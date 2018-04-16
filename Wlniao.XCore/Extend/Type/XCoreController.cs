@@ -227,7 +227,7 @@ namespace Wlniao
                 if (item.ToLower() == key)
                 {
                     Default = Request.Query[item];
-                    if (!string.IsNullOrEmpty(Default) && Default[0] == '%')
+                    if (!string.IsNullOrEmpty(Default) && Default.IndexOf('%') >= 0)
                     {
                         Default = strUtil.UrlDecode(Default);
                     }
