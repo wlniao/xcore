@@ -204,6 +204,28 @@ namespace Wlniao
             }
         }
         /// <summary>
+        /// 将时间按指定格式输出
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="format"></param>
+        /// <returns></returns>
+        public static string Format(DateTime time, string format = "yyyy-MM-dd HH:mm:ss")
+        {
+            if (time.Kind == DateTimeKind.Utc)
+            {
+                return time.AddHours(TimeZone).ToString(format);// 直接格式输出本地时间
+            }
+            else if (time.Kind == DateTimeKind.Local)
+            {
+                var temp = time.ToUniversalTime().AddHours(TimeZone);
+                return temp.ToString(format);// 按本地时间格式输出
+            }
+            else
+            {
+                return time.ToString(format);// 直接格式输出本地时间
+            }
+        }
+        /// <summary>
         /// 将当前UTC时间按指定格式输出
         /// </summary>
         /// <param name="format"></param>
