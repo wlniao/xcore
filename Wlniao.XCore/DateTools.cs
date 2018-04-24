@@ -53,7 +53,18 @@ namespace Wlniao
         /// <returns></returns>
         public static long GetUnix(DateTime time)
         {
-            return time.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
+            if (time.Kind == DateTimeKind.Unspecified)
+            {
+                return time.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)).Ticks / 10000000 - TimeZone * 3600;
+            }
+            else if (time.Kind == DateTimeKind.Utc)
+            {
+                return time.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
+            }
+            else
+            {
+                return time.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
+            }
         }
         /// <summary>
         /// 获取当前时间
@@ -123,6 +134,16 @@ namespace Wlniao
             return new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000));
         }
         /// <summary>
+        /// 将时间字符串转换为UTC世界协调时间
+        /// </summary>
+        /// <param name="strtime"></param>
+        /// <returns></returns>
+        public static DateTime ConvertToUtc(string strtime)
+        {
+            var temp = System.Convert.ToDateTime(strtime);
+            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Utc).AddHours(TimeZone);
+        }
+        /// <summary>
         /// 将Unix时间戳转换为无时区的时间
         /// </summary>
         /// <param name="unixtime"></param>
@@ -130,6 +151,16 @@ namespace Wlniao
         public static DateTime ConvertToUnspecified(long unixtime)
         {
             return new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified).Add(new TimeSpan(unixtime * 10000000)).AddHours(TimeZone);
+        }
+        /// <summary>
+        /// 将时间字符串转换为无时区的时间
+        /// </summary>
+        /// <param name="strtime"></param>
+        /// <returns></returns>
+        public static DateTime ConvertToUnspecified(string strtime)
+        {
+            var temp = System.Convert.ToDateTime(strtime);
+            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Unspecified);
         }
         /// <summary>
         /// 将Unix时间戳按当地时间及指定格式输出
