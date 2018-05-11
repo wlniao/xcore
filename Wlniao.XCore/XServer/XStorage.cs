@@ -435,7 +435,7 @@ namespace Wlniao.XServer
             }
         }
         /// <summary>
-        /// Upyun设置
+        /// Aliyun设置
         /// </summary>
         public static class Aliyun
         {
@@ -475,13 +475,15 @@ namespace Wlniao.XServer
             /// FormAPI参数
             /// </summary>
             /// <param name="expire">过期时间（单位：秒）</param>
+            /// <param name="max">文件最大大小</param>
             /// <returns></returns>
-            public static String FormApi(int expire = 5400)
+            public static String FormApi(int expire = 5400, int max = 200)
             {
                 if (Using)
                 {
+                    max = max * 1024 * 1024;
                     var dir = DateTools.Format("yyyyMM/MMdd/");
-                    var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, 209715200],[\"starts-with\",\"$key\",\"" + dir + "\"]]}";
+                    var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"]]}";
                     var policy = Encryptor.Base64Encrypt(json);
                     var signature = System.Convert.ToBase64String(Encryptor.GetHMACSHA1(policy, ossaccesskeySecret));
                     var host = ossdomain.IndexOf("://") < 0 ? "//" + ossdomain : ossdomain;
@@ -542,10 +544,12 @@ namespace Wlniao.XServer
             /// FormAPI参数
             /// </summary>
             /// <param name="expire">过期时间（单位：秒）</param>
+            /// <param name="max">文件最大大小</param>
             /// <returns></returns>
-            public static String FormApi(int expire = 5400)
+            public static String FormApi(int expire = 5400, int max = 200)
             {
                 Load();
+                max = max * 1024 * 1024;
                 if (!string.IsNullOrEmpty(bucketname) && !string.IsNullOrEmpty(formapi))
                 {
                     var json = "{\"bucket\":\"" + bucketname + "\",\"save-key\":\"/{year}{mon}/{mon}{day}/{random}{.suffix}\",\"expiration\":\"" + (DateTools.GetUnix() + expire) + "\"}";

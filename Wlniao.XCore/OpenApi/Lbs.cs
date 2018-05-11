@@ -135,7 +135,7 @@ namespace Wlniao.OpenApi
             }
         }
         /// <summary>
-        /// 距离换算工具
+        /// 坐标计算工具
         /// </summary>
         public class CoordDispose
         {
@@ -195,7 +195,7 @@ namespace Wlniao.OpenApi
             /// <summary>
             /// 以一个经纬度为中心计算出四个顶点
             /// </summary>
-            /// <param name="degree">半径(米)</param>
+            /// <param name="degree">中心坐标</param>
             /// <param name="distance">半径(米)</param>
             /// <returns></returns>
             public static Coord[] GetDegreeCoordinates(Coord degree, double distance)
@@ -212,7 +212,54 @@ namespace Wlniao.OpenApi
                                  new Coord(Math.Round(degree.latitude + dlat,6),Math.Round(degree.longitude - dlng,6) ) //right-bottom
                 };
             }
-            
+
+            /// <summary>
+            /// 计算多个点的中心点坐标
+            /// </summary>
+            /// <param name="degrees">半径(米)</param>
+            /// <param name="large">大范围/小范围（400km以上/400km以内）</param>
+            /// <returns></returns>
+            public static Coord GetCenterPoint(List<Coord> degrees,Boolean large=false)
+            {
+                int total = degrees.Count;
+                if (large)
+                {
+                    // 大范围计算（400km以上）
+                    double X = 0, Y = 0, Z = 0;
+                    foreach (var degree in degrees)
+                    {
+                        double lat, lon, x, y, z;
+                        lat = degree.latitude * Math.PI / 180;
+                        lon = degree.longitude * Math.PI / 180;
+                        x = Math.Cos(lat) * Math.Cos(lon);
+                        y = Math.Cos(lat) * Math.Sin(lon);
+                        z = Math.Sin(lat);
+                        X += x;
+                        Y += y;
+                        Z += z;
+                    }
+                    X = X / total;
+                    Y = Y / total;
+                    Z = Z / total;
+                    var Lon = Math.Atan2(Y, X);
+                    var Hyp = Math.Sqrt(X * X + Y * Y);
+                    var Lat = Math.Atan2(Z, Hyp);
+                    return new Coord(Lat * 180 / Math.PI, Lon * 180 / Math.PI);
+                }
+                else
+                {
+                    // 小范围计算（400km以内）
+                    double lat = 0, lon = 0;
+                    foreach (var degree in degrees)
+                    {
+                        lat += degree.latitude * Math.PI / 180;
+                        lon += degree.longitude * Math.PI / 180;
+                    }
+                    lat /= total;
+                    lon /= total;
+                    return new Coord(lat * 180 / Math.PI, lon * 180 / Math.PI);
+                }
+            }
         }
         /// <summary>
         /// 
