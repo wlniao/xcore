@@ -508,7 +508,16 @@ namespace Wlniao
         /// <returns>要求最近三天依次用 {今天、昨天、前天} 表示</returns>
         public static String ToDayString(DateTime day)
         {
-            var today = DateTools.GetUnspecifiedNow();
+            var today = DateTools.GetNow();
+            if (day.Kind == DateTimeKind.Utc)
+            {
+                day = new DateTime(day.Year, day.Month, day.Day, day.Hour, day.Minute, day.Second, day.Millisecond, DateTimeKind.Unspecified).AddHours(DateTools.TimeZone);
+            }
+            else if (day.Kind == DateTimeKind.Local)
+            {
+                day = day.ToUniversalTime();
+                day = new DateTime(day.Year, day.Month, day.Day, day.Hour, day.Minute, day.Second, day.Millisecond, DateTimeKind.Unspecified).AddHours(DateTools.TimeZone);
+            }
             if (IsDayEqual(day, today))
             {
                 return Runtime.Lang.Get("today");
@@ -530,7 +539,16 @@ namespace Wlniao
         /// <returns>格式为 {**小时前，**分钟前，**秒前}，以及 {昨天，前天}</returns>
         public static String ToTimeString(DateTime t)
         {
-            var now = DateTools.GetUnspecifiedNow();
+            var now = DateTools.GetNow();
+            if (t.Kind == DateTimeKind.Utc)
+            {
+                t = new DateTime(t.Year, t.Month, t.Day, t.Hour, t.Minute, t.Second, t.Millisecond, DateTimeKind.Unspecified).AddHours(DateTools.TimeZone);
+            }
+            else if (t.Kind == DateTimeKind.Local)
+            {
+                t = t.ToUniversalTime();
+                t = new DateTime(t.Year, t.Month, t.Day, t.Hour, t.Minute, t.Second, t.Millisecond, DateTimeKind.Unspecified).AddHours(DateTools.TimeZone);
+            }
             var span = now.Subtract(t);
             if (cvt.IsDayEqual(t, now))
             {
