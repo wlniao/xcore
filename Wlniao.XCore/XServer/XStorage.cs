@@ -471,6 +471,8 @@ namespace Wlniao.XServer
                     }
                 }
             }
+
+
             /// <summary>
             /// FormAPI参数
             /// </summary>
@@ -479,10 +481,35 @@ namespace Wlniao.XServer
             /// <returns></returns>
             public static String FormApi(int expire = 5400, int max = 200)
             {
+                return FormApi(expire, max, null);
+            }
+            /// <summary>
+            /// FormAPI参数
+            /// </summary>
+            /// <param name="expire">过期时间（单位：秒）</param>
+            /// <param name="max">文件最大大小（单位：M）</param>
+            /// <param name="dir">上传目录</param>
+            /// <returns></returns>
+            public static String FormApi(int expire, int max, string dir)
+            {
                 if (Using)
                 {
                     max = max * 1024 * 1024;
-                    var dir = DateTools.Format("yyyyMM/MMdd/");
+                    if (string.IsNullOrEmpty(dir))
+                    {
+                        dir = DateTools.Format("yyyyMM/MMdd/");
+                    }
+                    else
+                    {
+                        if (dir.StartsWith("/"))
+                        {
+                            dir = dir.TrimStart('/');
+                        }
+                        if (!dir.EndsWith("/"))
+                        {
+                            dir = dir + "/";
+                        }
+                    }
                     var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"]]}";
                     var policy = Encryptor.Base64Encrypt(json);
                     var signature = System.Convert.ToBase64String(Encryptor.GetHMACSHA1(policy, ossaccesskeySecret));
@@ -540,6 +567,7 @@ namespace Wlniao.XServer
                     }
                 }
             }
+
             /// <summary>
             /// FormAPI参数
             /// </summary>
@@ -548,11 +576,37 @@ namespace Wlniao.XServer
             /// <returns></returns>
             public static String FormApi(int expire = 5400, int max = 200)
             {
+                return FormApi(expire, max, null);
+            }
+            /// <summary>
+            /// FormAPI参数
+            /// </summary>
+            /// <param name="expire">过期时间（单位：秒）</param>
+            /// <param name="max">文件最大大小</param>
+            /// <param name="dir">上传目录</param>
+            /// <returns></returns>
+            public static String FormApi(int expire, int max, string dir)
+            {
                 Load();
                 max = max * 1024 * 1024;
                 if (!string.IsNullOrEmpty(bucketname) && !string.IsNullOrEmpty(formapi))
                 {
-                    var json = "{\"bucket\":\"" + bucketname + "\",\"save-key\":\"/{year}{mon}/{mon}{day}/{random}{.suffix}\",\"expiration\":\"" + (DateTools.GetUnix() + expire) + "\"}";
+                    if (string.IsNullOrEmpty(dir))
+                    {
+                        dir = "/{year}{mon}/{mon}{day}/";
+                    }
+                    else
+                    {
+                        if (!dir.StartsWith("/"))
+                        {
+                            dir = "/" + dir;
+                        }
+                        if (!dir.EndsWith("/"))
+                        {
+                            dir = dir + "/";
+                        }
+                    }
+                    var json = "{\"bucket\":\"" + bucketname + "\",\"save-key\":\"" + dir + "{random}{.suffix}\",\"expiration\":\"" + (DateTools.GetUnix() + expire) + "\"}";
                     var policy = Encryptor.Base64Encrypt(json);
                     var signature = Encryptor.Md5Encryptor32(policy + "&" + formapi);
                     return Json.ToString(new { host = XStorageUrl, bucket = bucketname, policy, signature });
