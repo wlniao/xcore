@@ -179,31 +179,6 @@ namespace Wlniao.Data
             }
         }
         /// <summary>
-        /// 分页数量
-        /// </summary>
-        public int totalpage
-        {
-            get
-            {
-                if (_total <= 0 || _size <= 0)
-                {
-                    return 0;
-                }
-                else
-                {
-                    var t = _total / _size;
-                    if (t * _size < _total)
-                    {
-                        return t + 1;
-                    }
-                    else
-                    {
-                        return t;
-                    }
-                }
-            }
-        }
-        /// <summary>
         /// 将原始数据进行分页
         /// </summary>
         /// <param name="source"></param>

@@ -39,9 +39,6 @@ namespace Wlniao
             Config.Clear();
             XServer.Common.Init();
             _level = Log.LogLevel.None;
-            if (DateTools.TimeZone == 0)
-            {
-            }
         }
         /// <summary>
         /// 输出系统信息

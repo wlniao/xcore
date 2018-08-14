@@ -140,6 +140,7 @@ namespace Wlniao.OpenApi
         public class CoordDispose
         {
             private const double EARTH_RADIUS = 6378137.0;//地球半径(米)
+
             /// <summary>
             /// 角度数转换为弧度公式
             /// </summary>

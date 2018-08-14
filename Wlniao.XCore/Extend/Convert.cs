@@ -262,13 +262,43 @@ namespace Wlniao
             return 0;
         }
         /// <summary>
+        /// 将 float 转换成整数
+        /// </summary>
+        /// <param name="number"></param>
+        /// <returns></returns>
+        public static int ToInt(float number)
+        {
+            try
+            {
+                return (int)number;
+            }
+            catch { return 0; }
+        }
+        /// <summary>
+        /// 将 double 转换成整数
+        /// </summary>
+        /// <param name="number"></param>
+        /// <returns></returns>
+        public static int ToInt(double number)
+        {
+            try
+            {
+                return (int)number;
+            }
+            catch { return 0; }
+        }
+        /// <summary>
         /// 将 decimal 转换成整数
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
         public static int ToInt(decimal number)
         {
-            return System.Convert.ToInt32(number);
+            try
+            {
+                return (int)number;
+            }
+            catch { return 0; }
         }
 
         #region 进制转换

@@ -242,7 +242,7 @@ namespace Wlniao.XServer
         }
 
         /// <summary>
-        /// 上传文件
+        /// 保存在线文件
         /// </summary>
         /// <param name="FileName"></param>
         /// <param name="url"></param>
@@ -265,7 +265,11 @@ namespace Wlniao.XServer
                     }).Wait();
                     if (data != null)
                     {
-                        if (Local.Using)
+                        if (Upyun.Using)
+                        {
+                            return Upyun.WriteFile(UploadPath + FileName, data);
+                        }
+                        else
                         {
                             string toFileName = IO.PathTool.Map(UploadPath, FileName);
                             string toFilePath = System.IO.Path.GetDirectoryName(toFileName);
@@ -283,10 +287,6 @@ namespace Wlniao.XServer
                                 fs.Write(data, 0, data.Length);
                                 return true;
                             }
-                        }
-                        else if (Upyun.Using)
-                        {
-                            return Upyun.WriteFile(UploadPath + FileName, data);
                         }
                     }
                 }
