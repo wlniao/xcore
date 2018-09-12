@@ -40,24 +40,24 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="RestSharp" Version="106.2.1" />
+    <PackageReference Include="RestSharp" Version="106.3.1" />
     <PackageReference Include="System.Net.Security" Version="4.3.2" />
     <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
     <PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
     <PackageReference Include="System.Linq.Queryable" Version="4.3.0" />
     <PackageReference Include="System.Linq.Expressions" Version="4.3.0" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.4.0" />
-    <PackageReference Include="Microsoft.AspNetCore" Version="2.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Https" Version="2.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.0.2" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Https" Version="2.1.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.1.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.1.2" />
   </ItemGroup>
 </Project>
