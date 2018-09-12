@@ -63,7 +63,14 @@ namespace Wlniao
         /// <returns></returns>
         public static long GetUnix(string time)
         {
-            return GetUnix(Convert(time));
+            try
+            {
+                return GetUnix(Convert(time));
+            }
+            catch
+            {
+                return 0;
+            }
         }
         /// <summary>
         /// 获取Unix时间戳

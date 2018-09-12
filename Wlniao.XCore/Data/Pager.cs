@@ -58,7 +58,7 @@ namespace Wlniao.Data
             }
         }
         /// <summary>
-        /// 当前页码
+        /// 当前页码（从1开始）
         /// </summary>
         public int page
         {
