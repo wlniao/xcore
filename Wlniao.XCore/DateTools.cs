@@ -99,7 +99,7 @@ namespace Wlniao
         public static DateTime GetNow()
         {
             var temp = DateTime.UtcNow.AddHours(TimeZone);
-            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Unspecified);
+            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Utc);
         }
         /// <summary>
         /// 将Unix时间戳转换为无时区的当前时间（可通过WLN_TIMEZONE设置）
@@ -118,7 +118,7 @@ namespace Wlniao
         public static DateTime Convert(string strtime)
         {
             var temp = System.Convert.ToDateTime(strtime);
-            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Unspecified);
+            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Utc).AddHours(0 - TimeZone);
         }
         /// <summary>
         /// 将Unix时间戳转换为UTC世界协调时间
