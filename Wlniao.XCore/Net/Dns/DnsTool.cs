@@ -29,6 +29,14 @@ namespace Wlniao.Net.Dns
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="ServerIPs"></param>
+        public DnsTool(IPAddress[] ServerIPs)
+        {
+            serverIPs = ServerIPs;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="ServerIPorHost"></param>
         public DnsTool(String ServerIPorHost)
         {
@@ -149,7 +157,7 @@ namespace Wlniao.Net.Dns
             {
                 var buffer = new byte[512];
                 var sendLength = CreateQuery(buffer, requestID++, qname, type, 1);
-                socket.ReceiveTimeout = 500;
+                socket.ReceiveTimeout = 15000;
                 foreach (var serverIP in serverIPs)
                 {
                     try

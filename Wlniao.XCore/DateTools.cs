@@ -328,5 +328,25 @@ namespace Wlniao
         {
             return DateTime.UtcNow.AddHours(TimeZone).ToString(format);// 以UTC时间进行时区计算
         }
+        /// <summary>
+        /// 获取当日起始时间
+        /// </summary>
+        /// <param name="unixtime"></param>
+        /// <returns></returns>
+        public static long GetDayStart(long unixtime)
+        {
+            var temp = unixtime + TimeZone * 3600;
+            temp = unixtime - unixtime % 86400;
+            return temp;
+        }
+        /// <summary>
+        /// 获取当日起始时间
+        /// </summary>
+        /// <param name="unixtime"></param>
+        /// <returns></returns>
+        public static long GetUnixDayStart(long unixtime)
+        {
+            return unixtime - unixtime % 86400;
+        }
     }
 }
