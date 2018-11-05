@@ -337,7 +337,7 @@ namespace Wlniao
         {
             var temp = unixtime + TimeZone * 3600;
             temp = unixtime - unixtime % 86400;
-            return temp;
+            return temp - TimeZone * 3600;
         }
         /// <summary>
         /// 获取当日起始时间
