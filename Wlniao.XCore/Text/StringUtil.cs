@@ -512,7 +512,40 @@ namespace Wlniao.Text
             return str.Length == 11 && IsNumber(str) && str.StartsWith("1");
         }
         /// <summary>
-        /// 
+        /// 是否为18位身份证号
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static bool IsIdentity(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return false;
+            }
+            else if (str.Length != 18)
+            {
+                return false;
+            }
+            else if (!strUtil.IsNumber(str.Substring(0, 17)) || !(strUtil.IsNumber(str.Substring(17)) || str.Substring(17).ToUpper() == "X"))
+            {
+                return false;
+            }
+            else if (cvt.ToInt(str.Substring(6, 4)) < 1900 || cvt.ToInt(str.Substring(6, 4)) > DateTime.Now.Year)
+            {
+                return false;
+            }
+            else if (cvt.ToInt(str.Substring(10, 2)) == 0 || cvt.ToInt(str.Substring(10, 2)) > 12)
+            {
+                return false;
+            }
+            else if (cvt.ToInt(str.Substring(12, 2)) == 0 || cvt.ToInt(str.Substring(12, 2)) > 31)
+            {
+                return false;
+            }
+            return true;
+        }
+        /// <summary>
+        /// 是否为SQL安全字符
         /// </summary>
         /// <param name="ch"></param>
         /// <returns></returns>

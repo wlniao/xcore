@@ -92,7 +92,7 @@ namespace Wlniao.OpenApi
         /// <returns></returns>
         public static ApiResult<Location> GetWithApiResult(string LocationId)
         {
-            return Common.Get<Location>("Location", "Get"
+            return Common.Get<Location>("location", "get"
                 , new KeyValuePair<String, String>("LocationId", LocationId));
         }
 
@@ -106,11 +106,11 @@ namespace Wlniao.OpenApi
         /// <returns></returns>
         public static Location GetByGPS(String Longitude, String Latitude, String Tag = "", Int32 GPSType = 1)
         {
-            String json = Common.Get("Location", "GetByGPS"
-                , new KeyValuePair<String, String>("Longitude", Longitude)
-                , new KeyValuePair<String, String>("Latitude", Latitude)
-                , new KeyValuePair<String, String>("Tag", Tag)
-                , new KeyValuePair<String, String>("GPSType", GPSType.ToString()));
+            String json = Common.Get("location", "getbygps"
+                , new KeyValuePair<String, String>("longitude", Longitude)
+                , new KeyValuePair<String, String>("latitude", Latitude)
+                , new KeyValuePair<String, String>("tag", Tag)
+                , new KeyValuePair<String, String>("gpstype", GPSType.ToString()));
             if (string.IsNullOrEmpty(json))
             {
                 return null;
@@ -150,9 +150,9 @@ namespace Wlniao.OpenApi
         public static List<Location> GetList(string Parent, int Count, params KeyValuePair<String, String>[] kvs)
         {
             var kvList = new List<KeyValuePair<String, String>>(kvs);
-            kvList.Add(new KeyValuePair<String, String>("Parent", Parent));
-            kvList.Add(new KeyValuePair<String, String>("Count", Count.ToString()));
-            var json = Common.GetOnlyData("Location", "GetList", kvList.ToArray());
+            kvList.Add(new KeyValuePair<String, String>("parent", Parent));
+            kvList.Add(new KeyValuePair<String, String>("count", Count.ToString()));
+            var json = Common.GetOnlyData("location", "getlist", kvList.ToArray());
             if (!string.IsNullOrEmpty(json))
             {
                 return Json.ToList<Location>(json);
@@ -166,12 +166,12 @@ namespace Wlniao.OpenApi
         public static List<Location> GetList(string Parent, int Count, Double Longitude = 0, Double Latitude = 0, int GPSType = 0, params KeyValuePair<String, String>[] kvs)
         {
             var kvList = new List<KeyValuePair<String, String>>(kvs);
-            kvList.Add(new KeyValuePair<String, String>("Count", Count.ToString()));
-            kvList.Add(new KeyValuePair<String, String>("Parent", Parent));
-            kvList.Add(new KeyValuePair<String, String>("Longitude", Longitude.ToString("F8")));
-            kvList.Add(new KeyValuePair<String, String>("Latitude", Latitude.ToString("F8")));
-            kvList.Add(new KeyValuePair<String, String>("GPSType", GPSType.ToString()));
-            var json = Common.GetOnlyData("Location", "GetList", kvList.ToArray());
+            kvList.Add(new KeyValuePair<String, String>("count", Count.ToString()));
+            kvList.Add(new KeyValuePair<String, String>("parent", Parent));
+            kvList.Add(new KeyValuePair<String, String>("longitude", Longitude.ToString("F8")));
+            kvList.Add(new KeyValuePair<String, String>("latitude", Latitude.ToString("F8")));
+            kvList.Add(new KeyValuePair<String, String>("gpstype", GPSType.ToString()));
+            var json = Common.GetOnlyData("location", "getlist", kvList.ToArray());
             if (!string.IsNullOrEmpty(json))
             {
                 return Json.ToList<Location>(json);
@@ -185,7 +185,7 @@ namespace Wlniao.OpenApi
         /// <returns></returns>
         public static String GetTree(string Parent)
         {
-            return Common.GetOnlyData("Location", "GetTree", new KeyValuePair<String, String>("Parent", Parent));
+            return Common.GetOnlyData("location", "gettree", new KeyValuePair<String, String>("Parent", Parent));
         }
     }
 }
