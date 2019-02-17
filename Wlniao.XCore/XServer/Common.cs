@@ -36,31 +36,11 @@ namespace Wlniao.XServer
         /// 开放接口主机地址
         /// </summary>
         public const string OpenHost = "https://openapi.wlniao.com";
-        private static int _HttpEngine = -1;
         private static string _App = "";
         private static string _AppId = "";
         private static string _Secret = "";
         internal static bool console = true;
         internal static bool retry = Wlniao.Config.GetSetting("WLN_RETRY") != "false";
-        /// <summary>
-        /// HttpEngine类型    0:restsharp 1:socket 2:httpclient 
-        /// </summary>
-        public static int HttpEngine
-        {
-            get
-            {
-                if (_HttpEngine < 0)
-                {
-                    var _engine = Config.GetConfigs("HttpEngine").ToLower();
-                    _engine.Switch((int t) => _HttpEngine = t)
-                        .Case("restsharp", 0)
-                        .Case("socket", 1)
-                        .Case("httpclient", 2)
-                        .Default(0);
-                }
-                return _HttpEngine;
-            }
-        }
         /// <summary>
         /// 
         /// </summary>
@@ -326,21 +306,12 @@ namespace Wlniao.XServer
             }
         }
         /// <summary>
-        /// 发起Http请求（引擎通过HttpEngine配置）
-        /// </summary>
-        /// <param name="url">请求地址</param>
-        /// <returns></returns>
-        public static string GetResponseString(String url)
-        {
-            return GetResponseString(url, HttpEngine);
-        }
-        /// <summary>
         /// 发起Http请求
         /// </summary>
         /// <param name="url">请求的Url</param>
-        /// <param name="engine">引擎模式（0:restsharp 1:socket 2:httpclient）</param>
+        /// <param name="engine">引擎模式（0:httpclient 1:socket）</param>
         /// <returns></returns>
-        public static string GetResponseString(String url, Int32 engine)
+        public static string GetResponseString(String url, Int32 engine = 0)
         {
             var times = 3;
             while (times > 0)
@@ -584,7 +555,7 @@ namespace Wlniao.XServer
                     catch { }
                     #endregion
                 }
-                else if (engine == 2)
+                else
                 {
                     #region
                     try
@@ -606,26 +577,6 @@ namespace Wlniao.XServer
                     catch (Exception ex)
                     {
                         log.Error(ex.Message + " [" + uri.Authority + "]");
-                    }
-                    #endregion
-                }
-                else
-                {
-                    #region
-                    //构建请求
-                    var request = new RestSharp.RestRequest(uri.PathAndQuery, RestSharp.Method.GET);
-                    var response = new RestSharp.RestClient(uri.Scheme + "://" + uri.Authority).Execute(request);
-                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
-                    {
-                        str = response.Content;
-                    }
-                    else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    {
-                        log.Error("NotFound [" + uri.Scheme + "://" + uri.Authority + uri.AbsolutePath + "]");
-                    }
-                    else
-                    {
-                        log.Error(response.ErrorMessage + " [" + uri.Authority + "]");
                     }
                     #endregion
                 }
@@ -654,7 +605,7 @@ namespace Wlniao.XServer
         /// <param name="url"></param>
         /// <param name="postData"></param>
         /// <returns></returns>
-        public static string PostResponseString(String url,String postData)
+        public static string PostResponseString(String url, String postData)
         {
             var encode = System.Text.Encoding.UTF8;
             byte[] byteArray = encode.GetBytes(postData);
@@ -1088,7 +1039,7 @@ namespace Wlniao.XServer
                         }
                         #endregion
                     }
-                    else if (engine == 2)
+                    else
                     {
                         #region
                         try
@@ -1124,27 +1075,6 @@ namespace Wlniao.XServer
                             {
                                 apilog.Failed(aex.Message);
                             }
-                        }
-                        #endregion
-                    }
-                    else
-                    {
-                        #region
-                        //构建请求
-                        var request = new RestSharp.RestRequest(uri.PathAndQuery, RestSharp.Method.GET);
-                        //request.AddHeader("Authorization", API_Token);
-                        var response = new RestSharp.RestClient(uri.Scheme + "://" + uri.Authority).Execute(request);
-                        if (response.StatusCode == System.Net.HttpStatusCode.OK)
-                        {
-                            //获取返回内容
-                            rlt = response.Content;
-                            em.Current.Value.Success();
-                            apilog.Success(rlt);
-                        }
-                        else
-                        {
-                            em.Current.Value.Failed();
-                            apilog.Failed(response.StatusCode.ToString() + "\t" + response.StatusDescription);
                         }
                         #endregion
                     }
@@ -1184,7 +1114,7 @@ namespace Wlniao.XServer
         /// <returns></returns>
         internal static string Get(CommonApp common, string controller, string action, out List<ApiLog> logs, params KeyValuePair<String, String>[] kvs)
         {
-            return Get(HttpEngine, common, controller, action, out logs, kvs);
+            return Get(0, common, controller, action, out logs, kvs);
         }
         /// <summary>
         /// 发起XServerGet请求

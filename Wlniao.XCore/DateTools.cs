@@ -335,6 +335,10 @@ namespace Wlniao
         /// <returns></returns>
         public static long GetDayStart(long unixtime)
         {
+            if ((unixtime - TimeZone * 3600) % 86400 == 0)
+            {
+                return unixtime;
+            }
             var temp = unixtime + TimeZone * 3600;
             temp = unixtime - unixtime % 86400;
             return temp - TimeZone * 3600;

@@ -384,7 +384,7 @@ namespace Wlniao.OpenApi
         public static UserInfo GetUserInfo(String access_token, String wxopenid)
         {
             string url = "https://api.weixin.qq.com/cgi-bin/user/info?access_token=" + access_token + "&openid=" + wxopenid + "&lang=zh_CN";
-            string json = XServer.Common.GetResponseString(url, 0);
+            string json = XServer.Common.GetResponseString(url);
             if (!string.IsNullOrEmpty(json))
             {
                 return Json.ToObject<UserInfo>(json);
@@ -486,7 +486,7 @@ namespace Wlniao.OpenApi
             try
             {
                 var url = string.Format("https://api.weixin.qq.com/sns/userinfo?access_token={0}&openid={1}&lang=zh_CN", access_token, wxopenid);
-                var userJson = XServer.Common.GetResponseString(url, 0);
+                var userJson = XServer.Common.GetResponseString(url);
                 var ui = Json.ToObject<AuthUserInfo>(userJson);
                 if (!string.IsNullOrEmpty(ui.nickname))
                 {
