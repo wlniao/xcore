@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Version>2.1.12</Version>
+    <Version>2.1.13</Version>
     <PackageId>Wlniao.XCore</PackageId>
     <PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
     <Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -18,7 +18,7 @@
     <PackageIconUrl>https://static.wlniao.com/wlniao/logo.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/wlniao/xcore</PackageProjectUrl>
     <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0.html</PackageLicenseUrl>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <RootNamespace>Wlniao.XCore</RootNamespace>
   </PropertyGroup>
 

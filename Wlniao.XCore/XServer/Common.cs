@@ -560,7 +560,12 @@ namespace Wlniao.XServer
                     #region
                     try
                     {
-                        var response = new System.Net.Http.HttpClient().GetAsync(uri).GetAwaiter().GetResult();
+                        var handler = new System.Net.Http.HttpClientHandler();
+                        if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+                        {
+                            handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+                        }
+                        var response = new System.Net.Http.HttpClient(handler).GetAsync(uri).GetAwaiter().GetResult();
                         if (response.StatusCode == System.Net.HttpStatusCode.OK)
                         {
                             str = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
@@ -612,7 +617,12 @@ namespace Wlniao.XServer
             var stream = cvt.ToStream(byteArray);
             var str = "";
             var err = "";
-            using (var client = new System.Net.Http.HttpClient())
+            var handler = new System.Net.Http.HttpClientHandler();
+            if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+            {
+                handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+            }
+            using (var client = new System.Net.Http.HttpClient(handler))
             {
                 var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
                 reqest.Headers.Date = DateTime.UtcNow;
@@ -673,7 +683,12 @@ namespace Wlniao.XServer
         {
             var str = "";
             var err = "";
-            using (var client = new System.Net.Http.HttpClient())
+            var handler = new System.Net.Http.HttpClientHandler();
+            if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+            {
+                handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+            }
+            using (var client = new System.Net.Http.HttpClient(handler))
             {
                 var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
                 reqest.Headers.Date = DateTime.UtcNow;
@@ -1044,7 +1059,12 @@ namespace Wlniao.XServer
                         #region
                         try
                         {
-                            var response = new System.Net.Http.HttpClient().GetAsync(uri).GetAwaiter().GetResult();
+                            var handler = new System.Net.Http.HttpClientHandler();
+                            if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+                            {
+                                handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+                            }
+                            var response = new System.Net.Http.HttpClient(handler).GetAsync(uri).GetAwaiter().GetResult();
                             if (response.StatusCode == System.Net.HttpStatusCode.OK)
                             {
                                 rlt = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
@@ -1197,7 +1217,16 @@ namespace Wlniao.XServer
             catch { }
             return "";
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="common"></param>
+        /// <param name="controller"></param>
+        /// <param name="action"></param>
+        /// <param name="postData"></param>
+        /// <param name="logs"></param>
+        /// <param name="kvs"></param>
+        /// <returns></returns>
         internal static string Post(CommonApp common, string controller, string action, string postData, out List<ApiLog> logs, params KeyValuePair<String, String>[] kvs)
         {
             var data = "";
@@ -1259,7 +1288,12 @@ namespace Wlniao.XServer
                     var encode = System.Text.Encoding.UTF8;
                     var byteArray = encode.GetBytes(postData);
                     var stream = cvt.ToStream(byteArray);
-                    using (var client = new System.Net.Http.HttpClient())
+                    var handler = new System.Net.Http.HttpClientHandler();
+                    if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+                    {
+                        handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+                    }
+                    using (var client = new System.Net.Http.HttpClient(handler))
                     {
                         var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
                         reqest.Headers.Date = DateTime.UtcNow;
@@ -1399,7 +1433,16 @@ namespace Wlniao.XServer
             rlt.PutLog(logs);
             return rlt;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="common"></param>
+        /// <param name="controller"></param>
+        /// <param name="action"></param>
+        /// <param name="stream"></param>
+        /// <param name="logs"></param>
+        /// <param name="kvs"></param>
+        /// <returns></returns>
         internal static string Post(CommonApp common, string controller, string action, System.IO.Stream stream, out List<ApiLog> logs, params KeyValuePair<String, String>[] kvs)
         {
             var data = "";
@@ -1459,7 +1502,12 @@ namespace Wlniao.XServer
                 try
                 {
                     em.Current.Value.Start();
-                    using (var client = new System.Net.Http.HttpClient())
+                    var handler = new System.Net.Http.HttpClientHandler();
+                    if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+                    {
+                        handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+                    }
+                    using (var client = new System.Net.Http.HttpClient(handler))
                     {
                         var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
                         reqest.Headers.Date = DateTime.UtcNow;
