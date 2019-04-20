@@ -305,6 +305,7 @@ namespace Wlniao
             }
             else
             {
+                log.Error("missing config:" + path);
                 return new Dictionary<string, string>();
             }
         }

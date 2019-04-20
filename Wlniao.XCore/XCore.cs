@@ -158,7 +158,6 @@ namespace Wlniao
                     if (startupRoot.IndexOf('/') >= 0)
                     {
                         Runtime.SysInfo.IsLinux = true;
-                        Runtime.SysInfo.IsWindows = false;
                         if (startupRoot.IndexOf("/bin") > 0)
                         {
                             startupRoot = startupRoot.Substring(0, startupRoot.IndexOf("/bin") + 1);
@@ -170,7 +169,6 @@ namespace Wlniao
                     }
                     else
                     {
-                        Runtime.SysInfo.IsLinux = false;
                         Runtime.SysInfo.IsWindows = true;
                         if (startupRoot.IndexOf("\\bin") > 0)
                         {
