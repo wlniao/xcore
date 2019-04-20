@@ -51,7 +51,7 @@ namespace Wlniao
         /// <returns>加密后的字符串</returns>
         public static string Md5Encryptor32(string str)
         {
-            string password = "";
+            var password = "";
             var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str));
             foreach (byte b in s)
             {
@@ -66,7 +66,7 @@ namespace Wlniao
         /// <returns>加密后的字符串</returns>
         public static string Md5Encryptor16(string str)
         {
-            string password = "";
+            var password = "";
             var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str));
             password = BitConverter.ToString(s, 4, 8).Replace("-", "");
             return password;
@@ -98,30 +98,38 @@ namespace Wlniao
         /// <returns>返回加密后的密文</returns>
         public static string AesEncrypt(string pToEncrypt, string sKey, string sIV = "")
         {
-            var aes = Aes.Create();
-            var key = new char[32];
-            for (var i = 0; i < key.Length && i < sKey.Length; i++)
+            if (!string.IsNullOrEmpty(pToEncrypt))
             {
-                key[i] = sKey[i];
-            }
-            aes.Key = Encoding.ASCII.GetBytes(key);
-            var iv = new char[16];
-            for (var i = 0; i < iv.Length && i < sIV.Length; i++)
-            {
-                iv[i] = sIV[i];
-            }
-            aes.IV = Encoding.ASCII.GetBytes(iv);
-            aes.Padding = PaddingMode.PKCS7;
-            var inputByteArray = Encoding.UTF8.GetBytes(pToEncrypt);
-            using (var ms = new MemoryStream())
-            {
-                using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                try
                 {
-                    cs.Write(inputByteArray, 0, inputByteArray.Length);
-                    cs.FlushFinalBlock();
-                    return System.Convert.ToBase64String(ms.ToArray());
+                    var aes = Aes.Create();
+                    var key = new char[32];
+                    for (var i = 0; i < key.Length && i < sKey.Length; i++)
+                    {
+                        key[i] = sKey[i];
+                    }
+                    aes.Key = Encoding.ASCII.GetBytes(key);
+                    var iv = new char[16];
+                    for (var i = 0; i < iv.Length && i < sIV.Length; i++)
+                    {
+                        iv[i] = sIV[i];
+                    }
+                    aes.IV = Encoding.ASCII.GetBytes(iv);
+                    aes.Padding = PaddingMode.PKCS7;
+                    var inputByteArray = Encoding.UTF8.GetBytes(pToEncrypt);
+                    using (var ms = new MemoryStream())
+                    {
+                        using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                        {
+                            cs.Write(inputByteArray, 0, inputByteArray.Length);
+                            cs.FlushFinalBlock();
+                            return System.Convert.ToBase64String(ms.ToArray());
+                        }
+                    }
                 }
+                catch { }
             }
+            return "";
         }
         /// <summary>
         /// 解密函数
@@ -132,34 +140,37 @@ namespace Wlniao
         /// <returns>返回加密前的明文</returns>
         public static string AesDecrypt(string pToDecrypt, string sKey, string sIV = "")
         {
-            try
+            if (!string.IsNullOrEmpty(pToDecrypt))
             {
-                var aes = Aes.Create();
-                var key = new char[32];
-                for (var i = 0; i < key.Length && i < sKey.Length; i++)
+                try
                 {
-                    key[i] = sKey[i];
-                }
-                aes.Key = Encoding.ASCII.GetBytes(key);
-                var iv = new char[16];
-                for (var i = 0; i < iv.Length && i < sIV.Length; i++)
-                {
-                    iv[i] = sIV[i];
-                }
-                aes.IV = Encoding.ASCII.GetBytes(iv);
-                aes.Padding = PaddingMode.PKCS7;
-                var inputByteArray = System.Convert.FromBase64String(pToDecrypt);
-                using (var ms = new MemoryStream())
-                {
-                    using (CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
+                    var aes = Aes.Create();
+                    var key = new char[32];
+                    for (var i = 0; i < key.Length && i < sKey.Length; i++)
                     {
-                        cs.Write(inputByteArray, 0, inputByteArray.Length);
-                        cs.FlushFinalBlock();
-                        return Encoding.UTF8.GetString(ms.ToArray());
+                        key[i] = sKey[i];
+                    }
+                    aes.Key = Encoding.ASCII.GetBytes(key);
+                    var iv = new char[16];
+                    for (var i = 0; i < iv.Length && i < sIV.Length; i++)
+                    {
+                        iv[i] = sIV[i];
+                    }
+                    aes.IV = Encoding.ASCII.GetBytes(iv);
+                    aes.Padding = PaddingMode.PKCS7;
+                    var inputByteArray = System.Convert.FromBase64String(pToDecrypt);
+                    using (var ms = new MemoryStream())
+                    {
+                        using (CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
+                        {
+                            cs.Write(inputByteArray, 0, inputByteArray.Length);
+                            cs.FlushFinalBlock();
+                            return Encoding.UTF8.GetString(ms.ToArray());
+                        }
                     }
                 }
+                catch { }
             }
-            catch { }
             return "";
         }
         /// <summary>
