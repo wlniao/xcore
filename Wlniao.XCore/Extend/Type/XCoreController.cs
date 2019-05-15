@@ -29,7 +29,7 @@ namespace Wlniao
         /// <summary>
         /// 错误提醒页面模板
         /// </summary>
-        protected const string errorHtml = "<html><head><title>{{errorTitle}}</title><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=0\"/></head><body onselectstart=\"return false;\" style=\"text-align:center;background:#f9f9f9;\"><div><img src=\"{{errorIcon}}\" style=\"width:9rem;margin-top:9rem;\"></div><div style=\"color:#999999;font-family:微软雅黑;padding:1rem;\">{{errorMsg}}</div></body></html>";
+        protected static string errorHtml = "<html><head><title>{{errorTitle}}</title><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=0\"/></head><body onselectstart=\"return false;\" style=\"text-align:center;background:#f9f9f9;\"><div><img src=\"{{errorIcon}}\" style=\"width:9rem;margin-top:9rem;\"></div><div style=\"color:#999999;font-family:微软雅黑;padding:1rem;\">{{errorMsg}}</div></body></html>";
         /// <summary>
         /// 当前请求是否安全
         /// </summary>
@@ -200,7 +200,7 @@ namespace Wlniao
             {
                 var errorPage = new ContentResult();
                 errorPage.ContentType = "text/html";
-                errorPage.Content = errorHtml.Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon).Replace("{{errorMsg}}", errorMsg);
+                errorPage.Content = errorHtml.Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon).Replace("{{errorMsg}}", message);
                 return errorPage;
             }
             else if (string.IsNullOrEmpty(GetRequest("callback")))
