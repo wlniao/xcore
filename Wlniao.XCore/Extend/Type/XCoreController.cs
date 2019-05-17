@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Net.Http.Headers;
@@ -338,6 +340,72 @@ namespace Wlniao
             }
             return "";
         }
+
+
+        private Dictionary<string, string> ctxPost = null;
+        /// <summary>
+        /// 获取请求参数（仅标记但不过滤非安全字符）
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <param name="Default"></param>
+        /// <returns></returns>
+        [NonAction]
+        protected String PostRequest(String Key, String Default = "")
+        {
+            if (ctxPost == null)
+            {
+                try
+                {
+                    if (Request.Method == "POST")
+                    {
+                        try
+                        {
+                            ctxPost = new Dictionary<string, string>();
+                            foreach (var item in Request.Form.Keys)
+                            {
+                                ctxPost.Add(item.ToLower(), Request.Form[item]);
+                            }
+                        }
+                        catch
+                        {
+                            var buffer = new byte[(int)Request.ContentLength];
+                            Request.Body.Read(buffer, 0, buffer.Length);
+                            ctxPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(System.Text.Encoding.UTF8.GetString(buffer));
+                            if (ctxPost == null)
+                            {
+                                ctxPost = new Dictionary<string, string>();
+                            }
+                        }
+                    }
+                    foreach (var item in Request.Query.Keys)
+                    {
+                        ctxPost.Add(item.ToLower(), strUtil.UrlDecode(Request.Query[item]));
+                    }
+                }
+                catch { }
+            }
+            Key = Key.ToLower();
+            if (ctxPost.ContainsKey(Key))
+            {
+                Default = ctxPost[Key];
+            }
+            return Default;
+        }
+        /// <summary>
+        /// 获取请求参数
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <returns></returns>
+        [NonAction]
+        protected Int32 PostRequestInt(String Key)
+        {
+            return cvt.ToInt(PostRequest(Key, "0"));
+        }
+
+
+
+
+
         /// <summary>
         /// 当前浏览器UserAgent
         /// </summary>
