@@ -514,7 +514,7 @@ namespace Wlniao.XServer
                     var policy = Encryptor.Base64Encrypt(json);
                     var signature = System.Convert.ToBase64String(Encryptor.GetHMACSHA1(policy, ossaccesskeySecret));
                     var host = ossdomain.IndexOf("://") < 0 ? "//" + ossdomain : ossdomain;
-                    return Json.ToString(new { host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
+                    return Json.ToString(new { to = "oss", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
                 }
                 return "";
             }
@@ -609,7 +609,7 @@ namespace Wlniao.XServer
                     var json = "{\"bucket\":\"" + bucketname + "\",\"save-key\":\"" + dir + "{random}{.suffix}\",\"expiration\":\"" + (DateTools.GetUnix() + expire) + "\"}";
                     var policy = Encryptor.Base64Encrypt(json);
                     var signature = Encryptor.Md5Encryptor32(policy + "&" + formapi);
-                    return Json.ToString(new { host = XStorageUrl, bucket = bucketname, policy, signature });
+                    return Json.ToString(new { to = "upyun", host = XStorageUrl, bucket = bucketname, policy, signature });
                 }
                 return "";
             }

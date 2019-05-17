@@ -316,9 +316,13 @@ namespace Wlniao
         {
             if (Request.Method == "POST")
             {
-                var buffer = new byte[(int)Request.ContentLength];
-                Request.Body.Read(buffer, 0, buffer.Length);
-                return System.Text.Encoding.UTF8.GetString(buffer);
+                if (strPost == null)
+                {
+                    var buffer = new byte[(int)Request.ContentLength];
+                    Request.Body.Read(buffer, 0, buffer.Length);
+                    strPost = System.Text.Encoding.UTF8.GetString(buffer);
+                }
+                return strPost;
             }
             return "";
         }
@@ -341,7 +345,7 @@ namespace Wlniao
             return "";
         }
 
-
+        private string strPost = null;
         private Dictionary<string, string> ctxPost = null;
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
@@ -368,9 +372,13 @@ namespace Wlniao
                         }
                         catch
                         {
-                            var buffer = new byte[(int)Request.ContentLength];
-                            Request.Body.Read(buffer, 0, buffer.Length);
-                            ctxPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(System.Text.Encoding.UTF8.GetString(buffer));
+                            if (strPost == null)
+                            {
+                                var buffer = new byte[(int)Request.ContentLength];
+                                Request.Body.Read(buffer, 0, buffer.Length);
+                                strPost = System.Text.Encoding.UTF8.GetString(buffer);
+                            }
+                            ctxPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(strPost);
                             if (ctxPost == null)
                             {
                                 ctxPost = new Dictionary<string, string>();
