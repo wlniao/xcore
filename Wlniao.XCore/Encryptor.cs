@@ -71,6 +71,20 @@ namespace Wlniao
             password = BitConverter.ToString(s, 4, 8).Replace("-", "");
             return password;
         }
+
+        /// <summary>
+        ///  HmacSHA256算法加密
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static string HmacSHA256Encryptor(string str, string key)
+        {
+            var hashAlgorithm = new HMACSHA256(Encoding.UTF8.GetBytes(key));
+            var bytes = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(str));
+            return IO.Base64Encoder.Encoder.GetEncoded(bytes);
+        }
+
         /// <summary>
         /// Base64编码
         /// </summary>

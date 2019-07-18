@@ -318,9 +318,16 @@ namespace Wlniao
             {
                 if (strPost == null)
                 {
-                    var buffer = new byte[(int)Request.ContentLength];
-                    Request.Body.Read(buffer, 0, buffer.Length);
-                    strPost = System.Text.Encoding.UTF8.GetString(buffer);
+                    try
+                    {
+                        strPost = new System.IO.StreamReader(Request.Body).ReadToEnd();
+                    }
+                    catch
+                    {
+                        var buffer = new byte[(int)Request.ContentLength];
+                        Request.Body.Read(buffer, 0, buffer.Length);
+                        strPost = System.Text.Encoding.UTF8.GetString(buffer);
+                    }
                 }
                 return strPost;
             }
@@ -392,10 +399,13 @@ namespace Wlniao
                 }
                 catch { }
             }
-            Key = Key.ToLower();
             if (ctxPost.ContainsKey(Key))
             {
                 Default = ctxPost[Key];
+            }
+            else if (ctxPost.ContainsKey(Key.ToLower()))
+            {
+                Default = ctxPost[Key.ToLower()];
             }
             return Default;
         }
@@ -458,6 +468,22 @@ namespace Wlniao
                     }
                 }
                 return ip;
+            }
+        }
+
+        /// <summary>
+        /// 页面引用地址
+        /// </summary>
+        public string UrlReferer
+        {
+            get
+            {
+                var referer = new Microsoft.Extensions.Primitives.StringValues();
+                if (Request.Headers.TryGetValue("referer", out referer) && referer.Count > 0)
+                {
+                    return referer.ToString();
+                }
+                return "";
             }
         }
     }
