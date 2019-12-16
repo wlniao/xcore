@@ -36,6 +36,32 @@ namespace Wlniao
         /// </summary>
         /// <param name="dic"></param>
         /// <param name="key"></param>
+        /// <param name="value"></param>
+        public static void TryAdd(this Dictionary<string, string> dic, string key, string value)
+        {
+            if (dic != null && !dic.ContainsKey(key))
+            {
+                dic.Add(key, value);
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public static void TryAdd(this Dictionary<string, object> dic, string key, object value)
+        {
+            if (dic != null && !dic.ContainsKey(key))
+            {
+                dic.Add(key, value);
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
         /// <param name="Default"></param>
         /// <returns></returns>
         public static string GetString(this Dictionary<string, string> dic, string key, string Default = "")
