@@ -46,57 +46,76 @@ namespace Wlniao.Runtime
             return Get(GetLang(), key, null);
         }
         /// <summary>
+        /// 获取某 key 的语言值
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="defaultStr"></param>
+        /// <returns></returns>
+        public static String Get(String key, String defaultStr)
+        {
+            return Get(GetLang(), key, defaultStr);
+        }
+        /// <summary>
         /// 获取指定语言某 key 的值
         /// </summary>
         /// <param name="langStr"></param>
         /// <param name="key"></param>
         /// <param name="defaultStr"></param>
         /// <returns></returns>
-        public static String Get(String langStr, String key, String defaultStr = null)
+        public static String Get(String langStr, String key, String defaultStr)
         {
             if (string.IsNullOrEmpty(langStr))
             {
-                langStr = defaultStr;
+                langStr = defaultLang;
             }
             var langPath = PathTool.Map(XCore.FrameworkRoot, "lang");
             if (langSetting.Count == 0)
             {
-                if (System.IO.Directory.Exists(langPath))
+                if (Directory.Exists(langPath))
                 {
                     foreach (String file in Directory.GetFiles(langPath))
                     {
-                        if (Path.GetExtension(file) != ".ini")
+                        if (file.EndsWith(".ini"))
                         {
-                            continue;
+                            langSetting.Add(Path.GetFileNameWithoutExtension(file), Config.Read(file));
                         }
-                        String fileName = Path.GetFileNameWithoutExtension(file);
-                        langSetting.Add(fileName, Config.Read(file));
                     }
                 }
                 else
                 {
                     var dicDefault = new Dictionary<String, String>();
-                    dicDefault.Add("emptypager", "加载完成 暂无数据");
-                    langSetting.Add(defaultLang, dicDefault);
-                    Config.Write(dicDefault, PathTool.JoinPath(langPath, defaultLang + ".ini"));
+                    if (langStr == defaultLang)
+                    {
+                        dicDefault.TryAdd("today", "今天");
+                        dicDefault.TryAdd("yesterday", "昨天");
+                        dicDefault.TryAdd("thedaybeforeyesterday", "前天");
+                        dicDefault.TryAdd("houresAgo", "小时前");
+                        dicDefault.TryAdd("minuteAgo", "分钟前");
+                        dicDefault.TryAdd("secondAgo", "秒前");
+                        dicDefault.TryAdd("justNow", "刚刚");
+                        dicDefault.TryAdd("empty", "加载完成 暂无数据");
+                    }
+                    langSetting.Add(langStr, dicDefault);
                 }
             }
-            if (langSetting.ContainsKey(langStr) && langSetting[langStr].ContainsKey(key))
+            if (langSetting.ContainsKey(langStr))
             {
-                return langSetting[langStr][key];
-            }
-            if (langSetting.ContainsKey(defaultLang) && langSetting[defaultLang].ContainsKey(key))
-            {
-                return langSetting[defaultLang][key];
-            }
-            if (string.IsNullOrEmpty(defaultStr))
-            {
-                if (defaultStr != null&& langSetting.ContainsKey(langStr))
+                if (langSetting[langStr].ContainsKey(key) && !string.IsNullOrEmpty(langSetting[langStr][key]))
                 {
-                    langSetting[langStr].Add(key, defaultStr);
-                    Config.Write(langSetting[langStr], PathTool.JoinPath(langPath, defaultLang + ".ini"));
+                    return langSetting[langStr][key];
                 }
-                return "{{" + key + "}}";
+                if (defaultStr == null)
+                {
+                    // 写入空行到语言包
+                    langSetting[langStr].TryAdd(key, defaultStr);
+                    Config.Write(langSetting[langStr], PathTool.JoinPath(langPath, langStr + ".ini"));
+                    return "{" + key + "}";
+                }
+            }
+            // 返回默认内容
+            if (defaultStr == null)
+            {
+                return "{" + key + "}";
             }
             else
             {
@@ -125,7 +144,7 @@ namespace Wlniao.Runtime
         /// <returns></returns>
         public static String GetLang()
         {
-            String nativeLang = System.Globalization.CultureInfo.CurrentCulture.Name.ToLower();
+            var nativeLang = System.Globalization.CultureInfo.CurrentCulture.Name.ToLower();
             if (langSetting.ContainsKey(nativeLang))
             {
                 return nativeLang;
@@ -139,7 +158,7 @@ namespace Wlniao.Runtime
         /// <returns></returns>
         public static String GetLangName(String langStr)
         {
-            switch (langStr)
+            switch (langStr.ToLower())
             {
                 case "en-us": return "English (US)";
                 case "en-gb": return "English (British)";

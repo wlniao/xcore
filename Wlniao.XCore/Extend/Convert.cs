@@ -590,7 +590,7 @@ namespace Wlniao
                 {
                     if (span.Minutes == 0)
                     {
-                        if (span.Seconds == 0)
+                        if (span.Seconds <= 2)
                         {
                             return Runtime.Lang.Get("justNow");
                         }

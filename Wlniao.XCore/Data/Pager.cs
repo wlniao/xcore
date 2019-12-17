@@ -169,7 +169,7 @@ namespace Wlniao.Data
             {
                 if (string.IsNullOrEmpty(_message))
                 {
-                    _message = lang.Get("", "emptypager", "without data");
+                    _message = lang.Get("", "empty", "without data");
                 }
                 return _message;
             }

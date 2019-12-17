@@ -1865,78 +1865,118 @@ namespace Wlniao.Text
             }
             return result;
         }
+
+        private static string [] beReplacedStrs = new[] { ".com.cn", ".edu.cn", ".net.cn", ".org.cn", ".co.jp", ".gov.cn", ".co.uk", ".ac.cn", ".edu", ".tv", ".info", ".com", ".ac", ".ag", ".am", ".at", ".be", ".biz", ".bz", ".cc", ".cn", ".com", ".de", ".es", ".eu", ".fm", ".gs", ".hk", ".in", ".info", ".io", ".it", ".jp", ".la", ".md", ".ms", ".name", ".net", ".nl", ".nu", ".org", ".pl", ".ru", ".sc", ".se", ".sg", ".sh", ".tc", ".tk", ".tv", ".tw", ".us", ".co", ".uk", ".vc", ".vg", ".ws", ".il", ".li", ".nz" };
+
+
         /// <summary>
-        /// 根据完整的URL获取主域名
+        /// 根据完整的URL获取域名
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public static string GetMainDomain(string url)
+        public static string GetDomain(string url)
         {
-            string host;
             try
             {
-                Uri uri = new Uri(url);
-                host = uri.Host + "";
+                return new Uri(url).Host;
             }
             catch
             {
                 return "";
             }
-
-            var beReplacedStrs = new[] { ".com.cn", ".edu.cn", ".net.cn", ".org.cn", ".co.jp", ".gov.cn", ".co.uk", ".ac.cn", ".edu", ".tv", ".info", ".com", ".ac", ".ag", ".am", ".at", ".be", ".biz", ".bz", ".cc", ".cn", ".com", ".de", ".es", ".eu", ".fm", ".gs", ".hk", ".in", ".info", ".io", ".it", ".jp", ".la", ".md", ".ms", ".name", ".net", ".nl", ".nu", ".org", ".pl", ".ru", ".sc", ".se", ".sg", ".sh", ".tc", ".tk", ".tv", ".tw", ".us", ".co", ".uk", ".vc", ".vg", ".ws", ".il", ".li", ".nz" };
-
-            string temp = "";
-            foreach (string oneBeReplacedStr in beReplacedStrs)
+        }
+        /// <summary>
+        /// 获取域名主机和主域部分
+        /// </summary>
+        /// <param name="domain"></param>
+        /// <param name="key"></param>
+        /// <param name="main"></param>
+        /// <returns></returns>
+        public static string GetDomainSplit(string domain, out string key, out string main)
+        {
+            key = "";
+            main = "";
+            foreach (string suffix in beReplacedStrs)
             {
-                string beReplacedStr = oneBeReplacedStr + "";
-                if (host.EndsWith(beReplacedStr))
+                if (domain.EndsWith(suffix))
                 {
-                    host = host.Substring(0, host.Length - beReplacedStr.Length);
-                    temp = beReplacedStr;
+                    var tmp = domain.Substring(0, domain.Length - suffix.Length);
+                    main = tmp.Substring(tmp.LastIndexOf('.') + 1) + suffix;
+                    if (tmp.LastIndexOf('.') > 0)
+                    {
+                        key = tmp.Substring(0, tmp.LastIndexOf('.'));
+                    }
                     break;
                 }
             }
-            int dotIndex = host.LastIndexOf(".", System.StringComparison.Ordinal);
-            host = host.Substring(dotIndex + 1);
-            return host + temp;
+            return key;
         }
         /// <summary>
-        /// 根据完整的URL获取主域名(无域名后缀)
+        /// 获取域名主域部分
         /// </summary>
-        /// <param name="url"></param>
+        /// <param name="domain"></param>
         /// <returns></returns>
-        public static string GetMainDomainNoSuffix(string url)
+        public static string GetDomainMain(string domain)
         {
-            if (url.IndexOf('.') > 0)
+            foreach (string suffix in beReplacedStrs)
             {
-                string host;
-                try
+                if (domain.EndsWith(suffix))
                 {
-                    host = url;
-                }
-                catch
-                {
-                    return "";
-                }
-
-                var beReplacedStrs = new[] { ".com.cn", ".edu.cn", ".net.cn", ".org.cn", ".co.jp", ".gov.cn", ".co.uk", ".ac.cn", ".edu", ".tv", ".info", ".com", ".ac", ".ag", ".am", ".at", ".be", ".biz", ".bz", ".cc", ".cn", ".com", ".de", ".es", ".eu", ".fm", ".gs", ".hk", ".in", ".info", ".io", ".it", ".jp", ".la", ".md", ".ms", ".name", ".net", ".nl", ".nu", ".org", ".pl", ".ru", ".sc", ".se", ".sg", ".sh", ".tc", ".tk", ".tv", ".tw", ".us", ".co", ".uk", ".vc", ".vg", ".ws", ".il", ".li", ".nz" };
-
-                foreach (string oneBeReplacedStr in beReplacedStrs)
-                {
-                    string beReplacedStr = oneBeReplacedStr + "";
-                    if (host.EndsWith(beReplacedStr))
+                    var tmp = domain.Substring(0, domain.Length - suffix.Length);
+                    if (tmp.LastIndexOf('.') > 0)
                     {
-                        host = host.Substring(0, host.Length - beReplacedStr.Length);
-                        host = host.Replace(beReplacedStr, string.Empty);
-                        break;
+                        return tmp.Substring(tmp.LastIndexOf('.') + 1) + suffix;
+                    }
+                    else
+                    {
+                        return tmp + suffix;
                     }
                 }
-
-                int dotIndex = host.LastIndexOf(".", System.StringComparison.Ordinal);
-                host = host.Substring(dotIndex + 1);
-                return host;
             }
-            return url;
+            return "";
+        }
+        /// <summary>
+        /// 获取域名主机部分
+        /// </summary>
+        /// <param name="domain"></param>
+        /// <returns></returns>
+        public static string GetDomainHost(string domain)
+        {
+            foreach (string suffix in beReplacedStrs)
+            {
+                if (domain.EndsWith(suffix))
+                {
+                    var tmp = domain.Substring(0, domain.Length - suffix.Length);
+                    if (tmp.LastIndexOf('.') > 0)
+                    {
+                        tmp = tmp.Substring(0, tmp.LastIndexOf('.'));
+                        return tmp;
+                    }
+                }
+            }
+            return "";
+        }
+        /// <summary>
+        /// 获取主域名无后缀部分
+        /// </summary>
+        /// <param name="domain"></param>
+        /// <returns></returns>
+        public static string GetDomainMainNoSuffix(string domain)
+        {
+            var tmp = "";
+            foreach (string suffix in beReplacedStrs)
+            {
+                if (domain.EndsWith(suffix))
+                {
+                    tmp = domain.Substring(0, domain.Length - suffix.Length);
+                    if (tmp.LastIndexOf('.') > 0)
+                    {
+                        tmp = tmp.Substring(tmp.LastIndexOf('.') + 1);
+                    }
+                    break;
+                }
+            }
+            return tmp;
         }
 
         /// <summary>
