@@ -107,21 +107,12 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static Boolean Exists(String key)
         {
-            if (cache.ContainsKey(key))
+            if (cache.ContainsKey(key) && cache[key].Expire > DateTime.Now)
             {
-                if (cache[key].Expire > DateTime.Now)
-                {
-                    return true;
-                }
-                else
-                {
-                    cache.Remove(key);
-                }
+                return true;
             }
             return false;
         }
-
-
 
         /// <summary>
         /// 获取一个缓存项
@@ -129,35 +120,21 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static String Get(String key)
         {
-            if (cache.ContainsKey(key))
+            if (cache.ContainsKey(key) && cache[key].Expire > DateTime.Now)
             {
-                if (cache[key].Expire > DateTime.Now)
-                {
-                    return cache[key].Value;
-                }
-                else
-                {
-                    cache.Remove(key);
-                }
+                return cache[key].Value == null ? "" : cache[key].Value;
             }
             return "";
         }
         /// <summary>
-        /// 获取一个缓存项
+        /// 获取一个缓存项（允许null）
         /// </summary>
         /// <param name="key"></param>
-        public static String GetWithNull(String key)
+        public static String GetAllowNull(String key)
         {
-            if (cache.ContainsKey(key))
+            if (cache.ContainsKey(key) && cache[key].Expire > DateTime.Now)
             {
-                if (cache[key].Expire > DateTime.Now)
-                {
-                    return cache[key].Value;
-                }
-                else
-                {
-                    cache.Remove(key);
-                }
+                return cache[key].Value;
             }
             return null;
         }
@@ -169,16 +146,9 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static T Get<T>(String key)
         {
-            if (cache.ContainsKey(key))
+            if (cache.ContainsKey(key) && cache[key].Expire > DateTime.Now)
             {
-                if (cache[key].Expire > DateTime.Now)
-                {
-                    return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(cache[key].Value);
-                }
-                else
-                {
-                    cache.Remove(key);
-                }
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(cache[key].Value);
             }
             return default(T);
         }

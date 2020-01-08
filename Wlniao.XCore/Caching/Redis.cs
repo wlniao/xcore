@@ -121,8 +121,43 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static String Get(String key)
         {
-            var rlt = SendCmd(RedisCommand.Get, key);
-            return rltToStr(rlt);
+            try
+            {
+                var rlt = SendCmd(RedisCommand.Get, key);
+                var lines = rlt.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length > 1)
+                {
+                    if (lines[1].StartsWith("+OK"))
+                    {
+                        lines[1] = lines[1].Substring(3);
+                    }
+                    return lines[1];
+                }
+            }
+            catch { }
+            return "";
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        public static String GetAllowNull(String key)
+        {
+            try
+            {
+                var rlt = SendCmd(RedisCommand.Get, key);
+                var lines = rlt.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length > 1)
+                {
+                    if (lines[1].StartsWith("+OK"))
+                    {
+                        lines[1] = lines[1].Substring(3);
+                    }
+                    return lines[1];
+                }
+            }
+            catch { }
+            return null;
         }
         /// <summary>
         /// 

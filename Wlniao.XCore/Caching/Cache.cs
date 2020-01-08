@@ -176,6 +176,21 @@ namespace Wlniao.Caching
             }
         }
         /// <summary>
+        /// 获取一个缓存项（允许null）
+        /// </summary>
+        /// <param name="key"></param>
+        public static String GetAllowNull(String key)
+        {
+            if (cType == CacheType.Redis)
+            {
+                return Redis.GetAllowNull(key);
+            }
+            else
+            {
+                return InMemory.GetAllowNull(key);
+            }
+        }
+        /// <summary>
         /// 获取一个缓存项
         /// </summary>
         /// <typeparam name="T"></typeparam>

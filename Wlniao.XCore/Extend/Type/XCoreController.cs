@@ -31,7 +31,7 @@ namespace Wlniao
         /// <summary>
         /// 错误提醒页面模板
         /// </summary>
-        protected static string errorHtml = "<html><head><title>{{errorTitle}}</title><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=0\"/></head><body onselectstart=\"return false;\" style=\"text-align:center;background:#f9f9f9;\"><div><img src=\"{{errorIcon}}\" style=\"width:9rem;margin-top:9rem;\"></div><div style=\"color:#999999;font-family:微软雅黑;padding:1rem;\">{{errorMsg}}</div></body></html>";
+        protected static string errorHtml = "<html><head><title>{{errorTitle}}</title><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=0\"/></head><body onselectstart=\"return false\" style=\"text-align:center;background:#f9f9f9\"><div><img src=\"{{errorIcon}}\" style=\"width:9rem;margin-top:9rem;\"></div><div style=\"color:#999999;font-family:Segoe UI, Segoe UI Midlevel, Segoe WP, Arial, Sans-Serif;padding:1rem\">{{errorMsg}}</div></body></html>";
         /// <summary>
         /// 当前请求是否安全
         /// </summary>
@@ -54,12 +54,9 @@ namespace Wlniao
         {
             if (!RequestSecurity)
             {
-                if (string.IsNullOrEmpty(errorMsg))
-                {
-                    errorMsg = Config.GetConfigs("NoSecurityMessage");
-                }
+                errorMsg = Config.GetConfigs("NoSecurityMessage");
             }
-            if (errorMsg.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(errorMsg))
             {
                 base.OnActionExecuted(context);
                 if (Request.HttpContext.Items["startTime"] != null)
@@ -112,13 +109,13 @@ namespace Wlniao
                     jsonStr = Wlniao.Json.ToString(data);
                 }
             }
-            if (string.IsNullOrEmpty(GetRequest("callback")))
+            if (Request.Query.ContainsKey("callback"))
             {
-                return Content(jsonStr, "text/json", System.Text.Encoding.UTF8);
+                return Content(GetRequest("callback") + "(" + jsonStr + ")", "text/javascript", System.Text.Encoding.UTF8);
             }
             else
             {
-                return Content(GetRequest("callback") + "(" + jsonStr + ")", "text/javascript", System.Text.Encoding.UTF8);
+                return Content(jsonStr, "text/json", System.Text.Encoding.UTF8);
             }
         }
         /// <summary>
@@ -142,13 +139,13 @@ namespace Wlniao
                     jsonStr = Wlniao.Json.ToString(data);
                 }
             }
-            if (string.IsNullOrEmpty(GetRequest("callback")))
+            if (Request.Query.ContainsKey("callback"))
             {
-                return Content(jsonStr, "text/json", encoding ?? System.Text.Encoding.UTF8);
+                return Content(GetRequest("callback") + "(" + jsonStr + ")", "text/javascript", encoding ?? System.Text.Encoding.UTF8);
             }
             else
             {
-                return Content(GetRequest("callback") + "(" + jsonStr + ")", "text/javascript", encoding ?? System.Text.Encoding.UTF8);
+                return Content(jsonStr, "text/json", encoding ?? System.Text.Encoding.UTF8);
             }
         }
         /// <summary>
