@@ -45,13 +45,13 @@ namespace Wlniao.Caching
             if (cache.ContainsKey(key))
             {
                 cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
-                cache[key].Value = value;
+                cache[key].Value = value == null ? "" : value;
             }
             else
             {
                 var data = new CacheData();
                 data.Expire = DateTime.Now.AddSeconds(expireSeconds);
-                data.Value = value;
+                data.Value = value == null ? "" : value;
                 cache.Add(key, data);
             }
             return true;
@@ -71,13 +71,13 @@ namespace Wlniao.Caching
             if (cache.ContainsKey(key))
             {
                 cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
-                cache[key].Value = obj;
+                cache[key].Value = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
             }
             else
             {
                 var data = new CacheData();
                 data.Expire = DateTime.Now.AddSeconds(expireSeconds);
-                data.Value = obj;
+                data.Value = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
                 cache.Add(key, data);
             }
             return true;
@@ -133,7 +133,7 @@ namespace Wlniao.Caching
             {
                 if (cache[key].Expire > DateTime.Now)
                 {
-                    return cache[key].Value.ToString();
+                    return cache[key].Value;
                 }
                 else
                 {
@@ -141,6 +141,25 @@ namespace Wlniao.Caching
                 }
             }
             return "";
+        }
+        /// <summary>
+        /// 获取一个缓存项
+        /// </summary>
+        /// <param name="key"></param>
+        public static String GetWithNull(String key)
+        {
+            if (cache.ContainsKey(key))
+            {
+                if (cache[key].Expire > DateTime.Now)
+                {
+                    return cache[key].Value;
+                }
+                else
+                {
+                    cache.Remove(key);
+                }
+            }
+            return null;
         }
         /// <summary>
         /// 获取一个缓存项
@@ -154,7 +173,7 @@ namespace Wlniao.Caching
             {
                 if (cache[key].Expire > DateTime.Now)
                 {
-                    return (T)cache[key].Value;
+                    return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(cache[key].Value);
                 }
                 else
                 {

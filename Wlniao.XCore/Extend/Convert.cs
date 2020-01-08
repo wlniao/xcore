@@ -20,6 +20,7 @@
 
 ===============================================================================*/
 using System;
+using System.Collections.Generic;
 using System.Text;
 namespace Wlniao
 {
@@ -665,6 +666,52 @@ namespace Wlniao
                 if (i < ids.Length - 1) builder.Append(',');
             }
             return builder.ToString();
+        }
+        /// <summary>
+        /// 将文本转换为数据字典
+        /// </summary>
+        /// <param name="doc"></param>
+        /// <returns></returns>
+        public static Dictionary<String, String> ToDictionary(string doc)
+        {
+            var result = new Dictionary<String, String>();
+            if (!string.IsNullOrEmpty(doc))
+            {
+                String[] arrLine = doc.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (String oneLine in arrLine)
+                {
+                    //无值的行跳过
+                    var tempLine = oneLine.TrimStart().TrimStart('-').TrimStart();
+                    //注释行跳过
+                    if (tempLine.StartsWith("//") || tempLine.StartsWith("#"))
+                    {
+                        continue;
+                    }
+                    String[] arrPair = tempLine.Split(new char[] { '=' }, 2);
+                    if (arrPair.Length == 2)
+                    {
+                        char[] arrTrim = new char[] { '"', '\'' };
+                        String itemKey = arrPair[0].Trim().TrimStart(arrTrim).TrimEnd(arrTrim).Trim().ToLower();
+                        String itemValue = arrPair[1].Trim().TrimStart(arrTrim).TrimEnd(arrTrim).Trim();
+                        if (result.ContainsKey(itemKey))
+                        {
+                            result[itemKey] = itemValue;
+                        }
+                        else
+                        {
+                            result.Add(itemKey, itemValue);
+                        }
+                    }
+                    else
+                    {
+                        if (tempLine.ToLower() == "yaml")
+                        {
+                            result.Add("yaml", "true");
+                        }
+                    }
+                }
+            }
+            return result;
         }
         /// <summary>
         /// 将字符串形式的 id 列表转换成整型数组

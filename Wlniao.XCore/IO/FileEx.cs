@@ -216,7 +216,7 @@ namespace Wlniao.IO
         /// <param name="absolutePath">文件的绝对路径</param>
         public static void Delete(String absolutePath)
         {
-            System.IO.File.Delete(absolutePath);
+            File.Delete(absolutePath);
         }
         /// <summary>
         /// 判断文件是否存在
@@ -225,9 +225,9 @@ namespace Wlniao.IO
         /// <returns></returns>
         public static Boolean Exists(String absolutePath)
         {
-            if (System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(absolutePath)))
+            if (!string.IsNullOrEmpty(absolutePath) && System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(absolutePath)))
             {
-                return System.IO.File.Exists(absolutePath);
+                return File.Exists(absolutePath);
             }
             return false;
         }
@@ -238,8 +238,8 @@ namespace Wlniao.IO
         /// <param name="destFileName">需要挪到的新路径</param>
         public static void Move(String sourceFileName, String destFileName)
         {
-            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(destFileName));
-            System.IO.File.Move(sourceFileName, destFileName);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(destFileName));
+            File.Move(sourceFileName, destFileName);
         }
         /// <summary>
         /// 拷贝文件(如果目标存在，不覆盖)
@@ -248,7 +248,7 @@ namespace Wlniao.IO
         /// <param name="destFileName">需要挪到的新路径</param>
         public static void Copy(String sourceFileName, String destFileName)
         {
-            System.IO.File.Copy(sourceFileName, destFileName, false);
+            File.Copy(sourceFileName, destFileName, false);
         }
         /// <summary>
         /// 拷贝文件
@@ -258,7 +258,7 @@ namespace Wlniao.IO
         /// <param name="overwrite">如果目标存在，是否覆盖</param>
         public static void Copy(String sourceFileName, String destFileName, Boolean overwrite)
         {
-            System.IO.File.Copy(sourceFileName, destFileName, overwrite);
+            File.Copy(sourceFileName, destFileName, overwrite);
         }
         /// <summary>
         /// 将内容追加到文件中(采用UTF8编码)

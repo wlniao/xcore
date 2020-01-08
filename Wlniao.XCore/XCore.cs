@@ -32,6 +32,22 @@ namespace Wlniao
     public partial class XCore
     {
         /// <summary>
+        /// 单线程锁
+        /// </summary>
+        internal static Object Lock = new object();
+        /// <summary>
+        /// 内部输出开关
+        /// </summary>
+        internal static Boolean _console = false;
+        /// <summary>
+        /// 当前日志输出等级
+        /// </summary>
+        private static Log.LogLevel _level = Log.LogLevel.None;
+        /// <summary>
+        /// 当前日志输出工具
+        /// </summary>
+        private static string _provider = null;
+        /// <summary>
         /// 重新初始化状态
         /// </summary>
         public static void Init()
@@ -39,6 +55,7 @@ namespace Wlniao
             Config.Clear();
             XServer.Common.Init();
             _level = Log.LogLevel.None;
+            _console = true;
         }
         /// <summary>
         /// 输出系统信息
@@ -302,7 +319,9 @@ namespace Wlniao
                 return 0;
             }
         }
-        private static Log.LogLevel _level = Log.LogLevel.None;
+        /// <summary>
+        /// 当前日志输出等级
+        /// </summary>
         internal static Log.LogLevel LogLevel
         {
             get
@@ -326,9 +345,8 @@ namespace Wlniao
                 return _level;
             }
         }
-        private static string _provider = null;
         /// <summary>
-        /// 默认日志输出工具
+        /// 当前日志输出工具
         /// </summary>
         /// <returns></returns>
         internal static string LogProvider

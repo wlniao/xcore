@@ -34,10 +34,6 @@ namespace Wlniao
     public class Config
     {
         /// <summary>
-        /// 配置文件分隔符
-        /// </summary>
-        private const char defaultSeparator = '=';
-        /// <summary>
         /// 环境变量内容
         /// </summary>
         private static Dictionary<String, String> _env = null;
@@ -83,23 +79,22 @@ namespace Wlniao
         /// <returns>返回一个字符串值</returns>
         public static String GetConfigs(String key, String defaultValue = null)
         {
-            if (_config == null)
+            lock (XCore.Lock)
             {
-                _config = Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"));
-            }
-            lock (_config)
-            {
-                var _key = key.ToLower();
-                var em = _config.GetEnumerator();
-                while (em.MoveNext())
+                if (_config == null)
                 {
-                    if (em.Current.Key.ToLower() == _key)
-                    {
-                        return em.Current.Value;
-                    }
+                    Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"));
                 }
-                return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
             }
+            key = key.ToLower();
+            foreach (var kv in _config)
+            {
+                if (kv.Key == key)
+                {
+                    return kv.Value;
+                }
+            }
+            return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
         }
         /// <summary>
         /// 获取 ConfigFile 中某项的值
@@ -109,20 +104,13 @@ namespace Wlniao
         /// <returns>返回一个字符串值</returns>
         public static String GetConfigsNoCache(String key, String defaultValue = "")
         {
-            if (_config == null)
+            key = key.ToLower();
+            Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"), false);
+            foreach (var kv in _config)
             {
-                _config = new Dictionary<string, string>();
-            }
-            else
-            {
-                var _key = key.ToLower();
-                var em = _config.GetEnumerator();
-                while (em.MoveNext())
+                if (kv.Key == key)
                 {
-                    if (em.Current.Key.ToLower() == _key)
-                    {
-                        return em.Current.Value;
-                    }
+                    return kv.Value;
                 }
             }
             return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
@@ -135,17 +123,19 @@ namespace Wlniao
         /// <returns>返回一个字符串值</returns>
         public static String GetConfigsAutoWrite(String key, String defaultValue = null)
         {
-            if (_config == null)
+            lock (XCore.Lock)
             {
-                _config = Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"));
-            }
-            var _key = key.ToLower();
-            var em = _config.GetEnumerator();
-            while (em.MoveNext())
-            {
-                if (em.Current.Key.ToLower() == _key)
+                if (_config == null)
                 {
-                    return em.Current.Value;
+                    Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"));
+                }
+            }
+            key = key.ToLower();
+            foreach (var kv in _config)
+            {
+                if (kv.Key == key)
+                {
+                    return kv.Value;
                 }
             }
             if (string.IsNullOrEmpty(defaultValue))
@@ -172,9 +162,17 @@ namespace Wlniao
         public static String GetEnvironment(String key, String defaultValue = "")
         {
             key = key.ToLower();
-            if (_env == null)
+            lock (XCore.Lock)
             {
-                _env = new Dictionary<string, string>();
+                if (_env == null || _env.Count == 0)
+                {
+                    _env = new Dictionary<string, string>();
+                    var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
+                    while (en.MoveNext())
+                    {
+                        _env.TryAdd(en.Key.ToString().ToLower(), en.Value.ToString());
+                    }
+                }
             }
             if (_env.ContainsKey(key))
             {
@@ -182,21 +180,8 @@ namespace Wlniao
             }
             else
             {
-                var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
-                while (en.MoveNext())
-                {
-                    if (key == en.Key.ToString().ToLower())
-                    {
-                        try
-                        {
-                            _env.Add(en.Key.ToString().ToLower(), en.Value.ToString());
-                        }
-                        catch { }
-                        return en.Value.ToString();
-                    }
-                }
+                return defaultValue;
             }
-            return defaultValue;
         }
         /// <summary>
         /// 添加一个临时的环境变量
@@ -282,31 +267,21 @@ namespace Wlniao
         /// 读取配置文件，返回一个 Dictionary，键值都是字符串
         /// </summary>
         /// <param name="path">配置文件的路径(相对路径，相对于项目的根目录)</param>
+        /// <param name="init">是否为初始化调用</param>
         /// <returns>返回一个 Dictionary</returns>
-        public static Dictionary<String, String> Read(String path)
+        public static void Read(String path, Boolean init = true)
         {
-            if (strUtil.IsNullOrEmpty(path))
+            if (file.Exists(path))
             {
-                throw new Exception("config path is empty");
+                _config = cvt.ToDictionary(file.Read(path));
             }
-            else if (file.Exists(path))
+            else if (init)
             {
-                var str = file.Read(path);
-                if (string.IsNullOrEmpty(str))
+                _config = new Dictionary<string, string>();
+                if (XCore._console)
                 {
-                    return new Dictionary<string, string>();
+                    log.Console("missing config:" + path, ConsoleColor.Red);
                 }
-                else
-                {
-                    var cfg = new Config();
-                    cfg.Content = str;
-                    return cfg.toDic();
-                }
-            }
-            else
-            {
-                log.Error("missing config:" + path);
-                return new Dictionary<string, string>();
             }
         }
 
@@ -317,137 +292,38 @@ namespace Wlniao
         /// <param name="path">配置文件的路径(相对路径，相对于项目的根目录)</param>
         public static void Write(Dictionary<String, String> dic, String path = "/xcore/xcore.config")
         {
-            var cfg = new Config() { Dic = dic };
-            file.Write(IO.PathTool.Map(path), cfg.Content, true);
-        }
-
-        /// <summary>
-        /// 将 Dictionary 序列化为字符串
-        /// </summary>
-        /// <param name="dic"></param>
-        /// <returns></returns>
-        public static String GetDicString(Dictionary<String, String> dic)
-        {
-            var cfg = new Config();
-            cfg.Dic = dic;
-            return cfg.ToString();
-        }
-        private String _content;
-        /// <summary>
-        /// 配置文件的内容
-        /// </summary>
-        public String Content
-        {
-            get
+            if (_config != null)
             {
-                if (_dictionary != null)
+                var sb = new StringBuilder();
+                foreach (KeyValuePair<String, String> pair in _config)
                 {
-                    toString();
-                }
-                return _content;
-            }
-            set
-            {
-                _content = value;
-            }
-        }
-        private Dictionary<String, String> _dictionary;
-        /// <summary>
-        /// 以 Dictionary 的形式设置或获取配置
-        /// </summary>
-        public Dictionary<String, String> Dic
-        {
-            get
-            {
-                if (_dictionary == null && strUtil.HasText(Content))
-                {
-                    toDic();
-                }
-                return _dictionary;
-            }
-            set
-            {
-                _dictionary = value;
-            }
-        }
-        private Dictionary<String, String> toDic()
-        {
-            var result = new Dictionary<String, String>();
-            String[] arrLine = Content.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (String oneLine in arrLine)
-            {
-                //无值的行跳过
-                var tempLine = oneLine.TrimStart().TrimStart('-').TrimStart();
-                //注释行跳过
-                if (tempLine.StartsWith("//") || tempLine.StartsWith("#"))
-                {
-                    continue;
-                }
-                String[] arrPair = tempLine.Split(new char[] { defaultSeparator }, 2);
-                if (arrPair.Length == 2)
-                {
-                    char[] arrTrim = new char[] { '"', '\'' };
-                    String itemKey = arrPair[0].Trim().TrimStart(arrTrim).TrimEnd(arrTrim).Trim();
-                    String itemValue = arrPair[1].Trim().TrimStart(arrTrim).TrimEnd(arrTrim).Trim();
-                    if (result.ContainsKey(itemKey))
+                    if (_config.ContainsKey("yaml"))
                     {
-                        result[itemKey] = itemValue;
+                        if (pair.Key == "yaml")
+                        {
+                            sb.Insert(0, "- yaml" + Environment.NewLine);
+                        }
+                        else
+                        {
+                            sb.Append("- ");
+                            sb.Append(pair.Key);
+                            sb.Append("=");
+                            sb.Append(pair.Value);
+                            sb.Append(Environment.NewLine);
+                        }
                     }
                     else
                     {
-                        result.Add(itemKey, itemValue);
-                    }
-                }
-                else
-                {
-                    if (tempLine.ToLower() == "yaml")
-                    {
-                        result.Add("yaml", "true");
-                    }
-                }
-            }
-            _dictionary = result;
-            return result;
-        }
-        private void toString()
-        {
-            var sb = new StringBuilder();
-            foreach (KeyValuePair<String, String> pair in this.Dic)
-            {
-                if (Dic.ContainsKey("yaml"))
-                {
-                    if (pair.Key == "yaml")
-                    {
-                        sb.Insert(0, "- yaml" + Environment.NewLine);
-                    }
-                    else
-                    {
-                        sb.Append("- ");
                         sb.Append(pair.Key);
-                        sb.Append(defaultSeparator);
+                        sb.Append(" ");
+                        sb.Append("=");
+                        sb.Append(" ");
                         sb.Append(pair.Value);
                         sb.Append(Environment.NewLine);
                     }
                 }
-                else
-                {
-                    sb.Append(pair.Key);
-                    sb.Append(" ");
-                    sb.Append(defaultSeparator);
-                    sb.Append(" ");
-                    sb.Append(pair.Value);
-                    sb.Append(Environment.NewLine);
-                }
+                file.Write(IO.PathTool.Map(path), sb.ToString(), true);
             }
-            _content = sb.ToString();
-        }
-        /// <summary>
-        /// 配置文件的内容
-        /// </summary>
-        /// <returns></returns>
-        public override String ToString()
-        {
-            return this.Content;
         }
     }
 }

@@ -68,34 +68,46 @@ namespace Wlniao.Runtime
             {
                 langStr = defaultLang;
             }
-            var langPath = PathTool.Map(XCore.FrameworkRoot, "lang");
-            if (langSetting.Count == 0)
+            lock (XCore.Lock)
             {
-                if (Directory.Exists(langPath))
+                if (langSetting.Count == 0)
                 {
-                    foreach (String file in Directory.GetFiles(langPath))
+                    var langPath = PathTool.Map(XCore.FrameworkRoot, "lang");
+                    if (Directory.Exists(langPath))
                     {
-                        if (file.EndsWith(".ini"))
+                        foreach (String file in Directory.GetFiles(langPath))
                         {
-                            langSetting.Add(Path.GetFileNameWithoutExtension(file), Config.Read(file));
+                            if (file.EndsWith(".ini"))
+                            {
+                                var str = Wlniao.file.Read(file);
+                                var langKey = Path.GetFileNameWithoutExtension(file);
+                                if (langSetting.ContainsKey(langKey))
+                                {
+                                    langSetting[langKey] = cvt.ToDictionary(str);
+                                }
+                                else
+                                {
+                                    langSetting.Add(langKey, cvt.ToDictionary(str));
+                                }
+                            }
                         }
                     }
-                }
-                else
-                {
-                    var dicDefault = new Dictionary<String, String>();
-                    if (langStr == defaultLang)
+                    else
                     {
-                        dicDefault.TryAdd("today", "今天");
-                        dicDefault.TryAdd("yesterday", "昨天");
-                        dicDefault.TryAdd("thedaybeforeyesterday", "前天");
-                        dicDefault.TryAdd("houresAgo", "小时前");
-                        dicDefault.TryAdd("minuteAgo", "分钟前");
-                        dicDefault.TryAdd("secondAgo", "秒前");
-                        dicDefault.TryAdd("justNow", "刚刚");
-                        dicDefault.TryAdd("empty", "加载完成 暂无数据");
+                        var dicDefault = new Dictionary<String, String>();
+                        if (langStr == defaultLang)
+                        {
+                            dicDefault.TryAdd("today", "今天");
+                            dicDefault.TryAdd("yesterday", "昨天");
+                            dicDefault.TryAdd("thedaybeforeyesterday", "前天");
+                            dicDefault.TryAdd("houresAgo", "小时前");
+                            dicDefault.TryAdd("minuteAgo", "分钟前");
+                            dicDefault.TryAdd("secondAgo", "秒前");
+                            dicDefault.TryAdd("justNow", "刚刚");
+                            dicDefault.TryAdd("empty", "加载完成 暂无数据");
+                        }
+                        langSetting.Add(langStr, dicDefault);
                     }
-                    langSetting.Add(langStr, dicDefault);
                 }
             }
             if (langSetting.ContainsKey(langStr))
@@ -108,7 +120,7 @@ namespace Wlniao.Runtime
                 {
                     // 写入空行到语言包
                     langSetting[langStr].TryAdd(key, defaultStr);
-                    Config.Write(langSetting[langStr], PathTool.JoinPath(langPath, langStr + ".ini"));
+                    Config.Write(langSetting[langStr], PathTool.Map(XCore.FrameworkRoot, "lang", langStr + ".ini"));
                     return "{" + key + "}";
                 }
             }
@@ -128,12 +140,12 @@ namespace Wlniao.Runtime
         /// <returns></returns>
         public static List<Dictionary<String, String>> GetSupportedLang()
         {
-            List<Dictionary<String, String>> list = new List<Dictionary<String, String>>();
+            var list = new List<Dictionary<String, String>>();
             foreach (String key in langSetting.Keys)
             {
                 Dictionary<String, String> pair = new Dictionary<String, String>();
-                pair.Add("Name", GetLangName(key));
-                pair.Add("Value", key);
+                pair.TryAdd("Name", GetLangName(key));
+                pair.TryAdd("Value", key);
                 list.Add(pair);
             }
             return list;

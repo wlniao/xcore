@@ -1889,12 +1889,12 @@ namespace Wlniao.Text
         /// 获取域名主机和主域部分
         /// </summary>
         /// <param name="domain"></param>
-        /// <param name="key"></param>
+        /// <param name="host"></param>
         /// <param name="main"></param>
         /// <returns></returns>
-        public static string GetDomainSplit(string domain, out string key, out string main)
+        public static void GetDomainSplit(string domain, out string host, out string main)
         {
-            key = "";
+            host = "";
             main = "";
             foreach (string suffix in beReplacedStrs)
             {
@@ -1904,12 +1904,11 @@ namespace Wlniao.Text
                     main = tmp.Substring(tmp.LastIndexOf('.') + 1) + suffix;
                     if (tmp.LastIndexOf('.') > 0)
                     {
-                        key = tmp.Substring(0, tmp.LastIndexOf('.'));
+                        host = tmp.Substring(0, tmp.LastIndexOf('.'));
                     }
                     break;
                 }
             }
-            return key;
         }
         /// <summary>
         /// 获取域名主域部分
