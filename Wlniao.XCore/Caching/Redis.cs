@@ -155,6 +155,10 @@ namespace Wlniao.Caching
                     }
                     return lines[1];
                 }
+                else if (lines.Length > 0)
+                {
+                    return "";
+                }
             }
             catch { }
             return null;

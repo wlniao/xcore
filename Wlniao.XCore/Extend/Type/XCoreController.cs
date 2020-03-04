@@ -364,11 +364,11 @@ namespace Wlniao
             {
                 try
                 {
+                    ctxPost = new Dictionary<string, string>();
                     if (Request.Method == "POST")
                     {
                         try
                         {
-                            ctxPost = new Dictionary<string, string>();
                             foreach (var item in Request.Form.Keys)
                             {
                                 ctxPost.Add(item.ToLower(), Request.Form[item]);
@@ -376,22 +376,28 @@ namespace Wlniao
                         }
                         catch
                         {
-                            if (strPost == null)
+                            if (strPost.Length == 0 && Request.ContentLength > 0)
                             {
                                 var buffer = new byte[(int)Request.ContentLength];
                                 Request.Body.Read(buffer, 0, buffer.Length);
                                 strPost = System.Text.Encoding.UTF8.GetString(buffer);
-                            }
-                            ctxPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(strPost);
-                            if (ctxPost == null)
-                            {
-                                ctxPost = new Dictionary<string, string>();
+                                if (strPost.IsNotNullAndEmpty())
+                                {
+                                    var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(strPost);
+                                    if (tmpPost != null)
+                                    {
+                                        foreach (var kv in tmpPost)
+                                        {
+                                            ctxPost.TryAdd(kv.Key.ToLower(), kv.Value);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                     foreach (var item in Request.Query.Keys)
                     {
-                        ctxPost.Add(item.ToLower(), strUtil.UrlDecode(Request.Query[item]));
+                        ctxPost.TryAdd(item.ToLower(), strUtil.UrlDecode(Request.Query[item]));
                     }
                 }
                 catch { }
@@ -406,6 +412,7 @@ namespace Wlniao
             }
             return Default;
         }
+
         /// <summary>
         /// 获取请求参数
         /// </summary>

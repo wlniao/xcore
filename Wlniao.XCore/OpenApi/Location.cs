@@ -12,58 +12,61 @@ namespace Wlniao.OpenApi
         /// <summary>
         /// LocationId
         /// </summary>
-        public string LocationId { get; set; }
+        public string id { get; set; }
         /// <summary>
         /// 上级LocationId
         /// </summary>
-        public string ParentId { get; set; }
+        public string parent { get; set; }
         /// <summary>
         /// 简称
         /// </summary>
-        public string Name { get; set; }
+        public string name { get; set; }
         /// <summary>
         /// 标签
         /// </summary>
-        public string Tags { get; set; }
+        public string tags { get; set; }
         /// <summary>
         /// 地址/全称
         /// </summary>
-        public string Address { get; set; }
+        public string address { get; set; }
         /// <summary>
         /// 经度
         /// </summary>
-        public double Longitude { get; set; }
+        public double lng { get; set; }
         /// <summary>
         /// 纬度
         /// </summary>
-        public double Latitude { get; set; }
+        public double lat { get; set; }
         /// <summary>
         /// 与指定坐标的距离
         /// </summary>
-        public double Distance { get; set; }
+        public double distance { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         private static Dictionary<String, String> namelist = new Dictionary<String, String>();
         /// <summary>
         /// 根据LocationId获取地点名称
         /// </summary>
-        /// <param name="LocationId"></param>
+        /// <param name="Id"></param>
         /// <returns></returns>
-        public static String GetName(String LocationId)
+        public static String GetName(String Id)
         {
-            if (string.IsNullOrEmpty(LocationId))
+            if (string.IsNullOrEmpty(Id))
             {
                 return "";
             }
-            else if (namelist.ContainsKey(LocationId))
+            else if (namelist.ContainsKey(Id))
             {
-                return namelist[LocationId];
+                return namelist[Id];
             }
             else
             {
-                var item = Get(LocationId);
+                var item = Get(Id);
                 if (item != null)
                 {
-                    namelist.Add(LocationId, item.Name);
-                    return item.Name;
+                    namelist.Add(Id, item.name);
+                    return item.name;
                 }
             }
             return null;
@@ -71,11 +74,12 @@ namespace Wlniao.OpenApi
         /// <summary>
         /// 通过LocationId获取地点信息
         /// </summary>
-        /// <param name="LocationId"></param>
+        /// <param name="Id"></param>
         /// <returns></returns>
-        public static Location Get(string LocationId)
+        public static Location Get(string Id)
         {
-            var rlt = GetWithApiResult(LocationId);
+            var rlt = Common.Get<Location>("location", "get"
+                , new KeyValuePair<String, String>("id", Id));
             if (rlt.success)
             {
                 return rlt.data;
@@ -86,30 +90,17 @@ namespace Wlniao.OpenApi
             }
         }
         /// <summary>
-        /// 带接口输出信息
-        /// </summary>
-        /// <param name="LocationId"></param>
-        /// <returns></returns>
-        public static ApiResult<Location> GetWithApiResult(string LocationId)
-        {
-            return Common.Get<Location>("location", "get"
-                , new KeyValuePair<String, String>("LocationId", LocationId));
-        }
-
-        /// <summary>
         /// 通过GPS获取最近的地址
         /// </summary>
         /// <param name="Longitude">经度</param>
         /// <param name="Latitude">纬度</param>
-        /// <param name="Tag">标签</param>
         /// <param name="GPSType">坐标类型 1,GPS坐标  2,百度坐标</param>
         /// <returns></returns>
-        public static Location GetByGPS(String Longitude, String Latitude, String Tag = "", Int32 GPSType = 1)
+        public static Location Get(String Longitude, String Latitude, Int32 GPSType = 1)
         {
-            String json = Common.Get("location", "getbygps"
+            String json = Common.Get("location", "get"
                 , new KeyValuePair<String, String>("longitude", Longitude)
                 , new KeyValuePair<String, String>("latitude", Latitude)
-                , new KeyValuePair<String, String>("tag", Tag)
                 , new KeyValuePair<String, String>("gpstype", GPSType.ToString()));
             if (string.IsNullOrEmpty(json))
             {
@@ -122,32 +113,10 @@ namespace Wlniao.OpenApi
         }
 
         /// <summary>
-        /// 通过GPS获取最近的地点列表
-        /// </summary>
-        /// <param name="Longitude"></param>
-        /// <param name="Latitude"></param>
-        /// <param name="Tag"></param>
-        /// <param name="Count"></param>
-        /// <returns></returns>
-        public static List<Location> GetNearest(Double Longitude, Double Latitude, String Tag = "", Int32 Count = 15)
-        {
-            String json = Common.GetOnlyData("Location", "GetNearest"
-                , new KeyValuePair<String, String>("Longitude", Longitude.ToString("F8"))
-                , new KeyValuePair<String, String>("Latitude", Latitude.ToString("F8"))
-                , new KeyValuePair<String, String>("Tag", Tag)
-                , new KeyValuePair<String, String>("Count", Count.ToString()));
-            if (!string.IsNullOrEmpty(json))
-            {
-                return Json.ToList<Location>(json);
-            }
-            return new List<Location>();
-        }
-
-        /// <summary>
         /// 获取地点列表
         /// </summary>
         /// <returns></returns>
-        public static List<Location> GetList(string Parent, int Count, params KeyValuePair<String, String>[] kvs)
+        public static List<Location> GetList(String Parent, Int32 Count, params KeyValuePair<String, String>[] kvs)
         {
             var kvList = new List<KeyValuePair<String, String>>(kvs);
             kvList.Add(new KeyValuePair<String, String>("parent", Parent));
@@ -163,7 +132,7 @@ namespace Wlniao.OpenApi
         /// 获取地点列表
         /// </summary>
         /// <returns></returns>
-        public static List<Location> GetList(string Parent, int Count, Double Longitude = 0, Double Latitude = 0, int GPSType = 0, params KeyValuePair<String, String>[] kvs)
+        public static List<Location> GetList(String Parent, Int32 Count, Double Longitude = 0, Double Latitude = 0, Int32 GPSType = 0, params KeyValuePair<String, String>[] kvs)
         {
             var kvList = new List<KeyValuePair<String, String>>(kvs);
             kvList.Add(new KeyValuePair<String, String>("count", Count.ToString()));
@@ -178,14 +147,41 @@ namespace Wlniao.OpenApi
             }
             return new List<Location>();
         }
+        /// <summary>
+        /// 通过GPS获取最近的地点列表
+        /// </summary>
+        /// <param name="Longitude"></param>
+        /// <param name="Latitude"></param>
+        /// <param name="GPSType"></param>
+        /// <param name="Tag"></param>
+        /// <param name="Count"></param>
+        /// <returns></returns>
+        public static List<Location> GetListNearBy(Double Longitude, Double Latitude, Int32 GPSType = 0, String Tag = "", Int32 Count = 15)
+        {
+            String json = Common.GetOnlyData("location", "getlist"
+                , new KeyValuePair<String, String>("tag", Tag)
+                , new KeyValuePair<String, String>("count", Count.ToString())
+                , new KeyValuePair<String, String>("latitude", Latitude.ToString("F8"))
+                , new KeyValuePair<String, String>("longitude", Longitude.ToString("F8"))
+                , new KeyValuePair<String, String>("gpstype", GPSType.ToString())
+                , new KeyValuePair<String, String>("nearby", "true"));
+            if (!string.IsNullOrEmpty(json))
+            {
+                return Json.ToList<Location>(json);
+            }
+            return new List<Location>();
+        }
 
         /// <summary>
         /// 获取地点列表
         /// </summary>
         /// <returns></returns>
-        public static String GetTree(string Parent)
+        public static String GetTree(String Parent, String Tag = "", String Key = "")
         {
-            return Common.GetOnlyData("location", "gettree", new KeyValuePair<String, String>("Parent", Parent));
+            return Common.GetOnlyData("location", "gettree"
+                , new KeyValuePair<String, String>("key", Key)
+                , new KeyValuePair<String, String>("tag", Tag)
+                , new KeyValuePair<String, String>("parent", Parent));
         }
     }
 }
