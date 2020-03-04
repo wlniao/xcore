@@ -275,7 +275,7 @@ namespace Wlniao
         [NonAction]
         protected String GetRequest(String Key, String Default = "")
         {
-            Default = GetRequestNoSecurity(Key, Default);
+            Default = PostRequest(Key, Default);
             var str = System.Text.RegularExpressions.Regex.Replace(Default, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\'|\.|<|>]", "").Replace("\"", "");
             if (str != Default)
             {
@@ -311,24 +311,20 @@ namespace Wlniao
         [NonAction]
         protected String GetPostString()
         {
-            if (Request.Method == "POST")
+            if (strPost == null && Request.Method == "POST")
             {
-                if (strPost == null)
+                try
                 {
-                    try
-                    {
-                        strPost = new System.IO.StreamReader(Request.Body).ReadToEnd();
-                    }
-                    catch
-                    {
-                        var buffer = new byte[(int)Request.ContentLength];
-                        Request.Body.Read(buffer, 0, buffer.Length);
-                        strPost = System.Text.Encoding.UTF8.GetString(buffer);
-                    }
+                    strPost = new System.IO.StreamReader(Request.Body).ReadToEnd();
                 }
-                return strPost;
+                catch
+                {
+                    var buffer = new byte[(int)Request.ContentLength];
+                    Request.Body.Read(buffer, 0, buffer.Length);
+                    strPost = System.Text.Encoding.UTF8.GetString(buffer);
+                }
             }
-            return "";
+            return strPost;
         }
         /// <summary>
         /// 获取Cookie指
@@ -369,14 +365,7 @@ namespace Wlniao
                     {
                         try
                         {
-                            foreach (var item in Request.Form.Keys)
-                            {
-                                ctxPost.Add(item.ToLower(), Request.Form[item]);
-                            }
-                        }
-                        catch
-                        {
-                            if (strPost.Length == 0 && Request.ContentLength > 0)
+                            if (strPost == null && Request.ContentLength > 0)
                             {
                                 var buffer = new byte[(int)Request.ContentLength];
                                 Request.Body.Read(buffer, 0, buffer.Length);
@@ -393,6 +382,14 @@ namespace Wlniao
                                     }
                                 }
                             }
+                            foreach (var item in Request.Form.Keys)
+                            {
+                                ctxPost.Add(item.ToLower(), Request.Form[item]);
+                            }
+                        }
+                        catch
+                        {
+                            strPost = "";
                         }
                     }
                     foreach (var item in Request.Query.Keys)
