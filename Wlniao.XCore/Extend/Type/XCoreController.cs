@@ -281,7 +281,7 @@ namespace Wlniao
             {
                 RequestSecurity = false;
             }
-            return Default;
+            return Default.Trim();
         }
         /// <summary>
         /// 获取请求参数
@@ -407,7 +407,7 @@ namespace Wlniao
             {
                 Default = ctxPost[Key.ToLower()];
             }
-            return Default;
+            return Default.Trim();
         }
 
         /// <summary>

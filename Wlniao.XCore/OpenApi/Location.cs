@@ -178,7 +178,7 @@ namespace Wlniao.OpenApi
         /// <returns></returns>
         public static String GetTree(String Parent, String Tag = "", String Key = "")
         {
-            return Common.GetOnlyData("location", "gettree"
+            return Common.Get("location", "gettree"
                 , new KeyValuePair<String, String>("key", Key)
                 , new KeyValuePair<String, String>("tag", Tag)
                 , new KeyValuePair<String, String>("parent", Parent));
