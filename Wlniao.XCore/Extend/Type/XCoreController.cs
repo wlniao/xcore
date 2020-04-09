@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Net.Http.Headers;
 
 namespace Wlniao
@@ -367,27 +368,41 @@ namespace Wlniao
                         {
                             if (strPost == null && Request.ContentLength > 0)
                             {
-                                var buffer = new byte[(int)Request.ContentLength];
-                                Request.Body.Read(buffer, 0, buffer.Length);
-                                strPost = System.Text.Encoding.UTF8.GetString(buffer);
+                                try
+                                {
+                                    strPost = new System.IO.StreamReader(Request.Body).ReadToEnd();
+                                }
+                                catch
+                                {
+                                    var buffer = new byte[(int)Request.ContentLength];
+                                    Request.Body.Read(buffer, 0, buffer.Length);
+                                    strPost = System.Text.Encoding.UTF8.GetString(buffer);
+                                }
                                 if (strPost.IsNotNullAndEmpty())
                                 {
-                                    var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(strPost);
-                                    if (tmpPost != null)
+                                    try
                                     {
-                                        foreach (var kv in tmpPost)
+                                        var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(strPost);
+                                        if (tmpPost != null)
                                         {
-                                            ctxPost.TryAdd(kv.Key.ToLower(), kv.Value);
+                                            foreach (var kv in tmpPost)
+                                            {
+                                                ctxPost.TryAdd(kv.Key.ToLower(), kv.Value.Trim());
+                                            }
                                         }
+                                    }
+                                    catch
+                                    {
+                                        Console.WriteLine("Post数据解析失败，请检查数据格式是否有效（如是否保护数组等）");
                                     }
                                 }
                             }
                             foreach (var item in Request.Form.Keys)
                             {
-                                ctxPost.Add(item.ToLower(), Request.Form[item]);
+                                ctxPost.Add(item.ToLower(), Request.Form[item].ToString().Trim());
                             }
                         }
-                        catch
+                        catch(Exception ex)
                         {
                             strPost = "";
                         }
