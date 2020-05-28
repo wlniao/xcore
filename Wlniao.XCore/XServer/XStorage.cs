@@ -136,6 +136,50 @@ namespace Wlniao.XServer
             return SourceUrl;
         }
         /// <summary>
+        /// 转换为XStorage存储格式（去除Host部分）
+        /// </summary>
+        /// <param name="SourceUrls"></param>
+        /// <returns></returns>
+        public static string ConvertUrlsToStorage(string SourceUrls)
+        {
+            if (string.IsNullOrEmpty(SourceUrls))
+            {
+                return "";
+            }
+            else
+            {
+                var urls = "";
+                foreach (var url in SourceUrls.Split(",", StringSplitOptions.RemoveEmptyEntries))
+                {
+                    urls += Wlniao.XServer.XStorage.ConvertUrlToStorage(url) + ",";
+                }
+                return urls.Trim(',');
+            }
+        }
+
+        /// <summary>
+        /// 添加XStorageUrl
+        /// </summary>
+        /// <param name="SourceUrl"></param>
+        /// <returns></returns>
+        public static string ConvertUrlsToFullUrls(string SourceUrls)
+        {
+            if (string.IsNullOrEmpty(SourceUrls))
+            {
+                return "";
+            }
+            else
+            {
+                var urls = "";
+                foreach (var url in SourceUrls.Split(",", StringSplitOptions.RemoveEmptyEntries))
+                {
+                    urls += Wlniao.XServer.XStorage.ConvertUrlToFullUrl(url, false) + ",";
+                }
+                return urls.Trim(',');
+            }
+        }
+
+        /// <summary>
         /// 添加XStorageUrl
         /// </summary>
         /// <param name="SourceUrl"></param>

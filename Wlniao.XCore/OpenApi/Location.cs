@@ -183,5 +183,80 @@ namespace Wlniao.OpenApi
                 , new KeyValuePair<String, String>("tag", Tag)
                 , new KeyValuePair<String, String>("parent", Parent));
         }
+
+        /// <summary>
+        /// 获取地点路径
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public static List<String> GetPath(String id)
+        {
+            var zxs = "11,12,31,50";   //直辖市ID
+            var ids = new List<String>();
+
+            if (id.Length <= 21 && (id.Length == 2 || id.Length == 4 || id.Length == 6 || id.Length == 9 || id.Length == 11
+                 || id.Length == 12 || id.Length == 14 || id.Length == 15 || id.Length == 16 || id.Length == 17
+                 || id.Length == 18 || id.Length == 20 || id.Length == 21))
+            {
+                if (id.Length >= 2)
+                {
+                    //查询地级市、直辖市区县
+                    ids.Add(id.Substring(0, 2));
+                }
+                if (id.Length >= 4)
+                {
+                    //非直辖市四查询区县
+                    if (!zxs.Contains(id.Substring(0, 2)))
+                    {
+                        ids.Add(id.Substring(0, 4));
+                    }
+                }
+                if (id.Length >= 6)
+                {
+                    //根据区县查询乡镇节点
+                    ids.Add(id.Substring(0, 6));
+
+                    //根据乡镇查询村、社区
+                    if (id.Length == 9)
+                    {
+                        ids.Add(id);
+                    }
+                    else if (id.Length == 11)
+                    {
+                        ids.Add(id);
+                    }
+                    else if (id.Length == 12 || id.Length == 14)
+                    {
+                        ids.Add(id.Substring(0, 9));
+                        ids.Add(id);
+                    }
+                    else if (id.Length == 15 || id.Length == 17)
+                    {
+                        ids.Add(id.Substring(0, 9));
+                        ids.Add(id.Substring(0, 12));
+                        ids.Add(id);
+                    }
+                    else if (id.Length == 16)
+                    {
+                        ids.Add(id.Substring(0, 11));
+                        ids.Add(id);
+                    }
+                    else if (id.Length == 18 || id.Length == 20)
+                    {
+                        ids.Add(id.Substring(0, 9));
+                        ids.Add(id.Substring(0, 12));
+                        ids.Add(id.Substring(0, 15));
+                        ids.Add(id);
+                    }
+                    else if (id.Length == 21)
+                    {
+                        ids.Add(id.Substring(0, 11));
+                        ids.Add(id.Substring(0, 16));
+                        ids.Add(id);
+                    }
+                }
+            }
+            return ids;
+        }
     }
 }
