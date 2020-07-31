@@ -486,7 +486,7 @@ namespace Wlniao.Text
             return Regex.IsMatch(ip, @"^((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$");
         }
         /// <summary>
-        /// 是否为数字
+        /// 是否为数字（包含小数点、负号）
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -495,6 +495,10 @@ namespace Wlniao.Text
             if (string.IsNullOrEmpty(str))
             {
                 return false;
+            }
+            else
+            {
+                str = str.Replace(".", "").Replace("-", "");
             }
             return Regex.IsMatch(str, @"^\d+$");
         }
