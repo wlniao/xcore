@@ -362,11 +362,12 @@ namespace Wlniao
                 try
                 {
                     ctxPost = new Dictionary<string, string>();
-                    if (Request.Method == "POST")
+                    if (Request.Method == "POST" && Request.ContentLength > 0)
                     {
+                        #region 请求为文本类型
                         try
                         {
-                            if (strPost == null && Request.ContentLength > 0)
+                            if (strPost == null)
                             {
                                 try
                                 {
@@ -378,38 +379,43 @@ namespace Wlniao
                                     Request.Body.Read(buffer, 0, buffer.Length);
                                     strPost = System.Text.Encoding.UTF8.GetString(buffer);
                                 }
-                                if (strPost.IsNotNullAndEmpty())
+                            }
+                            if (!string.IsNullOrEmpty(strPost))
+                            {
+                                var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(strPost);
+                                if (tmpPost != null)
                                 {
-                                    try
+                                    foreach (var kv in tmpPost)
                                     {
-                                        var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(strPost);
-                                        if (tmpPost != null)
-                                        {
-                                            foreach (var kv in tmpPost)
-                                            {
-                                                ctxPost.TryAdd(kv.Key.ToLower(), kv.Value.Trim());
-                                            }
-                                        }
-                                    }
-                                    catch
-                                    {
-                                        Console.WriteLine("Post数据解析失败，请检查数据格式是否有效（如是否保护数组等）");
+                                        ctxPost.TryAdd(kv.Key.ToLower(), kv.Value.Trim());
                                     }
                                 }
                             }
-                            foreach (var item in Request.Form.Keys)
+                        }
+                        catch { }
+                        #endregion 请求为文本类型
+
+                        #region 请求为表单或文件上传
+                        try
+                        {
+                            if (Request.ContentType == "application/x-www-form-urlencoded" || Request.ContentType == "multipart/form-data")
                             {
-                                ctxPost.Add(item.ToLower(), Request.Form[item].ToString().Trim());
+                                foreach (var item in Request.Form.Keys)
+                                {
+                                    ctxPost.Add(item.ToLower(), Request.Form[item].ToString().Trim());
+                                }
+                                strPost = "";
                             }
                         }
-                        catch(Exception ex)
-                        {
-                            strPost = "";
-                        }
+                        catch { }
+                        #endregion 请求为表单或文件上传
                     }
-                    foreach (var item in Request.Query.Keys)
+                    if (Request.Query != null)
                     {
-                        ctxPost.TryAdd(item.ToLower(), strUtil.UrlDecode(Request.Query[item]));
+                        foreach (var item in Request.Query.Keys)
+                        {
+                            ctxPost.TryAdd(item.ToLower(), strUtil.UrlDecode(Request.Query[item]));
+                        }
                     }
                 }
                 catch { }
