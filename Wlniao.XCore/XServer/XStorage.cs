@@ -160,7 +160,7 @@ namespace Wlniao.XServer
         /// <summary>
         /// 添加XStorageUrl
         /// </summary>
-        /// <param name="SourceUrl"></param>
+        /// <param name="SourceUrls"></param>
         /// <returns></returns>
         public static string ConvertUrlsToFullUrls(string SourceUrls)
         {
@@ -378,6 +378,28 @@ namespace Wlniao.XServer
                         return true;
                     }
                 }
+                else if (Aliyun.Using)
+                {
+                    if (FileName[0] == '/')
+                    {
+                        if (UploadPath.EndsWith("/"))
+                        {
+                            return Aliyun.WriteFile(UploadPath.TrimEnd('/') + FileName, data);
+                        }
+                        else
+                        {
+                            return Aliyun.WriteFile(UploadPath + FileName, data);
+                        }
+                    }
+                    else if (UploadPath.EndsWith("/"))
+                    {
+                        return Aliyun.WriteFile(UploadPath + FileName, data);
+                    }
+                    else
+                    {
+                        return Aliyun.WriteFile(UploadPath + "/" + FileName, data);
+                    }
+                }
                 else if (Upyun.Using)
                 {
                     return Upyun.WriteFile(UploadPath + FileName, data);
@@ -561,6 +583,78 @@ namespace Wlniao.XServer
                     return Json.ToString(new { to = "oss", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
                 }
                 return "";
+            }
+
+
+            /// <summary>
+            /// 上传文件
+            /// </summary>
+            /// <param name="path"></param>
+            /// <param name="data"></param>
+            /// <returns></returns>
+            public static bool WriteFile(string path, byte[] data)
+            {
+                var resp = newWorker("PUT", path, data);
+                if (resp.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            private static HttpResponseMessage newWorker(string method, string Url, byte[] postData = null, Hashtable headers = null)
+            {
+                using (var client = new HttpClient())
+                {
+                    var host = ossdomain.IndexOf("://") < 0 ? "https://" + ossdomain : ossdomain;
+                    var request = new HttpRequestMessage(new HttpMethod(method), host + Url);
+                    if (postData != null)
+                    {
+                        request.Content = new StreamContent(new MemoryStream(postData));
+                    }
+                    if (headers == null)
+                    {
+                        headers = new Hashtable();
+                    }
+                    var date = DateTools.ConvertToGMT();
+                    var contentType = Wlniao.MimeMapping.GetMimeMapping(Url);
+                    headers.Add("Date", date);
+                    headers.Add("Host", ossdomain);
+                    request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(postData);
+                    request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+                    request.Content.Headers.ContentLength = postData.Length;
+
+                    var contentMd5 = System.Convert.ToBase64String(request.Content.Headers.ContentMD5);
+                    var policy = method + '\n' + contentMd5 + '\n' + contentType + '\n' + date + "\n/" + bucket + Url;
+                    var signature = System.Convert.ToBase64String(Encryptor.GetHMACSHA1(policy, ossaccesskeySecret));
+
+                    headers.Add("Authorization", "OSS " + ossaccesskeyid + ':' + signature);
+                    foreach (DictionaryEntry kv in headers)
+                    {
+                        request.Headers.TryAddWithoutValidation(kv.Key.ToString(), kv.Value.ToString());
+                    }
+                    var res = new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.InternalServerError };
+                    client.SendAsync(request).ContinueWith((requestTask) =>
+                    {
+                        res = requestTask.Result;
+                        try
+                        {
+                            if (res.StatusCode != System.Net.HttpStatusCode.OK)
+                            {
+                                res.Content.ReadAsStringAsync().ContinueWith((readTask) =>
+                                {
+                                    var doc = new System.Xml.XmlDocument();
+                                    doc.LoadXml(readTask.Result);
+                                    log.Error("XStorage Aliyun：" + doc.GetElementsByTagName("Message")[0].InnerText);
+                                }).Wait();
+                            }
+                        }
+                        catch { }
+                    }).Wait();
+                    return res;
+                }
             }
         }
         /// <summary>
@@ -783,11 +877,12 @@ namespace Wlniao.XServer
                     {
                         request.Content = new StreamContent(new MemoryStream(postData));
                     }
+                    var res = new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.InternalServerError };
                     client.SendAsync(request).ContinueWith((requestTask) =>
                     {
-                        return requestTask.Result;
+                        res = requestTask.Result;
                     }).Wait();
-                    return new HttpResponseMessage();
+                    return res;
                 }
             }
             private static bool delete(string path, Hashtable headers = null)
