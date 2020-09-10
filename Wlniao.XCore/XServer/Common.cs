@@ -40,7 +40,7 @@ namespace Wlniao.XServer
         private static string _AppId = "";
         private static string _Secret = "";
         internal static bool console = true;
-        internal static bool retry = Wlniao.Config.GetSetting("WLN_RETRY") != "false";
+        internal static bool retry = Config.GetSetting("WLN_RETRY").ToLower() == "true";
         /// <summary>
         /// 
         /// </summary>
