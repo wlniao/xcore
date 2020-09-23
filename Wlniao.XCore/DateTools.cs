@@ -269,7 +269,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string FormatUnix(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
         {
-            return Convert(unixtime).ToString(format);
+            return unixtime > 0 ? Convert(unixtime).ToString(format) : "";
         }
         /// <summary>
         /// 将Unix时间戳按UTC协调时及指定格式输出
@@ -279,8 +279,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string FormatUnixToUtc(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
         {
-            var utc = ConvertToUtc(unixtime);
-            return utc.ToString(format);
+            return unixtime > 0 ? ConvertToUtc(unixtime).ToString(format) : "";
         }
         /// <summary>
         /// 将Unix时间戳按本地时区及格式输出
@@ -290,14 +289,17 @@ namespace Wlniao
         /// <returns></returns>
         public static string FormatUnixToTimeZone(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
         {
-            var utc = ConvertToUtc(unixtime);
-            if (TimeZone == 0)
+            if (unixtime <= 0)
             {
-                return utc.ToLocalTime().ToString(format); //直接以本地时间格式输出
+                return "";
+            }
+            else if (TimeZone == 0)
+            {
+                return ConvertToUtc(unixtime).ToLocalTime().ToString(format); //直接以本地时间格式输出
             }
             else
             {
-                return utc.AddHours(TimeZone).ToString(format); //以UTC时间进行时区计算
+                return ConvertToUtc(unixtime).AddHours(TimeZone).ToString(format); //以UTC时间进行时区计算
             }
         }
         /// <summary>
@@ -309,14 +311,17 @@ namespace Wlniao
         /// <returns></returns>
         public static string FormatUnixToTimeZone(long unixtime, int timezone, string format = "yyyy-MM-dd HH:mm:ss")
         {
-            var utc = ConvertToUtc(unixtime);
-            if (timezone == 0)
+            if (unixtime <= 0)
             {
-                return utc.ToLocalTime().ToString(format); //直接以本地时间格式输出
+                return "";
+            }
+            else if (timezone == 0)
+            {
+                return ConvertToUtc(unixtime).ToLocalTime().ToString(format); //直接以本地时间格式输出
             }
             else
             {
-                return utc.AddHours(timezone).ToString(format); //以UTC时间进行时区计算
+                return ConvertToUtc(unixtime).AddHours(timezone).ToString(format); //以UTC时间进行时区计算
             }
         }
         /// <summary>

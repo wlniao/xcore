@@ -286,25 +286,27 @@ namespace Wlniao.Text
         }
 
         /// <summary>
-        /// 是否是英文字符和下划线
+        /// 只允许英文字符、短横杠和下划线
         /// </summary>
-        /// <param name="rawString"></param>
+        /// <param name="str"></param>
         /// <returns></returns>
-        public static bool IsLetter(string rawString)
+        public static bool IsLetter(string str)
         {
-            if (IsNullOrEmpty(rawString)) return false;
-
-            char[] arrChar = rawString.ToCharArray();
+            if (IsNullOrEmpty(str))
+            {
+                return false;
+            }
+            char[] arrChar = str.ToCharArray();
             foreach (char c in arrChar)
             {
 
-                if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_".IndexOf(c) < 0)
+                if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-".IndexOf(c) < 0)
                     return false;
             }
             return true;
         }
         /// <summary>
-        /// 只能以英文开头，允许英文、数字、下划线；
+        /// 只能以英文开头，允许英文、数字、短横杠和下划线
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -321,7 +323,28 @@ namespace Wlniao.Text
             }
             for (int i = 1; i < arr.Length; i++)
             {
-                if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890".IndexOf(arr[i]) < 0)
+                if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-1234567890".IndexOf(arr[i]) < 0)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        /// <summary>
+        /// 只允许英文、数字、短横杠和下划线
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static bool IsLetterCanStartNumber(string str)
+        {
+            if (IsNullOrEmpty(str))
+            {
+                return false;
+            }
+            var arr = str.ToCharArray();
+            for (int i = 1; i < arr.Length; i++)
+            {
+                if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-1234567890".IndexOf(arr[i]) < 0)
                 {
                     return false;
                 }
