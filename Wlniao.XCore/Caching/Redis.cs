@@ -343,6 +343,10 @@ namespace Wlniao.Caching
                 if (strUtil.IsIP(host))
                 {
                     HostIP = System.Net.IPAddress.Parse(host);
+                    if (HostIP.IsIPv4MappedToIPv6)
+                    {
+                        HostIP = HostIP.MapToIPv4();
+                    }
                 }
                 else
                 {

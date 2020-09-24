@@ -45,6 +45,36 @@ namespace Wlniao.OpenApi
             return "";
         }
         /// <summary>
+        /// 获取本机IPv6
+        /// </summary>
+        /// <returns></returns>
+        public static String GetIPv6()
+        {
+            var ip = XServer.Common.Get("openapi", "tool", "getipv6");
+            if (strUtil.IsIPv6(ip))
+            {
+                return ip;
+            }
+            return "";
+        }
+        /// <summary>
+        /// 获取本机IPv6（仅能联通的）
+        /// </summary>
+        /// <returns></returns>
+        public static String GetIPv6Connected()
+        {
+            var ip = XServer.Common.Get("openapi", "tool", "getipv6");
+            if (strUtil.IsIPv6(ip))
+            {
+                var address = System.Net.IPAddress.Parse(ip);
+                if (!address.IsIPv4MappedToIPv6 && !address.IsIPv6SiteLocal && !address.IsIPv6LinkLocal && !address.IsIPv6Multicast)
+                {
+                    return ip;
+                }
+            }
+            return "";
+        }
+        /// <summary>
         /// 将汉字转换成拼音
         /// </summary>
         /// <returns></returns>

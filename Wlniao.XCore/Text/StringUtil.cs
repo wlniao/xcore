@@ -506,7 +506,43 @@ namespace Wlniao.Text
         // ReSharper disable once UnusedMember.Global
         public static bool IsIP(string ip)
         {
+            return IsIPv4(ip) || IsIPv6(ip);
+        }
+        /// <summary>
+        /// 是否为IPv4地址
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <returns></returns>
+        // ReSharper disable once UnusedMember.Global
+        public static bool IsIPv4(string ip)
+        {
             return Regex.IsMatch(ip, @"^((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$");
+        }
+        /// <summary>
+        /// 是否为ip
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <returns></returns>
+        // ReSharper disable once UnusedMember.Global
+        public static bool IsIPv6(string ip)
+        {
+            if (string.IsNullOrEmpty(ip)||ip.Split(':').Length > 8)
+            {
+                return false;
+            }
+            var tmp = ip.ToLower();
+            if (tmp.LastIndexOf("::") > ip.IndexOf("::"))
+            {
+                return false;
+            }
+            else if (tmp.IndexOf("::") < 0)
+            {
+                return Regex.IsMatch(tmp.ToLower(), @"^([\da-f]{1,4}:){7}[\da-f]{1,4}$");
+            }
+            else
+            {
+                return Regex.IsMatch(tmp.ToLower(), @"^([\da-f]{1,4}:){0,6}(:[\da-f]{1,4}){1,6}$");
+            }
         }
         /// <summary>
         /// 是否为数字（包含小数点、负号）

@@ -472,6 +472,24 @@ namespace Wlniao
         #endregion
 
         #endregion
+
+        /// <summary>
+        /// IPv4地址转换为IPv6格式
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <returns></returns>
+        public static String IPv4ToIPv6(String ip)
+        {
+            if (strUtil.IsIPv4(ip))
+            {
+                var ips = ip.SplitBy(".");
+                var low = int.Parse(ips[2]) * 256 + int.Parse(ips[3]);
+                var high = int.Parse(ips[0]) * 256 + int.Parse(ips[1]);
+                ip = "::ffff:" + high.ToString("x") + ":" + low.ToString("x");
+            }
+            return ip;
+        }
+
         /// <summary>
         /// 将对象转换成非Null形式，如果传入的参数是 null，则返回空字符串(即""，也即string.Empty)
         /// </summary>

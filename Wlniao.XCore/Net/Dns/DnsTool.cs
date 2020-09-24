@@ -42,7 +42,12 @@ namespace Wlniao.Net.Dns
         {
             if (Text.StringUtil.IsIP(ServerIPorHost))
             {
-                serverIPs = new IPAddress[] { IPAddress.Parse(ServerIPorHost) };
+                var serverIP = IPAddress.Parse(ServerIPorHost);
+                if (serverIP.IsIPv4MappedToIPv6)
+                {
+                    serverIP = serverIP.MapToIPv4();
+                }
+                serverIPs = new IPAddress[] { serverIP };
             }
             else
             {

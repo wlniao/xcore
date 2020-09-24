@@ -63,7 +63,12 @@ namespace Wlniao.Net
         public static WlnSocket GetSocket(String host, Int32 port, Int32 TimeOutSeconds = 10)
         {
             var now = DateTools.GetUnix();
-            var endpoint = new System.Net.IPEndPoint(strUtil.IsIP(host) ? System.Net.IPAddress.Parse(host) : new Net.Dns.DnsTool().GetIPAddressDefault(host), port);
+            var ipaddress = strUtil.IsIP(host) ? System.Net.IPAddress.Parse(host) : new Net.Dns.DnsTool().GetIPAddressDefault(host);
+            if (ipaddress.IsIPv4MappedToIPv6)
+            {
+                ipaddress = ipaddress.MapToIPv4();
+            }
+            var endpoint = new System.Net.IPEndPoint(ipaddress, port);
             lock (sockets)
             {
                 try
@@ -89,7 +94,7 @@ namespace Wlniao.Net
                             goto beginCheck;
                         }
                     }
-                    var newsocket = new WlnSocket(System.Net.Sockets.AddressFamily.InterNetwork, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
+                    var newsocket = new WlnSocket(endpoint.AddressFamily, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
                     newsocket.Using = true;
                     newsocket.LastUse = now;
                     newsocket.Connect(endpoint);
