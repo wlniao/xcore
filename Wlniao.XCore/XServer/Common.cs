@@ -325,7 +325,7 @@ namespace Wlniao.XServer
                     try
                     {
                         var reqStr = "";
-                        reqStr += "GET " + uri.PathAndQuery + " HTTP/1.1";
+                        reqStr += "GET " + uri.PathAndQuery + " HTTP/1.0";
                         reqStr += "\r\nHost: " + uri.Host;
                         reqStr += "\r\nDate: " + DateTools.ConvertToGMT(DateTools.GetUnix());
                         reqStr += "\r\nAccept: application/json";
@@ -806,7 +806,7 @@ namespace Wlniao.XServer
                         try
                         {
                             var reqStr = "";
-                            reqStr += "GET " + uri.PathAndQuery + " HTTP/1.1";
+                            reqStr += "GET " + uri.PathAndQuery + " HTTP/1.0";
                             reqStr += "\r\nHost: " + uri.Host;
                             reqStr += "\r\nDate: " + DateTools.ConvertToGMT(DateTools.GetUnix());
                             reqStr += "\r\nAccept: application/json";

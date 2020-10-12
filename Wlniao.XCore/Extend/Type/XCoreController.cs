@@ -447,6 +447,25 @@ namespace Wlniao
 
 
         /// <summary>
+        /// 客户端请求是否为HTTPS协议(兼容X-Forwarded-Proto属性)
+        /// </summary>
+        public bool IsHttps
+        {
+            get
+            {
+                if (Request.IsHttps)
+                {
+                    return true;
+                }
+                var forwardedProto = new Microsoft.Extensions.Primitives.StringValues();
+                if (Request.Headers.TryGetValue("x-forwarded-proto", out forwardedProto))
+                {
+                    return forwardedProto.ToString().ToLower() == "https";
+                }
+                return false;
+            }
+        }
+        /// <summary>
         /// 当前浏览器UserAgent
         /// </summary>
         /// <returns></returns>
@@ -492,7 +511,6 @@ namespace Wlniao
                 return ip;
             }
         }
-
         /// <summary>
         /// 页面引用地址
         /// </summary>
