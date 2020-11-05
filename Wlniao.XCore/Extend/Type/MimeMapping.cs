@@ -25,9 +25,16 @@ namespace Wlniao
 
             private bool _isInitialized;
 
-            protected void AddMapping(string fileExtension, string mimeType)
+            public void AddMapping(string fileExtension, string mimeType)
             {
-                _mappings.Add(fileExtension, mimeType);
+                if (_mappings.ContainsKey(fileExtension))
+                {
+                    _mappings[fileExtension] = mimeType;
+                }
+                else
+                {
+                    _mappings.Add(fileExtension, mimeType);
+                }
             }
 
             private void AddWildcardIfNotPresent()
@@ -337,6 +344,7 @@ namespace Wlniao
                 base.AddMapping(".ssm", "application/streamingmedia");
                 base.AddMapping(".sst", "application/vnd.ms-pki.certstore");
                 base.AddMapping(".stl", "application/vnd.ms-pki.stl");
+                base.AddMapping(".svg", "image/svg+xml");
                 base.AddMapping(".sv4cpio", "application/x-sv4cpio");
                 base.AddMapping(".sv4crc", "application/x-sv4crc");
                 base.AddMapping(".swf", "application/x-shockwave-flash");
@@ -444,6 +452,15 @@ namespace Wlniao
                 throw new ArgumentNullException("fileName");
             }
             return _mappingDictionary.GetMimeMapping(fileName);
+        }
+        /// <summary>
+        /// 添加新的MiniType映射
+        /// </summary>
+        /// <param name="extName"></param>
+        /// <param name="typeName"></param>
+        public static void AddMapping(string extName, string typeName)
+        {
+            _mappingDictionary.AddMapping(extName, typeName);
         }
     }
 }
