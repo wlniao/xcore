@@ -460,7 +460,17 @@ namespace Wlniao
                 var forwardedProto = new Microsoft.Extensions.Primitives.StringValues();
                 if (Request.Headers.TryGetValue("x-forwarded-proto", out forwardedProto))
                 {
-                    return forwardedProto.ToString().ToLower() == "https";
+                    if (forwardedProto.ToString().ToLower() == "https")
+                    {
+                        return true;
+                    }
+                }
+                if (Request.Headers.TryGetValue("x-client-scheme", out forwardedProto))
+                {
+                    if (forwardedProto.ToString().ToLower() == "https")
+                    {
+                        return true;
+                    }
                 }
                 return false;
             }
