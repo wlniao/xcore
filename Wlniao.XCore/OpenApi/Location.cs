@@ -121,10 +121,10 @@ namespace Wlniao.OpenApi
             var kvList = new List<KeyValuePair<String, String>>(kvs);
             kvList.Add(new KeyValuePair<String, String>("parent", Parent));
             kvList.Add(new KeyValuePair<String, String>("count", Count.ToString()));
-            var json = Common.GetOnlyData("location", "getlist", kvList.ToArray());
-            if (!string.IsNullOrEmpty(json))
+            var rlt = Common.Get<List<Location>>("location", "getlist", kvList.ToArray());
+            if (rlt.success)
             {
-                return Json.ToList<Location>(json);
+                return rlt.data;
             }
             return new List<Location>();
         }
@@ -140,10 +140,10 @@ namespace Wlniao.OpenApi
             kvList.Add(new KeyValuePair<String, String>("longitude", Longitude.ToString("F8")));
             kvList.Add(new KeyValuePair<String, String>("latitude", Latitude.ToString("F8")));
             kvList.Add(new KeyValuePair<String, String>("gpstype", GPSType.ToString()));
-            var json = Common.GetOnlyData("location", "getlist", kvList.ToArray());
-            if (!string.IsNullOrEmpty(json))
+            var rlt = Common.Get<List<Location>>("location", "getlist", kvList.ToArray());
+            if (rlt.success)
             {
-                return Json.ToList<Location>(json);
+                return rlt.data;
             }
             return new List<Location>();
         }
@@ -158,16 +158,16 @@ namespace Wlniao.OpenApi
         /// <returns></returns>
         public static List<Location> GetListNearBy(Double Longitude, Double Latitude, Int32 GPSType = 0, String Tag = "", Int32 Count = 15)
         {
-            String json = Common.GetOnlyData("location", "getlist"
+            var rlt = Common.Get<List<Location>>("location", "getlist"
                 , new KeyValuePair<String, String>("tag", Tag)
                 , new KeyValuePair<String, String>("count", Count.ToString())
                 , new KeyValuePair<String, String>("latitude", Latitude.ToString("F8"))
                 , new KeyValuePair<String, String>("longitude", Longitude.ToString("F8"))
                 , new KeyValuePair<String, String>("gpstype", GPSType.ToString())
                 , new KeyValuePair<String, String>("nearby", "true"));
-            if (!string.IsNullOrEmpty(json))
+            if (rlt.success)
             {
-                return Json.ToList<Location>(json);
+                return rlt.data;
             }
             return new List<Location>();
         }

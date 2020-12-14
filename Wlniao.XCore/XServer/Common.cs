@@ -1197,21 +1197,50 @@ namespace Wlniao.XServer
             var json = Get(common, controller, action, out logs, kvs);
             try
             {
-                var temp = json.Substring(json.IndexOf("\"data\"") + 7);
-                temp = temp.Substring(0, temp.IndexOf(",\"logs\":[") > 0 ? temp.IndexOf(",\"logs\":[") : temp.LastIndexOf("}"));
-                if (temp.StartsWith("\""))
+                var temp = json;
+                if (temp.IndexOf("data:") > 0)
                 {
-                    json = json.Replace(temp, "");
-                    temp = temp.Substring(1, temp.Length - 1);
+                    temp = temp.Substring(temp.IndexOf("data:") + 5);
+                }
+                else if (temp.IndexOf("data\":") > 0)
+                {
+                    temp = temp.Substring(temp.IndexOf("data\":") + 6);
+                }
+                //if (temp.IndexOf(",logs:[") > 0)
+                //{
+                //    temp = temp.Substring(0, temp.IndexOf(",logs:["));
+                //}
+                //else if (temp.IndexOf(",\"logs\":[") > 0)
+                //{
+                //    temp = temp.Substring(0, temp.IndexOf(",\"logs\":["));
+                //}
+                //else
+                //{
+                //    temp = temp.Substring(0, temp.LastIndexOf("}"));
+                //}
+                //if (temp.StartsWith("\"")&& temp.EndsWith("\""))
+                //{
+                //    temp = temp.Substring(1, temp.Length - 2);
+                //}
+                //else
+                //{
+                //    json = json.Replace(temp, "\"\"");
+                //}
+                if (temp.StartsWith("\"[") || temp.StartsWith("\"{"))
+                {
+                    var rlt = Json.ToObject<ApiResult<String>>(json);
+                    if (rlt.success)
+                    {
+                        return rlt.data;
+                    }
                 }
                 else
                 {
-                    json = json.Replace(temp, "\"\"");
-                }
-                var rlt = Json.ToObject<ApiResult<String>>(json);
-                if (rlt.success)
-                {
-                    return temp;
+                    var rlt = Json.ToObject<ApiResult<dynamic>>(json);
+                    if (rlt.success)
+                    {
+                        return Json.ToString(rlt.data);
+                    }
                 }
             }
             catch { }
