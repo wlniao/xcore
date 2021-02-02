@@ -312,7 +312,7 @@ namespace Wlniao
         [NonAction]
         protected String GetPostString()
         {
-            if (strPost == null && Request.Method == "POST" && (Request.Form == null || Request.Form.Files == null || Request.Form.Files.Count == 0))
+            if (strPost == null && Request.Method == "POST" && Request.ContentLength > 0 && (Request.ContentType == null || !Request.ContentType.Contains("form")))
             {
                 try
                 {
@@ -366,7 +366,7 @@ namespace Wlniao
                     {
                         try
                         {
-                            if (Request.ContentType == "application/x-www-form-urlencoded")
+                            if (Request.ContentType != null && Request.ContentType.Contains("application/x-www-form-urlencoded"))
                             {
                                 #region 请求为表单
                                 foreach (var item in Request.Form.Keys)
@@ -376,7 +376,7 @@ namespace Wlniao
                                 strPost = "";
                                 #endregion 请求为表单
                             }
-                            else if (Request.ContentType == "multipart/form-data")
+                            else if (Request.ContentType != null && Request.ContentType.Contains("multipart/form-data"))
                             {
                                 #region 请求为文件上传
                                 if (Request.Form != null && Request.Form.Keys != null)
@@ -389,7 +389,7 @@ namespace Wlniao
                                 strPost = "";
                                 #endregion 请求为文件上传
                             }
-                            else if(Request.ContentLength > 0)
+                            else if (Request.ContentLength > 0)
                             {
                                 #region 请求为其它类型
                                 if (strPost == null)
