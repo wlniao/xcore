@@ -54,6 +54,37 @@ namespace Wlniao
 
 
 
+        /// <summary>
+        /// 单一条件排序
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="query"></param>
+        /// <param name="order"></param>
+        /// <param name="sortby"></param>
+        /// <returns></returns>
+        public static IQueryable<T> QueryableOrder<T>(this IQueryable<T> query, string order, string sortby)
+        {
+            if (string.IsNullOrEmpty(sortby)) throw new Exception("必须指定排序字段!");
+
+            PropertyInfo sortProperty = typeof(T).GetProperty(sortby, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (sortProperty == null) throw new Exception("查询对象中不存在排序字段" + sortby + "！");
+
+            ParameterExpression param = Expression.Parameter(typeof(T), "t");
+            Expression body = param;
+            if (Nullable.GetUnderlyingType(body.Type) != null)
+            {
+                body = Expression.Property(body, "Value");
+            }
+            body = Expression.MakeMemberAccess(body, sortProperty);
+            LambdaExpression keySelectorLambda = Expression.Lambda(body, param);
+            if (string.IsNullOrEmpty(order))
+            {
+                order = "ascending";
+            }
+            string queryMethod = order.StartsWith("desc") ? "OrderByDescending" : "OrderBy";
+            query = query.Provider.CreateQuery<T>(Expression.Call(typeof(Queryable), queryMethod, new Type[] { typeof(T), body.Type }, query.Expression, Expression.Quote(keySelectorLambda)));
+            return query;
+        }
 
         /// <summary>
         /// 多条件组合排序

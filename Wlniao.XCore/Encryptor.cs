@@ -104,6 +104,59 @@ namespace Wlniao
             return Encoding.UTF8.GetString(IO.Base64Decoder.Decoder.GetDecoded(str));
         }
         /// <summary>
+        /// 逐字编码查询条件
+        /// </summary>
+        /// <param name="txt"></param>
+        /// <param name="crypt"></param>
+        /// <returns></returns>
+        public static string VerbatimQuery(string txt, int crypt = 6338)
+        {
+            var code = VerbatimEncrypt(txt);
+            if (code.EndsWith('='))
+            {
+                code = code.Substring(0, code.Length - 3);
+            }
+            return code;
+        }
+        /// <summary>
+        /// 逐字编码文本内容
+        /// </summary>
+        /// <param name="txt"></param>
+        /// <param name="crypt"></param>
+        /// <returns></returns>
+        public static string VerbatimEncrypt(string txt, int crypt = 6338)
+        {
+            if (!string.IsNullOrEmpty(txt))
+            {
+                var buffer = Encoding.UTF8.GetBytes(txt);
+                for (var i = 0; i < buffer.Length; i++)
+                {
+                    buffer[i] = (byte)((uint)buffer[i] + crypt);
+                }
+                return System.Convert.ToBase64String(buffer);
+            }
+            return "";
+        }
+        /// <summary>
+        /// 逐字解码文本内容
+        /// </summary>
+        /// <param name="txt"></param>
+        /// <param name="crypt"></param>
+        /// <returns></returns>
+        public static string VerbatimDecrypt(string txt, int crypt = 6338)
+        {
+            if (!string.IsNullOrEmpty(txt))
+            {
+                var buffer = System.Convert.FromBase64String(txt);
+                for (var i = 0; i < buffer.Length; i++)
+                {
+                    buffer[i] = (byte)((uint)buffer[i] - crypt);
+                }
+                return Encoding.UTF8.GetString(buffer);
+            }
+            return txt;
+        }
+        /// <summary>
         /// 加密函数
         /// </summary>
         /// <param name="pToEncrypt">需要加密的字符串</param>
