@@ -715,13 +715,24 @@ namespace Wlniao.Text
             return str;
         }
         /// <summary>
-        /// 返回 URL 字符串的编码结果
+        /// 返回 URL 字符串的编码结果（UTF8）
         /// </summary>
         /// <param name="str">字符串</param>
         /// <returns>编码结果</returns>
         public static string UrlEncode(string str)
         {
             return UrlEncode(str, "utf-8");
+        }
+        /// <summary>
+        /// 返回 URL 字符串的编码结果（UTF8，处理特殊符合）
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string UrlEncodeSymbol(string str)
+        {
+            return UrlEncode(str, "utf-8")
+                .Replace("+", "%20")
+                .Replace(",", "%20");
         }
         /// <summary>
         /// 返回 URL 字符串的解码结果

@@ -263,5 +263,20 @@ namespace Wlniao
             var hashAlgorithm = new HMACSHA1(keyBytes);
             return hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(str));
         }
+        /// <summary>
+        /// HMACMD5加密
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static string GetHMACSHA1String(string str, string key)
+        {
+            var enText = "";
+            foreach (byte b in GetHMACSHA1(str, key))
+            {
+                enText += b.ToString("x2");
+            }
+            return enText;
+        }
     }
 }
