@@ -224,9 +224,9 @@ namespace Wlniao
             var key = Key.ToLower();
             foreach (var item in Request.Query.Keys)
             {
-                if (item.ToLower() == key)
+                if (item.ToLower() == key && !string.IsNullOrEmpty(Request.Query[key]))
                 {
-                    Default = Request.Query[item];
+                    Default = Request.Query[item].ToString().Trim();
                     if (!string.IsNullOrEmpty(Default) && Default.IndexOf('%') >= 0)
                     {
                         Default = strUtil.UrlDecode(Default);
@@ -234,20 +234,6 @@ namespace Wlniao
                     return Default;
                 }
             }
-            //if (Request.Method == "POST" && Request.Form != null && Request.Form.Keys != null)
-            //{
-            //    try
-            //    {
-            //        foreach (var item in Request.Form.Keys)
-            //        {
-            //            if (item.ToLower() == key)
-            //            {
-            //                Default = Request.Form[item];
-            //            }
-            //        }
-            //    }
-            //    catch { }
-            //}
             return Default;
         }
         /// <summary>
@@ -357,6 +343,7 @@ namespace Wlniao
         [NonAction]
         protected String PostRequest(String Key, String Default = "")
         {
+            var key = Key.ToLower();
             if (ctxPost == null)
             {
                 try
@@ -425,19 +412,15 @@ namespace Wlniao
                     {
                         foreach (var item in Request.Query.Keys)
                         {
-                            ctxPost.TryAdd(item.ToLower(), strUtil.UrlDecode(Request.Query[item]));
+                            ctxPost.TryAdd(item.ToLower(), strUtil.UrlDecode(Request.Query[item].ToString().Trim()));
                         }
                     }
                 }
                 catch { }
             }
-            if (ctxPost.ContainsKey(Key))
+            if (ctxPost.ContainsKey(key) && !string.IsNullOrEmpty(ctxPost[key]))
             {
-                Default = ctxPost[Key];
-            }
-            else if (ctxPost.ContainsKey(Key.ToLower()))
-            {
-                Default = ctxPost[Key.ToLower()];
+                Default = ctxPost[key];
             }
             return Default.Trim();
         }
