@@ -20,6 +20,7 @@
 
 ===============================================================================*/
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 namespace Wlniao
@@ -86,13 +87,14 @@ namespace Wlniao
                     Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"));
                 }
             }
-            key = key.ToLower();
-            foreach (var kv in _config)
+            var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
+            if (string.IsNullOrEmpty(tmpKey))
             {
-                if (kv.Key == key)
-                {
-                    return kv.Value;
-                }
+                tmpKey = key;
+            }
+            if (_config.ContainsKey(tmpKey))
+            {
+                return _config[tmpKey];
             }
             return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
         }
@@ -104,14 +106,15 @@ namespace Wlniao
         /// <returns>返回一个字符串值</returns>
         public static String GetConfigsNoCache(String key, String defaultValue = "")
         {
-            key = key.ToLower();
-            Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"), false);
-            foreach (var kv in _config)
+            var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
+            if (string.IsNullOrEmpty(tmpKey))
             {
-                if (kv.Key == key)
-                {
-                    return kv.Value;
-                }
+                tmpKey = key;
+            }
+            Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"), false);
+            if (_config.ContainsKey(tmpKey))
+            {
+                return _config[tmpKey];
             }
             return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
         }
@@ -130,21 +133,22 @@ namespace Wlniao
                     Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"));
                 }
             }
-            key = key.ToLower();
-            foreach (var kv in _config)
+            var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
+            if (string.IsNullOrEmpty(tmpKey))
             {
-                if (kv.Key == key)
-                {
-                    return kv.Value;
-                }
+                tmpKey = key;
             }
-            if (string.IsNullOrEmpty(defaultValue))
+            if (_config.ContainsKey(tmpKey))
             {
-                _config.Add(key, "");
+                return _config[tmpKey];
+            }
+            else if (string.IsNullOrEmpty(defaultValue))
+            {
+                _config.Add(tmpKey, "");
             }
             else
             {
-                _config.Add(key, defaultValue);
+                _config.Add(tmpKey, defaultValue);
             }
             try
             {
@@ -161,7 +165,7 @@ namespace Wlniao
         /// <returns>返回一个字符串值</returns>
         public static String GetEnvironment(String key, String defaultValue = "")
         {
-            key = key.ToLower();
+            key = key.ToUpper();
             lock (XCore.Lock)
             {
                 if (_env == null || _env.Count == 0)
@@ -170,7 +174,7 @@ namespace Wlniao
                     var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
                     while (en.MoveNext())
                     {
-                        _env.TryAdd(en.Key.ToString().ToLower(), en.Value.ToString());
+                        _env.TryAdd(en.Key.ToString().ToUpper(), en.Value.ToString());
                     }
                 }
             }
@@ -190,18 +194,22 @@ namespace Wlniao
         /// <param name="value"></param>
         public static void AddEnvironment(String key, String value = null)
         {
-            key = key.ToLower();
+            var tmpKey = _env.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
+            if (string.IsNullOrEmpty(tmpKey))
+            {
+                tmpKey = key;
+            }
             if (_env == null)
             {
                 _env = new Dictionary<string, string>();
             }
-            if (_env.ContainsKey(key))
+            if (_env.ContainsKey(tmpKey))
             {
-                _env[key] = value;
+                _env[tmpKey] = value;
             }
             else
             {
-                _env.Add(key, value);
+                _env.Add(tmpKey, value);
             }
         }
         /// <summary>
@@ -212,21 +220,26 @@ namespace Wlniao
         /// <returns>返回结果</returns>
         public static Boolean SetConfigs(String key, String value)
         {
+            var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
+            if (string.IsNullOrEmpty(tmpKey))
+            {
+                tmpKey = key;
+            }
             if (_config == null)
             {
-                GetConfigs(key);
+                GetConfigs(tmpKey);
             }
-            if (_config.ContainsKey(key))
+            if (_config.ContainsKey(tmpKey))
             {
-                _config[key] = value;
+                _config[tmpKey] = value;
             }
-            else if (_config.ContainsKey(key.ToLower()))
+            else if (_config.ContainsKey(tmpKey.ToUpper()))
             {
-                _config[key.ToLower()] = value;
+                _config[tmpKey.ToUpper()] = value;
             }
             else
             {
-                _config.Add(key, value);
+                _config.Add(tmpKey, value);
             }
             Write(_config);
             return true;
@@ -256,10 +269,14 @@ namespace Wlniao
         /// <returns>返回结果</returns>
         public static Boolean Remove(String key)
         {
-            if (_config != null && _config.ContainsKey(key))
+            if (_config != null)
             {
-                _config.Remove(key);
-                Write(_config);
+                var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
+                if (!string.IsNullOrEmpty(tmpKey))
+                {
+                    _config.Remove(tmpKey);
+                    Write(_config);
+                }
             }
             return true;
         }

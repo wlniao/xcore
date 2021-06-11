@@ -80,7 +80,7 @@ namespace Wlniao.Net
                         {
                             try { socket.Shutdown(System.Net.Sockets.SocketShutdown.Both); } catch { }
                         }
-                        if (socket.RemoteEndPoint.ToString() == endpoint.ToString() && !socket.Using && socket.Connected && socket.LastUse < now - 3)
+                        if (!socket.Using && socket.RemoteEndPoint.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < now - 3)
                         {
                             socket.Using = true;
                             socket.LastUse = now;
@@ -90,7 +90,7 @@ namespace Wlniao.Net
                         {
                             sockets.Remove(socket);
                             try { socket.IOControl(System.Net.Sockets.IOControlCode.KeepAliveValues, BitConverter.GetBytes(30), null); } catch { }
-                            socket.Dispose();
+                            socket.Close();
                             goto beginCheck;
                         }
                     }

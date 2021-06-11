@@ -20,6 +20,7 @@
 
 ===============================================================================*/
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 namespace Wlniao
@@ -708,12 +709,13 @@ namespace Wlniao
                     String[] arrPair = tempLine.Split(new char[] { '=' }, 2);
                     if (arrPair.Length == 2)
                     {
-                        char[] arrTrim = new char[] { '"', '\'' };
-                        String itemKey = arrPair[0].Trim().TrimStart(arrTrim).TrimEnd(arrTrim).Trim().ToLower();
-                        String itemValue = arrPair[1].Trim().TrimStart(arrTrim).TrimEnd(arrTrim).Trim();
-                        if (result.ContainsKey(itemKey))
+                        var arrTrim = new char[] { '"', '\'' };
+                        var itemKey = arrPair[0].Trim().TrimStart(arrTrim).TrimEnd(arrTrim).Trim();
+                        var itemValue = arrPair[1].Trim().TrimStart(arrTrim).TrimEnd(arrTrim).Trim();
+                        var tmpKey = result.Keys.Where(o => o.ToUpper() == itemKey.ToUpper()).FirstOrDefault();
+                        if (!string.IsNullOrEmpty(tmpKey) && result.ContainsKey(tmpKey))
                         {
-                            result[itemKey] = itemValue;
+                            result[tmpKey] = itemValue;
                         }
                         else
                         {
@@ -722,7 +724,7 @@ namespace Wlniao
                     }
                     else
                     {
-                        if (tempLine.ToLower() == "yaml")
+                        if (tempLine.ToUpper() == "YAML")
                         {
                             result.Add("yaml", "true");
                         }
@@ -871,6 +873,26 @@ namespace Wlniao
             {
                 return money.ToString(format);
             }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="money"></param>
+        /// <param name="format"></param>
+        /// <returns></returns>
+        public static String ToMoney(double money, string format = "")
+        {
+            return ToMoney((float)money, format);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="money"></param>
+        /// <param name="format"></param>
+        /// <returns></returns>
+        public static String ToMoney(decimal money, string format = "")
+        {
+            return ToMoney((float)money, format);
         }
         /// <summary>
         /// 将远程Svg图片转换成Svg格式的字符串（可转换Url参数）

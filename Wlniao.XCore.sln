@@ -1,8 +1,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2006
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wlniao.XCore", "Wlniao.XCore\Wlniao.XCore.csproj", "{04340231-B54B-404E-82DE-EDFC50CC78F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wlniao.XCore.Test", "Wlniao.XCore.Test\Wlniao.XCore.Test.csproj", "{925CB13C-7ED8-4763-BAFD-01025E359C53}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +28,18 @@ Global
 		{04340231-B54B-404E-82DE-EDFC50CC78F2}.Release|x64.Build.0 = Release|Any CPU
 		{04340231-B54B-404E-82DE-EDFC50CC78F2}.Release|x86.ActiveCfg = Release|Any CPU
 		{04340231-B54B-404E-82DE-EDFC50CC78F2}.Release|x86.Build.0 = Release|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Debug|x64.Build.0 = Debug|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Debug|x86.Build.0 = Debug|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Release|x64.ActiveCfg = Release|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Release|x64.Build.0 = Release|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Release|x86.ActiveCfg = Release|Any CPU
+		{925CB13C-7ED8-4763-BAFD-01025E359C53}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
