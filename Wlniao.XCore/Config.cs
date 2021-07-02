@@ -42,8 +42,30 @@ namespace Wlniao
         /// 环境变量内容
         /// </summary>
         private static Dictionary<String, String> _config = null;
+        private static String _file = null;
         /// <summary>
-        /// 重置配置文件路径
+        /// 配置文件路径
+        /// </summary>
+        internal static String FileName
+        {
+            get
+            {
+                if (_file == null)
+                {
+                    if (file.Exists(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.dev.config")))
+                    {
+                        _file = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.dev.config");
+                    }
+                    else
+                    {
+                        _file = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config");
+                    }
+                }
+                return _file;
+            }
+        }
+        /// <summary>
+        /// 重置配置文件内容
         /// </summary>
         internal static void Clear()
         {
@@ -84,7 +106,7 @@ namespace Wlniao
             {
                 if (_config == null)
                 {
-                    Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"));
+                    Read(FileName);
                 }
             }
             var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
@@ -111,7 +133,7 @@ namespace Wlniao
             {
                 tmpKey = key;
             }
-            Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"), false);
+            Read(FileName, false);
             if (_config.ContainsKey(tmpKey))
             {
                 return _config[tmpKey];
@@ -130,7 +152,7 @@ namespace Wlniao
             {
                 if (_config == null)
                 {
-                    Read(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config"));
+                    Read(FileName);
                 }
             }
             var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();

@@ -4,6 +4,7 @@
 
 *.log
 *.user
+xcore.dev.config
 /.vs
 /*/.vscode
 /*/bin
