@@ -41,6 +41,11 @@ namespace Wlniao
         public string message { get; set; }
 
         /// <summary>
+        /// 错误消息提供节点
+        /// </summary>
+        public string node { get; set; }
+
+        /// <summary>
         /// 状态码
         /// </summary>
         public string code { get; set; }
@@ -143,11 +148,13 @@ namespace Wlniao
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="Node"></param>
         /// <param name="Code"></param>
         /// <param name="Message"></param>
         /// <param name="Success"></param>
-        public ApiResult(String Code, String Message, Boolean Success = false)
+        public ApiResult(String Node, String Code, String Message, Boolean Success = false)
         {
+            this.node = Node;
             this.code = Code;
             this.message = Message;
             this.success = Success;
