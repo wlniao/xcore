@@ -140,7 +140,7 @@ namespace Wlniao
         /// <param name="node"></param>
         /// <param name="code"></param>
         /// <param name="message"></param>
-        public static void ServiceStop(String node, String code = "302", String message = "Server maintenance 服务器正在维护中。")
+        public static void ServiceStop(String node, String code = "302", String message = "服务器正在维护中 Server maintenance.")
         {
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(new { node, code, success = false, message });
             new WebHostBuilder().UseKestrel(o => { o.Listen(System.Net.IPAddress.IPv6Any, ListenPort); }).Configure(app =>

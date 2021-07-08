@@ -23,5 +23,9 @@ namespace Wlniao.Handler
     /// </summary>
     public interface IContext
     {
+        /// <summary>
+        /// 请求重试次数
+        /// </summary>
+        public int Retry { get; set; }
     }
 }
