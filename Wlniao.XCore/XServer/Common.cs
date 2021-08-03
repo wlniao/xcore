@@ -85,7 +85,7 @@ namespace Wlniao.XServer
             /// <summary>
             /// 报告成功
             /// </summary>
-            public void Success(long usetime = 0)
+            public void Success()
             {
                 if (FailCount > 10)
                 {
@@ -110,14 +110,7 @@ namespace Wlniao.XServer
         /// </summary>
         internal class CommonApp
         {
-            private string _app;
-            public string App
-            {
-                get
-                {
-                    return _app;
-                }
-            }
+            public string App { get; private set; }
             private Dictionary<String, Instance> _instances;
             public Dictionary<String, Instance> Instances
             {
@@ -164,7 +157,7 @@ namespace Wlniao.XServer
             /// <param name="App"></param>
             public CommonApp(String App)
             {
-                _app = App;
+                this.App = App;
                 _instances = new Dictionary<String, Instance>();               
                 if (App.ToLower() == "openapi")
                 {
@@ -189,7 +182,7 @@ namespace Wlniao.XServer
             /// <param name="HostAddress"></param>
             public CommonApp(String AppCode, String HostAddress)
             {
-                _app = AppCode;
+                App = AppCode;
                 _instances = new Dictionary<String, Instance>();
                 Add(HostAddress);
             }
@@ -334,199 +327,33 @@ namespace Wlniao.XServer
                     if (uri.Scheme == "https")
                     {
                         #region HTTPS请求
-                        using (SslStream ssl = new SslStream(new NetworkStream(hostSocket, true), false, new RemoteCertificateValidationCallback(XCore.ValidateServerCertificate), null))
+                        using SslStream ssl = new SslStream(new NetworkStream(hostSocket, true), false, new RemoteCertificateValidationCallback(XCore.ValidateServerCertificate), null);
+                        ssl.AuthenticateAsClientAsync(uri.Host).ContinueWith((_rlt) =>
                         {
-                            ssl.AuthenticateAsClientAsync(uri.Host).ContinueWith((_rlt) =>
+                            if (ssl.IsAuthenticated)
                             {
-                                if (ssl.IsAuthenticated)
-                                {
-                                    ssl.Write(request);
-                                    ssl.Flush();
-                                    var wait = 0;
-                                    var bytes = new byte[655360];
-                                    var count = ssl.Read(bytes, 0, bytes.Length);
-                                    var buffer = bytes.Take(count).ToArray();
-                                    while (wait < 10 && ssl.CanRead)
-                                    {
-                                        count = ssl.Read(bytes, 0, bytes.Length);
-                                        if (count > 0)
-                                        {
-                                            wait = 0;
-                                            buffer = buffer.Concat(bytes.Take(count)).ToArray();
-                                        }
-                                        else
-                                        {
-                                            wait++;
-                                            System.Threading.Thread.Sleep(3);
-                                        }
-                                    }
-                                    #region HTTP协议处理
-                                    var lines = Encoding.UTF8.GetString(buffer).Split(new string[] { "\r\n" }, StringSplitOptions.None);
-                                    if (lines.Length > 0)
-                                    {
-                                        var index = 0;
-                                        if (lines[0].StartsWith("HTTP"))
-                                        {
-                                            var chunked = false;
-                                            var content = false;
-                                            var sbuilder = new System.Text.StringBuilder();
-                                            for (index = 1; index < lines.Length; index++)
-                                            {
-                                                if (content)
-                                                {
-                                                    sbuilder.AppendLine();
-                                                    sbuilder.Append(lines[index]);
-                                                }
-                                                else
-                                                {
-                                                    if (lines[index].ToLower().StartsWith("transfer-encoding"))
-                                                    {
-                                                        chunked = lines[index].EndsWith("chunked");
-                                                    }
-                                                    else if (string.IsNullOrEmpty(lines[index]) && index < lines.Length - 1)
-                                                    {
-                                                        index++;
-                                                        content = true;
-                                                        sbuilder.Append(lines[index]);
-                                                    }
-                                                }
-                                            }
-                                            str = sbuilder.ToString();
-                                        }
-                                    }
-                                    #endregion
-                                }
-                            }).Wait();
-                        }
-                        #endregion
-                    }
-                    else
-                    {
-                        #region HTTP请求
-                        if (hostSocket.Send(request, request.Length, System.Net.Sockets.SocketFlags.None) > 0)
-                        {
-                            if (false)
-                            {
-                                var length = 0;
-                                var end = false;
-                                var start = false;
-                                var chunked = false;
-                                while (true)
-                                {
-                                    var rev = new byte[65535];
-                                    var index = hostSocket.Receive(rev, rev.Length, System.Net.Sockets.SocketFlags.None);
-                                    if (index == 0)
-                                    {
-                                        break;
-                                    }
-                                    var tempstr = strUtil.GetUTF8String(rev, 0, index);
-                                    var lines = tempstr.Split(new string[] { "\r\n" }, StringSplitOptions.None);
-                                    index = 0;
-                                    #region Headers处理
-                                    if (!start && lines[0].StartsWith("HTTP"))
-                                    {
-                                        var ts = lines[0].Split(' ');
-                                        if (ts[1] == "200")
-                                        {
-                                            for (index = 1; index < lines.Length; index++)
-                                            {
-                                                if (lines[index].ToLower().StartsWith("content-length"))
-                                                {
-                                                    ts = lines[index].Split(' ');
-                                                    length = cvt.ToInt(ts[1]);
-                                                }
-                                                else if (lines[index].ToLower().StartsWith("transfer-encoding"))
-                                                {
-                                                    chunked = lines[index].EndsWith("chunked");
-                                                }
-                                                if (string.IsNullOrEmpty(lines[index]))
-                                                {
-                                                    index++;
-                                                    start = true;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        else
-                                        {
-                                            index = lines.Length;
-                                            break;
-                                        }
-                                    }
-                                    #endregion
-                                    #region 取文本内容
-                                    for (; index < lines.Length; index++)
-                                    {
-                                        var line = lines[index];
-                                        if (chunked)
-                                        {
-                                            index++;
-                                            if (index < lines.Length)
-                                            {
-                                                var tempLength = cvt.DeHex(line, "0123456789abcdef");
-                                                if (tempLength > 0)
-                                                {
-                                                    length += (int)tempLength;
-                                                    line = lines[index];
-                                                }
-                                                else if (lines.Length == index + 2 && string.IsNullOrEmpty(lines[index + 1]))
-                                                {
-                                                    end = true;
-                                                    break;
-                                                }
-                                                else
-                                                {
-                                                    break;
-                                                }
-                                            }
-                                            else
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        if (index == 0 || (chunked && index == 1) || str.Length == 0)
-                                        {
-                                            str += line;
-                                        }
-                                        else
-                                        {
-                                            str += "\r\n" + line;
-                                        }
-                                        if (!chunked && System.Text.Encoding.UTF8.GetBytes(str).Length >= length)
-                                        {
-                                            end = true;
-                                        }
-                                    }
-                                    if (end)
-                                    {
-                                        break;
-                                    }
-                                    #endregion
-                                }
-                            }
-                            else
-                            {
+                                ssl.Write(request);
+                                ssl.Flush();
                                 var wait = 0;
                                 var bytes = new byte[655360];
-                                var count = hostSocket.Receive(bytes, 0, bytes.Length, System.Net.Sockets.SocketFlags.None);
+                                var count = ssl.Read(bytes, 0, bytes.Length);
                                 var buffer = bytes.Take(count).ToArray();
-                                while (wait < 10)
+                                while (wait < 10 && ssl.CanRead)
                                 {
-                                    if (hostSocket.Available > 0)
+                                    count = ssl.Read(bytes, 0, bytes.Length);
+                                    if (count > 0)
                                     {
                                         wait = 0;
-                                        bytes = new byte[hostSocket.Available];
-                                        count = hostSocket.Receive(bytes, 0, hostSocket.Available, System.Net.Sockets.SocketFlags.None);
-                                        buffer = buffer.Concat(bytes).ToArray();
+                                        buffer = buffer.Concat(bytes.Take(count)).ToArray();
                                     }
                                     else
                                     {
                                         wait++;
-                                        System.Threading.Thread.Sleep(5);
+                                        System.Threading.Thread.Sleep(3);
                                     }
                                 }
-                                #region HTTP协议处理
-                                var lines = Encoding.UTF8.GetString(buffer).Split(new string[] { "\r\n" }, StringSplitOptions.None);
+                                    #region HTTP协议处理
+                                    var lines = Encoding.UTF8.GetString(buffer).Split(new string[] { "\r\n" }, StringSplitOptions.None);
                                 if (lines.Length > 0)
                                 {
                                     var index = 0;
@@ -559,8 +386,70 @@ namespace Wlniao.XServer
                                         str = sbuilder.ToString();
                                     }
                                 }
-                                #endregion
+                                    #endregion
+                                }
+                        }).Wait();
+                        #endregion
+                    }
+                    else
+                    {
+                        #region HTTP请求
+                        if (hostSocket.Send(request, request.Length, System.Net.Sockets.SocketFlags.None) > 0)
+                        {
+                            var wait = 0;
+                            var bytes = new byte[655360];
+                            var count = hostSocket.Receive(bytes, 0, bytes.Length, System.Net.Sockets.SocketFlags.None);
+                            var buffer = bytes.Take(count).ToArray();
+                            while (wait < 10)
+                            {
+                                if (hostSocket.Available > 0)
+                                {
+                                    wait = 0;
+                                    bytes = new byte[hostSocket.Available];
+                                    count = hostSocket.Receive(bytes, 0, hostSocket.Available, System.Net.Sockets.SocketFlags.None);
+                                    buffer = buffer.Concat(bytes).ToArray();
+                                }
+                                else
+                                {
+                                    wait++;
+                                    System.Threading.Thread.Sleep(5);
+                                }
                             }
+                            #region HTTP协议处理
+                            var lines = Encoding.UTF8.GetString(buffer).Split(new string[] { "\r\n" }, StringSplitOptions.None);
+                            if (lines.Length > 0)
+                            {
+                                var index = 0;
+                                if (lines[0].StartsWith("HTTP"))
+                                {
+                                    var chunked = false;
+                                    var content = false;
+                                    var sbuilder = new System.Text.StringBuilder();
+                                    for (index = 1; index < lines.Length; index++)
+                                    {
+                                        if (content)
+                                        {
+                                            sbuilder.AppendLine();
+                                            sbuilder.Append(lines[index]);
+                                        }
+                                        else
+                                        {
+                                            if (lines[index].ToLower().StartsWith("transfer-encoding"))
+                                            {
+                                                chunked = lines[index].EndsWith("chunked");
+                                            }
+                                            else if (string.IsNullOrEmpty(lines[index]) && index < lines.Length - 1)
+                                            {
+                                                index++;
+                                                content = true;
+                                                sbuilder.Append(lines[index]);
+                                            }
+                                        }
+                                    }
+                                    str = sbuilder.ToString();
+                                }
+                            }
+                            #endregion
                         }
                         #endregion
                     }
@@ -828,116 +717,114 @@ namespace Wlniao.XServer
                             if (uri.Scheme == "https")
                             {
                                 #region HTTPS请求
-                                using (SslStream ssl = new SslStream(new NetworkStream(hostSocket, true), false, new RemoteCertificateValidationCallback(XCore.ValidateServerCertificate), null))
+                                using SslStream ssl = new SslStream(new NetworkStream(hostSocket, true), false, new RemoteCertificateValidationCallback(XCore.ValidateServerCertificate), null);
+                                ssl.AuthenticateAsClientAsync(uri.Host).ContinueWith((_rlt) =>
                                 {
-                                    ssl.AuthenticateAsClientAsync(uri.Host).ContinueWith((_rlt) =>
+                                    if (ssl.IsAuthenticated)
                                     {
-                                        if (ssl.IsAuthenticated)
+                                        ssl.Write(request);
+                                        ssl.Flush();
+                                        var length = 0;
+                                        var end = false;
+                                        var start = false;
+                                        var chunked = false;
+                                        while (true)
                                         {
-                                            ssl.Write(request);
-                                            ssl.Flush();
-                                            var length = 0;
-                                            var end = false;
-                                            var start = false;
-                                            var chunked = false;
-                                            while (true)
+                                            var rev = new byte[65535];
+                                            var index = ssl.Read(rev, 0, rev.Length);
+                                            if (index == 0)
                                             {
-                                                var rev = new byte[65535];
-                                                var index = ssl.Read(rev, 0, rev.Length);
-                                                if (index == 0)
-                                                {
-                                                    break;
-                                                }
-                                                var beffur = new byte[index];
-                                                Buffer.BlockCopy(rev, 0, beffur, 0, index);
-                                                var tempstr = strUtil.GetUTF8String(beffur);
-                                                var lines = tempstr.Split(new string[] { "\r\n" }, StringSplitOptions.None);
-                                                index = 0;
+                                                break;
+                                            }
+                                            var beffur = new byte[index];
+                                            Buffer.BlockCopy(rev, 0, beffur, 0, index);
+                                            var tempstr = strUtil.GetUTF8String(beffur);
+                                            var lines = tempstr.Split(new string[] { "\r\n" }, StringSplitOptions.None);
+                                            index = 0;
                                                 #region Headers处理
                                                 if (!start && lines[0].StartsWith("HTTP"))
+                                            {
+                                                var ts = lines[0].Split(' ');
+                                                if (ts[1] == "200")
                                                 {
-                                                    var ts = lines[0].Split(' ');
-                                                    if (ts[1] == "200")
+                                                    for (index = 1; index < lines.Length; index++)
                                                     {
-                                                        for (index = 1; index < lines.Length; index++)
+                                                        if (lines[index].ToLower().StartsWith("content-length"))
                                                         {
-                                                            if (lines[index].ToLower().StartsWith("content-length"))
-                                                            {
-                                                                ts = lines[index].Split(' ');
-                                                                length = cvt.ToInt(ts[1]);
-                                                            }
-                                                            else if (lines[index].ToLower().StartsWith("transfer-encoding"))
-                                                            {
-                                                                chunked = lines[index].EndsWith("chunked");
-                                                            }
-                                                            if (string.IsNullOrEmpty(lines[index]))
-                                                            {
-                                                                index++;
-                                                                start = true;
-                                                                break;
-                                                            }
+                                                            ts = lines[index].Split(' ');
+                                                            length = cvt.ToInt(ts[1]);
+                                                        }
+                                                        else if (lines[index].ToLower().StartsWith("transfer-encoding"))
+                                                        {
+                                                            chunked = lines[index].EndsWith("chunked");
+                                                        }
+                                                        if (string.IsNullOrEmpty(lines[index]))
+                                                        {
+                                                            index++;
+                                                            start = true;
+                                                            break;
                                                         }
                                                     }
-                                                    else
-                                                    {
-                                                        err = lines.LastOrDefault();
-                                                        index = lines.Length;
-                                                        break;
-                                                    }
                                                 }
+                                                else
+                                                {
+                                                    err = lines.LastOrDefault();
+                                                    index = lines.Length;
+                                                    break;
+                                                }
+                                            }
                                                 #endregion
                                                 #region 取文本内容
                                                 for (; index < lines.Length; index++)
+                                            {
+                                                var line = lines[index];
+                                                if (chunked)
                                                 {
-                                                    var line = lines[index];
-                                                    if (chunked)
+                                                    index++;
+                                                    if (index < lines.Length)
                                                     {
-                                                        index++;
-                                                        if (index < lines.Length)
+                                                        var tempLength = cvt.DeHex(line, "0123456789abcdef");
+                                                        if (tempLength > 0)
                                                         {
-                                                            var tempLength = cvt.DeHex(line, "0123456789abcdef");
-                                                            if (tempLength > 0)
-                                                            {
-                                                                length += (int)tempLength;
-                                                                line = lines[index];
-                                                            }
-                                                            else if (lines.Length == index + 2 && string.IsNullOrEmpty(lines[index + 1]))
-                                                            {
-                                                                end = true;
-                                                                break;
-                                                            }
-                                                            else
-                                                            {
-                                                                break;
-                                                            }
+                                                            length += (int)tempLength;
+                                                            line = lines[index];
+                                                        }
+                                                        else if (lines.Length == index + 2 && string.IsNullOrEmpty(lines[index + 1]))
+                                                        {
+                                                            end = true;
+                                                            break;
                                                         }
                                                         else
                                                         {
                                                             break;
                                                         }
                                                     }
-                                                    if (index == 0 || (chunked && index == 1) || rlt.Length == 0)
-                                                    {
-                                                        rlt += line;
-                                                    }
                                                     else
                                                     {
-                                                        rlt += "\r\n" + line;
-                                                    }
-                                                    if (!chunked && System.Text.Encoding.UTF8.GetBytes(rlt).Length >= length)
-                                                    {
-                                                        end = true;
+                                                        break;
                                                     }
                                                 }
-                                                if (end)
+                                                if (index == 0 || (chunked && index == 1) || rlt.Length == 0)
                                                 {
-                                                    break;
+                                                    rlt += line;
                                                 }
+                                                else
+                                                {
+                                                    rlt += "\r\n" + line;
+                                                }
+                                                if (!chunked && System.Text.Encoding.UTF8.GetBytes(rlt).Length >= length)
+                                                {
+                                                    end = true;
+                                                }
+                                            }
+                                            if (end)
+                                            {
+                                                break;
+                                            }
                                                 #endregion
                                             }
-                                        }
-                                    }).Wait();
-                                }
+                                    }
+                                }).Wait();
                                 #endregion
                             }
                             else
@@ -1158,9 +1045,8 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static string Get(string app, string controller, string action, params KeyValuePair<String, String>[] kvs)
         {
-            List<ApiLog> logs;
             var common = GetInstances(app);
-            return Get(common, controller, action, out logs, kvs);
+            return Get(common, controller, action, out _, kvs);
         }
         /// <summary>
         /// 
@@ -1187,9 +1073,8 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static ApiResult<T> Get<T>(string app, string controller, string action, params KeyValuePair<String, String>[] kvs)
         {
-            List<ApiLog> logs;
             var common = GetInstances(app);
-            var str = Get(common, controller, action, out logs, kvs);
+            var str = Get(common, controller, action, out List<ApiLog> logs, kvs);
             var rlt = Json.ToObject<ApiResult<T>>(str);
             rlt.PutLog(logs);
             return rlt;
@@ -1204,19 +1089,18 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static string GetOnlyData(string app, string controller, string action, params KeyValuePair<String, String>[] kvs)
         {
-            List<ApiLog> logs;
             var common = GetInstances(app);
-            var json = Get(common, controller, action, out logs, kvs);
+            var json = Get(common, controller, action, out _, kvs);
             try
             {
                 var temp = json;
                 if (temp.IndexOf("data:") > 0)
                 {
-                    temp = temp.Substring(temp.IndexOf("data:") + 5);
+                    temp = temp[(temp.IndexOf("data:") + 5)..];
                 }
                 else if (temp.IndexOf("data\":") > 0)
                 {
-                    temp = temp.Substring(temp.IndexOf("data\":") + 6);
+                    temp = temp[(temp.IndexOf("data\":") + 6)..];
                 }
                 //if (temp.IndexOf(",logs:[") > 0)
                 //{
@@ -1437,9 +1321,8 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static string Post(string app, string controller, string action, string postData, params KeyValuePair<String, String>[] kvs)
         {
-            List<ApiLog> logs;
             var common = GetInstances(app);
-            return Post(common, controller, action, postData, out logs, kvs);
+            return Post(common, controller, action, postData, out _, kvs);
         }
         /// <summary>
         /// 
@@ -1468,9 +1351,8 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static ApiResult<T> Post<T>(string app, string controller, string action, string postData, params KeyValuePair<String, String>[] kvs)
         {
-            List<ApiLog> logs;
             var common = GetInstances(app);
-            var rlt = Json.ToObject<ApiResult<T>>(Post(common, controller, action, postData, out logs, kvs));
+            var rlt = Json.ToObject<ApiResult<T>>(Post(common, controller, action, postData, out List<ApiLog> logs, kvs));
             rlt.PutLog(logs);
             return rlt;
         }
@@ -1548,63 +1430,61 @@ namespace Wlniao.XServer
                     {
                         handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
                     }
-                    using (var client = new System.Net.Http.HttpClient(handler))
+                    using var client = new System.Net.Http.HttpClient(handler);
+                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
+                    reqest.Headers.Date = DateTime.UtcNow;
+                    reqest.Headers.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Wlniao-XCore-XServer", "beta"));
+                    if (stream != null && stream.Length > 0)
                     {
-                        var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
-                        reqest.Headers.Date = DateTime.UtcNow;
-                        reqest.Headers.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Wlniao-XCore-XServer", "beta"));
-                        if (stream != null && stream.Length > 0)
+                        reqest.Content = new System.Net.Http.StreamContent(stream);
+                    }
+                    client.SendAsync(reqest).ContinueWith((requestTask) =>
+                    {
+                        try
                         {
-                            reqest.Content = new System.Net.Http.StreamContent(stream);
-                        }
-                        client.SendAsync(reqest).ContinueWith((requestTask) =>
-                        {
-                            try
+                            var response = requestTask.Result;
+                            if (response.StatusCode == System.Net.HttpStatusCode.OK)
                             {
-                                var response = requestTask.Result;
-                                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                                response.Content.ReadAsStringAsync().ContinueWith((readTask) =>
                                 {
-                                    response.Content.ReadAsStringAsync().ContinueWith((readTask) =>
-                                    {
-                                        str = readTask.Result;
-                                    }).Wait();
+                                    str = readTask.Result;
+                                }).Wait();
+                            }
+                            else
+                            {
+                                response.Content.ReadAsStringAsync().ContinueWith((readTask) =>
+                                {
+                                    str = readTask.Result;
+                                }).Wait();
+                            }
+                        }
+                        catch (AggregateException aex)
+                        {
+                            if (aex.InnerException != null)
+                            {
+                                if (aex.InnerException.InnerException != null)
+                                {
+                                    apilog.Failed(aex.InnerException.InnerException.Message);
                                 }
                                 else
                                 {
-                                    response.Content.ReadAsStringAsync().ContinueWith((readTask) =>
-                                    {
-                                        str = readTask.Result;
-                                    }).Wait();
+                                    apilog.Failed(aex.InnerException.Message);
                                 }
                             }
-                            catch (AggregateException aex)
+                            else
                             {
-                                if (aex.InnerException != null)
-                                {
-                                    if (aex.InnerException.InnerException != null)
-                                    {
-                                        apilog.Failed(aex.InnerException.InnerException.Message);
-                                    }
-                                    else
-                                    {
-                                        apilog.Failed(aex.InnerException.Message);
-                                    }
-                                }
-                                else
-                                {
-                                    apilog.Failed(aex.Message);
-                                }
+                                apilog.Failed(aex.Message);
                             }
-                        }).Wait();
-                        if (string.IsNullOrEmpty(str))
-                        {
-                            em.Current.Value.Failed();
                         }
-                        else
-                        {
-                            em.Current.Value.Success();
-                            apilog.Success(str);
-                        }
+                    }).Wait();
+                    if (string.IsNullOrEmpty(str))
+                    {
+                        em.Current.Value.Failed();
+                    }
+                    else
+                    {
+                        em.Current.Value.Success();
+                        apilog.Success(str);
                     }
                 }
                 catch (Exception ex)
@@ -1647,9 +1527,8 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static string Post(string app, string controller, string action, System.IO.Stream stream, params KeyValuePair<String, String>[] kvs)
         {
-            List<ApiLog> logs;
             var common = GetInstances(app);
-            return Post(common, controller, action, stream, out logs, kvs);
+            return Post(common, controller, action, stream, out _, kvs);
         }
         /// <summary>
         /// 
@@ -1678,9 +1557,8 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static ApiResult<T> Post<T>(string app, string controller, string action, System.IO.Stream stream, params KeyValuePair<String, String>[] kvs)
         {
-            List<ApiLog> logs;
             var common = GetInstances(app);
-            var rlt = Json.ToObject<ApiResult<T>>(Post(common, controller, action, stream, out logs, kvs));
+            var rlt = Json.ToObject<ApiResult<T>>(Post(common, controller, action, stream, out List<ApiLog> logs, kvs));
             rlt.PutLog(logs);
             return rlt;
         }
@@ -1692,7 +1570,7 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static string GetAppHost(String app, Boolean https = false)
         {
-            var em = GetInstances(App).Instances.GetEnumerator();
+            var em = GetInstances(app).Instances.GetEnumerator();
             while (em.MoveNext())
             {
                 if (em.Current.Key.IndexOf("://") > 0)

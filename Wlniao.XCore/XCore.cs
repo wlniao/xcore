@@ -273,6 +273,16 @@ namespace Wlniao
             }
         }
         /// <summary>
+        /// 是否为开发测试环境
+        /// </summary>
+        public static Boolean IsDevTest
+        {
+            get
+            {
+                return Config.GetSetting("WLN_DEVTEST").ToLower() == "true";
+            }
+        }
+        /// <summary>
         /// 服务器Id
         /// </summary>
         public static string XServerId
