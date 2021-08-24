@@ -213,6 +213,24 @@ namespace Wlniao
             }
         }
         /// <summary>
+        /// 获取Cookie指
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        [NonAction]
+        public string GetCookies(String key)
+        {
+            key = key.ToLower();
+            foreach (var item in Request.Cookies.Keys)
+            {
+                if (item.ToLower() == key)
+                {
+                    return Request.Cookies[item];
+                }
+            }
+            return "";
+        }
+        /// <summary>
         /// 获取请求参数Get及Post
         /// </summary>
         /// <param name="Key"></param>
@@ -231,10 +249,10 @@ namespace Wlniao
                     {
                         Default = strUtil.UrlDecode(Default);
                     }
-                    return Default;
+                    return Default.Trim();
                 }
             }
-            return Default;
+            return Default.Trim();
         }
         /// <summary>
         /// 获取请求参数（过滤非安全字符）
@@ -251,7 +269,7 @@ namespace Wlniao
             {
                 RequestSecurity = false;
             }
-            return str.Trim();
+            return str;
         }
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
@@ -268,7 +286,7 @@ namespace Wlniao
             {
                 RequestSecurity = false;
             }
-            return Default.Trim();
+            return Default;
         }
         /// <summary>
         /// 获取请求参数
@@ -313,25 +331,6 @@ namespace Wlniao
             }
             return strPost;
         }
-        /// <summary>
-        /// 获取Cookie指
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        [NonAction]
-        public string GetCookies(String key)
-        {
-            key = key.ToLower();
-            foreach (var item in Request.Cookies.Keys)
-            {
-                if (item.ToLower() == key)
-                {
-                    return Request.Cookies[item];
-                }
-            }
-            return "";
-        }
-
         private string strPost = null;
         private Dictionary<string, string> ctxPost = null;
         /// <summary>

@@ -210,8 +210,33 @@ namespace Wlniao.XServer
         {
             return Content(jsonStr, "text/json", encoding ?? System.Text.Encoding.UTF8);
         }
+
         /// <summary>
-        /// 获取请求参数
+        /// 获取请求参数Get及Post
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <param name="Default"></param>
+        /// <returns></returns>
+        [NonAction]
+        protected String GetRequestNoSecurity(String Key, String Default = "")
+        {
+            var key = Key.ToLower();
+            foreach (var item in Request.Query.Keys)
+            {
+                if (item.ToLower() == key && !string.IsNullOrEmpty(Request.Query[key]))
+                {
+                    Default = Request.Query[item].ToString().Trim();
+                    if (!string.IsNullOrEmpty(Default) && Default.IndexOf('%') >= 0)
+                    {
+                        Default = strUtil.UrlDecode(Default);
+                    }
+                    return Default;
+                }
+            }
+            return Default;
+        }
+        /// <summary>
+        /// 获取请求参数（仅标记但不过滤非安全字符）
         /// </summary>
         /// <param name="Key"></param>
         /// <param name="Default"></param>
@@ -219,37 +244,20 @@ namespace Wlniao.XServer
         [NonAction]
         protected String GetRequest(String Key, String Default = "")
         {
-            try
+            var key = Key.ToLower();
+            foreach (var item in Request.Query.Keys)
             {
-                var key = Key.ToLower();
-                foreach (var item in Request.Query.Keys)
+                if (item.ToLower() == key && !string.IsNullOrEmpty(Request.Query[key]))
                 {
-                    if (item.ToLower() == key)
+                    Default = Request.Query[item].ToString().Trim();
+                    if (!string.IsNullOrEmpty(Default) && Default.IndexOf('%') >= 0)
                     {
-                        Default = Request.Query[item];
+                        Default = strUtil.UrlDecode(Default);
                     }
+                    return Default.Trim();
                 }
-                //try
-                //{
-                //    if (Request.Method.ToUpper() == "POST" && Request.Form.Keys != null && string.IsNullOrEmpty(Default))
-                //    {
-                //        foreach (var item in Request.Form.Keys)
-                //        {
-                //            if (item.ToLower() == key)
-                //            {
-                //                Default = Request.Form[item];
-                //            }
-                //        }
-                //    }
-                //    else
-                //    {
-                //        Default = System.Text.RegularExpressions.Regex.Replace(Default, "<[^>]*>", "");
-                //    }
-                //}
-                //catch { }
             }
-            catch { }
-            return Default;
+            return Default.Trim();
         }
         /// <summary>
         /// 获取请求参数
@@ -260,15 +268,7 @@ namespace Wlniao.XServer
         [NonAction]
         protected String GetRequestDecode(String Key, String Default = "")
         {
-            var str = GetRequest(Key, Default);
-            if (str.IsNullOrEmpty())
-            {
-                return Default;
-            }
-            else
-            {
-                return strUtil.UrlDecode(str);
-            }
+            return GetRequest(Key, Default);
         }
         /// <summary>
         /// 获取请求参数
@@ -287,30 +287,123 @@ namespace Wlniao.XServer
         [NonAction]
         protected String GetPostString()
         {
-            if (Request.Method == "POST")
+            if (strPost == null && Request.Method == "POST" && Request.ContentLength > 0 && (Request.ContentType == null || !Request.ContentType.Contains("form")))
             {
-                var buffer = new byte[(int)Request.ContentLength];
-                Request.Body.Read(buffer, 0, buffer.Length);
-                return System.Text.Encoding.UTF8.GetString(buffer);
-            }
-            return "";
-        }
-        /// <summary>
-        /// 获取当前Cookie（非服务端可用）
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public string GetCookies(String key)
-        {
-            key = key.ToLower();
-            foreach (var item in Request.Query.Keys)
-            {
-                if (item.ToLower() == key)
+                try
                 {
-                    return Request.Query[item];
+                    strPost = new System.IO.StreamReader(Request.Body).ReadToEnd();
+                }
+                catch
+                {
+                    var buffer = new byte[(int)Request.ContentLength];
+                    Request.Body.Read(buffer, 0, buffer.Length);
+                    strPost = System.Text.Encoding.UTF8.GetString(buffer);
                 }
             }
-            return "";
+            return strPost;
+        }
+        private string strPost = null;
+        private Dictionary<string, string> ctxPost = null;
+        /// <summary>
+        /// 获取请求参数（仅标记但不过滤非安全字符）
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <param name="Default"></param>
+        /// <returns></returns>
+        [NonAction]
+        protected String PostRequest(String Key, String Default = "")
+        {
+            var key = Key.ToLower();
+            if (ctxPost == null)
+            {
+                try
+                {
+                    ctxPost = new Dictionary<string, string>();
+                    if (Request.Method == "POST")
+                    {
+                        try
+                        {
+                            if (Request.ContentType != null && Request.ContentType.Contains("application/x-www-form-urlencoded"))
+                            {
+                                #region 请求为表单
+                                foreach (var item in Request.Form.Keys)
+                                {
+                                    ctxPost.Add(item.ToLower(), Request.Form[item].ToString().Trim());
+                                }
+                                strPost = "";
+                                #endregion 请求为表单
+                            }
+                            else if (Request.ContentType != null && Request.ContentType.Contains("multipart/form-data"))
+                            {
+                                #region 请求为文件上传
+                                if (Request.Form != null && Request.Form.Keys != null)
+                                {
+                                    foreach (var item in Request.Form.Keys)
+                                    {
+                                        ctxPost.Add(item.ToLower(), Request.Form[item].ToString().Trim());
+                                    }
+                                }
+                                strPost = "";
+                                #endregion 请求为文件上传
+                            }
+                            else if (Request.ContentLength > 0)
+                            {
+                                #region 请求为其它类型
+                                if (strPost == null)
+                                {
+                                    try
+                                    {
+                                        strPost = new System.IO.StreamReader(Request.Body).ReadToEnd();
+                                    }
+                                    catch
+                                    {
+                                        var buffer = new byte[(int)Request.ContentLength];
+                                        Request.Body.Read(buffer, 0, buffer.Length);
+                                        strPost = System.Text.Encoding.UTF8.GetString(buffer);
+                                    }
+                                }
+                                if (!string.IsNullOrEmpty(strPost))
+                                {
+                                    var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(strPost);
+                                    if (tmpPost != null)
+                                    {
+                                        foreach (var kv in tmpPost)
+                                        {
+                                            ctxPost.TryAdd(kv.Key.ToLower(), kv.Value.Trim());
+                                        }
+                                    }
+                                }
+                                #endregion 请求为其它类型
+                            }
+                        }
+                        catch { }
+                    }
+                    if (Request.Query != null) //叠加URL传递的参数
+                    {
+                        foreach (var item in Request.Query.Keys)
+                        {
+                            ctxPost.TryAdd(item.ToLower(), strUtil.UrlDecode(Request.Query[item].ToString().Trim()));
+                        }
+                    }
+                }
+                catch { }
+            }
+            if (ctxPost.ContainsKey(key) && !string.IsNullOrEmpty(ctxPost[key]))
+            {
+                Default = ctxPost[key];
+            }
+            return Default.Trim();
+        }
+
+        /// <summary>
+        /// 获取请求参数
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <returns></returns>
+        [NonAction]
+        protected Int32 PostRequestInt(String Key)
+        {
+            return cvt.ToInt(PostRequest(Key, "0"));
         }
     }
 }
