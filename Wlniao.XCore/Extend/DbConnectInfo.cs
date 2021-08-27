@@ -10,7 +10,8 @@ namespace Wlniao
     /// </summary>
     public partial class DbConnectInfo
     {
-        private static string connstr_mysql = null;
+        private static string connstr_mysql_rw = null;  //读写链接
+        private static string connstr_mysql_ro = null;  //只读链接
         private static string connstr_sqlite = null;
         private static string connstr_sqlsqlver = null;
         /// <summary>
@@ -73,6 +74,21 @@ namespace Wlniao
             }
         }
         /// <summary>
+        /// 连接的Mysql数据库端口号（默认为3306，只读）
+        /// </summary>
+        public static string WLN_MYSQL_PORT_READONLY
+        {
+            get
+            {
+                var port = Wlniao.Config.GetSetting("WLN_MYSQL_PORT_READONLY");
+                if (string.IsNullOrEmpty(port))
+                {
+                    return WLN_MYSQL_PORT;
+                }
+                return port;
+            }
+        }
+        /// <summary>
         /// 连接的Mysql数据库服务器地址（默认为127.0.0.1）
         /// </summary>
         public static string WLN_MYSQL_HOST
@@ -84,6 +100,21 @@ namespace Wlniao
                 {
                     host = "127.0.0.1";
                     Wlniao.Config.SetConfigs("WLN_MYSQL_HOST", host);
+                }
+                return host;
+            }
+        }
+        /// <summary>
+        /// 连接的Mysql数据库服务器地址（默认为127.0.0.1，只读）
+        /// </summary>
+        public static string WLN_MYSQL_HOST_READONLY
+        {
+            get
+            {
+                var host = Wlniao.Config.GetSetting("WLN_MYSQL_HOST_READONLY");
+                if (string.IsNullOrEmpty(host))
+                {
+                    return WLN_MYSQL_HOST;
                 }
                 return host;
             }
@@ -110,20 +141,43 @@ namespace Wlniao
         {
             get
             {
-                if (connstr_mysql == null)
+                if (connstr_mysql_rw == null)
                 {
-                    connstr_mysql = Wlniao.Config.GetSetting("WLN_CONNSTR_MYSQL");
-                    if (string.IsNullOrEmpty(connstr_mysql))
+                    connstr_mysql_rw = Wlniao.Config.GetSetting("WLN_CONNSTR_MYSQL");
+                    if (string.IsNullOrEmpty(connstr_mysql_rw))
                     {
-                        connstr_mysql = string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8;"
+                        connstr_mysql_rw = string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8;"
                             , WLN_MYSQL_HOST, WLN_MYSQL_PORT, WLN_MYSQL_NAME, WLN_MYSQL_UID, WLN_MYSQL_PWD);
                         if (string.IsNullOrEmpty(WLN_MYSQL_UID) || string.IsNullOrEmpty(WLN_MYSQL_PWD))
                         {
-                            connstr_mysql = "";
+                            connstr_mysql_rw = "";
                         }
                     }
                 }
-                return connstr_mysql;
+                return connstr_mysql_rw;
+            }
+        }
+        /// <summary>
+        /// MySql数据库连接字符串
+        /// </summary>
+        public static string WLN_CONNSTR_MYSQL_READONLY
+        {
+            get
+            {
+                if (connstr_mysql_ro == null)
+                {
+                    connstr_mysql_ro = Wlniao.Config.GetSetting("WLN_CONNSTR_MYSQL_READONLY");
+                    if (string.IsNullOrEmpty(connstr_mysql_ro))
+                    {
+                        connstr_mysql_ro = string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8;"
+                            , WLN_MYSQL_HOST_READONLY, WLN_MYSQL_PORT_READONLY, WLN_MYSQL_NAME, WLN_MYSQL_UID, WLN_MYSQL_PWD);
+                        if (string.IsNullOrEmpty(WLN_MYSQL_UID) || string.IsNullOrEmpty(WLN_MYSQL_PWD))
+                        {
+                            connstr_mysql_ro = "";
+                        }
+                    }
+                }
+                return connstr_mysql_ro;
             }
         }
         /// <summary>
