@@ -398,7 +398,7 @@ namespace Wlniao
                                     {
                                         foreach (var kv in tmpPost)
                                         {
-                                            ctxPost.TryAdd(kv.Key.ToLower(), kv.Value.Trim());
+                                            ctxPost.TryAdd(kv.Key.ToLower(), kv.Value == null ? "" : kv.Value.Trim());
                                         }
                                     }
                                 }
