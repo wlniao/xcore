@@ -41,6 +41,10 @@ namespace Wlniao.Net
 
         }
         /// <summary>
+        /// 此链接发生了异常
+        /// </summary>
+        public bool Catch { get; set; }
+        /// <summary>
         /// 
         /// </summary>
         public bool Using { get; set; }
@@ -73,25 +77,29 @@ namespace Wlniao.Net
             {
                 try
                 {
-                    beginCheck:
+                beginCheck:
                     foreach (var socket in sockets.OrderBy(a => a.LastUse))
                     {
-                        if (socket.LastUse < now - 30 && socket.Connected)
+                        if (socket.Catch || !socket.Connected)
                         {
-                            try { socket.Shutdown(System.Net.Sockets.SocketShutdown.Both); } catch { }
+                            sockets.Remove(socket);
+                            try
+                            {
+                                if (socket.Connected)
+                                {
+                                    socket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
+                                }
+                                socket.IOControl(System.Net.Sockets.IOControlCode.KeepAliveValues, BitConverter.GetBytes(30), null);
+                                socket.Close();
+                            }
+                            catch { }
+                            goto beginCheck;
                         }
                         if (!socket.Using && socket.RemoteEndPoint.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < now - 3)
                         {
                             socket.Using = true;
                             socket.LastUse = now;
                             return socket;
-                        }
-                        if (!socket.Connected)
-                        {
-                            sockets.Remove(socket);
-                            try { socket.IOControl(System.Net.Sockets.IOControlCode.KeepAliveValues, BitConverter.GetBytes(30), null); } catch { }
-                            socket.Close();
-                            goto beginCheck;
                         }
                     }
                     var newsocket = new WlnSocket(endpoint.AddressFamily, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
