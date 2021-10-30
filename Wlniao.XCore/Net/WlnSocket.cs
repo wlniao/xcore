@@ -56,6 +56,7 @@ namespace Wlniao.Net
         /// 
         /// </summary>
         public int TimeOutSeconds = 10;
+        private static Object _lock = new object();
         private static List<WlnSocket> sockets = new List<WlnSocket>();
         /// <summary>
         /// 从连接池获取一个实例
@@ -73,7 +74,7 @@ namespace Wlniao.Net
                 ipaddress = ipaddress.MapToIPv4();
             }
             var endpoint = new System.Net.IPEndPoint(ipaddress, port);
-            lock (sockets)
+            lock (_lock)
             {
                 try
                 {
@@ -95,7 +96,7 @@ namespace Wlniao.Net
                             catch { }
                             goto beginCheck;
                         }
-                        if (!socket.Using && socket.RemoteEndPoint.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < now - 3)
+                        if (!socket.Using && socket.RemoteEndPoint.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < now - 15)
                         {
                             socket.Using = true;
                             socket.LastUse = now;
@@ -124,7 +125,7 @@ namespace Wlniao.Net
         {
             var sb = new System.Text.StringBuilder();
             var uri = new Uri(url);
-            var hostSocket = Net.WlnSocket.GetSocket(uri.Host, uri.Port);
+            var hostSocket = Net.WlnSocket.GetSocket(uri.Host, uri.Port, 15);
             try
             {
                 var reqStr = "";

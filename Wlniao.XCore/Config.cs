@@ -263,7 +263,7 @@ namespace Wlniao
             {
                 _config.Add(tmpKey, value);
             }
-            Write(_config);
+            Write(_config, FileName);
             return true;
         }
         /// <summary>
@@ -297,7 +297,7 @@ namespace Wlniao
                 if (!string.IsNullOrEmpty(tmpKey))
                 {
                     _config.Remove(tmpKey);
-                    Write(_config);
+                    Write(_config, FileName);
                 }
             }
             return true;
@@ -354,9 +354,7 @@ namespace Wlniao
                     else
                     {
                         sb.Append(pair.Key);
-                        sb.Append(" ");
                         sb.Append("=");
-                        sb.Append(" ");
                         sb.Append(pair.Value);
                         sb.Append(Environment.NewLine);
                     }

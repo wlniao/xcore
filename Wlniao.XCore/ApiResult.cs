@@ -177,5 +177,107 @@ namespace Wlniao
                 }
             }
         }
+        /// <summary>
+        /// 拼接日志内容
+        /// </summary>
+        /// <param name="log"></param>
+        public void AddLog(String log)
+        {
+            AddLog(new ApiLog("", "") { message = log });
+        }
+        /// <summary>
+        /// 拼接日志内容
+        /// </summary>
+        /// <param name="log"></param>
+        /// <param name="node"></param>
+        public void AddLog(String log, String node)
+        {
+            AddLog(new ApiLog(node, "") { message = log });
+        }
+        /// <summary>
+        /// 拼接日志内容
+        /// </summary>
+        /// <param name="log"></param>
+        /// <param name="node"></param>
+        /// <param name="apiurl"></param>
+        public void AddLog(String log, String node, String apiurl)
+        {
+            AddLog(new ApiLog(node, apiurl) { message = log });
+        }
+        /// <summary>
+        /// 拼接日志内容
+        /// </summary>
+        /// <param name="log"></param>
+        public void AddLog(ApiLog log)
+        {
+            if (_logs == null)
+            {
+                _logs = new List<ApiLog>();
+            }
+            _logs.Add(log);
+        }
+        /// <summary>
+        /// 拼接日志内容
+        /// </summary>
+        /// <param name="logs"></param>
+        public void AddLogs(List<String> logs)
+        {
+            if (_logs == null)
+            {
+                _logs = new List<ApiLog>();
+            }
+            foreach (var log in logs)
+            {
+                _logs.Add(new ApiLog("", "") { message = log });
+            }
+        }
+        /// <summary>
+        /// 拼接日志内容
+        /// </summary>
+        /// <param name="logs"></param>
+        /// <param name="node"></param>
+        public void AddLogs(List<String> logs, String node)
+        {
+            if (_logs == null)
+            {
+                _logs = new List<ApiLog>();
+            }
+            foreach (var log in logs)
+            {
+                _logs.Add(new ApiLog(node, "") { message = log });
+            }
+        }
+        /// <summary>
+        /// 拼接日志内容
+        /// </summary>
+        /// <param name="logs"></param>
+        /// <param name="node"></param>
+        /// <param name="apiurl"></param>
+        public void AddLogs(List<String> logs, String node, String apiurl)
+        {
+            if (_logs == null)
+            {
+                _logs = new List<ApiLog>();
+            }
+            foreach (var log in logs)
+            {
+                _logs.Add(new ApiLog(node, apiurl) { message = log });
+            }
+        }
+        /// <summary>
+        /// 拼接日志内容
+        /// </summary>
+        /// <param name="logs"></param>
+        public void AddLogs(List<ApiLog> logs)
+        {
+            if (_logs == null)
+            {
+                _logs = new List<ApiLog>();
+            }
+            foreach (var log in logs)
+            {
+                _logs.Add(log);
+            }
+        }
     }
 }
