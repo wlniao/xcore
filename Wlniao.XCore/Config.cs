@@ -174,7 +174,7 @@ namespace Wlniao
             }
             try
             {
-                Write(_config);
+                Write(_config, FileName);
             }
             catch { }
             return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
@@ -329,7 +329,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="dic">一个 Dictionary</param>
         /// <param name="path">配置文件的路径(相对路径，相对于项目的根目录)</param>
-        public static void Write(Dictionary<String, String> dic, String path = "/xcore/xcore.config")
+        public static void Write(Dictionary<String, String> dic, String path)
         {
             if (_config != null)
             {
@@ -359,7 +359,11 @@ namespace Wlniao
                         sb.Append(Environment.NewLine);
                     }
                 }
-                file.Write(IO.PathTool.Map(path), sb.ToString(), true);
+                if (string.IsNullOrEmpty(path))
+                {
+                    path = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config");
+                }
+                file.Write(path, sb.ToString(), true);
             }
         }
     }
