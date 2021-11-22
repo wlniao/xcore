@@ -46,11 +46,15 @@ namespace Wlniao
         /// <summary>
         /// 当前日志输出等级
         /// </summary>
-        private static Log.LogLevel _level = Log.LogLevel.None;
+        private static Log.LogLevel _log_level = Log.LogLevel.None;
+        /// <summary>
+        /// 当前日志输出路径
+        /// </summary>
+        private static string _log_path = null;
         /// <summary>
         /// 当前日志输出工具
         /// </summary>
-        private static string _provider = null;
+        private static string _log_provider = null;
         /// <summary>
         /// 重新初始化状态
         /// </summary>
@@ -58,7 +62,7 @@ namespace Wlniao
         {
             Config.Clear();
             XServer.Common.Init();
-            _level = Log.LogLevel.None;
+            _log_level = Log.LogLevel.None;
             _console = true;
         }
         /// <summary>
@@ -356,29 +360,47 @@ namespace Wlniao
             }
         }
         /// <summary>
+        /// 当前日志输出路径
+        /// </summary>
+        internal static string LogPath
+        {
+            get
+            {
+                if (_log_path == null)
+                {
+                    _log_path = Config.GetConfigs("WLN_LOG_PATH");
+                    if (string.IsNullOrEmpty(_log_path))
+                    {
+                        _log_path = XCore.FrameworkRoot + "/logs";
+                    }
+                }
+                return _log_path;
+            }
+        }
+        /// <summary>
         /// 当前日志输出等级
         /// </summary>
         internal static Log.LogLevel LogLevel
         {
             get
             {
-                if (_level == Log.LogLevel.None)
+                if (_log_level == Log.LogLevel.None)
                 {
                     var level = Config.GetSetting("WLN_LOG_LEVEL");
                     if (!string.IsNullOrEmpty(level))
                     {
                         try
                         {
-                            _level = (Log.LogLevel)Enum.Parse(typeof(Log.LogLevel), level, true);
+                            _log_level = (Log.LogLevel)Enum.Parse(typeof(Log.LogLevel), level, true);
                         }
                         catch { }
                     }
-                    if (_level == Log.LogLevel.None)
+                    if (_log_level == Log.LogLevel.None)
                     {
-                        _level = Log.LogLevel.Error;
+                        _log_level = Log.LogLevel.Error;
                     }
                 }
-                return _level;
+                return _log_level;
             }
         }
         /// <summary>
@@ -389,19 +411,19 @@ namespace Wlniao
         {
             get
             {
-                if (_provider == null)
+                if (_log_provider == null)
                 {
-                    _provider = Config.GetConfigs("WLN_LOG_PROVIDER");
-                    if (string.IsNullOrEmpty(_provider))
+                    _log_provider = Config.GetConfigs("WLN_LOG_PROVIDER");
+                    if (string.IsNullOrEmpty(_log_provider))
                     {
-                        _provider = "file";
+                        _log_provider = "file";
                     }
                     else
                     {
-                        _provider = _provider.ToLower();
+                        _log_provider = _log_provider.ToLower();
                     }
                 }
-                return _provider;
+                return _log_provider;
             }
         }
         #endregion
@@ -415,8 +437,8 @@ namespace Wlniao
         /// <param name="Provider"></param>
         public static void SetLogger(String LogLevel = "debug", String Provider = "file")
         {
-            _level = (Log.LogLevel)Enum.Parse(typeof(Log.LogLevel), LogLevel, true);
-            _provider = Provider;
+            _log_level = (Log.LogLevel)Enum.Parse(typeof(Log.LogLevel), LogLevel, true);
+            _log_provider = Provider;
             Config.SetConfigs("WLN_LOG_LEVEL", LogLevel);
             Config.SetConfigs("WLN_LOG_PROVIDER", Provider);
         }

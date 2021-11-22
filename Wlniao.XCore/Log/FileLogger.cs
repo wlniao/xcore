@@ -91,7 +91,7 @@ namespace Wlniao.Log
         {
             try
             {
-                var fi = new System.IO.FileInfo(IO.PathTool.Map(XCore.FrameworkRoot, DateTools.Format("yyyy.MM.dd"), strUtil.GetTitleCase(msg.LogLevel) + ".log"));
+                var fi = new System.IO.FileInfo(IO.PathTool.Map(XCore.LogPath, DateTools.Format("yyyy.MM.dd"), strUtil.GetTitleCase(msg.LogLevel) + ".log"));
                 if (!fi.Exists)
                 {
                     if (!fi.Directory.Exists)
