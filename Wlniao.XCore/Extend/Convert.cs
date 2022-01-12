@@ -848,6 +848,49 @@ namespace Wlniao
             return sbyteArray;
         }
 
+
+        /// <summary>
+        /// 字符串转16进制字节数组
+        /// </summary>
+        /// <param name="hexString"></param>
+        /// <returns></returns>
+        public static byte[] HexStringToBytes(string hexString)
+        {
+            //byte[] msg1 = System.Text.UTF8Encoding.UTF8.GetBytes(data);
+            //string hexString = BytesToHexString(msg1);
+            //byte[] returnBytes = new byte[hexString.Length / 2];
+            //for (int i = 0; i < returnBytes.Length; i++)
+            //{
+            //    returnBytes[i] = System.Convert.ToByte(hexString.Substring(i * 2, 2), 10);
+            //}
+            //return returnBytes;
+            if ((hexString.Length % 2) != 0)
+            {
+                hexString += " ";
+            }
+            byte[] returnBytes = new byte[hexString.Length / 2];
+            for (int i = 0; i < returnBytes.Length; i++)
+            {
+                returnBytes[i] = System.Convert.ToByte(hexString.Substring(i * 2, 2), 16);
+            }
+            return returnBytes;
+        }
+
+        /// <summary>
+        /// byte[]数组转16进制字符串
+        /// </summary>
+        /// <param name="input">byte[]数组</param>
+        /// <returns>16进制字符串</returns>
+        public static string BytesToHexString(byte[] input)
+        {
+            var hexString = new StringBuilder();
+            for (int i = 0; i < input.Length; i++)
+            {
+                hexString.Append(String.Format("{0:x2}", input[i]));
+            }
+            return hexString.ToString();
+        }
+
         /// <summary>
         /// 
         /// </summary>

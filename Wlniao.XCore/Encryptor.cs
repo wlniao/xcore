@@ -240,6 +240,20 @@ namespace Wlniao
             }
             return "";
         }
+
+        /// <summary>
+        /// 获取SM3值
+        /// </summary>
+        /// <param name="str">需要加密的字符串</param>
+        /// <returns>加密后的字符串</returns>
+        public static string SM3Encryptor(string str)
+        {
+            var sm3 = new Crypto.SM3();
+            var buffer = System.Text.Encoding.UTF8.GetBytes(str);
+            sm3.BlockUpdate(buffer, 0, buffer.Length);
+            buffer = sm3.DoFinal();
+            return cvt.BytesToHexString(buffer);
+        }
         /// <summary>
         /// 获取SHA1值
         /// </summary>
