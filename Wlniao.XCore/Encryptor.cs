@@ -22,6 +22,8 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using Wlniao.Crypto;
+
 namespace Wlniao
 {
     /// <summary>
@@ -242,11 +244,141 @@ namespace Wlniao
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="plainText"></param>
+        /// <param name="secretKey"></param>
+        /// <param name="isPadding"></param>
+        /// <returns></returns>
+        public static String SM4EncryptECBToHex(string plainText, string secretKey, bool isPadding = true)
+        {
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            var sm4 = new SM4();
+            var encryBytes = sm4.EncryptECB(plainBytes, keyBytes, isPadding);
+            return cvt.BytesToHexString(encryBytes);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="plainText"></param>
+        /// <param name="secretKey"></param>
+        /// <param name="isPadding"></param>
+        /// <returns></returns>
+        public static String SM4EncryptECBToBase64(string plainText, string secretKey, bool isPadding = true)
+        {
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            var sm4 = new SM4();
+            var encryBytes = sm4.EncryptECB(plainBytes, keyBytes, isPadding);
+            return System.Convert.ToBase64String(encryBytes);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="encryText"></param>
+        /// <param name="secretKey"></param>
+        /// <param name="isPadding"></param>
+        /// <returns></returns>
+        public static String SM4DecryptECBFromHex(string encryText, string secretKey, bool isPadding = true)
+        {
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var encryBytes = Helper.Decode(encryText);
+            var sm4 = new SM4();
+            var plainBytes = sm4.DecryptECB(encryBytes, keyBytes, isPadding);
+            return System.Text.Encoding.UTF8.GetString(plainBytes);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="encryText"></param>
+        /// <param name="secretKey"></param>
+        /// <param name="isPadding"></param>
+        /// <returns></returns>
+        public static String SM4DecryptECBFromBase64(string encryText, string secretKey, bool isPadding = true)
+        {
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var encryBytes = Helper.Decode(encryText);
+            var sm4 = new SM4();
+            var plainBytes = sm4.DecryptECB(encryBytes, keyBytes, isPadding);
+            return System.Text.Encoding.UTF8.GetString(plainBytes);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="plainText"></param>
+        /// <param name="secretKey"></param>
+        /// <param name="iv"></param>
+        /// <param name="isPadding"></param>
+        /// <returns></returns>
+        public static String SM4EncryptCBCToHex(string plainText, string secretKey, string iv, bool isPadding = true)
+        {
+            var ivBytes = System.Text.Encoding.UTF8.GetBytes(iv);
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            var sm4 = new SM4();
+            var encryBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
+            return cvt.BytesToHexString(encryBytes);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="plainText"></param>
+        /// <param name="secretKey"></param>
+        /// <param name="iv"></param>
+        /// <param name="isPadding"></param>
+        /// <returns></returns>
+        public static String SM4EncryptCBCToBase64(string plainText, string secretKey, string iv, bool isPadding = true)
+        {
+            var ivBytes = System.Text.Encoding.UTF8.GetBytes(iv);
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            var sm4 = new SM4();
+            var encryBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
+            return System.Convert.ToBase64String(encryBytes);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="encryText"></param>
+        /// <param name="secretKey"></param>
+        /// <param name="iv"></param>
+        /// <param name="isPadding"></param>
+        /// <returns></returns>
+        public static String SM4DecryptCBCFromHex(string encryText, string secretKey, string iv, bool isPadding = true)
+        {
+            var ivBytes = System.Text.Encoding.UTF8.GetBytes(iv);
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var encryBytes = Helper.Decode(encryText);
+            var sm4 = new SM4();
+            var plainBytes = sm4.DecryptCBC(encryBytes, keyBytes, ivBytes, isPadding);
+            return System.Text.Encoding.UTF8.GetString(plainBytes);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="encryText"></param>
+        /// <param name="secretKey"></param>
+        /// <param name="iv"></param>
+        /// <param name="isPadding"></param>
+        /// <returns></returns>
+        public static String SM4DecryptCBCFromBase64(string encryText, string secretKey, string iv, bool isPadding = true)
+        {
+            var ivBytes = System.Text.Encoding.UTF8.GetBytes(iv);
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var encryBytes = Helper.Decode(encryText);
+            var sm4 = new SM4();
+            var plainBytes = sm4.DecryptCBC(encryBytes, keyBytes, ivBytes, isPadding);
+            return System.Text.Encoding.UTF8.GetString(plainBytes);
+        }
+
+        /// <summary>
         /// 获取SM3值
         /// </summary>
         /// <param name="str">需要加密的字符串</param>
         /// <returns>加密后的字符串</returns>
-        public static string SM3Encryptor(string str)
+        public static string SM3Encrypt(string str)
         {
             var sm3 = new Crypto.SM3();
             var buffer = System.Text.Encoding.UTF8.GetBytes(str);

@@ -39,15 +39,21 @@ namespace Wlniao.Crypto
         /// <summary>
         /// 
         /// </summary>
-        public ICipherParameters PrivateKeyParameters
+        public byte[] PublicKey
         {
             get
             {
-                if (_privateKeyParameters == null)
-                {
-                    _privateKeyParameters = new ECPrivateKeyParameters(new BigInteger(1, _privkey), new ECDomainParameters(GMNamedCurves.GetByName("SM2P256V1")));
-                }
-                return _privateKeyParameters;
+                return _pubkey;
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        public byte[] PrivateKey
+        {
+            get
+            {
+                return _privkey;
             }
         }
         /// <summary>
@@ -65,7 +71,20 @@ namespace Wlniao.Crypto
                 return _publicKeyParameters;
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICipherParameters PrivateKeyParameters
+        {
+            get
+            {
+                if (_privateKeyParameters == null)
+                {
+                    _privateKeyParameters = new ECPrivateKeyParameters(new BigInteger(1, _privkey), new ECDomainParameters(GMNamedCurves.GetByName("SM2P256V1")));
+                }
+                return _privateKeyParameters;
+            }
+        }
         /// <summary>
         /// 
         /// </summary>

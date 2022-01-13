@@ -54,8 +54,36 @@ namespace Wlniao.XCore.Test
         [Test]
         public void SM3Encryptor()
         {
-            var value = Wlniao.Encryptor.SM3Encryptor("abcd321");
-            Assert.GreaterOrEqual(value, "bdc9d153cabc7e452a28fe5ed8e041441452c080a27af42afd7d11cdd7a0872a");
+            var value = Wlniao.Encryptor.SM3Encrypt("wlniao studio");
+            Assert.GreaterOrEqual(value, "dce717c7430e26a0f41d33840bbe6baa64e3d915d4d54d1bf8f7a07b093dfec0");
+        }
+
+
+        [Test]
+        public void SM4EncryptECBToHex()
+        {
+            var value = Wlniao.Encryptor.SM4EncryptECBToHex("wlniao studio", "a8c9d69e29080f1d");
+            Assert.GreaterOrEqual(value, "b01a5eed2708c24a941053f82af23882");
+        }
+
+        [Test]
+        public void SM4EncryptCBCToBase64()
+        {
+            var value = Wlniao.Encryptor.SM4EncryptCBCToBase64("wlniao studio", "a8c9d69e29080f1d", "39ad0d2989a25606");
+            Assert.GreaterOrEqual(value, "3gS+A9JgJpyXghus0UapmQ==");
+        }
+        [Test]
+        public void SM4DecryptECBFromBase64()
+        {
+            var value = Wlniao.Encryptor.SM4DecryptECBFromBase64("sBpe7ScIwkqUEFP4KvI4gg==", "a8c9d69e29080f1d");
+            Assert.GreaterOrEqual(value, "wlniao studio");
+        }
+
+        [Test]
+        public void SM4DecryptCBCFromHex()
+        {
+            var value = Wlniao.Encryptor.SM4DecryptCBCFromHex("de04be03d260269c97821bacd146a999", "a8c9d69e29080f1d", "39ad0d2989a25606");
+            Assert.GreaterOrEqual(value, "wlniao studio");
         }
     }
 }
