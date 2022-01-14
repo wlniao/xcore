@@ -112,8 +112,8 @@ namespace Wlniao.Crypto
         {
             if (type == KeyType.Generate)
             {
-                _pubkey = Decode(pubkey);
-                _privkey = Decode(privkey);
+                _pubkey = Decode(pubkey.ToLower());
+                _privkey = Decode(privkey.ToLower());
             }
             else if (type == KeyType.Pkcs8)
             {

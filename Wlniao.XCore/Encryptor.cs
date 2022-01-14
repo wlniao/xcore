@@ -252,7 +252,7 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4EncryptECBToHex(string plainText, string secretKey, bool isPadding = true)
         {
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             var sm4 = new SM4();
             var encryBytes = sm4.EncryptECB(plainBytes, keyBytes, isPadding);
@@ -267,7 +267,7 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4EncryptECBToBase64(string plainText, string secretKey, bool isPadding = true)
         {
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             var sm4 = new SM4();
             var encryBytes = sm4.EncryptECB(plainBytes, keyBytes, isPadding);
@@ -282,7 +282,7 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4DecryptECBFromHex(string encryText, string secretKey, bool isPadding = true)
         {
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var encryBytes = Helper.Decode(encryText);
             var sm4 = new SM4();
             var plainBytes = sm4.DecryptECB(encryBytes, keyBytes, isPadding);
@@ -297,7 +297,7 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4DecryptECBFromBase64(string encryText, string secretKey, bool isPadding = true)
         {
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var encryBytes = Helper.Decode(encryText);
             var sm4 = new SM4();
             var plainBytes = sm4.DecryptECB(encryBytes, keyBytes, isPadding);
@@ -314,8 +314,8 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4EncryptCBCToHex(string plainText, string secretKey, string iv, bool isPadding = true)
         {
-            var ivBytes = System.Text.Encoding.UTF8.GetBytes(iv);
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             var sm4 = new SM4();
             var encryBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
@@ -331,8 +331,8 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4EncryptCBCToBase64(string plainText, string secretKey, string iv, bool isPadding = true)
         {
-            var ivBytes = System.Text.Encoding.UTF8.GetBytes(iv);
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             var sm4 = new SM4();
             var encryBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
@@ -348,8 +348,8 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4DecryptCBCFromHex(string encryText, string secretKey, string iv, bool isPadding = true)
         {
-            var ivBytes = System.Text.Encoding.UTF8.GetBytes(iv);
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var encryBytes = Helper.Decode(encryText);
             var sm4 = new SM4();
             var plainBytes = sm4.DecryptCBC(encryBytes, keyBytes, ivBytes, isPadding);
@@ -365,8 +365,8 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4DecryptCBCFromBase64(string encryText, string secretKey, string iv, bool isPadding = true)
         {
-            var ivBytes = System.Text.Encoding.UTF8.GetBytes(iv);
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes(secretKey);
+            var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var encryBytes = Helper.Decode(encryText);
             var sm4 = new SM4();
             var plainBytes = sm4.DecryptCBC(encryBytes, keyBytes, ivBytes, isPadding);

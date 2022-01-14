@@ -64,7 +64,7 @@ namespace Wlniao.Crypto
         /// <summary>
         /// 构造函数
         /// </summary>
-        internal SM3()
+        public SM3()
         {
             Reset();
         }
@@ -73,7 +73,7 @@ namespace Wlniao.Crypto
         /// 复制构造函数
         /// </summary>
         /// <param name="t"></param>
-        internal SM3(SM3 t)
+        public SM3(SM3 t)
         {
             XBuf = new byte[t.XBuf.Length];
             Array.Copy(t.XBuf, 0, XBuf, 0, t.XBuf.Length);
