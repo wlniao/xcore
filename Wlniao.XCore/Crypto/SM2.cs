@@ -131,7 +131,7 @@ namespace Wlniao.Crypto
             }
             sm2.Init(true, cp);
             sm2.BlockUpdate(msg, 0, msg.Length);
-            return sm2.GenerateSignature();
+            return RsAsn1ToPlainByteArray(sm2.GenerateSignature());
         }
         /// <summary>
         /// 
@@ -176,7 +176,7 @@ namespace Wlniao.Crypto
             }
             sm2.Init(false, cp);
             sm2.BlockUpdate(msg, 0, msg.Length);
-            return sm2.VerifySignature(signature);
+            return sm2.VerifySignature(RsPlainByteArrayToAsn1(signature));
         }
         /// <summary>
         /// 
