@@ -91,18 +91,15 @@ namespace Wlniao.Log
         {
             try
             {
-                var fi = new System.IO.FileInfo(IO.PathTool.Map(XCore.LogPath, DateTools.Format("yyyy.MM.dd"), strUtil.GetTitleCase(msg.LogLevel) + ".log"));
-                if (!fi.Exists)
+                var fi = new System.IO.FileInfo(IO.PathTool.Map(XCore.LogPath, DateTools.Format("yyyy.MM.dd"), msg.LogLevel + ".log"));
+                if (!fi.Directory.Exists)
                 {
-                    if (!fi.Directory.Exists)
-                    {
-                        fi.Directory.Create();
-                    }
-                    var fs = fi.CreateText();
-                    fs.WriteLine(string.Format("{0} {1} {2} - {3}", msg.LogTime, msg.LogLevel, msg.Source, msg.Message));
-                    fs.Flush();
-                    fs.Dispose();
+                    fi.Directory.Create();
                 }
+                var fs = fi.Exists ? fi.AppendText() : fi.CreateText();
+                fs.WriteLine(string.Format("{0} {1} - {2}", msg.LogTime, msg.LogLevel, msg.Message));
+                fs.Flush();
+                fs.Dispose();
             }
             catch { }
         }

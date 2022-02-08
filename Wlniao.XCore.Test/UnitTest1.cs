@@ -10,6 +10,16 @@ namespace Wlniao.XCore.Test
         }
 
         [Test]
+        public void Loger()
+        {
+            for(var i = 0; i < 10000; i++)
+            {
+                Wlniao.log.Topic("test", DateTools.GetUnix() + strUtil.CreateRndStrE(16));
+            }
+            Assert.Pass();
+            //Assert.Pass();
+        }
+        [Test]
         public void Test1()
         {
             var str = Wlniao.XServer.Common.GetResponseString("http://jinke.qihui365.com/login", 1, 60);

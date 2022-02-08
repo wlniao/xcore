@@ -67,7 +67,6 @@ namespace Wlniao.Net
         /// <returns></returns>
         public static WlnSocket GetSocket(String host, Int32 port, Int32 TimeOutSeconds = 10)
         {
-            var now = DateTools.GetUnix();
             var ipaddress = strUtil.IsIP(host) ? System.Net.IPAddress.Parse(host) : new Net.Dns.DnsTool().GetIPAddressDefault(host);
             if (ipaddress.IsIPv4MappedToIPv6)
             {
@@ -96,16 +95,16 @@ namespace Wlniao.Net
                             catch { }
                             goto beginCheck;
                         }
-                        if (!socket.Using && socket.RemoteEndPoint.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < now - 15)
+                        if (!socket.Using && socket.RemoteEndPoint.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < XCore.NowUnix - 15)
                         {
                             socket.Using = true;
-                            socket.LastUse = now;
+                            socket.LastUse = XCore.NowUnix;
                             return socket;
                         }
                     }
                     var newsocket = new WlnSocket(endpoint.AddressFamily, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
                     newsocket.Using = true;
-                    newsocket.LastUse = now;
+                    newsocket.LastUse = XCore.NowUnix;
                     newsocket.Connect(endpoint);
                     newsocket.SendTimeout = TimeOutSeconds * 1000;  //10s
                     newsocket.ReceiveTimeout = TimeOutSeconds * 1000;  //10s
@@ -131,7 +130,7 @@ namespace Wlniao.Net
                 var reqStr = "";
                 reqStr += "GET " + uri.PathAndQuery + " HTTP/1.1";
                 reqStr += "\r\nHost: " + uri.Host;
-                reqStr += "\r\nDate: " + DateTools.ConvertToGMT(DateTools.GetUnix());
+                reqStr += "\r\nDate: " + DateTools.ConvertToGMT(XCore.NowUnix);
                 reqStr += "\r\nAccept: application/json";
                 if (kvs != null)
                 {

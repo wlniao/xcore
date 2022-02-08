@@ -36,10 +36,6 @@ namespace Wlniao.Log
         /// </summary>
         public DateTime LogTime { get; set; }
         /// <summary>
-        /// 日志的来源
-        /// </summary>
-        public String Source { get; set; }
-        /// <summary>
         /// 日志的内容
         /// </summary>
         public String Message { get; set; }
@@ -49,7 +45,7 @@ namespace Wlniao.Log
         /// <returns></returns>
         public override string ToString()
         {
-            return String.Format("{0} {1} {2} - {3} \r\n", LogTime.ToString("HH:mm:ss"), strUtil.GetTitleCase(LogLevel), Source, Message);
+            return String.Format("{0} {1} - {2} \r\n", LogTime.ToString("HH:mm:ss"), LogLevel, Message);
         }
     }
 }

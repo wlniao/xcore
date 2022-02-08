@@ -39,7 +39,7 @@ namespace Wlniao.XServer
                 result.Content = Wlniao.Json.ToString(_rlt);
                 filterContext.Result = result;
             }
-            else if (cvt.ToLong(TimeSpan) < DateTools.GetUnix() - 3600)
+            else if (cvt.ToLong(TimeSpan) < XCore.NowUnix - 3600)
             {
                 _rlt.message = "request is expired";
                 var result = new ContentResult();

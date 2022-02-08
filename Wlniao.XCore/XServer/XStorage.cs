@@ -610,7 +610,7 @@ namespace Wlniao.XServer
                             dir = dir + "/";
                         }
                     }
-                    var json = "{\"bucket\":\"" + bucketname + "\",\"save-key\":\"" + dir + "{random}{.suffix}\",\"expiration\":\"" + (DateTools.GetUnix() + expire) + "\"}";
+                    var json = "{\"bucket\":\"" + bucketname + "\",\"save-key\":\"" + dir + "{random}{.suffix}\",\"expiration\":\"" + (XCore.NowUnix + expire) + "\"}";
                     var policy = Encryptor.Base64Encrypt(json);
                     var signature = Encryptor.Md5Encryptor32(policy + "&" + formapi);
                     return Json.ToString(new { to = "upyun", host = XStorageUrl, bucket = bucketname, policy, signature });
@@ -1210,8 +1210,7 @@ namespace Wlniao.XServer
                             dir = dir + "/";
                         }
                     }
-                    var now = DateTools.GetUnix();
-                    var keytime = now + ";" + (now + expire);
+                    var keytime = XCore.NowUnix + ";" + (XCore.NowUnix + expire);
                     var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"],{\"q-sign-algorithm\":\"sha1\"},{\"q-ak\":\"" + cosaccesskeyid + "\"},{\"q-sign-time\":\"" + keytime + "\"}]}";
                     var policy = Encryptor.Base64Encrypt(json);
                     var stringToSign = Encryptor.GetSHA1(json).ToLower();
@@ -1323,8 +1322,7 @@ namespace Wlniao.XServer
                     }
 
 
-                    var now = DateTools.GetUnix();
-                    var keytime = (now - 10) + ";" + (now + 3590);
+                    var keytime = (XCore.NowUnix - 10) + ";" + (XCore.NowUnix + 3590);
                     var signKey = Encryptor.GetHMACSHA1String(keytime, cosaccesskeySecret);
                     var contentMd5 = System.Convert.ToBase64String(request.Content.Headers.ContentMD5);
                     var httpString = method.ToLower() + '\n' + path + '\n' + httpParameters + '\n' + httpHeaders + '\n';

@@ -319,7 +319,7 @@ namespace Wlniao.XServer
                     var reqStr = "";
                     reqStr += "GET " + uri.PathAndQuery + " HTTP/1.0";
                     reqStr += "\r\nHost: " + uri.Host;
-                    reqStr += "\r\nDate: " + DateTools.ConvertToGMT(DateTools.GetUnix());
+                    reqStr += "\r\nDate: " + DateTools.ConvertToGMT(XCore.NowUnix);
                     reqStr += "\r\nAccept: application/json";
                     reqStr += "\r\n";
                     reqStr += "\r\n";
@@ -648,7 +648,7 @@ namespace Wlniao.XServer
             #region 处理接口基本参数及签名
             if (!string.IsNullOrEmpty(Secret))
             {
-                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
+                kvList.Add(new KeyValuePair<String, String>("xstime", XCore.NowUnix.ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
                     kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
@@ -709,7 +709,7 @@ namespace Wlniao.XServer
                             var reqStr = "";
                             reqStr += "GET " + uri.PathAndQuery + " HTTP/1.0";
                             reqStr += "\r\nHost: " + uri.Host;
-                            reqStr += "\r\nDate: " + DateTools.ConvertToGMT(DateTools.GetUnix());
+                            reqStr += "\r\nDate: " + DateTools.ConvertToGMT(XCore.NowUnix);
                             reqStr += "\r\nAccept: application/json";
                             reqStr += "\r\n";
                             reqStr += "\r\n";
@@ -1159,7 +1159,7 @@ namespace Wlniao.XServer
             #region 处理接口基本参数及签名
             if (!string.IsNullOrEmpty(Secret))
             {
-                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
+                kvList.Add(new KeyValuePair<String, String>("xstime", XCore.NowUnix.ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
                     kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
@@ -1374,7 +1374,7 @@ namespace Wlniao.XServer
             if (!string.IsNullOrEmpty(Secret))
             {
                 // 排序并拼接签名原始字符
-                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
+                kvList.Add(new KeyValuePair<String, String>("xstime", XCore.NowUnix.ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
                     kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
@@ -1635,7 +1635,7 @@ namespace Wlniao.XServer
             if (sig && !string.IsNullOrEmpty(Secret))
             {
                 // 排序并拼接签名原始字符
-                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
+                kvList.Add(new KeyValuePair<String, String>("xstime", XCore.NowUnix.ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
                     kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
