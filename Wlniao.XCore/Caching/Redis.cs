@@ -33,7 +33,7 @@ namespace Wlniao.Caching
     {
         internal static string _host = Config.GetSetting("WLN_REDIS_HOST");
         internal static string _pass = Config.GetSetting("WLN_REDIS_PASS");
-        internal static int _port = cvt.ToInt(Config.GetSetting("WLN_REDIS_PORT"));
+        internal static int _port = cvt.ToInt(Config.GetSetting("WLN_REDIS_PORT", "6379"));
         internal static bool CanUse()
         {
             if (string.IsNullOrEmpty(_host))

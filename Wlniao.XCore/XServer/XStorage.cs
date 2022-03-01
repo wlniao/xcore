@@ -1160,6 +1160,14 @@ namespace Wlniao.XServer
                         {
                             bucket = "";
                         }
+                        else
+                        {
+                            if (string.IsNullOrEmpty(cosaccesskeyid) && string.IsNullOrEmpty(cosaccesskeySecret))
+                            {
+                                cosaccesskeyid = Config.GetSetting("QCloudSecretId");
+                                cosaccesskeySecret = Config.GetSetting("QCloudSecretKey");
+                            }
+                        }
                     }
                     if (string.IsNullOrEmpty(bucket) || string.IsNullOrEmpty(cosdomain) || string.IsNullOrEmpty(cosaccesskeyid) || string.IsNullOrEmpty(cosaccesskeySecret))
                     {

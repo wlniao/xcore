@@ -131,7 +131,7 @@ namespace Wlniao.Crypto
             }
             sm2.Init(true, cp);
             sm2.BlockUpdate(msg, 0, msg.Length);
-            return RsAsn1ToPlainByteArray(sm2.GenerateSignature());
+            return sm2.GenerateSignature();
         }
         /// <summary>
         /// 
@@ -139,7 +139,7 @@ namespace Wlniao.Crypto
         /// <param name="msg"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public byte[] SignWithAsn1Rs(byte[] msg, byte[] id = null)
+        public byte[] SignWithRsAsn1(byte[] msg, byte[] id = null)
         {
             var signer = SignerUtilities.GetSigner("SM3withSM2");
             ICipherParameters cp;
@@ -153,7 +153,7 @@ namespace Wlniao.Crypto
             }
             signer.Init(true, cp);
             signer.BlockUpdate(msg, 0, msg.Length);
-            return signer.GenerateSignature();
+            return RsAsn1ToPlainByteArray(signer.GenerateSignature());
         }
         /// <summary>
         /// 
@@ -176,7 +176,7 @@ namespace Wlniao.Crypto
             }
             sm2.Init(false, cp);
             sm2.BlockUpdate(msg, 0, msg.Length);
-            return sm2.VerifySignature(RsPlainByteArrayToAsn1(signature));
+            return sm2.VerifySignature(signature);
         }
         /// <summary>
         /// 
@@ -196,7 +196,7 @@ namespace Wlniao.Crypto
         /// <param name="signature"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public bool VerifySignWithAsn1Rs(byte[] msg, byte[] signature, byte[] id = null)
+        public bool VerifySignWithRsAsn1(byte[] msg, byte[] signature, byte[] id = null)
         {
             var signer = SignerUtilities.GetSigner("SM3withSM2");
             ICipherParameters cp;
@@ -210,7 +210,7 @@ namespace Wlniao.Crypto
             }
             signer.Init(true, cp);
             signer.BlockUpdate(msg, 0, msg.Length);
-            return signer.VerifySignature(signature);
+            return signer.VerifySignature(RsPlainByteArrayToAsn1(signature));
         }
         /// <summary>
         /// 
@@ -219,9 +219,9 @@ namespace Wlniao.Crypto
         /// <param name="signature"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public bool VerifySignWithAsn1Rs(byte[] msg, string signature, byte[] id = null)
+        public bool VerifySignWithRsAsn1(byte[] msg, string signature, byte[] id = null)
         {
-            return VerifySignWithAsn1Rs(msg, Helper.Decode(signature), id);
+            return VerifySignWithRsAsn1(msg, Helper.Decode(signature), id);
         }
 
 
@@ -281,7 +281,7 @@ namespace Wlniao.Crypto
             {
                 return new Org.BouncyCastle.Asn1.DerSequence(v).GetEncoded("DER");
             }
-            catch (System.IO.IOException e)
+            catch
             {
                 return null;
             }

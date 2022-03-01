@@ -59,17 +59,18 @@ namespace Wlniao
         /// <summary>
         /// 获取Unix时间戳
         /// </summary>
-        /// <param name="time"></param>
+        /// <param name="strtime"></param>
         /// <returns></returns>
-        public static long GetUnix(string time)
+        public static long GetUnix(string strtime)
         {
-            try
+            var time = DateTime.Parse(strtime);
+            if (time.Kind == DateTimeKind.Unspecified)
             {
-                return GetUnix(Convert(time));
+                return time.AddHours(0 - DateTools.TimeZone).Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
             }
-            catch
+            else
             {
-                return 0;
+                return time.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
             }
         }
         /// <summary>
@@ -83,10 +84,6 @@ namespace Wlniao
             {
                 return time.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)).Ticks / 10000000 - TimeZone * 3600;
             }
-            else if (time.Kind == DateTimeKind.Utc)
-            {
-                return time.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
-            }
             else
             {
                 return time.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
@@ -99,27 +96,35 @@ namespace Wlniao
         public static DateTime GetNow()
         {
             var temp = DateTime.UtcNow.AddHours(TimeZone);
-            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Utc);
+            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Unspecified);
         }
         /// <summary>
-        /// 将Unix时间戳转换为无时区的当前时间（可通过WLN_TIMEZONE设置）
+        /// 将Unix时间戳转换为无时区的时间（可通过WLN_TIMEZONE设置）
         /// </summary>
         /// <param name="unixtime"></param>
         /// <returns></returns>
         public static DateTime Convert(long unixtime)
         {
-            return new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified).Add(new TimeSpan(unixtime * 10000000)).AddHours(TimeZone);
+            return new DateTime(1970, 1, 1, TimeZone, 0, 0, 0, DateTimeKind.Unspecified).Add(new TimeSpan(unixtime * 10000000));
         }
         /// <summary>
-        /// 将时间字符串转换为无时区的当前时间
+        /// 将时间字符串转换为无时区的时间
         /// </summary>
         /// <param name="strtime"></param>
         /// <returns></returns>
         public static DateTime Convert(string strtime)
         {
-            var temp = System.Convert.ToDateTime(strtime);
-            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Utc).AddHours(0 - TimeZone);
+            var time = DateTime.Parse(strtime);
+            if (time.Kind == DateTimeKind.Unspecified)
+            {
+                return time;
+            }
+            else
+            {
+                return new DateTime(time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, DateTimeKind.Unspecified).AddHours(TimeZone);
+            }
         }
+
         /// <summary>
         /// 将Unix时间戳转换为UTC世界协调时间
         /// </summary>
@@ -136,19 +141,21 @@ namespace Wlniao
         /// <returns></returns>
         public static DateTime ConvertToUtc(string strtime)
         {
-            var temp = TimeZone == 0 ? System.Convert.ToDateTime(strtime) : System.Convert.ToDateTime(strtime).AddHours(0 - TimeZone);
-            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Utc);
+            var time = DateTime.Parse(strtime);
+            if (time.Kind == DateTimeKind.Unspecified)
+            {
+                return new DateTime(time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, DateTimeKind.Utc).AddHours(0 - TimeZone); ;
+            }
+            else if (time.Kind == DateTimeKind.Local)
+            {
+                return time.ToUniversalTime();
+            }
+            else
+            {
+                return time;
+            }
         }
-        /// <summary>
-        /// 将Unix时间戳按当地时间及指定格式输出
-        /// </summary>
-        /// <param name="unixtime"></param>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string ConvertToFormat(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
-        {
-            return Convert(unixtime).ToString(format);
-        }
+
         /// <summary>
         /// 将Unix时间戳转换成GMT格式
         /// </summary>
@@ -156,12 +163,14 @@ namespace Wlniao
         /// <returns></returns>
         public static string ConvertToGMT(long unixtime = 0)
         {
-            var dt = DateTime.UtcNow;
             if (unixtime > 0)
             {
-                dt = ConvertToUtc(unixtime);
+                return ConvertToUtc(unixtime).ToString("r");
             }
-            return dt.ToString("r");
+            else
+            {
+                return DateTime.UtcNow.ToString("r");
+            }
         }
         /// <summary>
         /// 将GMT格式转换为UTC世界协调时间
@@ -196,7 +205,7 @@ namespace Wlniao
             return dt;
         }
         /// <summary>
-        /// 将当前时间按指定格式输出
+        /// 将时间按指定格式输出（可通过WLN_TIMEZONE设置）
         /// </summary>
         /// <param name="format"></param>
         /// <returns></returns>
@@ -205,7 +214,7 @@ namespace Wlniao
             return DateTime.UtcNow.AddHours(TimeZone).ToString(format);// 以UTC时间进行时区计算
         }
         /// <summary>
-        /// 将时间按指定格式输出
+        /// 将时间按指定格式输出（可通过WLN_TIMEZONE设置）
         /// </summary>
         /// <param name="time"></param>
         /// <param name="format"></param>
@@ -218,14 +227,14 @@ namespace Wlniao
             }
             else if (time.Kind == DateTimeKind.Local)
             {
-                var temp = time.ToUniversalTime().AddHours(TimeZone);
-                return temp.ToString(format);// 按本地时间格式输出
+                return time.ToUniversalTime().AddHours(TimeZone).ToString(format);// 按本地时间格式输出
             }
             else
             {
                 return time.ToString(format);// 直接格式输出本地时间
             }
         }
+
         /// <summary>
         /// 将当前UTC时间按指定格式输出
         /// </summary>
@@ -240,16 +249,9 @@ namespace Wlniao
         /// </summary>
         /// <param name="format"></param>
         /// <returns></returns>
-        public static string FormatTimeZone(string format = "yyyy-MM-dd HH:mm:ss")
+        public static string FormatLocal(string format = "yyyy-MM-dd HH:mm:ss")
         {
-            if (TimeZone == 0)
-            {
-                return DateTime.Now.ToString(format); //直接格式输出本地时间
-            }
-            else
-            {
-                return DateTime.UtcNow.AddHours(TimeZone).ToString(format); //以UTC时间进行时区计算
-            }
+            return DateTime.Now.ToString(format); //以UTC时间进行时区计算
         }
         /// <summary>
         /// 格式输出指定时区的时间
@@ -262,14 +264,14 @@ namespace Wlniao
             return DateTime.UtcNow.AddHours(timezone).ToString(format); //以UTC时间进行时区计算
         }
         /// <summary>
-        /// 将Unix时间戳按本地时区及指定格式输出
+        /// 将Unix时间戳按指定格式输出（可通过WLN_TIMEZONE设置）
         /// </summary>
         /// <param name="unixtime"></param>
         /// <param name="format"></param>
         /// <returns></returns>
         public static string FormatUnix(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
         {
-            return unixtime > 0 ? Convert(unixtime).ToString(format) : "";
+            return unixtime <= 0 ? "" : new DateTime(1970, 1, 1, TimeZone, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToString(format);
         }
         /// <summary>
         /// 将Unix时间戳按UTC协调时及指定格式输出
@@ -279,34 +281,23 @@ namespace Wlniao
         /// <returns></returns>
         public static string FormatUnixToUtc(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
         {
-            return unixtime > 0 ? ConvertToUtc(unixtime).ToString(format) : "";
+            return unixtime <= 0 ? "" : new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToString(format);
         }
         /// <summary>
-        /// 将Unix时间戳按本地时区及格式输出
+        /// 将Unix时间戳按本地时间及指定格式输出
         /// </summary>
         /// <param name="unixtime"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public static string FormatUnixToTimeZone(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
+        public static string FormatUnixToLocal(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
         {
-            if (unixtime <= 0)
-            {
-                return "";
-            }
-            else if (TimeZone == 0)
-            {
-                return ConvertToUtc(unixtime).ToLocalTime().ToString(format); //直接以本地时间格式输出
-            }
-            else
-            {
-                return ConvertToUtc(unixtime).AddHours(TimeZone).ToString(format); //以UTC时间进行时区计算
-            }
+            return unixtime <= 0 ? "" : new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToLocalTime().ToString(format);
         }
         /// <summary>
         /// 将Unix时间戳按指定时区及格式输出
         /// </summary>
-        /// <param name="unixtime"></param>
         /// <param name="timezone"></param>
+        /// <param name="unixtime"></param>
         /// <param name="format"></param>
         /// <returns></returns>
         public static string FormatUnixToTimeZone(long unixtime, int timezone, string format = "yyyy-MM-dd HH:mm:ss")
@@ -315,17 +306,13 @@ namespace Wlniao
             {
                 return "";
             }
-            else if (timezone == 0)
-            {
-                return ConvertToUtc(unixtime).ToLocalTime().ToString(format); //直接以本地时间格式输出
-            }
             else
             {
-                return ConvertToUtc(unixtime).AddHours(timezone).ToString(format); //以UTC时间进行时区计算
+                return new DateTime(1970, 1, 1, timezone, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToString(format); //以UTC时间进行时区计算
             }
         }
         /// <summary>
-        /// 将当前时间按指定格式输出
+        /// 将当前日期按指定格式输出（可通过WLN_TIMEZONE设置）
         /// </summary>
         /// <param name="format"></param>
         /// <returns></returns>
@@ -334,26 +321,20 @@ namespace Wlniao
             return DateTime.UtcNow.AddHours(TimeZone).ToString(format);// 以UTC时间进行时区计算
         }
         /// <summary>
-        /// 获取当日起始时间
+        /// 获取当日起始时间（可通过WLN_TIMEZONE设置）
         /// </summary>
         /// <param name="unixtime"></param>
         /// <returns></returns>
         public static long GetDayStart(long unixtime)
         {
-            if ((unixtime - TimeZone * 3600) % 86400 == 0)
-            {
-                return unixtime;
-            }
-            var temp = unixtime + TimeZone * 3600;
-            temp = unixtime - unixtime % 86400;
-            return temp - TimeZone * 3600;
+            return unixtime - ((unixtime + 3600 * TimeZone) % 86400);
         }
         /// <summary>
         /// 获取当日起始时间
         /// </summary>
         /// <param name="unixtime"></param>
         /// <returns></returns>
-        public static long GetUnixDayStart(long unixtime)
+        public static long GetUtcDayStart(long unixtime)
         {
             return unixtime - unixtime % 86400;
         }
