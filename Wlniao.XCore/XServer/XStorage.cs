@@ -980,30 +980,41 @@ namespace Wlniao.XServer
         /// <summary>
         /// Aliyun设置
         /// </summary>
-        public static class Aliyun
+        public class Aliyun
         {
-            internal static String bucket = null;
-            internal static String ossdomain = null;
-            internal static String ossaccesskeyid = null;
-            internal static String ossaccesskeySecret = null;
+            private static Aliyun instance = new Aliyun();
+            private String bucket = null;
+            private String ossdomain = null;
+            private String ossaccesskeyid = null;
+            private String ossaccesskeySecret = null;
+            /// <summary>
+            /// 
+            /// </summary>
+            public Aliyun()
+            {
+                bucket = Config.GetSetting("OssBucket");
+                ossdomain = Config.GetSetting("OssDomain");
+                ossaccesskeyid = Config.GetSetting("OssAccessKeyId");
+                ossaccesskeySecret = Config.GetSetting("OssAccessKeySecret");
+            }
+            /// <summary>
+            /// 
+            /// </summary>
+            public Aliyun(String bucket, String domain, String accesskeyid, String accesskeySecret)
+            {
+                this.bucket = bucket;
+                ossdomain = domain;
+                ossaccesskeyid = accesskeyid;
+                ossaccesskeySecret = accesskeySecret;
+            }
+
             /// <summary>
             /// 是否启用
             /// </summary>
-            public static Boolean Using
+            public Boolean isUsing
             {
                 get
                 {
-                    if (bucket == null)
-                    {
-                        bucket = Config.GetSetting("OssBucket");
-                        ossdomain = Config.GetSetting("OssDomain");
-                        ossaccesskeyid = Config.GetSetting("OssAccessKeyId");
-                        ossaccesskeySecret = Config.GetSetting("OssAccessKeySecret");
-                        if (string.IsNullOrEmpty(bucket))
-                        {
-                            bucket = "";
-                        }
-                    }
                     if (string.IsNullOrEmpty(bucket) || string.IsNullOrEmpty(ossdomain) || string.IsNullOrEmpty(ossaccesskeyid) || string.IsNullOrEmpty(ossaccesskeySecret))
                     {
                         return false;
@@ -1014,74 +1025,16 @@ namespace Wlniao.XServer
                     }
                 }
             }
-
-
             /// <summary>
-            /// FormAPI参数
+            /// 执行一个新任务
             /// </summary>
-            /// <param name="expire">过期时间（单位：秒）</param>
-            /// <param name="max">文件最大大小</param>
-            /// <returns></returns>
-            public static String FormApi(int expire = 5400, int max = 200)
-            {
-                return FormApi(null, expire, max);
-            }
-            /// <summary>
-            /// FormAPI参数
-            /// </summary>
-            /// <param name="dir">上传目录</param>
-            /// <param name="expire">过期时间（单位：秒）</param>
-            /// <param name="max">文件最大大小（单位：M）</param>
-            /// <returns></returns>
-            public static String FormApi(string dir, int expire = 5400, int max = 200)
-            {
-                if (Using)
-                {
-                    max = max * 1024 * 1024;
-                    if (string.IsNullOrEmpty(dir))
-                    {
-                        dir = DateTools.Format("yyyyMM/MMdd/");
-                    }
-                    else
-                    {
-                        if (dir.StartsWith("/"))
-                        {
-                            dir = dir.TrimStart('/');
-                        }
-                        if (!dir.EndsWith("/"))
-                        {
-                            dir = dir + "/";
-                        }
-                    }
-                    var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"]]}";
-                    var policy = Encryptor.Base64Encrypt(json);
-                    var signature = System.Convert.ToBase64String(Encryptor.GetHMACSHA1(policy, ossaccesskeySecret));
-                    var host = ossdomain.IndexOf("://") < 0 ? "//" + ossdomain : ossdomain;
-                    return Json.ToString(new { to = "oss", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
-                }
-                return "";
-            }
-
-
-            /// <summary>
-            /// 上传文件
-            /// </summary>
+            /// <param name="method"></param>
             /// <param name="path"></param>
-            /// <param name="data"></param>
+            /// <param name="postData"></param>
+            /// <param name="headers"></param>
+            /// <param name="message"></param>
             /// <returns></returns>
-            public static bool WriteFile(string path, byte[] data)
-            {
-                if (Using)
-                {
-                    var resp = newWorker("PUT", path, data);
-                    if (resp.StatusCode == System.Net.HttpStatusCode.OK)
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            private static HttpResponseMessage newWorker(string method, string path, byte[] postData = null, Hashtable headers = null)
+            public HttpResponseMessage newWorker(string method, string path, byte[] postData, Hashtable headers, out string message)
             {
                 using (var client = new HttpClient())
                 {
@@ -1112,95 +1065,49 @@ namespace Wlniao.XServer
                     {
                         request.Headers.TryAddWithoutValidation(kv.Key.ToString(), kv.Value.ToString());
                     }
+                    var msg = "";
                     var res = new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.InternalServerError };
                     client.SendAsync(request).ContinueWith((requestTask) =>
                     {
                         res = requestTask.Result;
-                        try
+                        if (res.StatusCode != System.Net.HttpStatusCode.OK)
                         {
-                            if (res.StatusCode != System.Net.HttpStatusCode.OK)
+                            res.Content.ReadAsStringAsync().ContinueWith((readTask) =>
                             {
-                                res.Content.ReadAsStringAsync().ContinueWith((readTask) =>
+                                if (!string.IsNullOrEmpty(readTask.Result))
                                 {
                                     var doc = new System.Xml.XmlDocument();
                                     doc.LoadXml(readTask.Result);
-                                    log.Error("XStorage Aliyun：" + doc.GetElementsByTagName("Message")[0].InnerText);
-                                }).Wait();
-                            }
+                                    msg = doc.GetElementsByTagName("Message")[0].InnerText;
+                                    log.Error("XStorage Aliyun：" + msg);
+                                }
+                            }).Wait();
                         }
-                        catch { }
                     }).Wait();
+                    message = msg;
                     return res;
                 }
             }
-        }
-        /// <summary>
-        /// QCloud设置
-        /// </summary>
-        public static class QCloud
-        {
-            internal static String bucket = null;
-            internal static String cosdomain = null;
-            internal static String cosaccesskeyid = null;
-            internal static String cosaccesskeySecret = null;
-            /// <summary>
-            /// 是否启用
-            /// </summary>
-            public static Boolean Using
-            {
-                get
-                {
-                    if (bucket == null)
-                    {
-                        bucket = Config.GetSetting("CosBucket");
-                        cosdomain = Config.GetSetting("CosDomain");
-                        cosaccesskeyid = Config.GetSetting("CosAccessKeyId");
-                        cosaccesskeySecret = Config.GetSetting("CosAccessKeySecret");
-                        if (string.IsNullOrEmpty(bucket))
-                        {
-                            bucket = "";
-                        }
-                        else
-                        {
-                            if (string.IsNullOrEmpty(cosaccesskeyid) && string.IsNullOrEmpty(cosaccesskeySecret))
-                            {
-                                cosaccesskeyid = Config.GetSetting("QCloudSecretId");
-                                cosaccesskeySecret = Config.GetSetting("QCloudSecretKey");
-                            }
-                        }
-                    }
-                    if (string.IsNullOrEmpty(bucket) || string.IsNullOrEmpty(cosdomain) || string.IsNullOrEmpty(cosaccesskeyid) || string.IsNullOrEmpty(cosaccesskeySecret))
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        return true;
-                    }
-                }
-            }
-
-
             /// <summary>
             /// FormAPI参数
             /// </summary>
             /// <param name="expire">过期时间（单位：秒）</param>
             /// <param name="max">文件最大大小</param>
             /// <returns></returns>
-            public static String FormApi(int expire = 5400, int max = 200)
+            public String formApi(int expire = 5400, int max = 200)
             {
-                return FormApi(null, expire, max);
+                return formApi(null, expire, max);
             }
             /// <summary>
             /// FormAPI参数
             /// </summary>
+            /// <param name="dir">上传目录</param>
             /// <param name="expire">过期时间（单位：秒）</param>
             /// <param name="max">文件最大大小（单位：M）</param>
-            /// <param name="dir">上传目录</param>
             /// <returns></returns>
-            public static String FormApi(string dir, int expire = 5400, int max = 200)
+            public String formApi(string dir, int expire = 5400, int max = 200)
             {
-                if (Using)
+                if (isUsing)
                 {
                     max = max * 1024 * 1024;
                     if (string.IsNullOrEmpty(dir))
@@ -1218,19 +1125,61 @@ namespace Wlniao.XServer
                             dir = dir + "/";
                         }
                     }
-                    var keytime = XCore.NowUnix + ";" + (XCore.NowUnix + expire);
-                    var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"],{\"q-sign-algorithm\":\"sha1\"},{\"q-ak\":\"" + cosaccesskeyid + "\"},{\"q-sign-time\":\"" + keytime + "\"}]}";
+                    var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"]]}";
                     var policy = Encryptor.Base64Encrypt(json);
-                    var stringToSign = Encryptor.GetSHA1(json).ToLower();
-                    var signKey = Encryptor.GetHMACSHA1String(keytime, cosaccesskeySecret);
-                    var signature = Encryptor.GetHMACSHA1String(stringToSign, signKey);
-                    var host = cosdomain.IndexOf("://") < 0 ? "//" + cosdomain : cosdomain;
-                    return Json.ToString(new { to = "cos", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, domain = host, keytime = keytime, secretid = cosaccesskeyid, dir, max, policy, signature });
+                    var signature = System.Convert.ToBase64String(Encryptor.GetHMACSHA1(policy, ossaccesskeySecret));
+                    var host = ossdomain.IndexOf("://") < 0 ? "//" + ossdomain : ossdomain;
+                    return Json.ToString(new { to = "oss", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
                 }
                 return "";
             }
+            /// <summary>
+            /// 上传文件
+            /// </summary>
+            /// <param name="path"></param>
+            /// <param name="data"></param>
+            /// <param name="message"></param>
+            /// <returns></returns>
+            public Boolean writeFile(string path, byte[] data, out string message)
+            {
+                message = "";
+                try
+                {
+                    if (isUsing)
+                    {
+                        var resp = newWorker("PUT", path, data, null, out message);
+                        if (resp.StatusCode == System.Net.HttpStatusCode.OK)
+                        {
+                            return true;
+                        }
+                    }
+                }
+                catch (Exception ex) { message = "上传异常：" + ex.Message; }
+                return false;
+            }
 
 
+            /// <summary>
+            /// FormAPI参数
+            /// </summary>
+            /// <param name="expire">过期时间（单位：秒）</param>
+            /// <param name="max">文件最大大小</param>
+            /// <returns></returns>
+            public static String FormApi(int expire = 5400, int max = 200)
+            {
+                return instance.formApi(null, expire, max);
+            }
+            /// <summary>
+            /// FormAPI参数
+            /// </summary>
+            /// <param name="dir">上传目录</param>
+            /// <param name="expire">过期时间（单位：秒）</param>
+            /// <param name="max">文件最大大小（单位：M）</param>
+            /// <returns></returns>
+            public static String FormApi(string dir, int expire = 5400, int max = 200)
+            {
+                return instance.formApi(dir, expire, max);
+            }
             /// <summary>
             /// 上传文件
             /// </summary>
@@ -1239,17 +1188,77 @@ namespace Wlniao.XServer
             /// <returns></returns>
             public static bool WriteFile(string path, byte[] data)
             {
-                if (Using)
+                return instance.writeFile(path, data, out _);
+            }
+            /// <summary>
+            /// 是否启用
+            /// </summary>
+            public static Boolean Using
+            {
+                get
                 {
-                    var resp = newWorker("PUT", path, data);
-                    if (resp.StatusCode == System.Net.HttpStatusCode.OK)
+                    return instance.isUsing;
+                }
+            }
+        }
+        /// <summary>
+        /// QCloud设置
+        /// </summary>
+        public class QCloud
+        {
+            private static QCloud instance = new QCloud();
+            private String bucket = null;
+            private String cosdomain = null;
+            private String cosaccesskeyid = null;
+            private String cosaccesskeySecret = null;
+            /// <summary>
+            /// 
+            /// </summary>
+            public QCloud()
+            {
+                bucket = Config.GetSetting("CosBucket");
+                cosdomain = Config.GetSetting("CosDomain");
+                cosaccesskeyid = Config.GetSetting("CosAccessKeyId");
+                cosaccesskeySecret = Config.GetSetting("CosAccessKeySecret");
+            }
+            /// <summary>
+            /// 
+            /// </summary>
+            public QCloud(String bucket, String domain, String accesskeyid, String accesskeySecret)
+            {
+                this.bucket = bucket;
+                cosdomain = domain;
+                cosaccesskeyid = accesskeyid;
+                cosaccesskeySecret = accesskeySecret;
+            }
+
+            /// <summary>
+            /// 是否启用
+            /// </summary>
+            public Boolean isUsing
+            {
+                get
+                {
+                    if (string.IsNullOrEmpty(bucket) || string.IsNullOrEmpty(cosaccesskeyid) || string.IsNullOrEmpty(cosaccesskeyid) || string.IsNullOrEmpty(cosaccesskeySecret))
+                    {
+                        return false;
+                    }
+                    else
                     {
                         return true;
                     }
                 }
-                return false;
             }
-            private static HttpResponseMessage newWorker(string method, string path, byte[] postData = null, Hashtable headers = null)
+            /// <summary>
+            /// 执行一个新任务
+            /// </summary>
+            /// <param name="method"></param>
+            /// <param name="path"></param>
+            /// <param name="postData"></param>
+            /// <param name="headers"></param>
+            /// <param name="message"></param>
+            /// <returns></returns>
+            public HttpResponseMessage newWorker(string method, string path, byte[] postData, Hashtable headers, out string message)
             {
                 using (var client = new HttpClient())
                 {
@@ -1349,26 +1358,145 @@ namespace Wlniao.XServer
                     {
                         request.Headers.TryAddWithoutValidation(kv.Key.ToString(), kv.Value.ToString());
                     }
+                    var msg = "";
                     var res = new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.InternalServerError };
                     client.SendAsync(request).ContinueWith((requestTask) =>
                     {
                         res = requestTask.Result;
-                        try
+                        if (res.StatusCode != System.Net.HttpStatusCode.OK)
                         {
-                            if (res.StatusCode != System.Net.HttpStatusCode.OK)
+                            res.Content.ReadAsStringAsync().ContinueWith((readTask) =>
                             {
-                                res.Content.ReadAsStringAsync().ContinueWith((readTask) =>
+                                if (!string.IsNullOrEmpty(readTask.Result))
                                 {
                                     var doc = new System.Xml.XmlDocument();
                                     doc.LoadXml(readTask.Result);
-                                    log.Error("XStorage QCloud：" + doc.GetElementsByTagName("Message")[0].InnerText);
-                                }).Wait();
-                            }
+                                    msg = doc.GetElementsByTagName("Message")[0].InnerText;
+                                    log.Error("XStorage QCloud：" + msg);
+                                }
+                            }).Wait();
                         }
-                        catch { }
                     }).Wait();
+                    message = msg;
                     return res;
                 }
+            }
+            /// <summary>
+            /// FormAPI参数
+            /// </summary>
+            /// <param name="expire">过期时间（单位：秒）</param>
+            /// <param name="max">文件最大大小</param>
+            /// <returns></returns>
+            public String formApi(int expire = 5400, int max = 200)
+            {
+                return formApi(null, expire, max);
+            }
+            /// <summary>
+            /// FormAPI参数
+            /// </summary>
+            /// <param name="expire">过期时间（单位：秒）</param>
+            /// <param name="max">文件最大大小（单位：M）</param>
+            /// <param name="dir">上传目录</param>
+            /// <returns></returns>
+            public String formApi(string dir, int expire = 5400, int max = 200)
+            {
+                if (isUsing)
+                {
+                    max = max * 1024 * 1024;
+                    if (string.IsNullOrEmpty(dir))
+                    {
+                        dir = DateTools.Format("yyyyMM/MMdd/");
+                    }
+                    else
+                    {
+                        if (dir.StartsWith("/"))
+                        {
+                            dir = dir.TrimStart('/');
+                        }
+                        if (!dir.EndsWith("/"))
+                        {
+                            dir = dir + "/";
+                        }
+                    }
+                    var keytime = XCore.NowUnix + ";" + (XCore.NowUnix + expire);
+                    var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"],{\"q-sign-algorithm\":\"sha1\"},{\"q-ak\":\"" + cosaccesskeyid + "\"},{\"q-sign-time\":\"" + keytime + "\"}]}";
+                    var policy = Encryptor.Base64Encrypt(json);
+                    var stringToSign = Encryptor.GetSHA1(json).ToLower();
+                    var signKey = Encryptor.GetHMACSHA1String(keytime, cosaccesskeySecret);
+                    var signature = Encryptor.GetHMACSHA1String(stringToSign, signKey);
+                    var host = cosdomain.IndexOf("://") < 0 ? "//" + cosdomain : cosdomain;
+                    return Json.ToString(new { to = "cos", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, domain = host, keytime = keytime, secretid = cosaccesskeyid, dir, max, policy, signature });
+                }
+                return "";
+            }
+
+
+            /// <summary>
+            /// 上传文件
+            /// </summary>
+            /// <param name="path"></param>
+            /// <param name="data"></param>
+            /// <param name="message"></param>
+            /// <returns></returns>
+            public Boolean writeFile(string path, byte[] data, out string message)
+            {
+                message = "";
+                try
+                {
+                    if (isUsing)
+                    {
+                        var resp = newWorker("PUT", path, data, null, out message);
+                        if (resp.StatusCode == System.Net.HttpStatusCode.OK)
+                        {
+                            return true;
+                        }
+                    }
+                }
+                catch (Exception ex) { message = "上传异常：" + ex.Message; }
+                return false;
+            }
+
+
+            /// <summary>
+            /// 是否启用
+            /// </summary>
+            public static Boolean Using
+            {
+                get
+                {
+                    return instance.isUsing;
+                }
+            }
+            /// <summary>
+            /// FormAPI参数
+            /// </summary>
+            /// <param name="expire">过期时间（单位：秒）</param>
+            /// <param name="max">文件最大大小</param>
+            /// <returns></returns>
+            public static String FormApi(int expire = 5400, int max = 200)
+            {
+                return instance.formApi(null, expire, max);
+            }
+            /// <summary>
+            /// FormAPI参数
+            /// </summary>
+            /// <param name="expire">过期时间（单位：秒）</param>
+            /// <param name="max">文件最大大小（单位：M）</param>
+            /// <param name="dir">上传目录</param>
+            /// <returns></returns>
+            public static String FormApi(string dir, int expire = 5400, int max = 200)
+            {
+                return instance.formApi(dir, expire, max);
+            }
+            /// <summary>
+            /// 上传文件
+            /// </summary>
+            /// <param name="path"></param>
+            /// <param name="data"></param>
+            /// <returns></returns>
+            public static bool WriteFile(string path, byte[] data)
+            {
+                return instance.writeFile(path, data, out _);
             }
         }
     }
