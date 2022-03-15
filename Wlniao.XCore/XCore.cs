@@ -185,6 +185,8 @@ namespace Wlniao
         private static String startupRoot = null;
         private static String _XServerId = null;
         private static String _XServerIP = null;
+        private static String _WebNode = null;
+        private static String _WebHost = null;
         /// <summary>
         /// 当前系统Unix时间戳
         /// </summary>
@@ -381,6 +383,35 @@ namespace Wlniao
                     return DateTools.GetUnix(new System.IO.FileInfo(files.Location).LastWriteTime);
                 }
                 return 0;
+            }
+        }
+
+        /// <summary>
+        /// 当前程序Web服务节点(通过WLN_NODE进行设置)
+        /// </summary>
+        internal static string WebNode
+        {
+            get
+            {
+                if (_WebNode == null)
+                {
+                    _WebNode = Config.GetConfigs("WLN_NODE");
+                }
+                return _WebNode;
+            }
+        }
+        /// <summary>
+        /// 当前程序Web服务地址(通过WLN_HOST进行设置)
+        /// </summary>
+        internal static string WebHost
+        {
+            get
+            {
+                if (_WebHost == null)
+                {
+                    _WebHost = Config.GetConfigs("WLN_HOST");
+                }
+                return _WebHost;
             }
         }
         /// <summary>

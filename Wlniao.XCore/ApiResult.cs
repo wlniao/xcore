@@ -119,6 +119,7 @@ namespace Wlniao
         /// </summary>
         public ApiResult()
         {
+            node = XCore.WebNode;
             code = "";
             message = "";
             success = false;
@@ -142,6 +143,8 @@ namespace Wlniao
         /// <param name="Success"></param>
         public ApiResult(String Message, Boolean Success = false)
         {
+            this.code = "";
+            this.node = XCore.WebNode;
             this.message = Message;
             this.success = Success;
         }
