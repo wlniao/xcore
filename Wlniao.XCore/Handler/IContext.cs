@@ -24,8 +24,20 @@ namespace Wlniao.Handler
     public interface IContext
     {
         /// <summary>
-        /// 请求重试次数
+        /// 请求方式 GET/POST
         /// </summary>
-        public int Retry { get; set; }
+        public string Method { get; set; }
+        /// <summary>
+        /// 接口路径
+        /// </summary>
+        public string ApiPath { get; set; }
+        /// <summary>
+        /// 请求内容
+        /// </summary>
+        public object RequestBody { get; set; }
+        /// <summary>
+        /// 输出内容
+        /// </summary>
+        public object ResponseBody { get; set; }
     }
 }

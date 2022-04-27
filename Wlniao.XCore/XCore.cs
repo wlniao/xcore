@@ -389,7 +389,7 @@ namespace Wlniao
         /// <summary>
         /// 当前程序Web服务节点(通过WLN_NODE进行设置)
         /// </summary>
-        internal static string WebNode
+        public static string WebNode
         {
             get
             {
@@ -403,7 +403,7 @@ namespace Wlniao
         /// <summary>
         /// 当前程序Web服务地址(通过WLN_HOST进行设置)
         /// </summary>
-        internal static string WebHost
+        public static string WebHost
         {
             get
             {

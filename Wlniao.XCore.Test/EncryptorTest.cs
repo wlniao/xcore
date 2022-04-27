@@ -39,14 +39,16 @@ namespace Wlniao.XCore.Test
         [Test]
         public void SM2VerifySign()
         {
-            var pubkey = "04DFA630B7BAB34FA0EB244DD2A76CC8A19D8EEF7B31C2BEB66E1F6A2977E7048DCF14D2DC3DA74C45DA65F0D487A126436FF20FF4B35C3B00B6325038C4A88543";
-            var privkey= "4C2C166B263D9110BC23641721903339517D7279F57DC074773DE0141AFF68A6";
-            var handle = new Wlniao.Crypto.SM2(pubkey, privkey, Crypto.KeyType.Generate);
+            var pubkey = Wlniao.Crypto.Helper.Decode("04f80f086d5a74bf65444494d5f2f6a2d9d7dc4fd5e683f228c87ebfa21e1b256bf7713bdf863264273c0f744f024c3381e963e5e457fdf470bee21397837b3b39");
+            var privkey = Wlniao.Crypto.Helper.Decode("5f59f8e24683b23942181f5f89a67f2f2fb39bc9752e613db70d81863c848929");
+            var handle = new Wlniao.Crypto.SM2(pubkey, null, Crypto.SM2Mode.C1C2C3);
             var plainBytes = Encoding.UTF8.GetBytes("abcdefg");
-            var signBytes = handle.Sign(plainBytes);
-            var signStr = cvt.BytesToHexString(signBytes);
-            signStr = "304402205b84e2244742157527a30303006a759d36e6930777a8b46cafc99c47b878c562022070923441cb95380dcbd8af7753cfd0a2f06b9612bc718760ccd4a86bdc425ef4";
-            var verifySingResult = handle.VerifySign(plainBytes, cvt.HexStringToBytes(signStr));
+            //var signBytes = handle.Sign(plainBytes);
+            //var signStr = cvt.BytesToHexString(signBytes);
+            var signStr = "30450220152006a9b5b0d0472f9466c5e0264aa21206cd4342ab28cfeb50861e823dfa16022100b3372a822635e5fd1e5bb2589d8a294b7f03455225cb99a02d2699729251feaf";
+            var signBytes = Wlniao.Crypto.Helper.Decode(signStr);
+            //signBytes = Wlniao.Crypto.SM2.RsPlainByteArrayToAsn1(signBytes);
+            var verifySingResult = handle.VerifySign(plainBytes, signBytes, null);
 
             // assert
             Assert.IsTrue(verifySingResult);
