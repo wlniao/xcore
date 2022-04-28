@@ -107,7 +107,7 @@ namespace Wlniao.Handler
                     http = new System.Net.Http.HttpClient(handler);
                 }
                 http.BaseAddress = new System.Uri(ApiHost);
-                if (Method == "GET")
+                if (Method == "GET" || Method == "DELETE")
                 {
                     var query = RequestBody as string;
                     if (!string.IsNullOrEmpty(query))
@@ -122,7 +122,14 @@ namespace Wlniao.Handler
                             http.DefaultRequestHeaders.Add(kv.Key, kv.Value);
                         }
                     }
-                    task = http.GetAsync(ApiPath);
+                    if (Method == "DELETE")
+                    {
+                        task = http.DeleteAsync(ApiPath);
+                    }
+                    else
+                    {
+                        task = http.GetAsync(ApiPath);
+                    }
                 }
                 else
                 {
@@ -152,7 +159,14 @@ namespace Wlniao.Handler
                             content.Headers.Add(kv.Key, kv.Value);
                         }
                     }
-                    task = http.PostAsync(ApiPath, content);
+                    if (Method == "PUT")
+                    {
+                        task = http.PutAsync(ApiPath, content);
+                    }
+                    else
+                    {
+                        task = http.PostAsync(ApiPath, content);
+                    }
                 }
 
                 task.Result.Content.ReadAsStringAsync().ContinueWith((res) =>
