@@ -605,6 +605,23 @@ namespace Wlniao.Text
             {
                 return false;
             }
+            else
+            {
+                var arrVarifyCode = ("1,0,x,9,8,7,6,5,4,3,2").Split(',');
+                var wi = ("7,9,10,5,8,4,2,1,6,3,7,9,10,5,8,4,2").Split(',');
+                var ai = str.Remove(17).ToCharArray();
+                var sum = 0;
+                for (int i = 0; i < 17; i++)
+                {
+                    sum += int.Parse(wi[i]) * int.Parse(ai[i].ToString());
+                }
+                int y = -1;
+                Math.DivRem(sum, 11, out y);
+                if (arrVarifyCode[y] != str.Substring(17, 1).ToLower())
+                {
+                    return false;   //校验码验证
+                }
+            }
             return true;
         }
         /// <summary>

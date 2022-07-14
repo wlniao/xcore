@@ -494,6 +494,42 @@ namespace Wlniao
             }
         }
         /// <summary>
+        /// 获取当前访问使用的平台
+        /// </summary>
+        /// <param name="UserAgent"></param>
+        /// <returns></returns>
+        public string GetPlatform
+        {
+            get
+            {
+                var ua = UserAgent.ToLower();
+                if (ua.Contains("wxwork"))
+                {
+                    return "wxwork";
+                }
+                else if (ua.Contains("micromessenger"))
+                {
+                    return "weixin";
+                }
+                else if (ua.Contains("dingtalk"))
+                {
+                    return "dingtalk";
+                }
+                else if (ua.Contains("wlniao"))
+                {
+                    return "wlniao";
+                }
+                else if (ua.Contains("wlnapp"))
+                {
+                    return "wlnapp";
+                }
+                else
+                {
+                    return "other";
+                }
+            }
+        }
+        /// <summary>
         /// 客户端IP地址
         /// </summary>
         public string ClientIP

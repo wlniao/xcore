@@ -10,6 +10,13 @@ namespace Wlniao.XCore.Test
         }
 
         [Test]
+        public void IsIdentity()
+        {
+            var result = Wlniao.strUtil.IsIdentity("51020219640204655X");
+            Assert.IsTrue(result);
+        }
+
+        [Test]
         public void Loger()
         {
             for(var i = 0; i < 10000; i++)

@@ -146,7 +146,8 @@ namespace Wlniao.Handler
                     }
                     else if (RequestBody != null)
                     {
-                        content = new System.Net.Http.StringContent(Json.ToString(RequestBody), Encoding, ContentType);
+                        text = Json.ToString(RequestBody);
+                        content = new System.Net.Http.StringContent(text, Encoding, ContentType);
                     }
                     else
                     {

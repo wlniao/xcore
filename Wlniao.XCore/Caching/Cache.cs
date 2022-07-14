@@ -41,18 +41,14 @@ namespace Wlniao.Caching
                 {
                     try
                     {
+                        ctype = CacheType.InMemory;
                         if (Redis.CanUse())
                         {
-                            Redis.Set("cache", "redis", 15);
-                            if (Redis.Get("cache") == "redis")
-                            {
-                                ctype = CacheType.Redis;
-                                return ctype;
-                            }
+                            ctype = CacheType.Redis;
                         }
                     }
-                    catch { }
-                    ctype = CacheType.InMemory;
+                    catch
+                    { }
                 }
                 return ctype;
             }
