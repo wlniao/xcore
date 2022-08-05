@@ -58,13 +58,17 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Info(String message)
         {
-            if (XCore.LogProvider == "file")
+            if (XCore.LogLevel >= LogLevel.Info)
             {
-                FileLogger.Info(message);
-            }
-            else if (XCore.LogLevel >= LogLevel.Info)
-            {
-                callMethod("Info", message);
+                if (XCore.LogProvider == "file")
+                {
+                    FileLogger.Info(message);
+                }
+                else
+                {
+                    callMethod("Info", message);
+                }
+                Console(message, ConsoleColor.White);
             }
         }
         /// <summary>
@@ -92,15 +96,18 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Warn(String message)
         {
-            if (XCore.LogProvider == "file")
+            if (XCore.LogLevel >= LogLevel.Warn)
             {
-                FileLogger.Warn(message);
+                if (XCore.LogProvider == "file")
+                {
+                    FileLogger.Warn(message);
+                }
+                else
+                {
+                    callMethod("Warn", message);
+                }
+                Console(message, ConsoleColor.DarkYellow);
             }
-            else if (XCore.LogLevel >= LogLevel.Warn)
-            {
-                callMethod("Warn", message);
-            }
-            Console(message, ConsoleColor.DarkYellow);
         }
         /// <summary>
         /// 输出Error级别的日志
@@ -108,15 +115,18 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Error(String message)
         {
-            if (XCore.LogProvider == "file")
+            if (XCore.LogLevel >= LogLevel.Error)
             {
-                FileLogger.Error(message);
+                if (XCore.LogProvider == "file")
+                {
+                    FileLogger.Error(message);
+                }
+                else
+                {
+                    callMethod("Error", message);
+                }
+                Console(message, ConsoleColor.Red);
             }
-            else if (XCore.LogLevel >= LogLevel.Error)
-            {
-                callMethod("Error", message);
-            }
-            Console(message, ConsoleColor.Red);
         }
         /// <summary>
         /// 输出Fatal级别的日志
@@ -124,15 +134,18 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Fatal(String message)
         {
-            if (XCore.LogProvider == "file")
+            if (XCore.LogLevel >= LogLevel.Fatal)
             {
-                FileLogger.Fatal(message);
+                if (XCore.LogProvider == "file")
+                {
+                    FileLogger.Fatal(message);
+                }
+                else
+                {
+                    callMethod("Fatal", message);
+                }
+                Console(message, ConsoleColor.Magenta);
             }
-            else if (XCore.LogLevel >= LogLevel.Fatal)
-            {
-                callMethod("Fatal", message);
-            }
-            Console(message, ConsoleColor.Magenta);
         }
         /// <summary>
         /// 输出自定义主题的日志
@@ -145,7 +158,7 @@ namespace Wlniao.Log
             {
                 FileLogger.Write(new LogMessage { LogTime = DateTime.Now, Message = message, LogLevel = topic });
             }
-            else if (XCore.LogLevel >= LogLevel.Fatal)
+            else
             {
                 callMethod("Write", topic, message);
             }

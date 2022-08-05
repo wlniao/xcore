@@ -252,6 +252,10 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4EncryptECBToHex(string plainText, string secretKey, bool isPadding = true)
         {
+            if (string.IsNullOrEmpty(plainText))
+            {
+                return "";
+            }
             var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             var sm4 = new SM4();
@@ -267,6 +271,10 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4EncryptECBToBase64(string plainText, string secretKey, bool isPadding = true)
         {
+            if (string.IsNullOrEmpty(plainText))
+            {
+                return "";
+            }
             var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             var sm4 = new SM4();
@@ -282,6 +290,10 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4DecryptECBFromHex(string encryText, string secretKey, bool isPadding = true)
         {
+            if (string.IsNullOrEmpty(encryText))
+            {
+                return "";
+            }
             var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var encryBytes = Helper.Decode(encryText);
             var sm4 = new SM4();
@@ -297,6 +309,10 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4DecryptECBFromBase64(string encryText, string secretKey, bool isPadding = true)
         {
+            if (string.IsNullOrEmpty(encryText))
+            {
+                return "";
+            }
             var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var encryBytes = Helper.Decode(encryText);
             var sm4 = new SM4();

@@ -92,7 +92,6 @@ namespace Wlniao
                 }
                 else
                 {
-                    Console.SetWindowSize(150, 50);
                     Console.WriteLine("      @@@@@     @@@@@               @@@@+ @@@                ;@,             @@@    @@@               #@;                   '@@@@@@@@@@,       ");
                     Console.WriteLine("       @@@@`     @@@@              `@@@@  @@@                @@@+            @@@    @@@              @@@@#               ,@@@@@@@@@@@@@@@@     ");
                     Console.WriteLine("       +@@@@     +@@@@             @@@@:  @@@                @@@@+           @@@    @@@             +@@@@@`             @@@@@@@@@@@@@@@@@@@.   ");
@@ -395,7 +394,7 @@ namespace Wlniao
             {
                 if (_WebNode == null)
                 {
-                    _WebNode = Config.GetConfigs("WLN_NODE");
+                    _WebNode = Config.GetSetting("WLN_NODE");
                 }
                 return _WebNode;
             }
@@ -409,7 +408,7 @@ namespace Wlniao
             {
                 if (_WebHost == null)
                 {
-                    _WebHost = Config.GetConfigs("WLN_HOST");
+                    _WebHost = Config.GetSetting("WLN_HOST");
                 }
                 return _WebHost;
             }
@@ -423,7 +422,7 @@ namespace Wlniao
             {
                 if (_log_path == null)
                 {
-                    _log_path = Config.GetConfigs("WLN_LOG_PATH");
+                    _log_path = Config.GetSetting("WLN_LOG_PATH");
                     if (string.IsNullOrEmpty(_log_path))
                     {
                         _log_path = XCore.FrameworkRoot + "/logs";
@@ -468,7 +467,7 @@ namespace Wlniao
             {
                 if (_log_provider == null)
                 {
-                    _log_provider = Config.GetConfigs("WLN_LOG_PROVIDER");
+                    _log_provider = Config.GetSetting("WLN_LOG_PROVIDER");
                     if (string.IsNullOrEmpty(_log_provider))
                     {
                         _log_provider = "file";

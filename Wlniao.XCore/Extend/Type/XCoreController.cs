@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -13,6 +14,14 @@ namespace Wlniao
     /// </summary>
     public class XCoreController : Controller
     {
+        /// <summary>
+        /// 请求是否为Https
+        /// </summary>
+        private bool https = false;
+        /// <summary>
+        /// 当前请求Host
+        /// </summary>
+        private string host = null;
         /// <summary>
         /// 当前执行的方法，参数：do=
         /// </summary>
@@ -455,26 +464,24 @@ namespace Wlniao
         {
             get
             {
-                if (Request.IsHttps)
+                if (https || Request.IsHttps)
                 {
                     return true;
                 }
-                var forwardedProto = new Microsoft.Extensions.Primitives.StringValues();
-                if (Request.Headers.TryGetValue("x-forwarded-proto", out forwardedProto))
+                var val = new Microsoft.Extensions.Primitives.StringValues();
+                if (Request.Headers.TryGetValue("x-forwarded-proto", out val) && val.ToString().ToLower() == "https")
                 {
-                    if (forwardedProto.ToString().ToLower() == "https")
-                    {
-                        return true;
-                    }
+                    https = true;
                 }
-                if (Request.Headers.TryGetValue("x-client-scheme", out forwardedProto))
+                if (!https && Request.Headers.TryGetValue("x-client-scheme", out val) && val.ToString().ToLower() == "https")
                 {
-                    if (forwardedProto.ToString().ToLower() == "https")
-                    {
-                        return true;
-                    }
+                    https = true;
                 }
-                return false;
+                if (!https && Request.Headers.TryGetValue("referer", out val) && val.ToString().Contains("https"))
+                {
+                    https = true;
+                }
+                return https;
             }
         }
         /// <summary>
@@ -496,7 +503,6 @@ namespace Wlniao
         /// <summary>
         /// 获取当前访问使用的平台
         /// </summary>
-        /// <param name="UserAgent"></param>
         /// <returns></returns>
         public string GetPlatform
         {
@@ -557,6 +563,27 @@ namespace Wlniao
                     }
                 }
                 return ip;
+            }
+        }
+        /// <summary>
+        /// 当前请求Host
+        /// </summary>
+        public string UrlHost
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(host))
+                {
+                    if (!string.IsNullOrEmpty(XCore.WebHost) && strUtil.IsIP(Request.Host.Host))
+                    {
+                        host = XCore.WebHost;
+                    }
+                    else
+                    {
+                        host = (IsHttps ? "https://" : "http://") + Request.Host.Value;
+                    }
+                }
+                return host;
             }
         }
         /// <summary>

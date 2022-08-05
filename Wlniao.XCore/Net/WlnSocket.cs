@@ -89,7 +89,6 @@ namespace Wlniao.Net
                                 {
                                     socket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
                                 }
-                                socket.IOControl(System.Net.Sockets.IOControlCode.KeepAliveValues, BitConverter.GetBytes(30), null);
                                 socket.Close();
                             }
                             catch { }

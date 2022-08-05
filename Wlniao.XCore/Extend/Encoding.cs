@@ -50,16 +50,6 @@ namespace Wlniao
             }
         }
         /// <summary>
-        /// UTF7编码
-        /// </summary>
-        public static System.Text.Encoding UTF7
-        {
-            get
-            {
-                return System.Text.Encoding.UTF7;
-            }
-        }
-        /// <summary>
         /// UTF8编码
         /// </summary>
         public static System.Text.Encoding UTF8
