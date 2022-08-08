@@ -146,7 +146,7 @@ namespace Wlniao
                     connstr_mysql_rw = Wlniao.Config.GetSetting("WLN_CONNSTR_MYSQL");
                     if (string.IsNullOrEmpty(connstr_mysql_rw))
                     {
-                        connstr_mysql_rw = string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8;"
+                        connstr_mysql_rw = string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8;SslMode=none;"
                             , WLN_MYSQL_HOST, WLN_MYSQL_PORT, WLN_MYSQL_NAME, WLN_MYSQL_UID, WLN_MYSQL_PWD);
                         if (string.IsNullOrEmpty(WLN_MYSQL_UID) || string.IsNullOrEmpty(WLN_MYSQL_PWD))
                         {
@@ -169,7 +169,7 @@ namespace Wlniao
                     connstr_mysql_ro = Wlniao.Config.GetSetting("WLN_CONNSTR_MYSQL_READONLY");
                     if (string.IsNullOrEmpty(connstr_mysql_ro))
                     {
-                        connstr_mysql_ro = string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8;"
+                        connstr_mysql_ro = string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8;SslMode=none;"
                             , WLN_MYSQL_HOST_READONLY, WLN_MYSQL_PORT_READONLY, WLN_MYSQL_NAME, WLN_MYSQL_UID, WLN_MYSQL_PWD);
                         if (string.IsNullOrEmpty(WLN_MYSQL_UID) || string.IsNullOrEmpty(WLN_MYSQL_PWD))
                         {

@@ -330,6 +330,10 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4EncryptCBCToHex(string plainText, string secretKey, string iv, bool isPadding = true)
         {
+            if (string.IsNullOrEmpty(plainText))
+            {
+                return "";
+            }
             var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
             var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
@@ -347,6 +351,10 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4EncryptCBCToBase64(string plainText, string secretKey, string iv, bool isPadding = true)
         {
+            if (string.IsNullOrEmpty(plainText))
+            {
+                return "";
+            }
             var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
             var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
@@ -364,6 +372,10 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4DecryptCBCFromHex(string encryText, string secretKey, string iv, bool isPadding = true)
         {
+            if (string.IsNullOrEmpty(encryText))
+            {
+                return "";
+            }
             var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
             var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var encryBytes = Helper.Decode(encryText);
@@ -381,6 +393,10 @@ namespace Wlniao
         /// <returns></returns>
         public static String SM4DecryptCBCFromBase64(string encryText, string secretKey, string iv, bool isPadding = true)
         {
+            if (string.IsNullOrEmpty(encryText))
+            {
+                return "";
+            }
             var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
             var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
             var encryBytes = Helper.Decode(encryText);
@@ -396,6 +412,10 @@ namespace Wlniao
         /// <returns>加密后的字符串</returns>
         public static string SM3Encrypt(string str)
         {
+            if (string.IsNullOrEmpty(str))
+            {
+                return "";
+            }
             var sm3 = new Crypto.SM3();
             var buffer = System.Text.Encoding.UTF8.GetBytes(str);
             sm3.BlockUpdate(buffer, 0, buffer.Length);
@@ -409,6 +429,10 @@ namespace Wlniao
         /// <returns></returns>
         public static string GetSHA1(string str)
         {
+            if (string.IsNullOrEmpty(str))
+            {
+                return "";
+            }
             var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
             var dataHashed = SHA1.Create().ComputeHash(dataToHash);//Hash运算
             return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
@@ -433,6 +457,10 @@ namespace Wlniao
         /// <returns></returns>
         public static string GetHMACSHA1String(string str, string key)
         {
+            if (string.IsNullOrEmpty(str))
+            {
+                return "";
+            }
             var enText = "";
             foreach (byte b in GetHMACSHA1(str, key))
             {

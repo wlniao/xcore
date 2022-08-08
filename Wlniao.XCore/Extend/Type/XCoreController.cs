@@ -349,7 +349,13 @@ namespace Wlniao
             }
             return strPost;
         }
+        /// <summary>
+        /// 
+        /// </summary>
         private string strPost = null;
+        /// <summary>
+        /// 
+        /// </summary>
         private Dictionary<string, string> ctxPost = null;
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
@@ -452,10 +458,6 @@ namespace Wlniao
         {
             return cvt.ToInt(PostRequest(Key, "0"));
         }
-
-
-
-
 
         /// <summary>
         /// 客户端请求是否为HTTPS协议(兼容X-Forwarded-Proto属性)

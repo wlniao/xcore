@@ -45,6 +45,19 @@ namespace Wlniao.OpenApi
             return "";
         }
         /// <summary>
+        /// 获取本机IPv4
+        /// </summary>
+        /// <returns></returns>
+        public static String GetIPv4()
+        {
+            var ip = XServer.Common.Get("openapi", "tool", "getipv4");
+            if (strUtil.IsIPv4(ip))
+            {
+                return ip;
+            }
+            return "";
+        }
+        /// <summary>
         /// 获取本机IPv6
         /// </summary>
         /// <returns></returns>
