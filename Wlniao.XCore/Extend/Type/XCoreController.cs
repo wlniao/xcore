@@ -23,6 +23,10 @@ namespace Wlniao
         /// </summary>
         private string host = null;
         /// <summary>
+        /// 链路追踪ID
+        /// </summary>
+        private string trace = null;
+        /// <summary>
         /// 当前执行的方法，参数：do=
         /// </summary>
         protected string method = "";
@@ -77,6 +81,7 @@ namespace Wlniao
             if (string.IsNullOrEmpty(errorMsg))
             {
                 base.OnActionExecuted(context);
+                Response.Headers.Add("X-Wlniao-Trace", trace);
                 if (Request.HttpContext.Items["startTime"] != null)
                 {
                     var ts = DateTime.Now.Subtract(System.Convert.ToDateTime(Request.HttpContext.Items["startTime"]));
@@ -601,6 +606,28 @@ namespace Wlniao
                     return referer.ToString();
                 }
                 return "";
+            }
+        }
+        /// <summary>
+        /// 链路追踪ID
+        /// </summary>
+        public string TraceId
+        {
+            get
+            {
+                if (trace == null)
+                {
+                    var traceId = new Microsoft.Extensions.Primitives.StringValues();
+                    if (Request.Headers.TryGetValue("wln-trace-id", out traceId) && traceId.Any())
+                    {
+                        trace = traceId.ToString();
+                    }
+                    else
+                    {
+                        trace = System.Guid.NewGuid().ToString().Replace('-', '\0');
+                    }
+                }
+                return trace;
             }
         }
     }

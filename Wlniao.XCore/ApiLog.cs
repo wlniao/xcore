@@ -45,6 +45,10 @@ namespace Wlniao
         }
         #endregion
 
+        /// <summary>
+        /// 链路追踪ID
+        /// </summary>
+        public string trace { get; set; }
         #region 所请求的API节点
         /// <summary>
         /// 所请求的API节点

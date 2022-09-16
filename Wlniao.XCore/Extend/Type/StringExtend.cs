@@ -43,7 +43,7 @@ namespace Wlniao
         /// <returns></returns>
         public static bool IsEmail(this string input)
         {
-            return Regex.IsMatch(input, @"^\w+@\w+\.\w+$");
+            return input != null && Regex.IsMatch(input, @"^\w+@\w+\.\w+$");
         }
         /// <summary>
         /// 分割字符串（不包含空字符串）
@@ -52,6 +52,10 @@ namespace Wlniao
         /// <returns></returns>
         public static string[] SplitBy(this string input)
         {
+            if (string.IsNullOrEmpty(input))
+            {
+                return new string[0];
+            }
             return input.SplitBy(new[] { "," });
         }
         /// <summary>
@@ -79,6 +83,10 @@ namespace Wlniao
         /// <returns></returns>
         public static string RemoveBOM(this string input)
         {
+            if (string.IsNullOrEmpty(input))
+            {
+                return String.Empty;
+            }
             return Regex.Replace(input, new string(new char[] { (char)65279 }), "");
         }
     }

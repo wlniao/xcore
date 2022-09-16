@@ -1,10 +1,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30907.101
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wlniao.XCore", "Wlniao.XCore\Wlniao.XCore.csproj", "{04340231-B54B-404E-82DE-EDFC50CC78F2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wlniao.XCore.Test", "Wlniao.XCore.Test\Wlniao.XCore.Test.csproj", "{925CB13C-7ED8-4763-BAFD-01025E359C53}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wlniao.XCore.Test", "Wlniao.XCore.Test\Wlniao.XCore.Test.csproj", "{925CB13C-7ED8-4763-BAFD-01025E359C53}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

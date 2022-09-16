@@ -27,6 +27,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Logging;
 
 namespace Wlniao
 {
@@ -40,21 +41,17 @@ namespace Wlniao
         /// </summary>
         internal static Object Lock = new object();
         /// <summary>
-        /// 内部输出开关
-        /// </summary>
-        internal static Boolean _console = false;
-        /// <summary>
-        /// 当前日志输出等级
-        /// </summary>
-        private static Log.LogLevel _log_level = Log.LogLevel.None;
-        /// <summary>
         /// 当前日志输出路径
         /// </summary>
-        private static string _log_path = null;
+        internal static string _log_path = null;
         /// <summary>
         /// 当前日志输出工具
         /// </summary>
-        private static string _log_provider = null;
+        internal static string _log_provider = null;
+        /// <summary>
+        /// 当前日志输出等级，None为未设定，会根据配置文件进行初始化
+        /// </summary>
+        internal static LogLevel _log_level = LogLevel.None;
         /// <summary>
         /// 重新初始化状态
         /// </summary>
@@ -62,8 +59,7 @@ namespace Wlniao
         {
             Config.Clear();
             XServer.Common.Init();
-            _log_level = Log.LogLevel.None;
-            _console = true;
+            _log_level = LogLevel.None;
         }
         /// <summary>
         /// 输出系统信息
@@ -434,24 +430,38 @@ namespace Wlniao
         /// <summary>
         /// 当前日志输出等级
         /// </summary>
-        internal static Log.LogLevel LogLevel
+        internal static LogLevel LogLevel
         {
             get
             {
-                if (_log_level == Log.LogLevel.None)
+                if (_log_level == LogLevel.None)
                 {
-                    var level = Config.GetSetting("WLN_LOG_LEVEL");
-                    if (!string.IsNullOrEmpty(level))
+                    var level = strUtil.GetTitleCase(Config.GetSetting("WLN_LOG_LEVEL"));
+                    if (string.IsNullOrEmpty(level))
+                    {
+                        _log_level = LogLevel.Error;
+                    }
+                    else
                     {
                         try
                         {
-                            _log_level = (Log.LogLevel)Enum.Parse(typeof(Log.LogLevel), level, true);
+                            if (level == "Info")
+                            {
+                                _log_level = LogLevel.Information;
+                            }
+                            else if (level == "Fatal")
+                            {
+                                _log_level = LogLevel.Critical;
+                            }
+                            else
+                            {
+                                _log_level = (LogLevel)Enum.Parse(typeof(LogLevel), level, true);
+                            }
                         }
-                        catch { }
-                    }
-                    if (_log_level == Log.LogLevel.None)
-                    {
-                        _log_level = Log.LogLevel.Error;
+                        catch
+                        {
+                            _log_level = LogLevel.Information;
+                        }
                     }
                 }
                 return _log_level;
@@ -482,20 +492,5 @@ namespace Wlniao
         }
         #endregion
 
-
-        #region 其它方法
-        /// <summary>
-        /// 设置日志提供工具
-        /// </summary>
-        /// <param name="LogLevel"></param>
-        /// <param name="Provider"></param>
-        public static void SetLogger(String LogLevel = "debug", String Provider = "file")
-        {
-            _log_level = (Log.LogLevel)Enum.Parse(typeof(Log.LogLevel), LogLevel, true);
-            _log_provider = Provider;
-            Config.SetConfigs("WLN_LOG_LEVEL", LogLevel);
-            Config.SetConfigs("WLN_LOG_PROVIDER", Provider);
-        }
-        #endregion
     }
 }

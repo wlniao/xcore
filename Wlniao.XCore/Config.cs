@@ -317,10 +317,6 @@ namespace Wlniao
             else if (init)
             {
                 _config = new Dictionary<string, string>();
-                if (XCore._console)
-                {
-                    log.Console("missing config:" + path, ConsoleColor.Red);
-                }
             }
         }
 

@@ -39,6 +39,10 @@ namespace Wlniao
         /// 附带返回的消息
         /// </summary>
         public string message { get; set; }
+        /// <summary>
+        /// 可否直接输出提示消息
+        /// </summary>
+        public bool tips { get; set; }
 
         /// <summary>
         /// 错误消息提供节点
@@ -186,7 +190,7 @@ namespace Wlniao
         /// <param name="log"></param>
         public void AddLog(String log)
         {
-            AddLog(new ApiLog("", "") { message = log });
+            AddLog(new ApiLog(null, null) { message = log });
         }
         /// <summary>
         /// 拼接日志内容
@@ -195,7 +199,7 @@ namespace Wlniao
         /// <param name="node"></param>
         public void AddLog(String log, String node)
         {
-            AddLog(new ApiLog(node, "") { message = log });
+            AddLog(new ApiLog(node, null) { message = log });
         }
         /// <summary>
         /// 拼接日志内容
@@ -231,7 +235,7 @@ namespace Wlniao
             }
             foreach (var log in logs)
             {
-                _logs.Add(new ApiLog("", "") { message = log });
+                _logs.Add(new ApiLog(null, null) { message = log });
             }
         }
         /// <summary>
@@ -247,7 +251,7 @@ namespace Wlniao
             }
             foreach (var log in logs)
             {
-                _logs.Add(new ApiLog(node, "") { message = log });
+                _logs.Add(new ApiLog(node, null) { message = log });
             }
         }
         /// <summary>

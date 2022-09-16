@@ -21,6 +21,8 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+
 namespace Wlniao.Log
 {
     /// <summary>
@@ -34,7 +36,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Info(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Info)
+            if (XCore.LogLevel >= LogLevel.Information)
             {
                 Write(new LogMessage { LogTime = DateTime.Now, Message = message, LogLevel = "info" });
             }
@@ -56,7 +58,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Warn(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Warn)
+            if (XCore.LogLevel >= LogLevel.Warning)
             {
                 Write(new LogMessage { LogTime = DateTime.Now, Message = message, LogLevel = "warn" });
             }
@@ -78,7 +80,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Fatal(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Fatal)
+            if (XCore.LogLevel >= LogLevel.Critical)
             {
                 Write(new LogMessage { LogTime = DateTime.Now, Message = message, LogLevel = "fatal" });
             }

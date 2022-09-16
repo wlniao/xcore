@@ -20,6 +20,8 @@
 
 ===============================================================================*/
 using System;
+using Microsoft.Extensions.Logging;
+
 namespace Wlniao.Log
 {
     /// <summary>
@@ -42,6 +44,34 @@ namespace Wlniao.Log
             }
         }
         /// <summary>
+        /// 设置日志提供工具
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="provider"></param>
+        public static void SetLogger(String level = "debug", String provider = "file")
+        {
+            try
+            {
+                XCore._log_provider = provider;
+                if (level == "Info")
+                {
+                    XCore._log_level = LogLevel.Information;
+                }
+                else if (level == "Fatal")
+                {
+                    XCore._log_level = LogLevel.Critical;
+                }
+                else
+                {
+                    XCore._log_level = (LogLevel)Enum.Parse(typeof(LogLevel), level, true);
+                }
+            }
+            catch
+            {
+                XCore._log_level = LogLevel.Information;
+            }
+        }
+        /// <summary>
         /// 直接在控制台打印内容
         /// </summary>
         /// <param name="message"></param>
@@ -58,7 +88,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Info(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Info)
+            if (XCore.LogLevel >= LogLevel.Information)
             {
                 if (XCore.LogProvider == "file")
                 {
@@ -96,7 +126,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Warn(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Warn)
+            if (XCore.LogLevel >= LogLevel.Warning)
             {
                 if (XCore.LogProvider == "file")
                 {
@@ -134,7 +164,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Fatal(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Fatal)
+            if (XCore.LogLevel >= LogLevel.Critical)
             {
                 if (XCore.LogProvider == "file")
                 {
