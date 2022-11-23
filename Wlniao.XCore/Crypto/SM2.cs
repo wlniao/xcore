@@ -59,8 +59,8 @@ namespace Wlniao.Crypto
             var _privkey = Helper.Decode(privkey);
             if (type == KeyType.Pkcs8)
             {
-                _pubkey = ((ECPublicKeyParameters)PublicKeyFactory.CreateKey(System.Convert.FromBase64String(pubkey))).Q.GetEncoded();
-                _privkey = ((ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(System.Convert.FromBase64String(privkey))).D.ToByteArray();
+                _pubkey = ((ECPublicKeyParameters)PublicKeyFactory.CreateKey(_pubkey)).Q.GetEncoded();
+                _privkey = ((ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(_privkey)).D.ToByteArray();
             }
             this.mode = mode;
             this.key = new KeyTool(_pubkey, _privkey);

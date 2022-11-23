@@ -330,6 +330,23 @@ namespace Wlniao
             return unixtime - ((unixtime + 3600 * TimeZone) % 86400);
         }
         /// <summary>
+        /// 获取一周中的某天
+        /// </summary>
+        /// <returns></returns>
+        public static DayOfWeek GetDayOfWeek()
+        {
+            return DateTime.UtcNow.AddSeconds(3600 * TimeZone).DayOfWeek;
+        }
+        /// <summary>
+        /// 获取一周中的某天
+        /// </summary>
+        /// <param name="unixtime"></param>
+        /// <returns></returns>
+        public static DayOfWeek GetDayOfWeek(long unixtime)
+        {
+            return new DateTime(1970, 1, 1, TimeZone, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).DayOfWeek;
+        }
+        /// <summary>
         /// 获取当日起始时间
         /// </summary>
         /// <param name="unixtime"></param>

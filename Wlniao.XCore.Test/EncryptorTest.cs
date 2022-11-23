@@ -13,29 +13,46 @@ namespace Wlniao.XCore.Test
         [Test]
         public void SM2Decrypt()
         {
-            var pubkey = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////v////////////////////8AAAAA//////////8wRAQg/////v////////////////////8AAAAA//////////wEICjp+p6dn140TVqeS89lCafzl4n1FauPkt28vUFNlA6TBEEEMsSuLB8ZgRlfmQRGajnJlI/jC7/yZgvhcVpFiTNMdMe8Nzai9PZ3nFm9zuNraSFT0KmHfMYqR0AC3zLlITnwoAIhAP////7///////////////9yA99rIcYFK1O79Ak51UEjAgEBA0IABPpZ3JJhJqbsNAbllbro4VE0toSVIlko/Z4JanWNL3+zwUo1djeBfQK6bSOh2fy4hODBVEuTvRmrueBy4aksAHM=";
-            var privkey = "MIICSwIBADCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////v////////////////////8AAAAA//////////8wRAQg/////v////////////////////8AAAAA//////////wEICjp+p6dn140TVqeS89lCafzl4n1FauPkt28vUFNlA6TBEEEMsSuLB8ZgRlfmQRGajnJlI/jC7/yZgvhcVpFiTNMdMe8Nzai9PZ3nFm9zuNraSFT0KmHfMYqR0AC3zLlITnwoAIhAP////7///////////////9yA99rIcYFK1O79Ak51UEjAgEBBIIBVTCCAVECAQEEIElZYbFSbv17P4+IuORNsDPSlwjRhuVvHF/2KMQzhOvWoIHjMIHgAgEBMCwGByqGSM49AQECIQD////+/////////////////////wAAAAD//////////zBEBCD////+/////////////////////wAAAAD//////////AQgKOn6np2fXjRNWp5Lz2UJp/OXifUVq4+S3by9QU2UDpMEQQQyxK4sHxmBGV+ZBEZqOcmUj+MLv/JmC+FxWkWJM0x0x7w3NqL09necWb3O42tpIVPQqYd8xipHQALfMuUhOfCgAiEA/////v///////////////3ID32shxgUrU7v0CTnVQSMCAQGhRANCAAT6WdySYSam7DQG5ZW66OFRNLaElSJZKP2eCWp1jS9/s8FKNXY3gX0Cum0jodn8uITgwVRLk70Zq7ngcuGpLABz";
+            var data = "040984af5d3d9cb71b39a061f16b9f0c19e5b692cd2ab7b943f3f7cc43fba1967ce4dc87d1f5af5f13f1f92a79629873a479d5173f8d5a98544f627c1d6daccdc3e18b16a761801df2800523dd4c2801c6a81cb16d253fae9deb40b2705b40fe5cdf90aaf10b1f44cec233e86e";
+            var pubkey = "308201333081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff30440420fffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffc042028e9fa9e9d9f5e344d5a9e4bcf6509a7f39789f515ab8f92ddbcbd414d940e9304410432c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0022100fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d541230201010342000421ad50bb500737e286d64f7b0e7413f8b69da68c2cae6995be86b1b0261d69fc847aec7c99aa3542fd2c9e2896957f0e46e9fdfcc6e31b51c090814df58bad38";
+            var privkey = "3082024b0201003081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff30440420fffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffc042028e9fa9e9d9f5e344d5a9e4bcf6509a7f39789f515ab8f92ddbcbd414d940e9304410432c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0022100fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d5412302010104820155308201510201010420eebf1ae134e71ce7bd06979b3cc273ed5eb0677030c08ffccf191af5c93220aca081e33081e0020101302c06072a8648ce3d0101022100fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff30440420fffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffc042028e9fa9e9d9f5e344d5a9e4bcf6509a7f39789f515ab8f92ddbcbd414d940e9304410432c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0022100fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54123020101a1440342000421ad50bb500737e286d64f7b0e7413f8b69da68c2cae6995be86b1b0261d69fc847aec7c99aa3542fd2c9e2896957f0e46e9fdfcc6e31b51c090814df58bad38";
             var handle = new Wlniao.Crypto.SM2(pubkey, privkey, Crypto.KeyType.Pkcs8);
-            var plainBytes = handle.Decrypt("04c38ac95e4986e2ad2e80354ae375f11015bf2898f1b8dc9a1c8859ed927afafaa237a99f570cafdf61ad9a7dbbc7a9ea60911fdd1c5835344e9ea544b97318c15bc7eff6c50b61a356bf0adbad14b5e3eb1197e93601243b9fba6b8472305967d033550c");
-
-            var plainStr = Encoding.UTF8.GetString(plainBytes);
+            var plainBytes = handle.Decrypt(data);
+            var result = Encoding.UTF8.GetString(plainBytes);
             // assert
-            Assert.IsNotEmpty(plainBytes);
+            Assert.IsNotEmpty(result);
         }
 
         [Test]
         public void SM2Encrypt()
         {
-            var pubkey = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////v////////////////////8AAAAA//////////8wRAQg/////v////////////////////8AAAAA//////////wEICjp+p6dn140TVqeS89lCafzl4n1FauPkt28vUFNlA6TBEEEMsSuLB8ZgRlfmQRGajnJlI/jC7/yZgvhcVpFiTNMdMe8Nzai9PZ3nFm9zuNraSFT0KmHfMYqR0AC3zLlITnwoAIhAP////7///////////////9yA99rIcYFK1O79Ak51UEjAgEBA0IABPpZ3JJhJqbsNAbllbro4VE0toSVIlko/Z4JanWNL3+zwUo1djeBfQK6bSOh2fy4hODBVEuTvRmrueBy4aksAHM=";
-            var privkey = "MIICSwIBADCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////v////////////////////8AAAAA//////////8wRAQg/////v////////////////////8AAAAA//////////wEICjp+p6dn140TVqeS89lCafzl4n1FauPkt28vUFNlA6TBEEEMsSuLB8ZgRlfmQRGajnJlI/jC7/yZgvhcVpFiTNMdMe8Nzai9PZ3nFm9zuNraSFT0KmHfMYqR0AC3zLlITnwoAIhAP////7///////////////9yA99rIcYFK1O79Ak51UEjAgEBBIIBVTCCAVECAQEEIElZYbFSbv17P4+IuORNsDPSlwjRhuVvHF/2KMQzhOvWoIHjMIHgAgEBMCwGByqGSM49AQECIQD////+/////////////////////wAAAAD//////////zBEBCD////+/////////////////////wAAAAD//////////AQgKOn6np2fXjRNWp5Lz2UJp/OXifUVq4+S3by9QU2UDpMEQQQyxK4sHxmBGV+ZBEZqOcmUj+MLv/JmC+FxWkWJM0x0x7w3NqL09necWb3O42tpIVPQqYd8xipHQALfMuUhOfCgAiEA/////v///////////////3ID32shxgUrU7v0CTnVQSMCAQGhRANCAAT6WdySYSam7DQG5ZW66OFRNLaElSJZKP2eCWp1jS9/s8FKNXY3gX0Cum0jodn8uITgwVRLk70Zq7ngcuGpLABz";
+            var data = "hello world!";
+            var pubkey = "308201333081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff30440420fffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffc042028e9fa9e9d9f5e344d5a9e4bcf6509a7f39789f515ab8f92ddbcbd414d940e9304410432c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0022100fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d541230201010342000421ad50bb500737e286d64f7b0e7413f8b69da68c2cae6995be86b1b0261d69fc847aec7c99aa3542fd2c9e2896957f0e46e9fdfcc6e31b51c090814df58bad38";
+            var privkey = "3082024b0201003081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff30440420fffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffc042028e9fa9e9d9f5e344d5a9e4bcf6509a7f39789f515ab8f92ddbcbd414d940e9304410432c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0022100fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d5412302010104820155308201510201010420eebf1ae134e71ce7bd06979b3cc273ed5eb0677030c08ffccf191af5c93220aca081e33081e0020101302c06072a8648ce3d0101022100fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff30440420fffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffc042028e9fa9e9d9f5e344d5a9e4bcf6509a7f39789f515ab8f92ddbcbd414d940e9304410432c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0022100fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54123020101a1440342000421ad50bb500737e286d64f7b0e7413f8b69da68c2cae6995be86b1b0261d69fc847aec7c99aa3542fd2c9e2896957f0e46e9fdfcc6e31b51c090814df58bad38";
             var handle = new Wlniao.Crypto.SM2(pubkey, privkey, Crypto.KeyType.Pkcs8);
-            var plainBytes = handle.Encrypt("345e");
-
-            var plainStr = System.Convert.ToBase64String(plainBytes);
+            var encryBytes = handle.Encrypt(data);
+            var result = Wlniao.Convert.BytesToHexString(encryBytes);
             // assert
-            Assert.IsNotEmpty(plainBytes);
+            Assert.IsNotEmpty(result);
         }
 
+
+        [Test]
+        public void SM2Sign()
+        {
+            var data = "hello world!";
+            var pubkey = "308201333081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff30440420fffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffc042028e9fa9e9d9f5e344d5a9e4bcf6509a7f39789f515ab8f92ddbcbd414d940e9304410432c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0022100fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d541230201010342000421ad50bb500737e286d64f7b0e7413f8b69da68c2cae6995be86b1b0261d69fc847aec7c99aa3542fd2c9e2896957f0e46e9fdfcc6e31b51c090814df58bad38";
+            var privkey = "3082024b0201003081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff30440420fffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffc042028e9fa9e9d9f5e344d5a9e4bcf6509a7f39789f515ab8f92ddbcbd414d940e9304410432c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0022100fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d5412302010104820155308201510201010420eebf1ae134e71ce7bd06979b3cc273ed5eb0677030c08ffccf191af5c93220aca081e33081e0020101302c06072a8648ce3d0101022100fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff30440420fffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffc042028e9fa9e9d9f5e344d5a9e4bcf6509a7f39789f515ab8f92ddbcbd414d940e9304410432c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0022100fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54123020101a1440342000421ad50bb500737e286d64f7b0e7413f8b69da68c2cae6995be86b1b0261d69fc847aec7c99aa3542fd2c9e2896957f0e46e9fdfcc6e31b51c090814df58bad38";
+            var handle = new Wlniao.Crypto.SM2(pubkey, privkey, Crypto.KeyType.Pkcs8, Crypto.SM2Mode.C1C3C2);
+            var plainBytes = Encoding.UTF8.GetBytes(data);
+            var signBytes = handle.Sign(plainBytes);
+            var result = Wlniao.Convert.BytesToHexString(signBytes);
+            var verifyBytes = Wlniao.Crypto.Helper.Decode(result);
+            var verifySingResult = handle.VerifySign(plainBytes, verifyBytes, null);
+
+            // assert
+            Assert.IsTrue(verifySingResult);
+        }
         [Test]
         public void SM2VerifySign()
         {

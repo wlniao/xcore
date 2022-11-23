@@ -88,7 +88,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Info(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Information)
+            if (XCore.LogLevel <= LogLevel.Information)
             {
                 if (XCore.LogProvider == "file")
                 {
@@ -107,7 +107,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Debug(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Debug)
+            if (XCore.LogLevel <= LogLevel.Debug)
             {
                 if (XCore.LogProvider == "file")
                 {
@@ -126,7 +126,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Warn(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Warning)
+            if (XCore.LogLevel <= LogLevel.Warning)
             {
                 if (XCore.LogProvider == "file")
                 {
@@ -145,7 +145,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Error(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Error)
+            if (XCore.LogLevel <= LogLevel.Error)
             {
                 if (XCore.LogProvider == "file")
                 {
@@ -164,7 +164,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Fatal(String message)
         {
-            if (XCore.LogLevel >= LogLevel.Critical)
+            if (XCore.LogLevel <= LogLevel.Critical)
             {
                 if (XCore.LogProvider == "file")
                 {
