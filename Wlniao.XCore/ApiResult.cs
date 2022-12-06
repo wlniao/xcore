@@ -39,6 +39,12 @@ namespace Wlniao
         /// 附带返回的消息
         /// </summary>
         public string message { get; set; }
+
+        /// <summary>
+        /// 链路追踪ID
+        /// </summary>
+        public string traceid { get; set; }
+
         /// <summary>
         /// 可否直接输出提示消息
         /// </summary>
