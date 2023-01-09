@@ -57,7 +57,7 @@ namespace Wlniao
         /// <summary>
         /// 错误提醒页面模板
         /// </summary>
-        internal const string ErrorHtml = "<html><head><title>{{errorTitle}}</title><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=0\"/></head><body onselectstart=\"return false\" style=\"text-align:center;background:#f9f9f9\"><div><img src=\"{{errorIcon}}\" style=\"width:9rem;margin-top:9rem;\"></div><div style=\"color:#999999;font-family:Segoe UI, Segoe UI Midlevel, Segoe WP, Arial, Sans-Serif;padding:1rem\">{{errorMsg}}</div></body></html>";
+        internal const string ErrorHtml = "<html><head><title>{{errorTitle}}</title><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\" /><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=0\"/></head><body onselectstart=\"return false\" style=\"text-align:center;background:#f9f9f9\"><div><img src=\"{{errorIcon}}\" style=\"width:9rem;margin-top:9rem;\"></div><div style=\"color:#999999;font-family:Segoe UI, Segoe UI Midlevel, Segoe WP, Arial, Sans-Serif;padding:1rem\">{{errorMsg}}</div></body></html>";
         /// <summary>
         /// 
         /// </summary>
@@ -76,16 +76,26 @@ namespace Wlniao
         {
             if (!RequestSecurity)
             {
-                errorMsg = Config.GetConfigs("NoSecurityMessage");
+                errorMsg = Config.GetSetting("NoSecurityMessage");
             }
             if (string.IsNullOrEmpty(errorMsg))
             {
                 base.OnActionExecuted(context);
-                Response.Headers.Add("X-Wlniao-Trace", trace);
+                if (string.IsNullOrEmpty(trace) && Request.Headers.ContainsKey("X-Wlniao-Trace"))
+                {
+                    trace = Request.Headers["X-Wlniao-Trace"].ToString();
+                }
+                if (!string.IsNullOrEmpty(trace))
+                {
+                    Response.Headers.Add("X-Wlniao-Trace", trace);
+                }
                 if (Request.HttpContext.Items["startTime"] != null)
                 {
                     var ts = DateTime.Now.Subtract(System.Convert.ToDateTime(Request.HttpContext.Items["startTime"]));
                     Response.Headers.Add("X-Wlniao-UseTime", ts.TotalMilliseconds.ToString("F2") + "ms");
+                }
+                if (!string.IsNullOrEmpty(XCore.XServerId))
+                {
                     Response.Headers.Add("X-Wlniao-XServerId", XCore.XServerId);
                 }
             }
@@ -114,10 +124,23 @@ namespace Wlniao
             }
         }
         /// <summary>
+        /// 输出调试消息
+        /// </summary>
+        /// <param name="message"></param>
+        [NonAction]
+        public void DebugMessage(String message)
+        {
+            if (!Response.Headers.ContainsKey("X-Wlniao-Debug"))
+            {
+                Response.Headers.Add("X-Wlniao-Debug", message);
+            }
+        }
+        /// <summary>
         /// Object输出
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
+        [NonAction]
         public new ActionResult Json(Object data)
         {
             var jsonStr = "";

@@ -54,16 +54,21 @@ namespace Wlniao.Middleware
             catch (Exception ex)
             {
                 Wlniao.log.Error(ex.Message);
-                await HandleExceptionAsync(context);
+                await HandleExceptionAsync(context, ex.Message);
             }
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="context"></param>
+        /// <param name="message"></param>
         /// <returns></returns>
-        public static Task HandleExceptionAsync(HttpContext context)
+        public static Task HandleExceptionAsync(HttpContext context, String message)
         {
+            if (!context.Response.Headers.ContainsKey("X-Wlniao-Debug"))
+            {
+                context.Response.Headers.Add("X-Wlniao-Debug", message);
+            }
             if (context.Request.Method == "POST" || context.Request.Query.ContainsKey("do"))
             {
                 context.Response.ContentType = "text/json";

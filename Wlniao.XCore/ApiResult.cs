@@ -36,6 +36,11 @@ namespace Wlniao
         public bool success { get; set; }
 
         /// <summary>
+        /// 返回的调试消息
+        /// </summary>
+        public string debuger { get; set; }
+
+        /// <summary>
         /// 附带返回的消息
         /// </summary>
         public string message { get; set; }

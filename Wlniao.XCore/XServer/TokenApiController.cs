@@ -55,7 +55,7 @@ namespace Wlniao.XServer
                     result.code = "100";
                     result.message = "请求已过期，请重新发起";
                 }
-                else if (Encryptor.SM3Encrypt(timestamp + data) != sign)
+                else if (Encryptor.SM3Encrypt(timestamp + data + token) != sign)
                 {
                     result.code = "402";
                     result.message = "请求错误，签名验证失败";

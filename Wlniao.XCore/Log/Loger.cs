@@ -117,7 +117,6 @@ namespace Wlniao.Log
                 {
                     callMethod("Debug", message);
                 }
-                Console(message, ConsoleColor.DarkGreen);
             }
         }
         /// <summary>

@@ -80,17 +80,10 @@ namespace Wlniao
         /// <returns></returns>
         public static String GetSetting(String key, String defaultValue = null)
         {
-            var val = GetEnvironment(key);
+            var val = GetEnvironment(key.ToUpper());
             if (string.IsNullOrEmpty(val))
             {
-                if (defaultValue == null)
-                {
-                    val = GetConfigs(key, defaultValue);
-                }
-                else
-                {
-                    val = GetConfigsAutoWrite(key, defaultValue);
-                }
+                val = GetConfigsAutoWrite(key, defaultValue);
             }
             return val;
         }
@@ -102,82 +95,67 @@ namespace Wlniao
         /// <returns>返回一个字符串值</returns>
         public static String GetConfigs(String key, String defaultValue = null)
         {
-            lock (XCore.Lock)
+            var val = GetEnvironment(key.ToUpper());
+            if (string.IsNullOrEmpty(val))
             {
                 if (_config == null)
                 {
                     Read(FileName);
                 }
-            }
-            var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
-            if (string.IsNullOrEmpty(tmpKey))
-            {
-                tmpKey = key;
-            }
-            if (_config.ContainsKey(tmpKey))
-            {
-                return _config[tmpKey];
-            }
-            return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
-        }
-        /// <summary>
-        /// 获取 ConfigFile 中某项的值
-        /// </summary>
-        /// <param name="key">项的名称</param>
-        /// <param name="defaultValue">默认值</param>
-        /// <returns>返回一个字符串值</returns>
-        public static String GetConfigsNoCache(String key, String defaultValue = "")
-        {
-            var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
-            if (string.IsNullOrEmpty(tmpKey))
-            {
-                tmpKey = key;
-            }
-            Read(FileName, false);
-            if (_config.ContainsKey(tmpKey))
-            {
-                return _config[tmpKey];
-            }
-            return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
-        }
-        /// <summary>
-        /// 获取 ConfigFile 中某项的值
-        /// </summary>
-        /// <param name="key">项的名称</param>
-        /// <param name="defaultValue">默认值</param>
-        /// <returns>返回一个字符串值</returns>
-        public static String GetConfigsAutoWrite(String key, String defaultValue = null)
-        {
-            lock (XCore.Lock)
-            {
-                if (_config == null)
+                if (_config.ContainsKey(key))
                 {
-                    Read(FileName);
+                    return _config[key];
                 }
-            }
-            var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
-            if (string.IsNullOrEmpty(tmpKey))
-            {
-                tmpKey = key;
-            }
-            if (_config.ContainsKey(tmpKey))
-            {
-                return _config[tmpKey];
-            }
-            else if (string.IsNullOrEmpty(defaultValue))
-            {
-                _config.Add(tmpKey, "");
+                else if (_config.ContainsKey(key.ToUpper()))
+                {
+                    return _config[key.ToUpper()];
+                }
+                else if (defaultValue != null)
+                {
+                    return defaultValue;
+                }
+                else
+                {
+                    return "";
+                }
             }
             else
             {
-                _config.Add(tmpKey, defaultValue);
+                return val;
             }
-            try
+        }
+        /// <summary>
+        /// 获取 ConfigFile 中某项的值
+        /// </summary>
+        /// <param name="key">项的名称</param>
+        /// <param name="defaultValue">默认值</param>
+        /// <returns>返回一个字符串值</returns>
+        private static String GetConfigsAutoWrite(String key, String defaultValue = null)
+        {
+            if (_config == null)
             {
-                Write(_config, FileName);
+                Read(FileName);
             }
-            catch { }
-            return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
+            if (_config.ContainsKey(key))
+            {
+                return _config[key];
+            }
+            else if (_config.ContainsKey(key.ToUpper()))
+            {
+                return _config[key.ToUpper()];
+            }
+            else if (defaultValue != null)
+            {
+                _config.Add(key, defaultValue);
+                try { Write(_config, FileName); } catch { }
+                return defaultValue;
+            }
+            else
+            {
+                _config.Add(key, "");
+                try { Write(_config, FileName); } catch { }
+                return "";
+            }
         }
         /// <summary>
         /// 获取环境变量值
@@ -185,19 +163,15 @@ namespace Wlniao
         /// <param name="key">项的名称</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>返回一个字符串值</returns>
-        public static String GetEnvironment(String key, String defaultValue = "")
+        private static String GetEnvironment(String key, String defaultValue = "")
         {
-            key = key.ToUpper();
-            lock (XCore.Lock)
+            if (_env == null || _env.Count == 0)
             {
-                if (_env == null || _env.Count == 0)
+                _env = new Dictionary<string, string>();
+                var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
+                while (en.MoveNext())
                 {
-                    _env = new Dictionary<string, string>();
-                    var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
-                    while (en.MoveNext())
-                    {
-                        _env.TryAdd(en.Key.ToString().ToUpper(), en.Value.ToString());
-                    }
+                    _env.TryAdd(en.Key.ToString().ToUpper(), en.Value.ToString());
                 }
             }
             if (_env.ContainsKey(key))
@@ -210,82 +184,31 @@ namespace Wlniao
             }
         }
         /// <summary>
-        /// 添加一个临时的环境变量
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        public static void AddEnvironment(String key, String value = null)
-        {
-            var tmpKey = _env.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
-            if (string.IsNullOrEmpty(tmpKey))
-            {
-                tmpKey = key;
-            }
-            if (_env == null)
-            {
-                _env = new Dictionary<string, string>();
-            }
-            if (_env.ContainsKey(tmpKey))
-            {
-                _env[tmpKey] = value;
-            }
-            else
-            {
-                _env.Add(tmpKey, value);
-            }
-        }
-        /// <summary>
         /// 设置 xcore.config 中某项的值
         /// </summary>
         /// <param name="key">项的名称</param>
         /// <param name="value">项的值</param>
         /// <returns>返回结果</returns>
-        public static Boolean SetConfigs(String key, String value)
+        public static Boolean SetConfigs(String key, String value = "")
         {
-            var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
-            if (string.IsNullOrEmpty(tmpKey))
+            Read(FileName);
+            if (_config.ContainsKey(key))
             {
-                tmpKey = key;
+                _config[key] = value;
             }
-            if (_config == null)
+            else if (_config.ContainsKey(key.ToUpper()))
             {
-                GetConfigs(tmpKey);
-            }
-            if (_config.ContainsKey(tmpKey))
-            {
-                _config[tmpKey] = value;
-            }
-            else if (_config.ContainsKey(tmpKey.ToUpper()))
-            {
-                _config[tmpKey.ToUpper()] = value;
+                _config[key.ToUpper()] = value;
             }
             else
             {
-                _config.Add(tmpKey, value);
+                _config.Add(key, value);
             }
-            Write(_config, FileName);
-            return true;
-        }
-        /// <summary>
-        /// 设置 xcore.config 中某项的值
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public static Boolean SetConfigs(String key)
-        {
-            return SetConfigs(key, "");
-        }
-        /// <summary>
-        /// 使用yaml格式
-        /// </summary>
-        /// <returns></returns>
-        public static Boolean UseYaml()
-        {
-            return SetConfigs("yaml", "");
+            return Write(_config, FileName);
         }
 
         /// <summary>
-        /// 设置 ConfigFile 中某项的值
+        /// 移除 ConfigFile 中某项的值
         /// </summary>
         /// <param name="key">项的名称</param>
         /// <returns>返回结果</returns>
@@ -306,17 +229,16 @@ namespace Wlniao
         /// 读取配置文件，返回一个 Dictionary，键值都是字符串
         /// </summary>
         /// <param name="path">配置文件的路径(相对路径，相对于项目的根目录)</param>
-        /// <param name="init">是否为初始化调用</param>
         /// <returns>返回一个 Dictionary</returns>
-        public static void Read(String path, Boolean init = true)
+        public static void Read(String path)
         {
+            _config = new Dictionary<string, string>();
             if (file.Exists(path))
             {
-                _config = cvt.ToDictionary(file.Read(path));
-            }
-            else if (init)
-            {
-                _config = new Dictionary<string, string>();
+                foreach (var kv in cvt.ToDictionary(file.Read(path)))
+                {
+                    _config.TryAdd(kv.Key, kv.Value);
+                }
             }
         }
 
@@ -325,42 +247,48 @@ namespace Wlniao
         /// </summary>
         /// <param name="dic">一个 Dictionary</param>
         /// <param name="path">配置文件的路径(相对路径，相对于项目的根目录)</param>
-        public static void Write(Dictionary<String, String> dic, String path)
+        public static bool Write(Dictionary<String, String> dic, String path)
         {
-            if (_config != null)
+            try
             {
-                var sb = new StringBuilder();
-                foreach (KeyValuePair<String, String> pair in _config)
+                if (_config != null)
                 {
-                    if (_config.ContainsKey("yaml"))
+                    var sb = new StringBuilder();
+                    foreach (KeyValuePair<String, String> pair in _config)
                     {
-                        if (pair.Key == "yaml")
+                        if (_config.ContainsKey("yaml"))
                         {
-                            sb.Insert(0, "- yaml" + Environment.NewLine);
+                            if (pair.Key == "yaml")
+                            {
+                                sb.Insert(0, "- yaml" + Environment.NewLine);
+                            }
+                            else
+                            {
+                                sb.Append("- ");
+                                sb.Append(pair.Key);
+                                sb.Append("=");
+                                sb.Append(pair.Value);
+                                sb.Append(Environment.NewLine);
+                            }
                         }
                         else
                         {
-                            sb.Append("- ");
                             sb.Append(pair.Key);
                             sb.Append("=");
                             sb.Append(pair.Value);
                             sb.Append(Environment.NewLine);
                         }
                     }
-                    else
+                    if (string.IsNullOrEmpty(path))
                     {
-                        sb.Append(pair.Key);
-                        sb.Append("=");
-                        sb.Append(pair.Value);
-                        sb.Append(Environment.NewLine);
+                        path = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config");
                     }
+                    file.Write(path, sb.ToString(), true);
+                    return true;
                 }
-                if (string.IsNullOrEmpty(path))
-                {
-                    path = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config");
-                }
-                file.Write(path, sb.ToString(), true);
             }
+            catch { }
+            return false;
         }
     }
 }

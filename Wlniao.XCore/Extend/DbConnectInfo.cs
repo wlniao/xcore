@@ -126,12 +126,7 @@ namespace Wlniao
         {
             get
             {
-                var env = Wlniao.Config.GetSetting("WLN_CONNSTR");
-                if (string.IsNullOrEmpty(env))
-                {
-                    env = WLN_CONNSTR_MYSQL;
-                }
-                return env;
+                return Wlniao.Config.GetSetting("WLN_CONNSTR");
             }
         }
         /// <summary>

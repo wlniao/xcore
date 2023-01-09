@@ -58,8 +58,11 @@ namespace Wlniao
         public static void Init()
         {
             Config.Clear();
-            XServer.Common.Init();
             _log_level = LogLevel.None;
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                XServer.Common.Init();
+            });
         }
         /// <summary>
         /// 输出系统信息
@@ -218,11 +221,12 @@ namespace Wlniao
             {
                 if (string.IsNullOrEmpty(startupRoot))
                 {
-                    startupRoot = Config.GetEnvironment("WLN_STARTUP_ROOT");
-                    if (string.IsNullOrEmpty(startupRoot))
-                    {
-                        startupRoot = System.IO.Directory.GetCurrentDirectory();
-                    }
+                    //startupRoot = Config.GetConfigs("WLN_STARTUP_ROOT");
+                    //if (string.IsNullOrEmpty(startupRoot))
+                    //{
+                    //    startupRoot = System.IO.Directory.GetCurrentDirectory();
+                    //}
+                    startupRoot = System.IO.Directory.GetCurrentDirectory();
                     if (startupRoot.IndexOf('/') >= 0)
                     {
                         Runtime.SysInfo.IsLinux = true;
@@ -247,6 +251,7 @@ namespace Wlniao
                             startupRoot += "\\";
                         }
                     }
+                    Wlniao.Log.Loger.Console("Startup Path:" + startupRoot);
                     Init();
                 }
                 return startupRoot;
@@ -266,14 +271,10 @@ namespace Wlniao
             {
                 if (port == 0)
                 {
-                    port = cvt.ToInt(Config.GetEnvironment("WLN_LISTEN_PORT"));
+                    port = cvt.ToInt(Config.GetConfigs("WLN_LISTEN_PORT"));
                     if (port <= 0)
                     {
-                        port = cvt.ToInt(Config.GetConfigs("WLN_LISTEN_PORT"));
-                        if (port <= 0)
-                        {
-                            port = 5000;
-                        }
+                        port = 5000;
                     }
                 }
                 return port;
@@ -286,7 +287,7 @@ namespace Wlniao
         {
             get
             {
-                var listenUrls = Config.GetEnvironment("WLN_LISTEN_URLS");
+                var listenUrls = Config.GetConfigs("WLN_LISTEN_URLS");
                 if (string.IsNullOrEmpty(listenUrls))
                 {
                     return "http://*:" + ListenPort;
@@ -304,7 +305,7 @@ namespace Wlniao
         {
             get
             {
-                return Config.GetSetting("WLN_DEVTEST").ToLower() == "true";
+                return Config.GetConfigs("WLN_DEVTEST").ToLower() == "true";
             }
         }
         /// <summary>
@@ -316,7 +317,7 @@ namespace Wlniao
             {
                 if (_XServerId == null)
                 {
-                    _XServerId = Config.GetSetting("XServerId");
+                    _XServerId = Config.GetConfigs("XServerId");
                 }
                 return _XServerId;
             }
@@ -390,7 +391,7 @@ namespace Wlniao
             {
                 if (_WebNode == null)
                 {
-                    _WebNode = Config.GetSetting("WLN_NODE");
+                    _WebNode = Config.GetConfigs("WLN_NODE");
                 }
                 return _WebNode;
             }
@@ -404,7 +405,7 @@ namespace Wlniao
             {
                 if (_WebHost == null)
                 {
-                    _WebHost = Config.GetSetting("WLN_HOST");
+                    _WebHost = Config.GetConfigs("WLN_HOST");
                 }
                 return _WebHost;
             }
@@ -418,7 +419,7 @@ namespace Wlniao
             {
                 if (_log_path == null)
                 {
-                    _log_path = Config.GetSetting("WLN_LOG_PATH");
+                    _log_path = Config.GetConfigs("WLN_LOG_PATH");
                     if (string.IsNullOrEmpty(_log_path))
                     {
                         _log_path = XCore.FrameworkRoot + "/logs";
@@ -436,7 +437,7 @@ namespace Wlniao
             {
                 if (_log_level == LogLevel.None)
                 {
-                    var level = strUtil.GetTitleCase(Config.GetSetting("WLN_LOG_LEVEL"));
+                    var level = strUtil.GetTitleCase(Config.GetConfigs("WLN_LOG_LEVEL"));
                     if (string.IsNullOrEmpty(level))
                     {
                         _log_level = LogLevel.Error;
@@ -477,7 +478,7 @@ namespace Wlniao
             {
                 if (_log_provider == null)
                 {
-                    _log_provider = Config.GetSetting("WLN_LOG_PROVIDER");
+                    _log_provider = Config.GetConfigs("WLN_LOG_PROVIDER");
                     if (string.IsNullOrEmpty(_log_provider))
                     {
                         _log_provider = "file";

@@ -42,7 +42,7 @@ namespace Wlniao
                 }
                 else
                 {
-                    _TimeZone = cvt.ToInt(Config.GetSetting("WLN_TIMEZONE"));
+                    _TimeZone = cvt.ToInt(Config.GetConfigs("WLN_TIMEZONE"));
                     init = true;
                 }
                 return _TimeZone;
