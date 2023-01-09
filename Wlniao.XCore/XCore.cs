@@ -251,7 +251,7 @@ namespace Wlniao
                             startupRoot += "\\";
                         }
                     }
-                    Wlniao.Log.Loger.Console("Startup Path:" + startupRoot);
+                    Wlniao.Log.Loger.Console("Startup Path:" + startupRoot, ConsoleColor.DarkGreen);
                     Init();
                 }
                 return startupRoot;
@@ -478,10 +478,10 @@ namespace Wlniao
             {
                 if (_log_provider == null)
                 {
-                    _log_provider = Config.GetConfigs("WLN_LOG_PROVIDER");
+                    _log_provider = Config.GetSetting("WLN_LOG_PROVIDER");
                     if (string.IsNullOrEmpty(_log_provider))
                     {
-                        _log_provider = "file";
+                        _log_provider = "console";
                     }
                     else
                     {

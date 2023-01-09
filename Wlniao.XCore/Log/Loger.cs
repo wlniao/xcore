@@ -94,7 +94,7 @@ namespace Wlniao.Log
                 {
                     FileLogger.Info(message);
                 }
-                else
+                else if (XCore.LogProvider != "console")
                 {
                     callMethod("Info", message);
                 }
@@ -113,7 +113,7 @@ namespace Wlniao.Log
                 {
                     FileLogger.Debug(message);
                 }
-                else
+                else if (XCore.LogProvider != "console")
                 {
                     callMethod("Debug", message);
                 }
@@ -131,7 +131,7 @@ namespace Wlniao.Log
                 {
                     FileLogger.Warn(message);
                 }
-                else
+                else if (XCore.LogProvider != "console")
                 {
                     callMethod("Warn", message);
                 }
@@ -150,7 +150,7 @@ namespace Wlniao.Log
                 {
                     FileLogger.Error(message);
                 }
-                else
+                else if (XCore.LogProvider != "console")
                 {
                     callMethod("Error", message);
                 }
@@ -169,7 +169,7 @@ namespace Wlniao.Log
                 {
                     FileLogger.Fatal(message);
                 }
-                else
+                else if (XCore.LogProvider != "console")
                 {
                     callMethod("Fatal", message);
                 }
@@ -187,7 +187,7 @@ namespace Wlniao.Log
             {
                 FileLogger.Write(new LogMessage { LogTime = DateTime.Now, Message = message, LogLevel = topic });
             }
-            else
+            else if (XCore.LogProvider != "console")
             {
                 callMethod("Write", topic, message);
             }

@@ -16,6 +16,9 @@ namespace Wlniao.XServer
         /// 加密密钥
         /// </summary>
         protected String token = null;
+        /// <summary>
+        /// 默认返回对象
+        /// </summary>
         protected ApiResult<Object> result = new() { node = XCore.WebNode, code = "-1", message = "未知错误" };
         /// <summary>
         /// 执行请求校验

@@ -49,7 +49,7 @@ namespace Wlniao.XServer
             {
                 traceid = System.Guid.NewGuid().ToString(); //生成默认传递链路ID
             }
-            var now = XCore.NowUnix.ToString();
+            var now = DateTools.GetUnix().ToString();
             var rlt = new Wlniao.ApiResult<T>();
             if (string.IsNullOrEmpty(token))
             {
@@ -100,7 +100,13 @@ namespace Wlniao.XServer
                         rlt.traceid = string.IsNullOrEmpty(resObj.traceid) ? traceid : resObj.traceid;
                         rlt.message = resObj.message;
                         rlt.success = resObj.success;
-                        if (resObj.success)
+                        if (string.IsNullOrEmpty(resObj.node) || string.IsNullOrEmpty(resObj.code))
+                        {
+                            rlt.code = "402";
+                            rlt.message = "API返回内容格式不正确";
+                            log.Info(url + ": API返回内容格式不正确\r\n" + resStr);
+                        }
+                        else
                         {
                             try
                             {
@@ -109,6 +115,7 @@ namespace Wlniao.XServer
                                 {
                                     rlt.code = "401";
                                     rlt.message = "输出内容解密失败";
+                                    log.Info(url + ": 输出内容解密失败");
                                 }
                                 else
                                 {
@@ -135,6 +142,7 @@ namespace Wlniao.XServer
                             {
                                 rlt.code = "401";
                                 rlt.message = "输出内容解密失败";
+                                log.Info(url + ": 输出内容解密失败");
                             }
                         }
                     }
@@ -142,6 +150,7 @@ namespace Wlniao.XServer
                     {
                         rlt.code = "402";
                         rlt.message = "API返回内容格式不正确";
+                        log.Info(url + ": API返回内容格式不正确");
                     }
                 }
             }
