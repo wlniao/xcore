@@ -132,11 +132,23 @@ namespace Wlniao.XServer
         [NonAction]
         public IActionResult OutDefault()
         {
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(result.data);
+            var txt = string.Empty;
             var dic = new Dictionary<string, object>();
+            if (result.data == null)
+            {
+                txt = "";
+            }
+            else if (result.data is string)
+            {
+                txt = result.data.ToString();
+            }
+            else
+            {
+                txt = Newtonsoft.Json.JsonConvert.SerializeObject(result.data);
+            }
             dic.Add("node", result.node);
             dic.Add("code", result.code);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(json, token));
+            dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
             dic.Add("success", result.success);
             dic.Add("message", result.message);
             return Json(dic);

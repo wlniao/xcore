@@ -39,16 +39,14 @@ namespace Wlniao.Caching
             {
                 if (ctype == CacheType.None)
                 {
-                    try
+                    if (!string.IsNullOrEmpty(Redis.ConnStr))
+                    {
+                        ctype = CacheType.Redis;
+                    }
+                    else
                     {
                         ctype = CacheType.InMemory;
-                        if (Redis.CanUse())
-                        {
-                            ctype = CacheType.Redis;
-                        }
                     }
-                    catch
-                    { }
                 }
                 return ctype;
             }
@@ -57,34 +55,22 @@ namespace Wlniao.Caching
         /// 启用Redis作为缓存机制
         /// </summary>
         /// <param name="host"></param>
-        /// <param name="port"></param>
         /// <param name="pass"></param>
-        public static void UseRedis(string host, int port = 6379, string pass = "")
+        /// <param name="port"></param>
+        public static void UseRedis(string host, string pass = "", int port = 6379)
         {
             ctype = CacheType.Redis;
             if (!string.IsNullOrEmpty(host))
             {
-                if (string.IsNullOrEmpty(Config.GetConfigs("WLN_REDIS_HOST")))
+                var connstr = host + ":" + port;
+                if (!string.IsNullOrEmpty(pass))
                 {
-                    Config.SetConfigs("WLN_REDIS_HOST", host);
+                    connstr += ",password=" + pass;
                 }
-                if (Config.GetConfigs("WLN_REDIS_PASS") != pass)
-                {
-                    Config.SetConfigs("WLN_REDIS_PASS", pass);
-                }
-                Redis._host = host;
-                Redis._port = port;
-                Redis._pass = pass;
+                Redis.ConnStr = connstr;
             }
         }
 
-        /// <summary>
-        /// 启用InMemory作为缓存机制
-        /// </summary>
-        public static void UseInMemory()
-        {
-            ctype = CacheType.InMemory;
-        }
         /// <summary>
         /// 缓存一个字符串
         /// </summary>
@@ -132,7 +118,7 @@ namespace Wlniao.Caching
         {
             if (cType == CacheType.Redis)
             {
-                return Redis.Del(key);
+                return Redis.KeyDelete(key);
             }
             else
             {
@@ -148,7 +134,7 @@ namespace Wlniao.Caching
         {
             if (cType == CacheType.Redis)
             {
-                return Redis.Exists(key);
+                return Redis.KeyExists(key);
             }
             else
             {
@@ -179,7 +165,7 @@ namespace Wlniao.Caching
         {
             if (cType == CacheType.Redis)
             {
-                return Redis.GetAllowNull(key);
+                return Redis.Get(key);
             }
             else
             {

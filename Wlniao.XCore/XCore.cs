@@ -41,6 +41,10 @@ namespace Wlniao
         /// </summary>
         internal static Object Lock = new object();
         /// <summary>
+        /// 框架初始化时间
+        /// </summary>
+        internal static DateTime _startup_time = DateTime.Now;
+        /// <summary>
         /// 当前日志输出路径
         /// </summary>
         internal static string _log_path = null;
@@ -114,23 +118,36 @@ namespace Wlniao
                 }
                 Console.ResetColor();
                 Console.WriteLine("");
-                Console.WriteLine("System Name          Wlniao XCore");
-                Console.WriteLine("Version              " + Version);
+                if (!String.IsNullOrEmpty(XServerId))
+                {
+                    Console.WriteLine("XServerId            " + XServerId);
+                }
+                if (!String.IsNullOrEmpty(WebHost))
+                {
+                    Console.WriteLine("Web Host             " + WebHost);
+                }
+                if (!String.IsNullOrEmpty(WebNode))
+                {
+                    Console.WriteLine("Program Node         " + WebNode);
+                }
+                if (!String.IsNullOrEmpty(ProgramVersion))
+                {
+                    Console.WriteLine("Program Version      " + ProgramVersion);
+                }
                 Console.WriteLine("\r\nXCore Runtime:");
-                //Console.WriteLine("    Language         " + lang.GetLang());
-                Console.WriteLine("    XServerId        " + XServerId);
-                Console.WriteLine("    StartupRoot      " + StartupRoot);
-                Console.WriteLine("    ProgramVersion   " + ProgramVersion);
+                Console.WriteLine("    LogType          " + strUtil.GetTitleCase(LogProvider));
                 Console.WriteLine("    LogLevel         " + LogLevel.ToString());
-                Console.WriteLine("    Cache            " + (Cache.cType == Caching.CacheType.Redis ? "Redis" : "InMemory"));
+                Console.WriteLine("    Language         " + lang.GetLang());
+                Console.WriteLine("    StartupRoot      " + StartupRoot);
+                Console.WriteLine("    StartupTime      " + StartupTime);
+                Console.WriteLine("    PublishTime      " + DateTools.FormatUnix(PublishTime));
+                Console.WriteLine("    Version          " + Version);
                 Console.WriteLine("");
                 Console.WriteLine("\r\nModules:");
                 Console.WriteLine("    OpenApi          Load Finish");
                 Console.WriteLine("    XServer          Load Finish");
                 Console.WriteLine("    HttpEngine       Load Finish");
-                Console.WriteLine("    XCore.Aliyun     Not Found");
-                Console.WriteLine("    PublishTime      " + DateTools.FormatUnix(PublishTime));
-                Console.WriteLine("\r\nInit Use:        " + DateTime.Now.Subtract(StartupTime).TotalMilliseconds.ToString("F2") + "ms");
+                Console.WriteLine("\r\nInit Use:        " + DateTime.Now.Subtract(_startup_time).TotalMilliseconds.ToString("F2") + "ms");
                 Console.WriteLine("");
             }
             catch { }
@@ -180,6 +197,7 @@ namespace Wlniao
 
         #region 系统信息
         private static Int64 nowUnix = 0;
+        private static String startupTime = null;
         private static String startupRoot = null;
         private static String _XServerId = null;
         private static String _XServerIP = null;
@@ -211,7 +229,17 @@ namespace Wlniao
         /// <summary>
         /// 程序启动时间
         /// </summary>
-        public static DateTime StartupTime = DateTime.Now;
+        public static string StartupTime
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(startupTime))
+                {
+                    startupTime = DateTools.Format();
+                }
+                return startupTime;
+            }
+        }
         /// <summary>
         /// 程序启动路径，默认为 /
         /// </summary>
@@ -251,7 +279,6 @@ namespace Wlniao
                             startupRoot += "\\";
                         }
                     }
-                    Wlniao.Log.Loger.Console("Startup Path:" + startupRoot, ConsoleColor.DarkGreen);
                     Init();
                 }
                 return startupRoot;
@@ -478,7 +505,7 @@ namespace Wlniao
             {
                 if (_log_provider == null)
                 {
-                    _log_provider = Config.GetSetting("WLN_LOG_PROVIDER");
+                    _log_provider = Config.GetConfigs("LogType");
                     if (string.IsNullOrEmpty(_log_provider))
                     {
                         _log_provider = "console";

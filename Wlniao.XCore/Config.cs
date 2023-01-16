@@ -146,14 +146,20 @@ namespace Wlniao
             }
             else if (defaultValue != null)
             {
-                _config.Add(key, defaultValue);
-                try { Write(_config, FileName); } catch { }
+                lock (XCore.Lock)
+                {
+                    _config.Add(key, defaultValue);
+                    try { Write(_config, FileName); } catch { }
+                }
                 return defaultValue;
             }
             else
             {
-                _config.Add(key, "");
-                try { Write(_config, FileName); } catch { }
+                lock (XCore.Lock)
+                {
+                    _config.Add(key, "");
+                    try { Write(_config, FileName); } catch { }
+                }
                 return "";
             }
         }
@@ -167,11 +173,14 @@ namespace Wlniao
         {
             if (_env == null || _env.Count == 0)
             {
-                _env = new Dictionary<string, string>();
-                var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
-                while (en.MoveNext())
+                lock (XCore.Lock)
                 {
-                    _env.TryAdd(en.Key.ToString().ToUpper(), en.Value.ToString());
+                    _env = new Dictionary<string, string>();
+                    var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
+                    while (en.MoveNext())
+                    {
+                        _env.TryAdd(en.Key.ToString().ToUpper(), en.Value.ToString());
+                    }
                 }
             }
             if (_env.ContainsKey(key))
@@ -191,18 +200,30 @@ namespace Wlniao
         /// <returns>返回结果</returns>
         public static Boolean SetConfigs(String key, String value = "")
         {
-            Read(FileName);
+            if (_config == null)
+            {
+                Read(FileName);
+            }
             if (_config.ContainsKey(key))
             {
-                _config[key] = value;
+                lock (XCore.Lock)
+                {
+                    _config[key] = value;
+                }
             }
             else if (_config.ContainsKey(key.ToUpper()))
             {
-                _config[key.ToUpper()] = value;
+                lock (XCore.Lock)
+                {
+                    _config[key.ToUpper()] = value;
+                }
             }
             else
             {
-                _config.Add(key, value);
+                lock (XCore.Lock)
+                {
+                    _config.Add(key, value);
+                }
             }
             return Write(_config, FileName);
         }
@@ -232,12 +253,15 @@ namespace Wlniao
         /// <returns>返回一个 Dictionary</returns>
         public static void Read(String path)
         {
-            _config = new Dictionary<string, string>();
-            if (file.Exists(path))
+            lock (XCore.Lock)
             {
-                foreach (var kv in cvt.ToDictionary(file.Read(path)))
+                _config = new Dictionary<string, string>();
+                if (file.Exists(path))
                 {
-                    _config.TryAdd(kv.Key, kv.Value);
+                    foreach (var kv in cvt.ToDictionary(file.Read(path)))
+                    {
+                        _config.TryAdd(kv.Key, kv.Value);
+                    }
                 }
             }
         }
