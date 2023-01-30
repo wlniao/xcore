@@ -56,11 +56,11 @@ namespace Wlniao.Caching
                 {
                     lock (XCore.Lock)
                     {
-                        connstr = Config.GetSetting("WLN_REDIS");
+                        connstr = Config.GetConfigs("WLN_REDIS");
                         if (string.IsNullOrEmpty(connstr))
                         {
-                            var host = Config.GetConfigs("WLN_REDIS_HOST");
-                            var pass = Config.GetConfigs("WLN_REDIS_PASS");
+                            var host = Config.GetSetting("WLN_REDIS_HOST");
+                            var pass = Config.GetSetting("WLN_REDIS_PASS");
                             var port = cvt.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
                             if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
                             {

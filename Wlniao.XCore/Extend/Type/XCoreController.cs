@@ -57,7 +57,7 @@ namespace Wlniao
         /// <summary>
         /// 错误提醒页面模板
         /// </summary>
-        internal const string ErrorHtml = "<html><head><title>{{errorTitle}}</title><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\" /><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=0\"/></head><body onselectstart=\"return false\" style=\"text-align:center;background:#f9f9f9\"><div><img src=\"{{errorIcon}}\" style=\"width:9rem;margin-top:9rem;\"></div><div style=\"color:#999999;font-family:Segoe UI, Segoe UI Midlevel, Segoe WP, Arial, Sans-Serif;padding:1rem\">{{errorMsg}}</div></body></html>";
+        internal const string ErrorHtml = "<html><head><title>{{errorTitle}}</title><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\" /><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"user-scalable=no,width=device-width,initial-scale=1.0\"/></head><body onselectstart=\"return false\" style=\"text-align:center;background:#f9f9f9\"><div><img src=\"{{errorIcon}}\" style=\"width:9rem;margin-top:9rem;\"></div><div style=\"color:#999999;font-family:Segoe UI, Segoe UI Midlevel, Segoe WP, Arial, Sans-Serif;padding:1rem\">{{errorMsg}}</div></body></html>";
         /// <summary>
         /// 
         /// </summary>
@@ -546,6 +546,10 @@ namespace Wlniao
                 else if (ua.Contains("micromessenger"))
                 {
                     return "weixin";
+                }
+                else if (ua.Contains("alipay"))
+                {
+                    return "alipay";
                 }
                 else if (ua.Contains("dingtalk"))
                 {

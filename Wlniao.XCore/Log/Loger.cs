@@ -98,7 +98,7 @@ namespace Wlniao.Log
                 {
                     callMethod("Info", message);
                 }
-                Console(message, ConsoleColor.White);
+                Console(string.Format("{0} Info - {1}", DateTools.Format(), message), ConsoleColor.White);
             }
         }
         /// <summary>
@@ -117,6 +117,7 @@ namespace Wlniao.Log
                 {
                     callMethod("Debug", message);
                 }
+                Console(string.Format("{0} Debug - {1}", DateTools.Format(), message), ConsoleColor.White);
             }
         }
         /// <summary>
@@ -135,7 +136,7 @@ namespace Wlniao.Log
                 {
                     callMethod("Warn", message);
                 }
-                Console(message, ConsoleColor.DarkYellow);
+                Console(string.Format("{0} Warn - {1}", DateTools.Format(), message), ConsoleColor.DarkYellow);
             }
         }
         /// <summary>
@@ -154,7 +155,7 @@ namespace Wlniao.Log
                 {
                     callMethod("Error", message);
                 }
-                Console(message, ConsoleColor.Red);
+                Console(string.Format("{0} Error - {1}", DateTools.Format(), message), ConsoleColor.Red);
             }
         }
         /// <summary>
@@ -173,7 +174,7 @@ namespace Wlniao.Log
                 {
                     callMethod("Fatal", message);
                 }
-                Console(message, ConsoleColor.Magenta);
+                Console(string.Format("{0} Fatal - {1}", DateTools.Format(), message), ConsoleColor.Magenta);
             }
         }
         /// <summary>
@@ -191,7 +192,7 @@ namespace Wlniao.Log
             {
                 callMethod("Write", topic, message);
             }
-            Console(message, ConsoleColor.Magenta);
+            Console(string.Format("{0} {1} - {2}", DateTools.Format(), topic, message), ConsoleColor.Magenta);
         }
     }
 }
