@@ -76,7 +76,7 @@ namespace Wlniao
         {
             if (!RequestSecurity)
             {
-                errorMsg = Config.GetSetting("NoSecurityMessage");
+                errorMsg = Config.GetConfigs("NoSecurityMessage");
             }
             if (string.IsNullOrEmpty(errorMsg))
             {

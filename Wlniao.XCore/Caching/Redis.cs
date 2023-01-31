@@ -92,12 +92,12 @@ namespace Wlniao.Caching
             {
                 if (redis == null && nextconnect < DateTime.Now)
                 {
-                    nextconnect = DateTime.Now.AddSeconds(30);
+                    nextconnect = DateTime.Now.AddSeconds(60);
                     redis = StackExchange.Redis.ConnectionMultiplexer.Connect(ConnStr);
                 }
                 if (redis == null)
                 {
-                    log.Error("Redis can't connect");
+                    log.Warn("Redis can't connect");
                     return "";
                 }
                 else
@@ -116,7 +116,7 @@ namespace Wlniao.Caching
             catch
             {
                 redis = null;
-                log.Error("Redis connect error");
+                log.Warn("Redis connect error");
                 return "";
             }
         }
@@ -148,12 +148,12 @@ namespace Wlniao.Caching
             {
                 if (redis == null && nextconnect < DateTime.Now)
                 {
-                    nextconnect = DateTime.Now.AddSeconds(30);
+                    nextconnect = DateTime.Now.AddSeconds(60);
                     redis = StackExchange.Redis.ConnectionMultiplexer.Connect(ConnStr);
                 }
                 if (redis == null)
                 {
-                    log.Error("Redis can't connect");
+                    log.Warn("Redis can't connect");
                     return false;
                 }
                 else
@@ -164,7 +164,7 @@ namespace Wlniao.Caching
             catch
             {
                 redis = null;
-                log.Error("Redis connect error");
+                log.Warn("Redis connect error");
                 return false;
             }
         }
@@ -191,12 +191,12 @@ namespace Wlniao.Caching
             {
                 if (redis == null && nextconnect < DateTime.Now)
                 {
-                    nextconnect = DateTime.Now.AddSeconds(30);
+                    nextconnect = DateTime.Now.AddSeconds(60);
                     redis = StackExchange.Redis.ConnectionMultiplexer.Connect(ConnStr);
                 }
                 if (redis == null)
                 {
-                    log.Error("Redis can't connect");
+                    log.Warn("Redis can't connect");
                     return false;
                 }
                 else
@@ -207,7 +207,7 @@ namespace Wlniao.Caching
             catch
             {
                 redis = null;
-                log.Error("Redis connect error");
+                log.Warn("Redis connect error");
                 return false;
             }
         }
@@ -222,12 +222,12 @@ namespace Wlniao.Caching
             {
                 if (redis == null && nextconnect < DateTime.Now)
                 {
-                    nextconnect = DateTime.Now.AddSeconds(30);
+                    nextconnect = DateTime.Now.AddSeconds(60);
                     redis = StackExchange.Redis.ConnectionMultiplexer.Connect(ConnStr);
                 }
                 if (redis == null)
                 {
-                    log.Error("Redis can't connect");
+                    log.Warn("Redis can't connect");
                     return false;
                 }
                 else
@@ -238,7 +238,7 @@ namespace Wlniao.Caching
             catch
             {
                 redis = null;
-                log.Error("Redis connect error");
+                log.Warn("Redis connect error");
                 return false;
             }
         }

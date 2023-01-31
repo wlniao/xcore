@@ -56,102 +56,109 @@ namespace Wlniao.XServer
                 rlt.code = "400";
                 rlt.message = "本地通讯密钥未配置，无法发起API请求";
             }
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(data);
-            var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(json, token);
+            var txt = Newtonsoft.Json.JsonConvert.SerializeObject(data);
+            var usetime = "0ms";
+            var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
+            var resStr = "";
             var reqStr = Newtonsoft.Json.JsonConvert.SerializeObject(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
-            var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
-            var handler = new System.Net.Http.HttpClientHandler();
-            if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+            try
             {
-                handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+                var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
+                var handler = new System.Net.Http.HttpClientHandler();
+                if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+                {
+                    handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+                }
+                using (var client = new System.Net.Http.HttpClient(handler))
+                {
+                    log.Info(url + " request:" + encdata);
+                    var start = DateTime.Now;
+                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
+                    reqest.Headers.Date = DateTime.Now;
+                    reqest.Content = new System.Net.Http.StreamContent(stream);
+                    reqest.Content.Headers.Add("Content-Type", "application/json");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
+                    var respose = client.Send(reqest);
+                    resStr = respose.Content.ReadAsStringAsync().Result;
+                    if (respose.Content.Headers.Contains("X-Wlniao-Trace"))
+                    {
+                        traceid = respose.Content.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
+                    }
+                    if (respose.Headers.Contains("X-Wlniao-UseTime"))
+                    {
+                        usetime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
+                    }
+                    log.Info(url + " response:" + resStr + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]");
+                }
             }
-            using (var client = new System.Net.Http.HttpClient(handler))
+            catch { }
+            if (string.IsNullOrEmpty(resStr))
             {
-                var start = DateTime.Now;
-                var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
-                reqest.Headers.Date = start;
-                reqest.Content = new System.Net.Http.StreamContent(stream);
-                reqest.Content.Headers.Add("Content-Type", "application/json");
-                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
-                var resStr = "";
+                rlt.code = "401";
+                rlt.message = "服务器无返回或状态异常";
+            }
+            else
+            {
                 try
                 {
-                    var content = client.Send(reqest).Content;
-                    resStr = content.ReadAsStringAsync().Result;
-                    if (content.Headers.Contains("X-Wlniao-Trace"))
-                    {
-                        traceid = content.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
-                    }
-                }
-                catch { }
-                if (string.IsNullOrEmpty(resStr))
-                {
-                    rlt.code = "401";
-                    rlt.message = "服务器无返回或状态异常";
-                }
-                else
-                {
-                    try
-                    {
-                        var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Wlniao.ApiResult<String>>(resStr);
-                        rlt.node = resObj.node;
-                        rlt.code = resObj.code;
-                        rlt.traceid = string.IsNullOrEmpty(resObj.traceid) ? traceid : resObj.traceid;
-                        rlt.message = resObj.message;
-                        rlt.success = resObj.success;
-                        if (string.IsNullOrEmpty(resObj.node) || string.IsNullOrEmpty(resObj.code))
-                        {
-                            rlt.code = "402";
-                            rlt.message = "API返回内容格式不正确";
-                            log.Info(url + ": API返回内容格式不正确\r\n" + resStr);
-                        }
-                        else
-                        {
-                            try
-                            {
-                                json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
-                                if (string.IsNullOrEmpty(json))
-                                {
-                                    rlt.code = "401";
-                                    rlt.message = "输出内容解密失败";
-                                    log.Info(url + ": 输出内容解密失败");
-                                }
-                                else
-                                {
-                                    log.Info(url + ":\r\n" + json);
-                                    if (typeof(T) == typeof(string))
-                                    {
-                                        rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
-                                    }
-                                    else
-                                    {
-                                        try
-                                        {
-                                            rlt.data = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
-                                        }
-                                        catch
-                                        {
-                                            rlt.code = "402";
-                                            rlt.message = "解密内容格式不正确";
-                                        }
-                                    }
-                                }
-                            }
-                            catch
-                            {
-                                rlt.code = "401";
-                                rlt.message = "输出内容解密失败";
-                                log.Info(url + ": 输出内容解密失败");
-                            }
-                        }
-                    }
-                    catch
+                    var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Wlniao.ApiResult<String>>(resStr);
+                    rlt.node = resObj.node;
+                    rlt.code = resObj.code;
+                    rlt.traceid = string.IsNullOrEmpty(resObj.traceid) ? traceid : resObj.traceid;
+                    rlt.message = resObj.message;
+                    rlt.success = resObj.success;
+                    if (string.IsNullOrEmpty(resObj.node) || string.IsNullOrEmpty(resObj.code))
                     {
                         rlt.code = "402";
                         rlt.message = "API返回内容格式不正确";
-                        log.Info(url + ": API返回内容格式不正确");
+                        log.Warn(url + ": API返回内容格式不正确\r\n" + resStr);
                     }
+                    else
+                    {
+                        try
+                        {
+                            var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                            if (string.IsNullOrEmpty(json))
+                            {
+                                rlt.code = "401";
+                                rlt.message = "输出内容解密失败";
+                                log.Warn(url + ": 输出内容解密失败");
+                            }
+                            else
+                            {
+                                log.Debug(url + " [traceid:" + traceid + ",usetime:" + usetime + "]\r\n >>> " + txt + "\r\n <<< " + json + "\r\n");
+                                if (typeof(T) == typeof(string))
+                                {
+                                    rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
+                                }
+                                else
+                                {
+                                    try
+                                    {
+                                        rlt.data = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
+                                    }
+                                    catch
+                                    {
+                                        rlt.code = "402";
+                                        rlt.message = "解密内容格式不正确";
+                                    }
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            rlt.code = "401";
+                            rlt.message = "输出内容解密失败";
+                            log.Info(url + ": 输出内容解密失败");
+                        }
+                    }
+                }
+                catch
+                {
+                    rlt.code = "402";
+                    rlt.message = "API返回内容格式不正确";
+                    log.Info(url + ": API返回内容格式不正确");
                 }
             }
             return rlt;

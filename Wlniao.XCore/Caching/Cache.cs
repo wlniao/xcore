@@ -54,13 +54,29 @@ namespace Wlniao.Caching
         /// <summary>
         /// 启用Redis作为缓存机制
         /// </summary>
+        /// <param name="connstr"></param>
+        public static void UseRedis(string connstr = null)
+        {
+            ctype = CacheType.Redis;
+            if (!string.IsNullOrEmpty(connstr))
+            {
+                Redis.ConnStr = connstr;
+            }
+        }
+        /// <summary>
+        /// 启用Redis作为缓存机制
+        /// </summary>
         /// <param name="host"></param>
         /// <param name="pass"></param>
         /// <param name="port"></param>
-        public static void UseRedis(string host, string pass = "", int port = 6379)
+        public static void UseRedis(string host, string pass, int port = 6379)
         {
             ctype = CacheType.Redis;
-            if (!string.IsNullOrEmpty(host))
+            if (string.IsNullOrEmpty(host))
+            {
+                Redis.ConnStr = null;
+            }
+            else
             {
                 var connstr = host + ":" + port;
                 if (!string.IsNullOrEmpty(pass))

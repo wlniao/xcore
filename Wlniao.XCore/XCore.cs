@@ -63,10 +63,6 @@ namespace Wlniao
         {
             Config.Clear();
             _log_level = LogLevel.None;
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                XServer.Common.Init();
-            });
         }
         /// <summary>
         /// 输出系统信息
@@ -464,14 +460,14 @@ namespace Wlniao
             {
                 if (_log_level == LogLevel.None)
                 {
-                    var level = strUtil.GetTitleCase(Config.GetConfigs("WLN_LOG_LEVEL"));
-                    if (string.IsNullOrEmpty(level))
+                    try
                     {
-                        _log_level = LogLevel.Error;
-                    }
-                    else
-                    {
-                        try
+                        var level = strUtil.GetTitleCase(Config.GetConfigs("WLN_LOG_LEVEL"));
+                        if (string.IsNullOrEmpty(level))
+                        {
+                            _log_level = LogLevel.Information;
+                        }
+                        else
                         {
                             if (level == "Info")
                             {
@@ -486,10 +482,10 @@ namespace Wlniao
                                 _log_level = (LogLevel)Enum.Parse(typeof(LogLevel), level, true);
                             }
                         }
-                        catch
-                        {
-                            _log_level = LogLevel.Information;
-                        }
+                    }
+                    catch
+                    {
+                        _log_level = LogLevel.Information;
                     }
                 }
                 return _log_level;

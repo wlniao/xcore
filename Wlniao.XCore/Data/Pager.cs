@@ -169,7 +169,14 @@ namespace Wlniao.Data
             {
                 if (string.IsNullOrEmpty(_message))
                 {
-                    _message = lang.Get("", "empty", "without data");
+                    if (total > 0)
+                    {
+                        return string.Format(lang.Get("", "findtotal", "{0} records found"), total);
+                    }
+                    else
+                    {
+                        return lang.Get("", "empty", "without data");
+                    }
                 }
                 return _message;
             }

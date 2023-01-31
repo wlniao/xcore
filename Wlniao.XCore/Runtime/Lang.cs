@@ -68,9 +68,9 @@ namespace Wlniao.Runtime
             {
                 langStr = defaultLang;
             }
-            lock (XCore.Lock)
+            if (langSetting.Count == 0)
             {
-                if (langSetting.Count == 0)
+                lock (XCore.Lock)
                 {
                     var langPath = PathTool.Map(XCore.FrameworkRoot, "lang");
                     if (Directory.Exists(langPath))
@@ -104,6 +104,7 @@ namespace Wlniao.Runtime
                             dicDefault.TryAdd("minuteAgo", "分钟前");
                             dicDefault.TryAdd("secondAgo", "秒前");
                             dicDefault.TryAdd("justNow", "刚刚");
+                            dicDefault.TryAdd("findtotal", "共找到{0}条记录");
                             dicDefault.TryAdd("empty", "加载完成 暂无数据");
                         }
                         langSetting.Add(langStr, dicDefault);
