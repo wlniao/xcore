@@ -71,7 +71,7 @@ namespace Wlniao.XServer
                 }
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
-                    log.Info(url + " request:" + encdata);
+                    log.Info(url + " request:" + reqStr);
                     var start = DateTime.Now;
                     var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
                     reqest.Headers.Date = DateTime.Now;

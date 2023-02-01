@@ -27,6 +27,10 @@ namespace Wlniao
         /// </summary>
         private string trace = null;
         /// <summary>
+        /// 当前请求开始时间
+        /// </summary>
+        private DateTime start = DateTime.Now;
+        /// <summary>
         /// 当前执行的方法，参数：do=
         /// </summary>
         protected string method = "";
@@ -65,7 +69,6 @@ namespace Wlniao
         public override void OnActionExecuting(ActionExecutingContext filterContext)
         {
             method = Request.Query.ContainsKey("do") ? Request.Query["do"].ToString() : "";
-            Request.HttpContext.Items["startTime"] = DateTime.Now;
             base.OnActionExecuting(filterContext);
         }
         /// <summary>
@@ -74,6 +77,7 @@ namespace Wlniao
         /// <param name="context"></param>
         public override void OnActionExecuted(ActionExecutedContext context)
         {
+            Response.Headers.Add("X-Wlniao-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
             if (!RequestSecurity)
             {
                 errorMsg = Config.GetConfigs("NoSecurityMessage");
@@ -88,11 +92,6 @@ namespace Wlniao
                 if (!string.IsNullOrEmpty(trace))
                 {
                     Response.Headers.Add("X-Wlniao-Trace", trace);
-                }
-                if (Request.HttpContext.Items["startTime"] != null)
-                {
-                    var ts = DateTime.Now.Subtract(System.Convert.ToDateTime(Request.HttpContext.Items["startTime"]));
-                    Response.Headers.Add("X-Wlniao-UseTime", ts.TotalMilliseconds.ToString("F2") + "ms");
                 }
                 if (!string.IsNullOrEmpty(XCore.XServerId))
                 {
@@ -251,11 +250,11 @@ namespace Wlniao
             }
             else if (string.IsNullOrEmpty(GetRequest("callback")))
             {
-                return Content(Wlniao.Json.ToString(new { success = false, message = message, data = "" }), "text/json", System.Text.Encoding.UTF8);
+                return Content(Wlniao.Json.ToString(new { success = false, message = message }), "text/json", System.Text.Encoding.UTF8);
             }
             else
             {
-                return Content(GetRequest("callback") + "(" + Wlniao.Json.ToString(new { success = false, message = message, data = "" }) + ")", "text/json", System.Text.Encoding.UTF8);
+                return Content(GetRequest("callback") + "(" + Wlniao.Json.ToString(new { success = false, message = message }) + ")", "text/json", System.Text.Encoding.UTF8);
             }
         }
         /// <summary>

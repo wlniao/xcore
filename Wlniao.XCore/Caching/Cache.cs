@@ -39,9 +39,18 @@ namespace Wlniao.Caching
             {
                 if (ctype == CacheType.None)
                 {
-                    if (!string.IsNullOrEmpty(Redis.ConnStr))
+                    var cacheType = Config.GetConfigs("WLN_CACHE_TYPE", "auto").ToLower();
+                    if (cacheType == "auto" && !string.IsNullOrEmpty(Redis.ConnStr))
                     {
                         ctype = CacheType.Redis;
+                    }
+                    else if (cacheType == "redis")
+                    {
+                        ctype = CacheType.Redis;
+                    }
+                    else if (cacheType.Contains("memory"))
+                    {
+                        ctype = CacheType.InMemory;
                     }
                     else
                     {
