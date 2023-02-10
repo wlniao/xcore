@@ -57,6 +57,7 @@ namespace Wlniao.XServer
                 rlt.message = "本地通讯密钥未配置，无法发起API请求";
             }
             var txt = Newtonsoft.Json.JsonConvert.SerializeObject(data);
+            var start = DateTime.Now;
             var usetime = "0ms";
             var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
             var resStr = "";
@@ -72,7 +73,6 @@ namespace Wlniao.XServer
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
                     log.Info(url + " request:" + reqStr);
-                    var start = DateTime.Now;
                     var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
                     reqest.Headers.Date = DateTime.Now;
                     reqest.Content = new System.Net.Http.StreamContent(stream);
@@ -95,8 +95,11 @@ namespace Wlniao.XServer
             catch { }
             if (string.IsNullOrEmpty(resStr))
             {
+                rlt.tips = true;
                 rlt.code = "401";
-                rlt.message = "服务器无返回或状态异常";
+                rlt.debuger = url + "[Error]";
+                rlt.message = "服务器异常，请稍后再试";
+                log.Warn(url + " response: " + rlt.message + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]");
             }
             else
             {
@@ -107,6 +110,7 @@ namespace Wlniao.XServer
                     rlt.code = resObj.code;
                     rlt.traceid = string.IsNullOrEmpty(resObj.traceid) ? traceid : resObj.traceid;
                     rlt.message = resObj.message;
+                    rlt.debuger = resObj.debuger;
                     rlt.success = resObj.success;
                     if (string.IsNullOrEmpty(resObj.node) || string.IsNullOrEmpty(resObj.code))
                     {
@@ -114,7 +118,7 @@ namespace Wlniao.XServer
                         rlt.message = "API返回内容格式不正确";
                         log.Warn(url + ": API返回内容格式不正确\r\n" + resStr);
                     }
-                    else
+                    else if (!string.IsNullOrEmpty(resObj.data))
                     {
                         try
                         {
@@ -131,17 +135,19 @@ namespace Wlniao.XServer
                                 if (typeof(T) == typeof(string))
                                 {
                                     rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
+                                    rlt.tips = resObj.tips;
                                 }
                                 else
                                 {
                                     try
                                     {
                                         rlt.data = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
+                                        rlt.tips = resObj.tips;
                                     }
                                     catch
                                     {
                                         rlt.code = "402";
-                                        rlt.message = "解密内容格式不正确";
+                                        rlt.message = "输出内容格式错误或类型无效";
                                     }
                                 }
                             }

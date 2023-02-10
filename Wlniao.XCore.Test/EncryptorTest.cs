@@ -9,6 +9,18 @@ namespace Wlniao.XCore.Test
         {
         }
 
+        [Test]
+        public void SM2EncryptAndDecrypt()
+        {
+            var data = "hello world!";
+            var pubkey = "041e9c284e27529094ea9a17acf612215ec1f97b4a03d269a1f3da228ff07f49a782218c3cfb7ae874238fdf538be88c40a0e8d3ee750f453bc8c43f126f1e99eb";
+            var privkey = "0bc7da110f90bc3a37b407ffc5c7cb8a7f7d9ebd9d4d9bda1aa36f71df04244d";
+            var encryText = Wlniao.Encryptor.SM2EncryptByPublicKey(data, pubkey);
+            var plainText = Wlniao.Encryptor.SM2DecryptByPrivateKey(encryText, privkey);
+            // assert
+            Assert.AreEqual(data, plainText);
+        }
+
 
         [Test]
         public void SM2Decrypt()

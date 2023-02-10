@@ -19,6 +19,8 @@
     limitations under the License.
 
 ===============================================================================*/
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Security;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -242,7 +244,40 @@ namespace Wlniao
             }
             return "";
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="plainText"></param>
+        /// <param name="publickey"></param>
+        /// <returns></returns>
+        public static String SM2EncryptByPublicKey(string plainText, string publickey)
+        {
+            if (string.IsNullOrEmpty(plainText))
+            {
+                return "";
+            }
+            var sm2 = new SM2(Helper.Decode(publickey), null, SM2Mode.C1C2C3);
+            var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            var encryBytes = sm2.Encrypt(plainBytes);
+            return cvt.BytesToHexString(encryBytes);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="encryText"></param>
+        /// <param name="privatekey"></param>
+        /// <returns></returns>
+        public static String SM2DecryptByPrivateKey(string encryText, string privatekey)
+        {
+            if (string.IsNullOrEmpty(encryText))
+            {
+                return "";
+            }
+            var sm2 = new SM2(null, Helper.Decode(privatekey), SM2Mode.C1C2C3);
+            var encryBytes = Helper.Decode(encryText);
+            var plainBytes = sm2.Decrypt(encryBytes);
+            return System.Text.Encoding.UTF8.GetString(plainBytes);
+        }
         /// <summary>
         /// 
         /// </summary>

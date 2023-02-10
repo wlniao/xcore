@@ -129,7 +129,7 @@ namespace Wlniao
         [NonAction]
         public void DebugMessage(String message)
         {
-            if (!Response.Headers.ContainsKey("X-Wlniao-Debug"))
+            if (!string.IsNullOrEmpty(message) && !Response.Headers.ContainsKey("X-Wlniao-Debug"))
             {
                 Response.Headers.Add("X-Wlniao-Debug", message);
             }

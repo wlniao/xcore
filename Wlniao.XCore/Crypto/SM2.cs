@@ -59,8 +59,8 @@ namespace Wlniao.Crypto
             var _privkey = Helper.Decode(privkey);
             if (type == KeyType.Pkcs8)
             {
-                _pubkey = ((ECPublicKeyParameters)PublicKeyFactory.CreateKey(_pubkey)).Q.GetEncoded();
-                _privkey = ((ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(_privkey)).D.ToByteArray();
+                _pubkey = _pubkey == null ? null : ((ECPublicKeyParameters)PublicKeyFactory.CreateKey(_pubkey)).Q.GetEncoded();
+                _privkey = _privkey == null ? null : ((ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(_privkey)).D.ToByteArray();
             }
             this.mode = mode;
             this.key = new KeyTool(_pubkey, _privkey);
@@ -99,7 +99,10 @@ namespace Wlniao.Crypto
             var sm2 = new SM2Engine(new SM3());
             sm2.Init(true, new ParametersWithRandom(key.PublicKeyParameters));
             data = sm2.ProcessBlock(data, 0, data.Length);
-            if (mode == SM2Mode.C1C3C2) data = C123ToC132(data);
+            if (mode == SM2Mode.C1C3C2)
+            {
+                data = C123ToC132(data);
+            }
             return data;
         }
         /// <summary>

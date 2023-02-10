@@ -68,7 +68,7 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public static byte[] Decode(string key)
         {
-            return Regex.IsMatch(key, "^[0-9a-f]+$", RegexOptions.IgnoreCase) ? Hex.Decode(key) : System.Convert.FromBase64String(key);
+            return string.IsNullOrEmpty(key) ? null : Regex.IsMatch(key, "^[0-9a-f]+$", RegexOptions.IgnoreCase) ? Hex.Decode(key) : System.Convert.FromBase64String(key);
         }
     }
 }
