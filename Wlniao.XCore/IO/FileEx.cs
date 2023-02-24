@@ -22,6 +22,7 @@
 using System;
 using System.IO;
 using System.Text;
+
 namespace Wlniao.IO
 {
     /// <summary>

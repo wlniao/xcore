@@ -20,7 +20,8 @@
 
 ===============================================================================*/
 using System;
-namespace Wlniao
+
+namespace Wlniao.Text
 {
     /// <summary>
     /// Encoding类常用方法扩展
@@ -77,7 +78,7 @@ namespace Wlniao
             get
             {
                 var testRegisterProvider = true;
-                reTest:
+            reTest:
                 try
                 {
                     if (gbk == null)
@@ -109,7 +110,7 @@ namespace Wlniao
             get
             {
                 var testRegisterProvider = true;
-                reTest:
+            reTest:
                 try
                 {
                     if (gb2312 == null)
@@ -138,7 +139,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public static System.Text.Encoding GetEncoding(String name)
+        public static System.Text.Encoding GetEncoding(string name)
         {
             try
             {

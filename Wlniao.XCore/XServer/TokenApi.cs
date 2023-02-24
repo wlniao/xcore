@@ -112,7 +112,7 @@ namespace Wlniao.XServer
                     rlt.message = resObj.message;
                     rlt.debuger = resObj.debuger;
                     rlt.success = resObj.success;
-                    if (string.IsNullOrEmpty(resObj.node) || string.IsNullOrEmpty(resObj.code))
+                    if (string.IsNullOrEmpty(resObj.node) && string.IsNullOrEmpty(resObj.code))
                     {
                         rlt.code = "402";
                         rlt.message = "API返回内容格式不正确";

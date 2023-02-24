@@ -150,6 +150,21 @@ namespace Wlniao.Caching
                 return InMemory.Del(key);
             }
         }
+        /// <summary>
+        /// 删除缓存内容
+        /// </summary>
+        /// <param name="key"></param>
+        public static Boolean DelAll(String keys)
+        {
+            if (cType == CacheType.Redis)
+            {
+                return Redis.RangeDelete(keys);
+            }
+            else
+            {
+                return InMemory.RangeDelete(keys);
+            }
+        }
 
         /// <summary>
         /// 判断是否存在缓存项

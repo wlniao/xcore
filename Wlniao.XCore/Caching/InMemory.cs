@@ -19,6 +19,7 @@
     limitations under the License.
 
 ===============================================================================*/
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
@@ -99,6 +100,35 @@ namespace Wlniao.Caching
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 删除缓存内容
+        /// </summary>
+        /// <param name="keys"></param>
+        public static Boolean RangeDelete(String keys)
+        {
+
+            if (string.IsNullOrEmpty(keys))
+            {
+                return false;
+            }
+            else if (keys.EndsWith('*'))
+            {
+                var tmp = keys.TrimEnd('*');
+                foreach (var key in cache.Keys)
+                {
+                    if (key.StartsWith(tmp))
+                    {
+                        return cache.Remove(key);
+                    }
+                }
+            }
+            else
+            {
+                return cache.Remove(keys);
+            }
+            return false;
         }
 
         /// <summary>

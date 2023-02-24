@@ -24,6 +24,7 @@ using Org.BouncyCastle.Security;
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using Wlniao.Text;
 using Wlniao.Crypto;
 
 namespace Wlniao
@@ -56,7 +57,7 @@ namespace Wlniao
         public static string Md5Encryptor32(string str)
         {
             var password = "";
-            var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str));
+            var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str ?? ""));
             foreach (byte b in s)
             {
                 password += b.ToString("X2");
@@ -70,10 +71,8 @@ namespace Wlniao
         /// <returns>加密后的字符串</returns>
         public static string Md5Encryptor16(string str)
         {
-            var password = "";
-            var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str));
-            password = BitConverter.ToString(s, 4, 8).Replace("-", "");
-            return password;
+            var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str ?? ""));
+            return BitConverter.ToString(s, 4, 8).Replace("-", "");
         }
 
         /// <summary>
@@ -96,7 +95,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string Base64Encrypt(string str)
         {
-            return IO.Base64Encoder.Encoder.GetEncoded(Encoding.UTF8.GetBytes(str));
+            return IO.Base64Encoder.Encoder.GetEncoded(Encoding.UTF8.GetBytes(str ?? ""));
         }
         /// <summary>
         /// Base64解码
@@ -105,7 +104,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string Base64Decrypt(string str)
         {
-            return Encoding.UTF8.GetString(IO.Base64Decoder.Decoder.GetDecoded(str));
+            return Encoding.UTF8.GetString(IO.Base64Decoder.Decoder.GetDecoded(str ?? ""));
         }
         /// <summary>
         /// 逐字编码查询条件

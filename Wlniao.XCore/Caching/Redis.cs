@@ -213,6 +213,36 @@ namespace Wlniao.Caching
         }
 
         /// <summary>
+        /// 批量删除
+        /// </summary>
+        /// <param name="keys"></param>
+        public static Boolean RangeDelete(String keys)
+        {
+            try
+            {
+                if (redis == null && nextconnect < DateTime.Now)
+                {
+                    nextconnect = DateTime.Now.AddSeconds(60);
+                    redis = StackExchange.Redis.ConnectionMultiplexer.Connect(ConnStr);
+                }
+                if (redis == null)
+                {
+                    log.Warn("Redis can't connect");
+                    return false;
+                }
+                else
+                {
+                    return redis.GetDatabase(Select).KeyDelete(keys + "*");
+                }
+            }
+            catch
+            {
+                redis = null;
+                log.Warn("Redis connect error");
+                return false;
+            }
+        }
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="key"></param>
