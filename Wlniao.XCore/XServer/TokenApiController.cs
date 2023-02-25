@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Wlniao;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Wlniao.XServer
 {
@@ -96,11 +97,24 @@ namespace Wlniao.XServer
             result.code = "0";
             result.success = true;
             result.message = "success";
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+            var txt = string.Empty;
+            if (result.data == null)
+            {
+                txt = "";
+            }
+            else if (result.data is string)
+            {
+                txt = result.data.ToString();
+            }
+            else
+            {
+                txt = Newtonsoft.Json.JsonConvert.SerializeObject(result.data);
+            }
             var dic = new Dictionary<string, object>();
             dic.Add("node", result.node);
             dic.Add("code", result.code);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(json, token));
+            dic.Add("tips", result.tips);
+            dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
             dic.Add("success", result.success);
             dic.Add("message", result.message);
             return Json(dic);
@@ -119,6 +133,7 @@ namespace Wlniao.XServer
             var dic = new Dictionary<string, object>();
             dic.Add("node", result.node);
             dic.Add("code", result.code);
+            dic.Add("tips", result.tips);
             dic.Add("data", Encryptor.SM4EncryptECBToHex(str, token));
             dic.Add("success", result.success);
             dic.Add("message", result.message);
@@ -133,7 +148,6 @@ namespace Wlniao.XServer
         public IActionResult OutDefault()
         {
             var txt = string.Empty;
-            var dic = new Dictionary<string, object>();
             if (result.data == null)
             {
                 txt = "";
@@ -146,8 +160,10 @@ namespace Wlniao.XServer
             {
                 txt = Newtonsoft.Json.JsonConvert.SerializeObject(result.data);
             }
+            var dic = new Dictionary<string, object>();
             dic.Add("node", result.node);
             dic.Add("code", result.code);
+            dic.Add("tips", result.tips);
             dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
             dic.Add("success", result.success);
             dic.Add("message", result.message);

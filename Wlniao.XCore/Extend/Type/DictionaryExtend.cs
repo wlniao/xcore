@@ -217,6 +217,42 @@ namespace Wlniao
         /// <param name="key"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
+        public static long GetInt64(this Dictionary<string, object> dic, string key, long defaultValue = 0)
+        {
+            if (dic != null && dic.ContainsKey(key))
+            {
+                return Convert.ToLong(dic[key]);
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        public static long GetInt64(this Dictionary<string, string> dic, string key, long defaultValue = 0)
+        {
+            if (dic != null && dic.ContainsKey(key))
+            {
+                return Convert.ToLong(dic[key] ?? "" + defaultValue);
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
         public static int GetInt32(this Dictionary<string, object> dic, string key, int defaultValue = 0)
         {
             if (dic != null && dic.ContainsKey(key))
