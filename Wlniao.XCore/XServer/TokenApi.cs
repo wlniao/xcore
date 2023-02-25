@@ -56,7 +56,7 @@ namespace Wlniao.XServer
                 rlt.code = "400";
                 rlt.message = "本地通讯密钥未配置，无法发起API请求";
             }
-            var txt = Newtonsoft.Json.JsonConvert.SerializeObject(data);
+            var txt = data is String ? data.ToString() : Newtonsoft.Json.JsonConvert.SerializeObject(data);
             var start = DateTime.Now;
             var usetime = "0ms";
             var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
@@ -108,6 +108,7 @@ namespace Wlniao.XServer
                     var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Wlniao.ApiResult<String>>(resStr);
                     rlt.node = resObj.node;
                     rlt.code = resObj.code;
+                    rlt.tips = resObj.tips;
                     rlt.traceid = string.IsNullOrEmpty(resObj.traceid) ? traceid : resObj.traceid;
                     rlt.message = resObj.message;
                     rlt.debuger = resObj.debuger;

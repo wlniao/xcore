@@ -95,20 +95,21 @@ namespace Wlniao.XServer
         public IActionResult OutSuccess(Object obj)
         {
             result.code = "0";
+            result.data = obj;
             result.success = true;
             result.message = "success";
             var txt = string.Empty;
-            if (result.data == null)
+            if (obj == null)
             {
                 txt = "";
             }
-            else if (result.data is string)
+            else if (obj is string)
             {
-                txt = result.data.ToString();
+                txt = obj.ToString();
             }
             else
             {
-                txt = Newtonsoft.Json.JsonConvert.SerializeObject(result.data);
+                txt = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
             }
             var dic = new Dictionary<string, object>();
             dic.Add("node", result.node);
