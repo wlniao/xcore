@@ -39,7 +39,7 @@ namespace Wlniao
         /// <summary>
         /// 单线程锁
         /// </summary>
-        internal static Object Lock = new object();
+        public static Object Lock = new object();
         /// <summary>
         /// 框架初始化时间
         /// </summary>
@@ -501,7 +501,7 @@ namespace Wlniao
             {
                 if (_log_provider == null)
                 {
-                    _log_provider = Config.GetConfigs("LogType");
+                    _log_provider = Config.GetConfigs("WLN_LOG_TYPE");
                     if (string.IsNullOrEmpty(_log_provider))
                     {
                         _log_provider = "console";

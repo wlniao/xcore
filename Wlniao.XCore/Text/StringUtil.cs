@@ -741,15 +741,18 @@ namespace Wlniao.Text
             return UrlEncode(str, "utf-8");
         }
         /// <summary>
-        /// 返回 URL 字符串的编码结果（UTF8，处理特殊符合）
+        /// 返回 URL 字符串的编码结果（UTF8，处理特殊符号）
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
         public static string UrlEncodeSymbol(string str)
         {
             return UrlEncode(str, "utf-8")
-                .Replace("+", "%20")
-                .Replace(",", "%20");
+                .Replace("&", "%26")
+                .Replace("+", "%2B")
+                .Replace(",", "%2C")
+                .Replace("?", "%2F")
+                .Replace("=", "%3D");
         }
         /// <summary>
         /// 返回 URL 字符串的解码结果
@@ -863,11 +866,38 @@ namespace Wlniao.Text
             return UrlDecode(str, "utf-8");
         }
         /// <summary>
+        /// 生成带时间的24位标准ID
+        /// </summary>
+        /// <returns></returns>
+        public static string CreateId()
+        {
+            var now = DateTime.UtcNow.AddHours(DateTools.TimeZone);
+            return now.ToString("yyyyMMddHHmmssfff") + CreateRndStr(7);
+        }
+        /// <summary>
+        /// 生成带时间的15位数字ID
+        /// </summary>
+        /// <returns></returns>
+        public static string CreateMinId()
+        {
+            var now = DateTime.UtcNow.AddHours(DateTools.TimeZone);
+            return now.ToString("yyMMddHHmmss") + CreateRndStr(3);
+        }
+        /// <summary>
+        /// 生成带时间的36位数字ID
+        /// </summary>
+        /// <returns></returns>
+        public static string CreateLongId()
+        {
+            var now = DateTime.UtcNow.AddHours(DateTools.TimeZone);
+            return now.ToString("yyyyMMddHHmmssffffff") + "0000" + CreateRndStr(12);
+        }
+        /// <summary>
         /// 生成一个指定长度的随机字符串（仅有数字）
         /// </summary>
         /// <param name="length"></param>
         /// <returns></returns>
-        static public string CreateRndStr(int length)
+        public static string CreateRndStr(int length)
         {
             string valid = "0123456789";
             string res = "";
@@ -881,7 +911,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="length"></param>
         /// <returns></returns>
-        static public string CreateRndStrE(int length)
+        public static string CreateRndStrE(int length)
         {
             const string valid = "0123456789abcdefghijklmnopqrstuvwxyz";
             string res = "";
