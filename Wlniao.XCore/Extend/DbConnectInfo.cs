@@ -16,81 +16,6 @@ namespace Wlniao
         private static string connstr_sqlite = null;
         private static string connstr_sqlsqlver = null;
         /// <summary>
-        /// 连接的Mysql数据库用户名
-        /// </summary>
-        public static string WLN_MYSQL_UID
-        {
-            get
-            {
-                return Wlniao.Config.GetSetting("WLN_MYSQL_UID");
-            }
-        }
-        /// <summary>
-        /// 密码
-        /// </summary>
-        public static string WLN_MYSQL_PWD
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(WLN_MYSQL_UID))
-                {
-                    return Wlniao.Config.GetSetting("WLN_MYSQL_PWD");
-                }
-                else
-                {
-                    return Wlniao.Config.GetSetting("WLN_MYSQL_PWD", "");
-                }
-            }
-        }
-        /// <summary>
-        /// 连接的Mysql数据库名称
-        /// </summary>
-        public static string WLN_MYSQL_NAME
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(WLN_MYSQL_UID))
-                {
-                    return Wlniao.Config.GetSetting("WLN_MYSQL_NAME");
-                }
-                else
-                {
-                    return Wlniao.Config.GetSetting("WLN_MYSQL_NAME", WLN_MYSQL_UID);
-                }
-            }
-        }
-        /// <summary>
-        /// 连接的Mysql数据库端口号（默认为3306）
-        /// </summary>
-        public static string WLN_MYSQL_PORT
-        {
-            get
-            {
-                var port = Wlniao.Config.GetConfigs("WLN_MYSQL_PORT");
-                if (string.IsNullOrEmpty(port))
-                {
-                    return "3306";
-                }
-                return port;
-            }
-        }
-        /// <summary>
-        /// 连接的Mysql数据库服务器地址（默认为127.0.0.1）
-        /// </summary>
-        public static string WLN_MYSQL_HOST
-        {
-            get
-            {
-                var host = Wlniao.Config.GetSetting("WLN_MYSQL_HOST");
-                if (!string.IsNullOrEmpty(WLN_MYSQL_UID) && string.IsNullOrEmpty(host))
-                {
-                    host = "127.0.0.1";
-                    Wlniao.Config.SetConfigs("WLN_MYSQL_HOST", host);
-                }
-                return host;
-            }
-        }
-        /// <summary>
         /// 数据库连接字符串
         /// </summary>
         public static string WLN_CONNSTR
@@ -106,6 +31,46 @@ namespace Wlniao
                     connstr_rw = WLN_CONNSTR_MYSQL;
                 }
                 return connstr_rw;
+            }
+        }
+        /// <summary>
+        /// 连接的数据库服务器地址（默认为127.0.0.1）
+        /// </summary>
+        public static string WLN_CONNSTR_HOST
+        {
+            get
+            {
+                return Wlniao.Config.GetSetting("WLN_CONNSTR_HOST", "127.0.0.1");
+            }
+        }
+        /// <summary>
+        /// 连接的数据库名称
+        /// </summary>
+        public static string WLN_CONNSTR_NAME
+        {
+            get
+            {
+                return Wlniao.Config.GetSetting("WLN_CONNSTR_NAME");
+            }
+        }
+        /// <summary>
+        /// 连接数据库的用户账号
+        /// </summary>
+        public static string WLN_CONNSTR_UID
+        {
+            get
+            {
+                return Wlniao.Config.GetSetting("WLN_CONNSTR_UID", WLN_CONNSTR_NAME);
+            }
+        }
+        /// <summary>
+        /// 连接数据库的用户密码
+        /// </summary>
+        public static string WLN_CONNSTR_PWD
+        {
+            get
+            {
+                return Wlniao.Config.GetSetting("WLN_CONNSTR_UID");
             }
         }
         /// <summary>
@@ -138,9 +103,14 @@ namespace Wlniao
                     connstr_mysql = Wlniao.Config.GetConfigs("WLN_CONNSTR_MYSQL");
                     if (string.IsNullOrEmpty(connstr_mysql))
                     {
+                        var WLN_MYSQL_PORT = Wlniao.Config.GetConfigs("WLN_MYSQL_PORT", "3306");
+                        var WLN_MYSQL_HOST = Wlniao.Config.GetConfigs("WLN_MYSQL_HOST", WLN_CONNSTR_HOST);
+                        var WLN_MYSQL_NAME = Wlniao.Config.GetConfigs("WLN_MYSQL_NAME", WLN_CONNSTR_NAME);
+                        var WLN_MYSQL_UID = Wlniao.Config.GetConfigs("WLN_MYSQL_UID", WLN_CONNSTR_UID);
+                        var WLN_MYSQL_PWD = Wlniao.Config.GetConfigs("WLN_MYSQL_PWD", WLN_CONNSTR_PWD);
                         connstr_mysql = string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8;SslMode=none;"
                             , WLN_MYSQL_HOST, WLN_MYSQL_PORT, WLN_MYSQL_NAME, WLN_MYSQL_UID, WLN_MYSQL_PWD);
-                        if (string.IsNullOrEmpty(WLN_MYSQL_UID) || string.IsNullOrEmpty(WLN_MYSQL_PWD))
+                        if (string.IsNullOrEmpty(WLN_MYSQL_HOST) || string.IsNullOrEmpty(WLN_MYSQL_UID) || string.IsNullOrEmpty(WLN_MYSQL_PWD))
                         {
                             connstr_mysql = "";
                         }
@@ -159,7 +129,21 @@ namespace Wlniao
             {
                 if (connstr_sqlsqlver == null)
                 {
-                    connstr_sqlsqlver = Wlniao.Config.GetSetting("WLN_CONNSTR_SQLSERVER");
+                    connstr_sqlsqlver = Wlniao.Config.GetConfigs("WLN_CONNSTR_SQLSERVER");
+                    if (string.IsNullOrEmpty(connstr_sqlsqlver))
+                    {
+                        var WLN_MSSQL_PORT = Wlniao.Config.GetConfigs("WLN_MSSQL_PORT", "1433");
+                        var WLN_MSSQL_HOST = Wlniao.Config.GetConfigs("WLN_MSSQL_HOST", WLN_CONNSTR_HOST);
+                        var WLN_MSSQL_NAME = Wlniao.Config.GetConfigs("WLN_MSSQL_NAME", WLN_CONNSTR_NAME);
+                        var WLN_MSSQL_UID = Wlniao.Config.GetConfigs("WLN_MSSQL_UID", WLN_CONNSTR_UID);
+                        var WLN_MSSQL_PWD = Wlniao.Config.GetConfigs("WLN_MSSQL_PWD", WLN_CONNSTR_PWD);
+                        connstr_sqlsqlver = string.Format("Server={0},{1};Database={2};User Id={3};Password={4};TrustServerCertificate=true;"
+                            , WLN_MSSQL_HOST, WLN_MSSQL_PORT, WLN_MSSQL_NAME, WLN_MSSQL_UID, WLN_MSSQL_PWD);
+                        if (string.IsNullOrEmpty(WLN_MSSQL_NAME) || string.IsNullOrEmpty(WLN_MSSQL_UID) || string.IsNullOrEmpty(WLN_MSSQL_PWD))
+                        {
+                            connstr_sqlsqlver = "";
+                        }
+                    }
                 }
                 return connstr_sqlsqlver;
             }
@@ -174,7 +158,7 @@ namespace Wlniao
                 if (connstr_sqlite == null)
                 {
                     connstr_sqlite = Wlniao.Config.GetSetting("WLN_CONNSTR_SQLITE");
-                    if (string.IsNullOrEmpty(connstr_sqlite) && string.IsNullOrEmpty(WLN_MYSQL_NAME))
+                    if (string.IsNullOrEmpty(connstr_sqlite) && string.IsNullOrEmpty(WLN_CONNSTR_NAME))
                     {
                         var sqlite = Wlniao.IO.PathTool.Map(Wlniao.XCore.StartupRoot, XCore.FrameworkRoot, "xcore.db");
                         if (IO.FileEx.Exists(sqlite))

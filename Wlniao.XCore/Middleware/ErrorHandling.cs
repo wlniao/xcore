@@ -65,10 +65,14 @@ namespace Wlniao.Middleware
         /// <returns></returns>
         public static Task HandleExceptionAsync(HttpContext context, String message)
         {
-            if (!context.Response.Headers.ContainsKey("X-Wlniao-Debug"))
+            try
             {
-                context.Response.Headers.Add("X-Wlniao-Debug", message);
+                if (!context.Response.Headers.ContainsKey("X-Wlniao-Debug"))
+                {
+                    context.Response.Headers.Add("X-Wlniao-Debug", message);
+                }
             }
+            catch { }
             if (context.Request.Method == "POST" || context.Request.Query.ContainsKey("do"))
             {
                 context.Response.ContentType = "text/json";
