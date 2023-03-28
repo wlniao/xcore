@@ -60,7 +60,7 @@ namespace Wlniao
         {
             get
             {
-                return Wlniao.Config.GetSetting("WLN_CONNSTR_UID", WLN_CONNSTR_NAME);
+                return Wlniao.Config.GetSetting("WLN_CONNSTR_UID");
             }
         }
         /// <summary>
@@ -70,7 +70,7 @@ namespace Wlniao
         {
             get
             {
-                return Wlniao.Config.GetSetting("WLN_CONNSTR_UID");
+                return Wlniao.Config.GetSetting("WLN_CONNSTR_PWD");
             }
         }
         /// <summary>
