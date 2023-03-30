@@ -1,4 +1,7 @@
 using NUnit.Framework;
+using System.Collections.Generic;
+using System;
+using Wlniao.XServer;
 
 namespace Wlniao.XCore.Test
 {

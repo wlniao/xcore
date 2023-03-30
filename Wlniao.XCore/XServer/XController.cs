@@ -12,7 +12,7 @@ namespace Wlniao.XServer
     /// </summary>
     public class XController : Controller
     {
-        private static Dictionary<String, XsApp> _cache = new Dictionary<String, XsApp>();
+        private static readonly Dictionary<String, XsApp> _cache = new();
         /// <summary>
         /// 当前客户端的App信息
         /// </summary>
@@ -20,7 +20,7 @@ namespace Wlniao.XServer
         /// <summary>
         /// 默认返回的ApiResult对象
         /// </summary>
-        protected ApiResult<String> _rlt = new ApiResult<String>();
+        protected ApiResult<String> _rlt = new();
         /// <summary>
         /// 
         /// </summary>
@@ -35,16 +35,12 @@ namespace Wlniao.XServer
             if (string.IsNullOrEmpty(AppId))
             {
                 _rlt.message = "xsappid is missing";
-                var result = new ContentResult();
-                result.Content = Wlniao.Json.ToString(_rlt);
-                filterContext.Result = result;
+                filterContext.Result = new ContentResult { Content = Wlniao.Json.ToString(_rlt) };
             }
             else if (cvt.ToLong(TimeSpan) < XCore.NowUnix - 3600)
             {
                 _rlt.message = "request is expired";
-                var result = new ContentResult();
-                result.Content = Wlniao.Json.ToString(_rlt);
-                filterContext.Result = result;
+                filterContext.Result = new ContentResult() { Content = Wlniao.Json.ToString(_rlt) };
             }
             else
             {
@@ -57,12 +53,14 @@ namespace Wlniao.XServer
                     if (AppId == XServer.Common.AppId)
                     {
                         //使用同一对AppId及Secret
-                        app = new XsApp();
-                        app.appid = XServer.Common.AppId;
-                        app.secret = XServer.Common.Secret;
-                        app.domain = "";
-                        app.xclient = false;
-                        app.appname = "Default";
+                        app = new XsApp
+                        {
+                            appid = XServer.Common.AppId,
+                            secret = XServer.Common.Secret,
+                            domain = "",
+                            xclient = false,
+                            appname = "Default"
+                        };
                     }
                     else
                     {
@@ -71,12 +69,10 @@ namespace Wlniao.XServer
                         {
                             app = rlt.data;
                             _rlt.PutLog(rlt.logs);
-                            if (app.xclient && filterContext.ActionDescriptor.FilterDescriptors.Where(a => a.Filter.ToString().Contains("Wlniao.Mvc.XClientAttribute")).ToList().Count() == 0)
+                            if (app.xclient && !filterContext.ActionDescriptor.FilterDescriptors.Any(a => a.Filter.ToString().Contains("Wlniao.Mvc.XClientAttribute")))
                             {
                                 _rlt.message = "not allow xclient app";
-                                var result = new ContentResult();
-                                result.Content = Wlniao.Json.ToString(_rlt);
-                                filterContext.Result = result;
+                                filterContext.Result = new ContentResult() { Content = Wlniao.Json.ToString(_rlt) };
                                 return;
                             }
                         }
@@ -85,9 +81,7 @@ namespace Wlniao.XServer
                 if (app == null || app.appid.IsNullOrEmpty())
                 {
                     _rlt.message = "xsappid is invalid";
-                    var result = new ContentResult();
-                    result.Content = Wlniao.Json.ToString(_rlt);
-                    filterContext.Result = result;
+                    filterContext.Result = new ContentResult() { Content = Wlniao.Json.ToString(_rlt) };
                 }
                 else
                 {
@@ -119,9 +113,7 @@ namespace Wlniao.XServer
                             _cache.Remove(AppId);
                         }
                         _rlt.message = "signature error";
-                        var result = new ContentResult();
-                        result.Content = Wlniao.Json.ToString(_rlt);
-                        filterContext.Result = result;
+                        filterContext.Result = new ContentResult() { Content = Wlniao.Json.ToString(_rlt) };
                     }
                     else if (!_cache.ContainsKey(AppId))
                     {
@@ -136,6 +128,7 @@ namespace Wlniao.XServer
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
+        [NonAction]
         public new ActionResult Json(Object data)
         {
             var jsonStr = "";
@@ -226,7 +219,7 @@ namespace Wlniao.XServer
                 if (item.ToLower() == key && !string.IsNullOrEmpty(Request.Query[key]))
                 {
                     Default = Request.Query[item].ToString().Trim();
-                    if (!string.IsNullOrEmpty(Default) && Default.IndexOf('%') >= 0)
+                    if (!string.IsNullOrEmpty(Default) && Default.Contains('%'))
                     {
                         Default = strUtil.UrlDecode(Default);
                     }
@@ -250,7 +243,7 @@ namespace Wlniao.XServer
                 if (item.ToLower() == key && !string.IsNullOrEmpty(Request.Query[key]))
                 {
                     Default = Request.Query[item].ToString().Trim();
-                    if (!string.IsNullOrEmpty(Default) && Default.IndexOf('%') >= 0)
+                    if (!string.IsNullOrEmpty(Default) && Default.Contains('%'))
                     {
                         Default = strUtil.UrlDecode(Default);
                     }

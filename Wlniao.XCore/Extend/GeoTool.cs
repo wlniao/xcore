@@ -26,13 +26,31 @@ using System.Threading.Tasks;
 using Wlniao;
 namespace Wlniao
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class GeoTool
     {
+        /// <summary>
+        /// 
+        /// </summary>
         public enum Direction
         {
+            /// <summary>
+            /// 上
+            /// </summary>
             Top = 0,
+            /// <summary>
+            /// 右
+            /// </summary>
             Right = 1,
+            /// <summary>
+            /// 下
+            /// </summary>
             Bottom = 2,
+            /// <summary>
+            /// 左
+            /// </summary>
             Left = 3
         }
         private const double EARTH_RADIUS = 6378137; //地球半径常量

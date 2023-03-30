@@ -18,17 +18,17 @@
 		<RootNamespace>Wlniao.XCore</RootNamespace>
 		<RepositoryUrl>https://github.com/wlniao/xcore</RepositoryUrl>
 		<PackageIcon>wlniao.png</PackageIcon>
+		<PackageOutputPath>C:\Users\Administrator\OneDrive\Path\packages</PackageOutputPath>
 		<PackageProjectUrl>https://github.com/wlniao/xcore</PackageProjectUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<IncludeSymbols>False</IncludeSymbols>
+		<EnableNETAnalyzers>False</EnableNETAnalyzers>
+		<AnalysisLevel>6.0-all</AnalysisLevel>
 	</PropertyGroup>
-	<ItemGroup>
-	  <Compile Remove="Log\LogLevel.cs" />
-	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.15" />
 		<PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.4" />

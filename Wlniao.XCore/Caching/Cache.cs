@@ -153,7 +153,7 @@ namespace Wlniao.Caching
         /// <summary>
         /// 删除缓存内容
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="keys"></param>
         public static Boolean DelAll(String keys)
         {
             if (cType == CacheType.Redis)
