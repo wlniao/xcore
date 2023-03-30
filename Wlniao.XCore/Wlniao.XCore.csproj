@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Version>7.0.0</Version>
+		<Version>7.0.1</Version>
 		<PackageId>Wlniao.XCore</PackageId>
 		<PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -24,6 +24,9 @@
 		<IncludeSymbols>False</IncludeSymbols>
 		<EnableNETAnalyzers>False</EnableNETAnalyzers>
 		<AnalysisLevel>6.0-all</AnalysisLevel>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <Optimize>False</Optimize>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
