@@ -281,7 +281,7 @@ namespace Wlniao.XServer
             {
                 if (string.IsNullOrEmpty(_AppId))
                 {
-                    _AppId = Config.GetSetting("XServerAppId");
+                    _AppId = Config.GetConfigs("XServerAppId");
                 }
                 return _AppId;
             }
@@ -295,7 +295,7 @@ namespace Wlniao.XServer
             {
                 if (string.IsNullOrEmpty(_Secret))
                 {
-                    _Secret = Config.GetSetting("XServerSecret");
+                    _Secret = Config.GetConfigs("XServerSecret");
                 }
                 return _Secret;
             }

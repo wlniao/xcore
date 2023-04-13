@@ -543,10 +543,10 @@ namespace Wlniao.XServer
             {
                 if (bucketname == null)
                 {
-                    bucketname = Config.GetSetting("Upyun_Bucket");
-                    username = Config.GetSetting("Upyun_Username");
-                    password = Config.GetSetting("Upyun_Password");
-                    formapi = Config.GetSetting("Upyun_Formapi");
+                    bucketname = Config.GetConfigs("UpyunBucket");
+                    username = Config.GetConfigs("UpyunUsername");
+                    password = Config.GetConfigs("UpyunPassword");
+                    formapi = Config.GetConfigs("UpyunFormApi");
                     if (string.IsNullOrEmpty(bucketname))
                     {
                         bucketname = "";
@@ -1071,7 +1071,7 @@ namespace Wlniao.XServer
                                     var doc = new System.Xml.XmlDocument();
                                     doc.LoadXml(readTask.Result);
                                     msg = doc.GetElementsByTagName("Message")[0].InnerText;
-                                    log.Error("XStorage Aliyun：" + msg);
+                                    log.Debug("XStorage Aliyun：" + msg);
                                 }
                             }).Wait();
                         }
@@ -1364,7 +1364,7 @@ namespace Wlniao.XServer
                                     var doc = new System.Xml.XmlDocument();
                                     doc.LoadXml(readTask.Result);
                                     msg = doc.GetElementsByTagName("Message")[0].InnerText;
-                                    log.Error("XStorage QCloud：" + msg);
+                                    log.Debug("XStorage QCloud：" + msg);
                                 }
                             }).Wait();
                         }

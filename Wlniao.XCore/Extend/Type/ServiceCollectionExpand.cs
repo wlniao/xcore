@@ -59,7 +59,7 @@ namespace Wlniao
                 }
                 else
                 {
-                    log.Error("Business component registration failed: the '" + assemblyFile + "' file was not found");
+                    log.Debug("Business component registration failed: the '" + assemblyFile + "' file was not found");
                 }
             }
             if (types != null && types.Length > 0)
