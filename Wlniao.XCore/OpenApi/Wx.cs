@@ -262,11 +262,6 @@ namespace Wlniao.OpenApi
                     rlt.success = false;
                     rlt.message = "解析Json结果失败";
                 }
-                else if (!rlt.success && rlt.code == "40164")
-                {
-                    //白名单问题时，自动尝试本地直接获取
-                    rlt = GetAccessTokenByLocal(appid, appsecret);
-                }
             }
             catch (Exception ex)
             {
