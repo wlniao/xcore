@@ -19,6 +19,8 @@
     limitations under the License.
 
 ===============================================================================*/
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Newtonsoft.Json.Linq;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
@@ -115,20 +117,18 @@ namespace Wlniao.Caching
             {
                 try
                 {
-                    if (redis == null && nextconnect < DateTime.Now)
-                    {
-                        nextconnect = DateTime.Now.AddSeconds(10);
-                        redis = ConnectionMultiplexer.Connect(ConnStr);
-                    }
-                    if (redis != null)
+                    if (Instance != null && redis.IsConnected)
                     {
                         return redis.GetDatabase(Select);
                     }
+                    else
+                    {
+                        redis = null;
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    redis = null;
-                    log.Warn("Redis connect error");
+                    log.Error(ex.Message);
                 }
                 return null;
             }
@@ -143,20 +143,18 @@ namespace Wlniao.Caching
             {
                 try
                 {
-                    if (redis == null && nextconnect < DateTime.Now)
-                    {
-                        nextconnect = DateTime.Now.AddSeconds(10);
-                        redis = StackExchange.Redis.ConnectionMultiplexer.Connect(ConnStr);
-                    }
-                    if (redis != null)
+                    if (Instance != null && redis.IsConnected)
                     {
                         return redis.GetSubscriber();
                     }
+                    else
+                    {
+                        redis = null;
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    redis = null;
-                    log.Warn("Redis connect error");
+                    log.Error(ex.Message);
                 }
                 return null;
             }
@@ -179,12 +177,7 @@ namespace Wlniao.Caching
         {
             try
             {
-                if (redis == null && nextconnect < DateTime.Now)
-                {
-                    nextconnect = DateTime.Now.AddSeconds(60);
-                    redis = StackExchange.Redis.ConnectionMultiplexer.Connect(ConnStr);
-                }
-                if (redis != null)
+                if (Instance != null && redis.IsConnected)
                 {
                     var val = redis.GetDatabase(Select).StringGet(key);
                     if (val.HasValue && !val.IsNullOrEmpty)
@@ -192,11 +185,14 @@ namespace Wlniao.Caching
                         return val.ToString();
                     }
                 }
+                else
+                {
+                    redis = null;
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                redis = null;
-                log.Warn("Redis connect error");
+                log.Error(ex.Message);
             }
             return "";
         }
@@ -226,20 +222,18 @@ namespace Wlniao.Caching
         {
             try
             {
-                if (redis == null && nextconnect < DateTime.Now)
-                {
-                    nextconnect = DateTime.Now.AddSeconds(60);
-                    redis = StackExchange.Redis.ConnectionMultiplexer.Connect(ConnStr);
-                }
-                if (redis != null)
+                if (Instance != null && redis.IsConnected)
                 {
                     return redis.GetDatabase(Select).StringSet(key, value, TimeSpan.FromSeconds(expire));
                 }
+                else
+                {
+                    redis = null;
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                redis = null;
-                log.Warn("Redis connect error");
+                log.Error(ex.Message);
             }
             return false;
         }
@@ -264,20 +258,18 @@ namespace Wlniao.Caching
         {
             try
             {
-                if (redis == null && nextconnect < DateTime.Now)
-                {
-                    nextconnect = DateTime.Now.AddSeconds(60);
-                    redis = ConnectionMultiplexer.Connect(ConnStr);
-                }
-                if (redis != null)
+                if (Instance != null && redis.IsConnected)
                 {
                     return redis.GetDatabase(Select).KeyDelete(key);
                 }
+                else
+                {
+                    redis = null;
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                redis = null;
-                log.Warn("Redis connect error");
+                log.Error(ex.Message);
             }
             return false;
         }
@@ -290,20 +282,18 @@ namespace Wlniao.Caching
         {
             try
             {
-                if (redis == null && nextconnect < DateTime.Now)
-                {
-                    nextconnect = DateTime.Now.AddSeconds(60);
-                    redis = ConnectionMultiplexer.Connect(ConnStr);
-                }
-                if (redis != null)
+                if (Instance != null && redis.IsConnected)
                 {
                     return redis.GetDatabase(Select).KeyDelete(keys + "*");
                 }
+                else
+                {
+                    redis = null;
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                redis = null;
-                log.Warn("Redis connect error");
+                log.Error(ex.Message);
             }
             return false;
         }
@@ -315,20 +305,18 @@ namespace Wlniao.Caching
         {
             try
             {
-                if (redis == null && nextconnect < DateTime.Now)
-                {
-                    nextconnect = DateTime.Now.AddSeconds(60);
-                    redis = ConnectionMultiplexer.Connect(ConnStr);
-                }
-                if (redis != null)
+                if (Instance != null && redis.IsConnected)
                 {
                     return redis.GetDatabase(Select).KeyExists(key);
                 }
+                else
+                {
+                    redis = null;
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                redis = null;
-                log.Warn("Redis connect error");
+                log.Error(ex.Message);
             }
             return false;
         }

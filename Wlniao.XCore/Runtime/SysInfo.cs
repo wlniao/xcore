@@ -20,15 +20,14 @@
 
 ===============================================================================*/
 using System;
-using Microsoft.AspNetCore.Hosting;
+using System.Runtime.InteropServices;
 namespace Wlniao.Runtime
 {
     /// <summary>
     /// 当前系统信息（如：OSVersion等）
     /// </summary>
     public partial class SysInfo
-    {
-        private static System.Runtime.InteropServices.OSPlatform os = System.Runtime.InteropServices.OSPlatform.Windows;        
+    {     
 
         /// <summary>
         /// 当前是否为Linux系统
@@ -37,11 +36,7 @@ namespace Wlniao.Runtime
         {
             get
             {
-                return os == System.Runtime.InteropServices.OSPlatform.Linux;
-            }
-            set
-            {
-                os = System.Runtime.InteropServices.OSPlatform.Linux;
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
             }
         }
         /// <summary>
@@ -51,11 +46,7 @@ namespace Wlniao.Runtime
         {
             get
             {
-                return os == System.Runtime.InteropServices.OSPlatform.Windows;
-            }
-            set
-            {
-                os = System.Runtime.InteropServices.OSPlatform.Windows;
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
             }
         }
         /// <summary>
@@ -65,11 +56,7 @@ namespace Wlniao.Runtime
         {
             get
             {
-                return os == System.Runtime.InteropServices.OSPlatform.OSX;
-            }
-            set
-            {
-                os = System.Runtime.InteropServices.OSPlatform.OSX;
+                return RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
             }
         }
 

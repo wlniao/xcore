@@ -28,6 +28,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Logging;
+using Wlniao.Log;
 
 namespace Wlniao
 {
@@ -45,24 +46,12 @@ namespace Wlniao
         /// </summary>
         internal static DateTime _startup_time = DateTime.Now;
         /// <summary>
-        /// 当前日志输出路径
-        /// </summary>
-        internal static string _log_path = null;
-        /// <summary>
-        /// 当前日志输出工具
-        /// </summary>
-        internal static string _log_provider = null;
-        /// <summary>
-        /// 当前日志输出等级，None为未设定，会根据配置文件进行初始化
-        /// </summary>
-        internal static LogLevel _log_level = LogLevel.None;
-        /// <summary>
         /// 重新初始化状态
         /// </summary>
         public static void Init()
         {
             Config.Clear();
-            _log_level = LogLevel.None;
+            Loger.LogLevel = LogLevel.None;
         }
         /// <summary>
         /// 输出系统信息
@@ -131,8 +120,8 @@ namespace Wlniao
                     Console.WriteLine("Program Version      " + ProgramVersion);
                 }
                 Console.WriteLine("\r\nXCore Runtime:");
-                Console.WriteLine("    LogType          " + strUtil.GetTitleCase(LogProvider));
-                Console.WriteLine("    LogLevel         " + LogLevel.ToString());
+                Console.WriteLine("    LogType          " + Loger.LogProvider.GetType().Name);
+                Console.WriteLine("    LogLevel         " + Loger.LogLevel.ToString());
                 Console.WriteLine("    Language         " + lang.GetLang());
                 Console.WriteLine("    StartupRoot      " + StartupRoot);
                 Console.WriteLine("    StartupTime      " + StartupTime);
@@ -253,7 +242,6 @@ namespace Wlniao
                     startupRoot = System.IO.Directory.GetCurrentDirectory();
                     if (startupRoot.IndexOf('/') >= 0)
                     {
-                        Runtime.SysInfo.IsLinux = true;
                         if (startupRoot.IndexOf("/bin") > 0)
                         {
                             startupRoot = startupRoot.Substring(0, startupRoot.IndexOf("/bin") + 1);
@@ -265,7 +253,6 @@ namespace Wlniao
                     }
                     else
                     {
-                        Runtime.SysInfo.IsWindows = true;
                         if (startupRoot.IndexOf("\\bin") > 0)
                         {
                             startupRoot = startupRoot.Substring(0, startupRoot.IndexOf("\\bin") + 1);
@@ -431,87 +418,6 @@ namespace Wlniao
                     _WebHost = Config.GetConfigs("WLN_HOST");
                 }
                 return _WebHost;
-            }
-        }
-        /// <summary>
-        /// 当前日志输出路径
-        /// </summary>
-        internal static string LogPath
-        {
-            get
-            {
-                if (_log_path == null)
-                {
-                    _log_path = Config.GetConfigs("WLN_LOG_PATH");
-                    if (string.IsNullOrEmpty(_log_path))
-                    {
-                        _log_path = XCore.FrameworkRoot + "/logs";
-                    }
-                }
-                return _log_path;
-            }
-        }
-        /// <summary>
-        /// 当前日志输出等级
-        /// </summary>
-        internal static LogLevel LogLevel
-        {
-            get
-            {
-                if (_log_level == LogLevel.None)
-                {
-                    try
-                    {
-                        var level = strUtil.GetTitleCase(Config.GetConfigs("WLN_LOG_LEVEL"));
-                        if (string.IsNullOrEmpty(level))
-                        {
-                            _log_level = LogLevel.Information;
-                        }
-                        else
-                        {
-                            if (level == "Info")
-                            {
-                                _log_level = LogLevel.Information;
-                            }
-                            else if (level == "Fatal")
-                            {
-                                _log_level = LogLevel.Critical;
-                            }
-                            else
-                            {
-                                _log_level = (LogLevel)Enum.Parse(typeof(LogLevel), level, true);
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        _log_level = LogLevel.Information;
-                    }
-                }
-                return _log_level;
-            }
-        }
-        /// <summary>
-        /// 当前日志输出工具
-        /// </summary>
-        /// <returns></returns>
-        internal static string LogProvider
-        {
-            get
-            {
-                if (_log_provider == null)
-                {
-                    _log_provider = Config.GetConfigs("WLN_LOG_TYPE");
-                    if (string.IsNullOrEmpty(_log_provider))
-                    {
-                        _log_provider = "console";
-                    }
-                    else
-                    {
-                        _log_provider = _log_provider.ToLower();
-                    }
-                }
-                return _log_provider;
             }
         }
         #endregion

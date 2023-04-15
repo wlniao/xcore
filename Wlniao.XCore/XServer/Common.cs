@@ -26,6 +26,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Wlniao.Log;
 
 namespace Wlniao.XServer
 {
@@ -695,7 +696,7 @@ namespace Wlniao.XServer
                     {
                         url += "?" + data;
                     }
-                    if (console && XCore.LogLevel == Microsoft.Extensions.Logging.LogLevel.Debug)
+                    if (console && Loger.LogLevel == LogLevel.Debug)
                     {
                         Log.Loger.Console(url, ConsoleColor.DarkGreen);
                     }
@@ -999,7 +1000,7 @@ namespace Wlniao.XServer
                         }
                         #endregion
                     }
-                    if (console && XCore.LogLevel == Microsoft.Extensions.Logging.LogLevel.Information)
+                    if (console && Loger.LogLevel == Microsoft.Extensions.Logging.LogLevel.Information)
                     {
                         common.WriteLog(apilog);
                     }
@@ -1205,7 +1206,7 @@ namespace Wlniao.XServer
                     url += "?" + data;
                 }
                 var apilog = new ApiLog(common.App, url);
-                if (XCore.LogLevel == LogLevel.Debug)
+                if (Loger.LogLevel == LogLevel.Debug)
                 {
                     Log.Loger.Console(url, ConsoleColor.DarkGreen);
                 }
@@ -1284,7 +1285,7 @@ namespace Wlniao.XServer
                     em.Current.Value.Failed();
                     apilog.Failed(ex.Message);
                 }
-                if (console && XCore.LogLevel == LogLevel.Information)
+                if (console && Loger.LogLevel == LogLevel.Debug)
                 {
                     if (!string.IsNullOrEmpty(str))
                     {
@@ -1420,7 +1421,7 @@ namespace Wlniao.XServer
                     url += "?" + data;
                 }
                 var apilog = new ApiLog(common.App, url);
-                if (XCore.LogLevel == LogLevel.Debug)
+                if (Loger.LogLevel == LogLevel.Debug)
                 {
                     Log.Loger.Console(url, ConsoleColor.DarkGreen);
                 }
@@ -1494,7 +1495,7 @@ namespace Wlniao.XServer
                     em.Current.Value.Failed();
                     logs.Add(apilog.Failed(ex.Message));
                 }
-                if (console && XCore.LogLevel == LogLevel.Information)
+                if (console && Loger.LogLevel == LogLevel.Information)
                 {
                     common.WriteLog(apilog);
                 }

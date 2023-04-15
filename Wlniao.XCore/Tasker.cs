@@ -8,6 +8,7 @@ using Wlniao.Caching;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Security.Cryptography;
 using System.IO;
+using static Microsoft.AspNetCore.Razor.Language.TagHelperMetadata;
 
 namespace Wlniao
 {
@@ -116,69 +117,73 @@ namespace Wlniao
         /// </summary>
         /// <param name="topics">多个主题可通过“,”分割</param>
         /// <param name="begin">开始触发时间</param>
-        /// <param name="maxqueue">最大队列</param>
-        public static void Trigger(string topics, long begin = 0, int maxqueue = 1000)
+        /// <param name="delay">队列检查时间间隔（单位：毫秒）</param>
+        /// <param name="maxqueue">每个时间区间拉取任务的最大数量</param>
+        public static void Trigger(string topics, long begin = 0, int delay = 1000, int maxqueue = 100)
         {
             if (string.IsNullOrEmpty(topics))
             {
                 return;
             }
-            foreach (var topic in topics.SplitBy())
+            Task.Run(() =>
             {
-                Task.Delay(3000).Wait();
-                Task.Run(() =>
+                while (Instance == null)
                 {
-                    var index = "tasker_queue_" + topic;
-                    while (true)
+                    Task.Delay(300).Wait();
+                }
+                foreach (var topic in topics.SplitBy())
+                {
+                    Task.Run(() =>
                     {
-                        try
+                        var index = "tasker_queue_" + topic;
+                        while (true)
                         {
-                            Task.Run(() =>
+                            try
                             {
-                                if (Instance != null)
+                                if (Instance != null && instance.IsConnected)
                                 {
                                     var db = instance.GetDatabase(Redis.Select);
                                     var now = DateTools.GetUnix();
                                     var tran = db.CreateTransaction();
                                     foreach (var s in db.SortedSetRangeByRankWithScores(index, 0, maxqueue, Order.Ascending))
                                     {
-                                        var max = 0L;
-                                        var next = 0L;
-                                        var times = new List<string>();
-                                        var jobid = s.Element.ToString();
-                                        try
-                                        {
-                                            var infokey = "tasker_tl" + topic + "_" + jobid;
-                                            var value = db.StringGet(infokey).ToString();
-                                            if (!string.IsNullOrEmpty(value))
-                                            {
-                                                foreach (var item in value.SplitBy())
-                                                {
-                                                    max = cvt.ToLong(item);
-                                                    if (next == 0 && max > now)
-                                                    {
-                                                        next = max;
-                                                        times.Add(item);
-                                                    }
-                                                    else if (max > now)
-                                                    {
-                                                        times.Add(item);
-                                                    }
-                                                }
-                                            }
-                                            if (next > 0)
-                                            {
-                                                tran.StringSetAsync(infokey, string.Join(",", times), TimeSpan.FromSeconds(max - now + 10));
-                                                tran.SortedSetAddAsync(index, jobid, next);
-                                            }
-                                            else if (max > 0)
-                                            {
-                                                tran.KeyDeleteAsync(infokey);
-                                            }
-                                        }
-                                        catch { }
                                         if (s.Score <= now)
                                         {
+                                            var next = 0L;
+                                            var jobid = s.Element.ToString();
+                                            try
+                                            {
+                                                var max = 0L;
+                                                var times = new List<string>();
+                                                var infokey = "tasker_tl" + topic + "_" + jobid;
+                                                var value = db.StringGet(infokey).ToString();
+                                                if (!string.IsNullOrEmpty(value))
+                                                {
+                                                    foreach (var item in value.SplitBy())
+                                                    {
+                                                        max = cvt.ToLong(item);
+                                                        if (next == 0 && max > now)
+                                                        {
+                                                            next = max;
+                                                            times.Add(item);
+                                                        }
+                                                        else if (max > now)
+                                                        {
+                                                            times.Add(item);
+                                                        }
+                                                    }
+                                                }
+                                                if (next > 0)
+                                                {
+                                                    tran.StringSetAsync(infokey, string.Join(",", times), TimeSpan.FromSeconds(max - now + 10));
+                                                    tran.SortedSetAddAsync(index, jobid, next);
+                                                }
+                                                else if (max > 0)
+                                                {
+                                                    tran.KeyDeleteAsync(infokey);
+                                                }
+                                            }
+                                            catch { }
                                             if (next <= now)
                                             {
                                                 tran.SortedSetRemoveAsync(index, jobid);
@@ -188,16 +193,29 @@ namespace Wlniao
                                                 tran.PublishAsync(index, jobid);
                                             }
                                         }
+                                        else
+                                        {
+                                            break;
+                                        }
                                     }
                                     tran.Execute();
                                 }
-                            });
-                            Task.Delay(1000).Wait();
+                            }
+                            catch (Exception ex)
+                            {
+                                log.Topic("Tasker", ex.Message);
+                            }
+                            finally
+                            {
+                                if (delay > 0 && delay < 86401)
+                                {
+                                    Task.Delay(delay).Wait();
+                                }
+                            }
                         }
-                        catch { }
-                    }
-                });
-            }
+                    });
+                }
+            });
         }
         /// <summary>
         /// 订阅事件
@@ -216,42 +234,63 @@ namespace Wlniao
             }
             Task.Run(() =>
             {
-                ISubscriber subscriber = null;
-                while(watcher.ContainsKey(topic))
+                while (Instance == null)
                 {
-                    if (watcher[topic] < DateTime.Now.AddMinutes(5))
+                    Task.Delay(300).Wait();
+                }
+                ISubscriber subscriber = null;
+                var channel = new RedisChannel("tasker_queue_" + topic, RedisChannel.PatternMode.Literal);
+                while (watcher.ContainsKey(topic))
+                {
+                    try
                     {
-                        try
+                        if (watcher[topic] < DateTime.Now.AddMinutes(-30))
                         {
-                            if (subscriber == null)
+                            if (subscriber != null)
                             {
-                                subscriber = Instance.GetSubscriber();
+                                log.Topic("Tasker", "Tasker subscribe " + topic + " restart at " + DateTools.Format());
+                                subscriber.Unsubscribe(channel);
                             }
-                            subscriber.Subscribe("tasker_queue_" + topic, (channel, message) =>
+                            subscriber = null;  //默认30分钟异常周期，超过时清除subscriber并在后续重新发起订阅
+                        }
+                        if (subscriber == null)
+                        {
+                            watcher[topic] = DateTime.Now;
+                            subscriber = Instance.GetSubscriber();
+                            subscriber.Subscribe(channel, (rchannel, message) =>
                             {
-                                if (watcher.ContainsKey(topic))
+                                watcher[topic] = DateTime.Now;
+                                func.Invoke(new Context
                                 {
-                                    watcher[topic] = DateTime.Now;
-                                    func.Invoke(new Context
-                                    {
-                                        key = message,
-                                        topic = topic,
-                                    });
-                                }
-                                else if (subscriber != null)
-                                {
-                                    subscriber.Unsubscribe("tasker_queue_" + topic);
-                                    subscriber = null;
-                                }
+                                    key = message,
+                                    topic = topic,
+                                });
                             });
                         }
-                        catch
+                        else if (!subscriber.IsConnected(channel))
                         {
-                            subscriber = null;
-                            log.Error("Tasker subscribe " + topic + " error, please check if Redis connection is correct.");
+                            log.Topic("Tasker", "Tasker subscribe " + topic + " link has been disconnected.");
                         }
-                        Task.Delay(3000).Wait();
+                        else
+                        {
+                            watcher[topic] = DateTime.Now;
+                        }
                     }
+                    catch
+                    {
+                        subscriber = null;
+                        log.Topic("Tasker", "Tasker subscribe " + topic + " error, please check if Redis connection is correct.");
+                    }
+                    Task.Delay(3000).Wait();
+                }
+                if (subscriber != null)
+                {
+                    if (subscriber.IsConnected(channel))
+                    {
+                        subscriber.Unsubscribe(channel);
+                    }
+                    subscriber = null;
+                    log.Topic("Tasker", "Tasker subscribe " + topic + " stop.");
                 }
             });
         }
@@ -281,7 +320,7 @@ namespace Wlniao
             }
             try
             {
-                if (Instance != null)
+                if (Instance != null && instance.IsConnected)
                 {
                     var db = instance.GetDatabase(Redis.Select);
                     var tran = db.CreateTransaction();
@@ -313,12 +352,15 @@ namespace Wlniao
         {
             try
             {
-                var tran = Instance.GetDatabase(Redis.Select).CreateTransaction();
-                foreach (var topic in topics.SplitBy())
+                if (Instance != null && instance.IsConnected)
                 {
-                    tran.SortedSetAddAsync("tasker_queue_" + topic, key, runtime > 0 ? runtime : XCore.NowUnix);
+                    var tran = instance.GetDatabase(Redis.Select).CreateTransaction();
+                    foreach (var topic in topics.SplitBy())
+                    {
+                        tran.SortedSetAddAsync("tasker_queue_" + topic, key, runtime > 0 ? runtime : XCore.NowUnix);
+                    }
+                    return tran.Execute();
                 }
-                return tran.Execute();
             }
             catch
             {
@@ -326,8 +368,8 @@ namespace Wlniao
                 {
                     instance = null;
                 }
-                return false;
             }
+            return false;
         }
         /// <summary>
         /// 放入任务队列
@@ -340,31 +382,34 @@ namespace Wlniao
         {
             try
             {
-                var now = XCore.NowUnix;
-                var times = new List<long>();
-                if (delays == null || delays.Length == 0)
+                if (Instance != null && instance.IsConnected)
                 {
-                    delays = Delays;
-                }
-                foreach (var delay in delays)
-                {
-                    times.Add(now + delay);
-                }
-                var tran = Instance.GetDatabase(Redis.Select).CreateTransaction();
-                foreach (var topic in topics.SplitBy())
-                {
-                    if (topic == "queue")
+                    var now = XCore.NowUnix;
+                    var times = new List<long>();
+                    if (delays == null || delays.Length == 0)
                     {
-                        log.Error("tasker error, topic cannot use:" + topic);
-                        return false;
+                        delays = Delays;
                     }
-                    tran.SortedSetAddAsync("tasker_queue_" + topic, key, times[0]);
-                    if (times.Count > 0)
+                    foreach (var delay in delays)
                     {
-                        tran.StringSetAsync("tasker_tl" + topic + "_" + key, string.Join(",", times), TimeSpan.FromSeconds(delays.LastOrDefault() + 10));
+                        times.Add(now + delay);
                     }
+                    var tran = Instance.GetDatabase(Redis.Select).CreateTransaction();
+                    foreach (var topic in topics.SplitBy())
+                    {
+                        if (topic == "queue")
+                        {
+                            log.Error("tasker error, topic cannot use:" + topic);
+                            return false;
+                        }
+                        tran.SortedSetAddAsync("tasker_queue_" + topic, key, times[0]);
+                        if (times.Count > 0)
+                        {
+                            tran.StringSetAsync("tasker_tl" + topic + "_" + key, string.Join(",", times), TimeSpan.FromSeconds(delays.LastOrDefault() + 10));
+                        }
+                    }
+                    return tran.Execute();
                 }
-                return tran.Execute();
             }
             catch
             {
@@ -372,8 +417,8 @@ namespace Wlniao
                 {
                     instance = null;
                 }
-                return false;
             }
+            return false;
         }
     }
 }

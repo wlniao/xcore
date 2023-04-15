@@ -29,46 +29,73 @@ namespace Wlniao.Log
     /// </summary>
     public class Loger
     {
-        private static Object logObj = null;
-        private static void callMethod(String method, params String[] args)
+        /// <summary>
+        /// 当前日志输出等级，None为未设定，会根据配置文件进行初始化
+        /// </summary>
+        private static LogLevel logLevel = LogLevel.None;
+        /// <summary>
+        /// 当前日志输出工具
+        /// </summary>
+        private static ILogProvider logProvider = null;
+        /// <summary>
+        /// 当前日志输出等级
+        /// </summary>
+        internal static LogLevel LogLevel
         {
-            if (logObj == null)
+            get
             {
-                var typeName = "Wlniao.Log." + strUtil.GetTitleCase(XCore.LogProvider) + "Logger";
-                var asmName = "Wlniao.XCore." + strUtil.GetTitleCase(XCore.LogProvider);
-                logObj = rft.GetInstance(asmName, typeName);
+                if (logLevel == LogLevel.None)
+                {
+                    var level = Config.GetConfigs("WLN_LOG_LEVEL").ToLower();
+                    if (level == "warn")
+                    {
+                        logLevel = LogLevel.Warning;
+                    }
+                    else if (level == "fatal")
+                    {
+                        logLevel = LogLevel.Critical;
+                    }
+                    else if (!Enum.TryParse<LogLevel>(strUtil.GetTitleCase(level), out logLevel))
+                    {
+                        logLevel = LogLevel.Information;
+                    }
+                }
+                return logLevel;
             }
-            if (logObj != null)
+            set { logLevel = value; }
+        }
+        /// <summary>
+        /// 当前日志输出工具
+        /// </summary>
+        /// <returns></returns>
+        public static ILogProvider LogProvider
+        {
+            get
             {
-                rft.CallMethod(logObj, method, args);
+                if (logProvider == null)
+                {
+                    if (Config.GetConfigs("WLN_LOG_TYPE").ToLower() == "file")
+                    {
+                        logProvider = new FileLoger(LogLevel);
+                    }
+                    else
+                    {
+                        logProvider = new ConsoleLoger(LogLevel);
+                    }
+                }
+                return logProvider;
             }
         }
+
         /// <summary>
         /// 设置日志提供工具
         /// </summary>
-        /// <param name="level"></param>
         /// <param name="provider"></param>
-        public static void SetLogger(String level = "debug", String provider = "file")
+        public static void SetLogger(ILogProvider provider)
         {
-            try
+            if (provider != null)
             {
-                XCore._log_provider = provider;
-                if (level == "Info")
-                {
-                    XCore._log_level = LogLevel.Information;
-                }
-                else if (level == "Fatal")
-                {
-                    XCore._log_level = LogLevel.Critical;
-                }
-                else
-                {
-                    XCore._log_level = (LogLevel)Enum.Parse(typeof(LogLevel), level, true);
-                }
-            }
-            catch
-            {
-                XCore._log_level = LogLevel.Information;
+                logProvider = provider;
             }
         }
         /// <summary>
@@ -83,42 +110,20 @@ namespace Wlniao.Log
             System.Console.ForegroundColor = ConsoleColor.White;
         }
         /// <summary>
-        /// 输出Info级别的日志
-        /// </summary>
-        /// <param name="message"></param>
-        public static void Info(String message)
-        {
-            if (XCore.LogLevel <= LogLevel.Information)
-            {
-                if (XCore.LogProvider == "file")
-                {
-                    FileLogger.Info(message);
-                }
-                else if (XCore.LogProvider != "console")
-                {
-                    callMethod("Info", message);
-                }
-                Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.DarkGray);
-            }
-        }
-        /// <summary>
         /// 输出Debug级别的日志
         /// </summary>
         /// <param name="message"></param>
         public static void Debug(String message)
         {
-            if (XCore.LogLevel <= LogLevel.Debug)
-            {
-                if (XCore.LogProvider == "file")
-                {
-                    FileLogger.Debug(message);
-                }
-                else if (XCore.LogProvider != "console")
-                {
-                    callMethod("Debug", message);
-                }
-                Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.White);
-            }
+            LogProvider.Debug(message);
+        }
+        /// <summary>
+        /// 输出Info级别的日志
+        /// </summary>
+        /// <param name="message"></param>
+        public static void Info(String message)
+        {
+            LogProvider.Info(message);
         }
         /// <summary>
         /// 输出Warn级别的日志
@@ -126,18 +131,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Warn(String message)
         {
-            if (XCore.LogLevel <= LogLevel.Warning)
-            {
-                if (XCore.LogProvider == "file")
-                {
-                    FileLogger.Warn(message);
-                }
-                else if (XCore.LogProvider != "console")
-                {
-                    callMethod("Warn", message);
-                }
-                Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.DarkYellow);
-            }
+            LogProvider.Warn(message);
         }
         /// <summary>
         /// 输出Error级别的日志
@@ -145,18 +139,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Error(String message)
         {
-            if (XCore.LogLevel <= LogLevel.Error)
-            {
-                if (XCore.LogProvider == "file")
-                {
-                    FileLogger.Error(message);
-                }
-                else if (XCore.LogProvider != "console")
-                {
-                    callMethod("Error", message);
-                }
-                Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.Red);
-            }
+            LogProvider.Error(message);
         }
         /// <summary>
         /// 输出Fatal级别的日志
@@ -164,18 +147,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Fatal(String message)
         {
-            if (XCore.LogLevel <= LogLevel.Critical)
-            {
-                if (XCore.LogProvider == "file")
-                {
-                    FileLogger.Fatal(message);
-                }
-                else if (XCore.LogProvider != "console")
-                {
-                    callMethod("Fatal", message);
-                }
-                Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.Magenta);
-            }
+            LogProvider.Fatal(message);
         }
         /// <summary>
         /// 输出自定义主题的日志
@@ -184,15 +156,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Topic(String topic, String message)
         {
-            if (XCore.LogProvider == "file")
-            {
-                FileLogger.Write(new LogMessage { LogTime = DateTime.Now, Message = message, LogLevel = topic });
-            }
-            else if (XCore.LogProvider != "console")
-            {
-                callMethod("Write", topic, message);
-            }
-            Console(string.Format("{0} => {1}", DateTools.Format(), message, topic), ConsoleColor.Magenta);
+            LogProvider.Topic(topic, message);
         }
     }
 }
