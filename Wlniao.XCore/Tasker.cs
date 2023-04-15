@@ -222,7 +222,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="func"></param>
-        public static void Subscribe(string topic, Func<Context, Boolean> func)
+        public static void Subscribe(string topic, Func<Context, Object> func)
         {
             if (string.IsNullOrEmpty(topic))
             {
