@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Security.Cryptography;
 using System.IO;
 using static Microsoft.AspNetCore.Razor.Language.TagHelperMetadata;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Wlniao
 {
@@ -42,7 +43,7 @@ namespace Wlniao
             {
                 if (delays == null)
                 {
-                    lock (XCore.Lock)
+                    lock (watcher)
                     {
                         try
                         {
@@ -145,15 +146,23 @@ namespace Wlniao
                                     var db = instance.GetDatabase(Redis.Select);
                                     var now = DateTools.GetUnix();
                                     var tran = db.CreateTransaction();
+                                    var jobid = "";
+                                    var max = 0L;
+                                    var next = 0L;
+                                    tran.SortedSetAddAsync(index, "tasker", now - 1);
                                     foreach (var s in db.SortedSetRangeByRankWithScores(index, 0, maxqueue, Order.Ascending))
                                     {
                                         if (s.Score <= now)
                                         {
-                                            var next = 0L;
-                                            var jobid = s.Element.ToString();
                                             try
                                             {
-                                                var max = 0L;
+                                                jobid = s.Element.ToString();
+                                                if (jobid == "tasker")
+                                                {
+                                                    continue;
+                                                }
+                                                max = 0L;
+                                                next = 0L;
                                                 var times = new List<string>();
                                                 var infokey = "tasker_tl" + topic + "_" + jobid;
                                                 var value = db.StringGet(infokey).ToString();
@@ -394,7 +403,7 @@ namespace Wlniao
                     {
                         times.Add(now + delay);
                     }
-                    var tran = Instance.GetDatabase(Redis.Select).CreateTransaction();
+                    var tran = instance.GetDatabase(Redis.Select).CreateTransaction();
                     foreach (var topic in topics.SplitBy())
                     {
                         if (topic == "queue")

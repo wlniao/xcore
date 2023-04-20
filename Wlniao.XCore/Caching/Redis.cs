@@ -57,23 +57,24 @@ namespace Wlniao.Caching
             {
                 if (string.IsNullOrEmpty(connstr))
                 {
-                    lock (XCore.Lock)
+                    lock (connstr)
                     {
-                        connstr = Config.GetConfigs("WLN_REDIS");
-                        if (string.IsNullOrEmpty(connstr))
+                        var _connstr = Config.GetConfigs("WLN_REDIS");
+                        if (string.IsNullOrEmpty(_connstr))
                         {
                             var host = Config.GetConfigs("WLN_REDIS_HOST");
                             var pass = Config.GetConfigs("WLN_REDIS_PASS");
                             var port = cvt.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
                             if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
                             {
-                                connstr = host + ":" + port;
+                                _connstr = host + ":" + port;
                                 if (!string.IsNullOrEmpty(pass))
                                 {
-                                    connstr += ",password=" + pass;
+                                    _connstr += ",password=" + pass;
                                 }
                             }
                         }
+                        connstr = _connstr;
                     }
                 }
                 return connstr;

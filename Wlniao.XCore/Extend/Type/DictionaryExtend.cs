@@ -96,6 +96,37 @@ namespace Wlniao
         /// <summary>
         /// 
         /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static T GetValue<T>(this Dictionary<string, object> dic, string key)
+        {
+            return dic.GetValue<T>(key, default(T));
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
+        /// <param name="Default"></param>
+        /// <returns></returns>
+        public static T GetValue<T>(this Dictionary<string, object> dic, string key, T Default)
+        {
+            if (dic != null && dic.ContainsKey(key))
+            {
+                try
+                {
+                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(dic[key]);
+                    return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
+                }
+                catch { }
+            }
+            return Default;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="dic"></param>
         /// <param name="key"></param>
         /// <param name="defaultValue"></param>
