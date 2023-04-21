@@ -58,7 +58,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Debug)
             {
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.White);
+                Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.DarkGray);
             }
         }
         /// <summary>
@@ -69,7 +69,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Information)
             {
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.DarkGray);
+                Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.White);
             }
         }
         /// <summary>

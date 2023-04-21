@@ -55,11 +55,11 @@ namespace Wlniao
                 if (asms.Length > 0)
                 {
                     types = Assembly.LoadFrom(asms[0]).GetTypes();
-                    log.Error("Find business component from: " + asms[0]);
+                    log.Info("Find business component from: " + asms[0]);
                 }
                 else
                 {
-                    log.Debug("Business component registration failed: the '" + assemblyFile + "' file was not found");
+                    log.Error("Business component registration failed: the '" + assemblyFile + "' file was not found");
                 }
             }
             if (types != null && types.Length > 0)

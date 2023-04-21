@@ -51,7 +51,7 @@ namespace Wlniao
         public static void Init()
         {
             Config.Clear();
-            Loger.LogLevel = LogLevel.None;
+            Loger.logLevel = LogLevel.None;
         }
         /// <summary>
         /// 输出系统信息

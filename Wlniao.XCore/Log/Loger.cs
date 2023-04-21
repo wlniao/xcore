@@ -32,7 +32,7 @@ namespace Wlniao.Log
         /// <summary>
         /// 当前日志输出等级，None为未设定，会根据配置文件进行初始化
         /// </summary>
-        private static LogLevel logLevel = LogLevel.None;
+        internal static LogLevel logLevel = LogLevel.None;
         /// <summary>
         /// 当前日志输出工具
         /// </summary>
@@ -40,7 +40,7 @@ namespace Wlniao.Log
         /// <summary>
         /// 当前日志输出等级
         /// </summary>
-        internal static LogLevel LogLevel
+        public static LogLevel LogLevel
         {
             get
             {
@@ -62,7 +62,6 @@ namespace Wlniao.Log
                 }
                 return logLevel;
             }
-            set { logLevel = value; }
         }
         /// <summary>
         /// 当前日志输出工具
@@ -74,7 +73,13 @@ namespace Wlniao.Log
             {
                 if (logProvider == null)
                 {
-                    if (Config.GetConfigs("WLN_LOG_TYPE").ToLower() == "file")
+                    var type = Config.GetConfigs("WLN_LOG_TYPE").ToLower();
+                    var server = Config.GetConfigs("WLN_LOG_SERVER").ToLower();
+                    if (type == "loki" || (string.IsNullOrEmpty(type) && !string.IsNullOrEmpty(server)))
+                    {
+                        logProvider = new LokiLoger(LogLevel, server);
+                    }
+                    else if (type == "file")
                     {
                         logProvider = new FileLoger(LogLevel);
                     }
@@ -93,10 +98,7 @@ namespace Wlniao.Log
         /// <param name="provider"></param>
         public static void SetLogger(ILogProvider provider)
         {
-            if (provider != null)
-            {
-                logProvider = provider;
-            }
+            logProvider = provider;
         }
         /// <summary>
         /// 直接在控制台打印内容
