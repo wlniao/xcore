@@ -255,14 +255,14 @@ namespace Wlniao
         {
             lock (XCore.Lock)
             {
-                _config = new Dictionary<string, string>();
                 if (file.Exists(path))
                 {
-                    foreach (var kv in cvt.ToDictionary(file.Read(path)))
-                    {
-                        _config.TryAdd(kv.Key, kv.Value);
-                    }
-                }
+                    _config = cvt.ToDictionary(file.Read(path));
+				}
+                else
+				{
+					_config = new Dictionary<string, string>();
+				}
             }
         }
 

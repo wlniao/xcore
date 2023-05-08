@@ -36,45 +36,59 @@ namespace Wlniao.XServer
                 var timestamp = PostRequest("timestamp");
                 if (string.IsNullOrEmpty(token))
                 {
-                    result.data = "100";
-                    result.message = "通讯密钥为配置，请先配置token";
-                }
-                else if (string.IsNullOrEmpty(sign))
-                {
-                    result.data = "100";
-                    result.message = "缺少参数，sign不能为空";
+                    result.data = "200";
+                    result.message = "通讯密钥未配置，请先配置token";
                 }
                 else if (string.IsNullOrEmpty(data))
                 {
-                    result.data = "100";
+                    result.data = "202";
                     result.message = "缺少参数，data不能为空";
+                }
+                else if (string.IsNullOrEmpty(sign))
+                {
+                    result.data = "202";
+                    result.message = "缺少参数，sign不能为空";
                 }
                 else if (string.IsNullOrEmpty(timestamp))
                 {
-                    result.data = "100";
+                    result.data = "202";
                     result.message = "缺少参数，timestamp不能为空";
                 }
                 else if (cvt.ToLong(timestamp) + 3600 < XCore.NowUnix)
                 {
-                    result.code = "100";
+                    result.code = "203";
                     result.message = "请求已过期，请重新发起";
                 }
                 else if (Encryptor.SM3Encrypt(timestamp + data + token) != sign)
                 {
-                    result.code = "402";
+                    result.code = "205";
                     result.message = "请求错误，签名验证失败";
                 }
                 else
                 {
                     var json = Encryptor.SM4DecryptECBFromHex(data, token);
-                    if (string.IsNullOrEmpty(json))
+                    if (string.IsNullOrEmpty(json) && !string.IsNullOrEmpty(data))
                     {
-                        result.code = "100";
+                        result.code = "206";
                         result.message = "数据解密失败，请检查通讯密钥";
                     }
                     else
                     {
-                        return func?.Invoke(Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, Object>>(json));
+                        Dictionary<String, Object> req = null;
+                        try
+                        {
+                            req = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, Object>>(json);
+                        }
+                        catch { }
+                        if (req == null && !string.IsNullOrEmpty(data))
+                        {
+                            result.code = "207";
+                            result.message = "远端收到请求，但反序列化失败";
+                        }
+                        else
+                        {
+                            return func?.Invoke(req);
+                        }
                     }
                 }
             }

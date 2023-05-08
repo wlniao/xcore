@@ -24,6 +24,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Collections;
 using System.Reflection;
+using System.Linq;
+using Wlniao.Runtime;
+
 namespace Wlniao.Serialization
 {
 
@@ -47,7 +50,16 @@ namespace Wlniao.Serialization
         /// <returns></returns>
         public static String Convert(Object obj)
         {
-            return Convert(obj, getDefaultIsBreakline(), "");
+            return Convert(obj, false, getDefaultIsBreakline(), "");
+        }
+        /// <summary>
+        /// 将对象转换成 json 字符串
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static String Convert(Object obj, Boolean reSort)
+        {
+            return Convert(obj, reSort, getDefaultIsBreakline(), "");
         }
         /// <summary>
         /// 将对象转换成 json 字符串
@@ -55,9 +67,9 @@ namespace Wlniao.Serialization
         /// <param name="obj"></param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
-        public static String Convert(Object obj, String TypeList)
+        public static String Convert(Object obj, Boolean reSort, String TypeList)
         {
-            return Convert(obj, getDefaultIsBreakline(), TypeList);
+            return Convert(obj, reSort, getDefaultIsBreakline(), TypeList);
         }
         /// <summary>
         /// 将对象转换成 json 字符串
@@ -66,7 +78,7 @@ namespace Wlniao.Serialization
         /// <param name="isBreakline">是否换行(默认不换行)</param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
-        public static String Convert(Object obj, Boolean isBreakline, String TypeList)
+        public static String Convert(Object obj, Boolean reSort, Boolean isBreakline, String TypeList)
         {
             if (obj == null)
             {
@@ -87,15 +99,15 @@ namespace Wlniao.Serialization
                 }
                 if (t.IsArray)
                 {
-                    return ConvertArray((object[])obj, TypeList);
+                    return ConvertArray((object[])obj, reSort, TypeList);
                 }
-                if (rft.IsInterface(t, typeof(IList)))
+                if (Reflection.IsInterface(t, typeof(IList)))
                 {
-                    return ConvertList((IList)obj, TypeList);
+                    return ConvertList((IList)obj, reSort, TypeList);
                 }
-                if (rft.IsInterface(t, typeof(IDictionary)))
+                if (Reflection.IsInterface(t, typeof(IDictionary)))
                 {
-                    return ConvertDictionary((IDictionary)obj, isBreakline, TypeList);
+                    return ConvertDictionary((IDictionary)obj, reSort, isBreakline, TypeList);
                 }
                 if (t == typeof(int) ||
                     t == typeof(long) ||
@@ -114,7 +126,7 @@ namespace Wlniao.Serialization
                 {
                     return "\"" + obj.ToString() + "\"";
                 }
-                return ConvertObject(obj, isBreakline, TypeList);
+                return ConvertObject(obj, reSort, isBreakline, TypeList);
             }
         }
         /// <summary>
@@ -137,9 +149,10 @@ namespace Wlniao.Serialization
         /// 将数组转换成 json 字符串
         /// </summary>
         /// <param name="arrObj"></param>
+        /// <param name="reSort">是否重新排序</param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
-        public static String ConvertArray(object[] arrObj, String TypeList)
+        public static String ConvertArray(object[] arrObj, Boolean reSort, String TypeList)
         {
             if (arrObj == null)
             {
@@ -152,7 +165,7 @@ namespace Wlniao.Serialization
                 {
                     continue;
                 }
-                sb.Append(Convert(arrObj[i], getDefaultIsBreakline(), TypeList));
+                sb.Append(Convert(arrObj[i], reSort, getDefaultIsBreakline(), TypeList));
                 if (i < arrObj.Length - 1)
                 {
                     sb.Append(",");
@@ -165,20 +178,22 @@ namespace Wlniao.Serialization
         /// 将List转换成 json 字符串
         /// </summary>
         /// <param name="list"></param>
+        /// <param name="reSort">是否重新排序</param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
-        public static String ConvertList(IList list, String TypeList)
+        public static String ConvertList(IList list, Boolean reSort, String TypeList)
         {
-            return ConvertList(list, getDefaultIsBreakline(), TypeList);
+            return ConvertList(list, reSort, getDefaultIsBreakline(), TypeList);
         }
         /// <summary>
         /// 将List转换成 json 字符串
         /// </summary>
         /// <param name="list"></param>
+        /// <param name="reSort">是否重新排序</param>
         /// <param name="isBreakline">是否换行(默认不换行，阅读起来更加清晰)</param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
-        public static String ConvertList(IList list, Boolean isBreakline, String TypeList)
+        public static String ConvertList(IList list, Boolean reSort, Boolean isBreakline, String TypeList)
         {
             if (list == null)
             {
@@ -195,7 +210,7 @@ namespace Wlniao.Serialization
                 {
                     continue;
                 }
-                sb.Append(Convert(list[i], isBreakline, TypeList));
+                sb.Append(Convert(list[i], reSort, isBreakline, TypeList));
                 if (i < list.Count - 1)
                 {
                     sb.Append(",");
@@ -212,20 +227,22 @@ namespace Wlniao.Serialization
         /// 将字典 Dictionary 转换成 json 字符串
         /// </summary>
         /// <param name="dic"></param>
+        /// <param name="reSort">是否重新排序</param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
-        public static String ConvertDictionary(IDictionary dic, String TypeList)
+        public static String ConvertDictionary(IDictionary dic, Boolean reSort, String TypeList)
         {
-            return ConvertDictionary(dic, getDefaultIsBreakline(), TypeList);
+            return ConvertDictionary(dic, reSort, getDefaultIsBreakline(), TypeList);
         }
         /// <summary>
         /// 将字典 Dictionary 转换成 json 字符串
         /// </summary>
         /// <param name="dic"></param>
+        /// <param name="reSort">是否重新排序</param>
         /// <param name="isBreakline">是否换行(默认不换行)</param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
-        public static String ConvertDictionary(IDictionary dic, Boolean isBreakline, String TypeList)
+        public static String ConvertDictionary(IDictionary dic, Boolean reSort, Boolean isBreakline, String TypeList)
         {
             if (dic == null)
             {
@@ -241,7 +258,7 @@ namespace Wlniao.Serialization
                 builder.Append("\"");
                 builder.Append(pair.Key);
                 builder.Append("\":");
-                builder.Append(Convert(pair.Value, isBreakline, TypeList));
+                builder.Append(Convert(pair.Value, reSort, isBreakline, TypeList));
                 builder.Append(",");
                 if (isBreakline) builder.AppendLine();
             }
@@ -256,42 +273,46 @@ namespace Wlniao.Serialization
         /// 将对象转换成 json 字符串
         /// </summary>
         /// <param name="obj"></param>
+        /// <param name="reSort">是否重新排序</param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
-        public static String ConvertObject(Object obj, String TypeList)
+        public static String ConvertObject(Object obj, Boolean reSort, String TypeList)
         {
-            return ConvertObject(obj, getDefaultIsBreakline(), TypeList);
+            return ConvertObject(obj, reSort, getDefaultIsBreakline(), TypeList);
         }
         /// <summary>
         /// 将对象转换成 json 字符串
         /// </summary>
         /// <param name="obj"></param>
+        /// <param name="reSort">是否重新排序</param>
         /// <param name="isBreakline">是否换行(默认不换行)</param>
         /// <returns></returns>
-        public static String ConvertObject(Object obj, Boolean isBreakline)
+        public static String ConvertObject(Object obj, Boolean reSort, Boolean isBreakline)
         {
-            return ConvertObject(obj, isBreakline, true, "");
+            return ConvertObject(obj, reSort, isBreakline, true, "");
         }
         /// <summary>
         /// 将对象转换成 json 字符串
         /// </summary>
         /// <param name="obj"></param>
+        /// <param name="reSort">是否重新排序</param>
         /// <param name="isBreakline">是否换行(默认不换行)</param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
-        public static String ConvertObject(Object obj, Boolean isBreakline, String TypeList)
+        public static String ConvertObject(Object obj, Boolean reSort, Boolean isBreakline, String TypeList)
         {
-            return ConvertObject(obj, isBreakline, true, TypeList);
+            return ConvertObject(obj, reSort, isBreakline, true, TypeList);
         }
         /// <summary>
         /// 将对象转换成 json 字符串
         /// </summary>
         /// <param name="obj"></param>
+        /// <param name="reSort">是否重新排序</param>
         /// <param name="isBreakline">是否换行(默认不换行)</param>
         /// <param name="withQuotation">属性名是否使用引号(默认不启用)</param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
-        public static String ConvertObject(Object obj, Boolean isBreakline, Boolean withQuotation, String TypeList)
+        public static String ConvertObject(Object obj, Boolean reSort, Boolean isBreakline, Boolean withQuotation, String TypeList)
         {
             TypeList = TypeList + obj.GetType().FullName + ",";
             StringBuilder builder = new StringBuilder();
@@ -299,8 +320,8 @@ namespace Wlniao.Serialization
             if (isBreakline) builder.AppendLine();
             Object idValue = "";
             Object nameValue = "";
-            PropertyInfo[] properties = rft.GetPropertyList(obj.GetType());
-            foreach (PropertyInfo info in properties)
+            var propertieKvs = new Dictionary<String, PropertyInfo>();
+            foreach (PropertyInfo info in Reflection.GetPropertyList(obj.GetType()))
             {
                 var methodInfo = info.GetGetMethod();
                 if (methodInfo == null || methodInfo.IsStatic || !methodInfo.IsPublic)
@@ -311,6 +332,24 @@ namespace Wlniao.Serialization
                 {
                     continue;
                 }
+                propertieKvs.Add(info.Name, info);
+            }
+            var properties = new List<PropertyInfo>();
+            if (reSort)
+            {
+                var keys = propertieKvs.Keys.ToArray();
+                Array.Sort(keys, String.CompareOrdinal);
+                foreach (var key in keys)
+                {
+                    properties.Add(propertieKvs[key]);
+                }
+            }
+            else
+            {
+                properties = propertieKvs.Values.ToList();
+            }
+            foreach (PropertyInfo info in properties)
+            {
                 Object propertyValue = info.GetValue(obj, null);
                 String jsonValue = string.Empty;
                 try
@@ -344,18 +383,18 @@ namespace Wlniao.Serialization
                     }
                     else if (info.PropertyType.IsArray)
                     {
-                        jsonValue = ConvertArray((object[])propertyValue, TypeList);
+                        jsonValue = ConvertArray((object[])propertyValue, reSort, TypeList);
                     }
-                    else if (rft.IsInterface(info.PropertyType, typeof(IList)))
+                    else if (Reflection.IsInterface(info.PropertyType, typeof(IList)))
                     {
-                        jsonValue = ConvertList((IList)propertyValue, isBreakline, "");
+                        jsonValue = ConvertList((IList)propertyValue, reSort, isBreakline, "");
                     }
                     else
                     {
-                        jsonValue = Convert(propertyValue, isBreakline, TypeList);
+                        jsonValue = Convert(propertyValue, reSort, isBreakline, TypeList);
                     }
                 }
-                catch{ }
+                catch { }
                 if (withQuotation)
                 {
                     builder.AppendFormat("\"{0}\":{1}", info.Name, jsonValue);

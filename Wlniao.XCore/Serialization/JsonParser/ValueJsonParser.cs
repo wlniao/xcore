@@ -120,17 +120,20 @@ namespace Wlniao.Serialization
 
         private static Object getStringValue(String s)
         {
-            if (cvt.IsInt(s))
+            int i = 0;
+            if (int.TryParse(s, out i))
             {
-                return cvt.ToInt(s);
+                return i;
             }
-            if (cvt.IsDecimal(s))
+            decimal d = 0;
+            if (decimal.TryParse(s, out d))
             {
-                return cvt.ToDecimal(s);
+                return d;
             }
-            if (cvt.IsBool(s))
+            bool b = false;
+            if (bool.TryParse(s, out b))
             {
-                return cvt.ToBool(s);
+                return b;
             }
             return s;
         }
