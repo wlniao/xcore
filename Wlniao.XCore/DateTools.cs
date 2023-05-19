@@ -63,6 +63,10 @@ namespace Wlniao
         /// <returns></returns>
         public static long GetUnix(string strtime)
         {
+            if (string.IsNullOrEmpty(strtime))
+            {
+                return 0;
+            }
             var time = DateTime.Parse(strtime);
             if (time.Kind == DateTimeKind.Unspecified)
             {

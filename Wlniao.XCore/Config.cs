@@ -261,7 +261,7 @@ namespace Wlniao
 				}
                 else
 				{
-					_config = new Dictionary<string, string>();
+					_config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 				}
             }
         }

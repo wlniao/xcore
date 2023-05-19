@@ -693,7 +693,7 @@ namespace Wlniao
         /// <returns></returns>
         public static Dictionary<String, String> ToDictionary(string doc)
         {
-            var result = new Dictionary<String, String>();
+            var result = new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrEmpty(doc))
             {
                 String[] arrLine = doc.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
