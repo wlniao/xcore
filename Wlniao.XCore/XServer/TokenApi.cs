@@ -73,9 +73,9 @@ namespace Wlniao.XServer
                         handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
                     }
                     using (var client = new System.Net.Http.HttpClient(handler))
-                    {
-                        log.Info(url + " request:" + reqStr);
-                        var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
+					{
+						log.Debug(url + " request:" + reqStr);
+						var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
                         reqest.Headers.Date = DateTime.Now;
                         reqest.Content = new System.Net.Http.StreamContent(stream);
                         reqest.Content.Headers.Add("Content-Type", "application/json");
@@ -91,7 +91,7 @@ namespace Wlniao.XServer
                         {
                             usetime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                         }
-                        log.Info(url + " response:" + resStr + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]");
+                        log.Debug(url + " response:" + resStr + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]");
                     }
                 }
                 catch { }
@@ -127,17 +127,21 @@ namespace Wlniao.XServer
                         rlt.debuger = resObj.debuger;
                         rlt.success = resObj.success;
                         var plaintext = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
-                        if (string.IsNullOrEmpty(plaintext))
-                        {
-                            rlt.code = "106";
-                            rlt.message = "远端返回内容无法解密";
-                            log.Warn(url + ": " + rlt.message);
-                        }
-                        else
-                        {
+						if (string.IsNullOrEmpty(resObj.data))
+						{
+							log.Debug(url + ": 远端暂无返回内容");
+						}
+						else if (string.IsNullOrEmpty(plaintext))
+						{
+							rlt.code = "106";
+							rlt.message = "远端返回内容无法解密";
+							log.Warn(url + ": " + rlt.message);
+						}
+						else
+						{
                             try
                             {
-                                log.Debug(url + " [traceid:" + traceid + ",usetime:" + usetime + "]\r\n >>> " + txt + "\r\n <<< " + plaintext + "\r\n");
+                                log.Info(url + " [traceid:" + traceid + ",usetime:" + usetime + "]\r\n >>> " + txt + "\r\n <<< " + plaintext + "\r\n");
                                 if (typeof(T) == typeof(string))
                                 {
                                     rlt.data = (T)System.Convert.ChangeType(plaintext, typeof(T));
