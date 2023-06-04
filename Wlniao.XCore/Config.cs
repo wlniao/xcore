@@ -23,6 +23,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.AspNetCore.DataProtection;
+
 namespace Wlniao
 {
     /// <summary>
@@ -42,11 +44,18 @@ namespace Wlniao
         /// 环境变量内容
         /// </summary>
         private static Dictionary<String, String> _config = null;
+        /// <summary>
+        /// 
+        /// </summary>
         private static String _file = null;
         /// <summary>
-        /// 配置文件路径
+        /// 配置文件密钥
         /// </summary>
-        internal static String FileName
+		public static String Secret { get; set; }
+		/// <summary>
+		/// 配置文件路径
+		/// </summary>
+		internal static String FileName
         {
             get
             {
@@ -86,6 +95,50 @@ namespace Wlniao
                 val = GetConfigsAutoWrite(key, defaultValue);
             }
             return val;
+        }
+        /// <summary>
+        /// 获取 ConfigFile 中某项的值
+        /// </summary>
+        /// <param name="key">项的名称</param>
+        /// <param name="secret">SM4密钥</param>
+        /// <param name="defaultValue">默认值</param>
+        /// <returns>返回一个字符串值</returns>
+        public static String GetEncrypt(String key, String secret, String defaultValue = null)
+        {
+            var val = GetEnvironment(key.ToUpper());
+            if (string.IsNullOrEmpty(val))
+            {
+                val = GetConfigs(key);
+                if (string.IsNullOrEmpty(val))
+                {
+                    return defaultValue;
+                }
+                if (string.IsNullOrEmpty(secret))
+                {
+                    return val;
+                }
+                else
+                {
+                    var tmp = Encryptor.SM4DecryptECBFromHex(val, secret);
+                    if (!string.IsNullOrEmpty(tmp))
+                    {
+                        val = tmp;
+                    }
+                    else
+                    {
+                        SetEncrypt(key, val, secret);
+                    }
+                }
+            }
+            else
+			{
+				var tmp = Encryptor.SM4DecryptECBFromHex(val, secret);
+				if (!string.IsNullOrEmpty(tmp))
+				{
+					val = tmp;
+				}
+			}
+			return val;
         }
         /// <summary>
         /// 获取 ConfigFile 中某项的值
@@ -204,36 +257,36 @@ namespace Wlniao
             {
                 Read(FileName);
             }
-            if (_config.ContainsKey(key))
+            _config.PutValue(key, value);
+			return Write(_config, FileName);
+		}
+        /// <summary>
+        /// 设置 xcore.config 中某项的值
+        /// </summary>
+        /// <param name="key">项的名称</param>
+        /// <param name="value">项的值</param>
+        /// <param name="secret">SM4密钥</param>
+        /// <returns>返回结果</returns>
+        public static Boolean SetEncrypt(String key, String value, String secret)
+        {
+            if (_config == null)
             {
-                lock (XCore.Lock)
-                {
-                    _config[key] = value;
-                }
+                Read(FileName);
             }
-            else if (_config.ContainsKey(key.ToUpper()))
+            if (!string.IsNullOrEmpty(secret))
             {
-                lock (XCore.Lock)
-                {
-                    _config[key.ToUpper()] = value;
-                }
+                value = Wlniao.Encryptor.SM4EncryptECBToHex(value, secret, true);
             }
-            else
-            {
-                lock (XCore.Lock)
-                {
-                    _config.Add(key, value);
-                }
-            }
+            _config.PutValue(key, value);
             return Write(_config, FileName);
         }
 
-        /// <summary>
-        /// 移除 ConfigFile 中某项的值
-        /// </summary>
-        /// <param name="key">项的名称</param>
-        /// <returns>返回结果</returns>
-        public static Boolean Remove(String key)
+		/// <summary>
+		/// 移除 ConfigFile 中某项的值
+		/// </summary>
+		/// <param name="key">项的名称</param>
+		/// <returns>返回结果</returns>
+		public static Boolean Remove(String key)
         {
             if (_config != null)
             {

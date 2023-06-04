@@ -60,7 +60,7 @@ namespace Wlniao
         {
             get
             {
-                return Wlniao.Config.GetSetting("WLN_CONNSTR_UID");
+                return Wlniao.Config.GetEncrypt("WLN_CONNSTR_UID", Config.Secret);
             }
         }
         /// <summary>
@@ -70,7 +70,7 @@ namespace Wlniao
         {
             get
             {
-                return Wlniao.Config.GetSetting("WLN_CONNSTR_PWD");
+                return Wlniao.Config.GetEncrypt("WLN_CONNSTR_PWD", Config.Secret);
             }
         }
         /// <summary>
@@ -106,8 +106,8 @@ namespace Wlniao
                         var WLN_MYSQL_PORT = Wlniao.Config.GetConfigs("WLN_MYSQL_PORT", "3306");
                         var WLN_MYSQL_HOST = Wlniao.Config.GetConfigs("WLN_MYSQL_HOST", WLN_CONNSTR_HOST);
                         var WLN_MYSQL_NAME = Wlniao.Config.GetConfigs("WLN_MYSQL_NAME", WLN_CONNSTR_NAME);
-                        var WLN_MYSQL_UID = Wlniao.Config.GetConfigs("WLN_MYSQL_UID", WLN_CONNSTR_UID);
-                        var WLN_MYSQL_PWD = Wlniao.Config.GetConfigs("WLN_MYSQL_PWD", WLN_CONNSTR_PWD);
+                        var WLN_MYSQL_UID = Wlniao.Config.GetEncrypt("WLN_MYSQL_UID", Config.Secret, WLN_CONNSTR_UID);
+                        var WLN_MYSQL_PWD = Wlniao.Config.GetEncrypt("WLN_MYSQL_PWD", Config.Secret, WLN_CONNSTR_PWD);
                         connstr_mysql = string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8;SslMode=none;"
                             , WLN_MYSQL_HOST, WLN_MYSQL_PORT, WLN_MYSQL_NAME, WLN_MYSQL_UID, WLN_MYSQL_PWD);
                         if (string.IsNullOrEmpty(WLN_MYSQL_HOST) || string.IsNullOrEmpty(WLN_MYSQL_UID) || string.IsNullOrEmpty(WLN_MYSQL_PWD))
@@ -135,8 +135,8 @@ namespace Wlniao
                         var WLN_MSSQL_PORT = Wlniao.Config.GetConfigs("WLN_MSSQL_PORT", "1433");
                         var WLN_MSSQL_HOST = Wlniao.Config.GetConfigs("WLN_MSSQL_HOST", WLN_CONNSTR_HOST);
                         var WLN_MSSQL_NAME = Wlniao.Config.GetConfigs("WLN_MSSQL_NAME", WLN_CONNSTR_NAME);
-                        var WLN_MSSQL_UID = Wlniao.Config.GetConfigs("WLN_MSSQL_UID", WLN_CONNSTR_UID);
-                        var WLN_MSSQL_PWD = Wlniao.Config.GetConfigs("WLN_MSSQL_PWD", WLN_CONNSTR_PWD);
+                        var WLN_MSSQL_UID = Wlniao.Config.GetEncrypt("WLN_MSSQL_UID", Config.Secret, WLN_CONNSTR_UID);
+                        var WLN_MSSQL_PWD = Wlniao.Config.GetEncrypt("WLN_MSSQL_PWD", Config.Secret, WLN_CONNSTR_PWD);
                         connstr_sqlsqlver = string.Format("Server={0},{1};Database={2};User Id={3};Password={4};TrustServerCertificate=true;"
                             , WLN_MSSQL_HOST, WLN_MSSQL_PORT, WLN_MSSQL_NAME, WLN_MSSQL_UID, WLN_MSSQL_PWD);
                         if (string.IsNullOrEmpty(WLN_MSSQL_NAME) || string.IsNullOrEmpty(WLN_MSSQL_UID) || string.IsNullOrEmpty(WLN_MSSQL_PWD))
