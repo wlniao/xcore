@@ -25,6 +25,8 @@ using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 namespace Wlniao.XServer
@@ -45,10 +47,6 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static Wlniao.ApiResult<T> Request<T>(String url, String token, Object data, String traceid = "")
         {
-            if (string.IsNullOrEmpty(traceid))
-            {
-                traceid = System.Guid.NewGuid().ToString(); //生成默认传递链路ID
-            }
             var now = DateTools.GetUnix().ToString();
             var rlt = new Wlniao.ApiResult<T>();
             if (string.IsNullOrEmpty(token))
@@ -58,9 +56,13 @@ namespace Wlniao.XServer
             }
             else
             {
+                if (string.IsNullOrEmpty(traceid))
+                {
+                    traceid = strUtil.CreateLongId();
+                }
                 var txt = data is String ? data.ToString() : Newtonsoft.Json.JsonConvert.SerializeObject(data);
                 var start = DateTime.Now;
-                var usetime = "0ms";
+                var usetime = "";
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
                 var resStr = "";
                 var reqStr = Newtonsoft.Json.JsonConvert.SerializeObject(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
@@ -81,11 +83,11 @@ namespace Wlniao.XServer
                         reqest.Content.Headers.Add("Content-Type", "application/json");
                         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
                         client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
-                        var respose = client.Send(reqest);
+						var respose = client.Send(reqest);
                         resStr = respose.Content.ReadAsStringAsync().Result;
-                        if (respose.Content.Headers.Contains("X-Wlniao-Trace"))
+                        if (respose.Headers.Contains("X-Wlniao-Trace"))
                         {
-                            traceid = respose.Content.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
+                            rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
                         }
                         if (respose.Headers.Contains("X-Wlniao-UseTime"))
                         {
@@ -122,10 +124,13 @@ namespace Wlniao.XServer
                         rlt.node = resObj.node;
                         rlt.code = resObj.code;
                         rlt.tips = resObj.tips;
-                        rlt.traceid = string.IsNullOrEmpty(resObj.traceid) ? traceid : resObj.traceid;
                         rlt.message = resObj.message;
                         rlt.debuger = resObj.debuger;
                         rlt.success = resObj.success;
+                        if (!string.IsNullOrEmpty(resObj.traceid))
+						{
+							rlt.traceid = resObj.traceid;
+						}
                         var plaintext = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
 						if (string.IsNullOrEmpty(resObj.data))
 						{
@@ -140,8 +145,14 @@ namespace Wlniao.XServer
 						else
 						{
                             try
-                            {
-                                log.Info(url + " [traceid:" + traceid + ",usetime:" + usetime + "]\r\n >>> " + txt + "\r\n <<< " + plaintext + "\r\n");
+							{
+								if (Log.Loger.LogLevel <= LogLevel.Information)
+                                {
+                                    var msg = string.IsNullOrEmpty(usetime) ? url + " [" : url + " [usetime:" + usetime + ",";
+                                    msg += "duration:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms,traceid:" + rlt.traceid + "]\r\n >>> " + txt;
+                                    msg += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + plaintext + "}\r\n";
+                                    log.Topic(XCore.WebNode, msg);
+                                }
                                 if (typeof(T) == typeof(string))
                                 {
                                     rlt.data = (T)System.Convert.ChangeType(plaintext, typeof(T));

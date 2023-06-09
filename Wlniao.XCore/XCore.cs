@@ -402,6 +402,10 @@ namespace Wlniao
                 if (_WebNode == null)
                 {
                     _WebNode = Config.GetConfigs("WLN_NODE");
+                    if (string.IsNullOrEmpty(_WebNode))
+                    {
+                        _WebNode = "xcore";
+                    }
                 }
                 return _WebNode;
             }
