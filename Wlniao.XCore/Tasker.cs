@@ -269,7 +269,8 @@ namespace Wlniao
                             subscriber.Subscribe(channel, (rchannel, message) =>
                             {
                                 watcher[topic] = DateTime.Now;
-                                func.Invoke(new Context
+                                log.Topic("Tasker", "Tasker execute " + message + "[" + topic + "]");
+								func.Invoke(new Context
                                 {
                                     key = message,
                                     topic = topic,

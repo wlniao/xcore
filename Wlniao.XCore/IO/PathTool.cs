@@ -71,7 +71,7 @@ namespace Wlniao.IO
                 {
                     path = path.Replace("~", "");
                 }
-                if (path.IndexOf(':') < 0)
+                if (path.IndexOf(':') < 0 && path.IndexOf('/') < 0)
                 {
                     path = JoinPath(XCore.StartupRoot, path);
                 }

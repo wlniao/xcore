@@ -239,7 +239,7 @@ namespace Wlniao
                     //{
                     //    startupRoot = System.IO.Directory.GetCurrentDirectory();
                     //}
-                    startupRoot = System.IO.Directory.GetCurrentDirectory();
+                    startupRoot = Config.GetEnvironment("WLN_STARTUP_ROOT", System.IO.Directory.GetCurrentDirectory());
                     if (startupRoot.IndexOf('/') >= 0)
                     {
                         if (startupRoot.IndexOf("/bin") > 0)

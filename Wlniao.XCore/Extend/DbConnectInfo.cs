@@ -161,11 +161,7 @@ namespace Wlniao
 					connstr_sqlite = Wlniao.Config.GetSetting("WLN_CONNSTR_SQLITE");
 					if (string.IsNullOrEmpty(connstr_sqlite) && string.IsNullOrEmpty(WLN_CONNSTR_NAME))
 					{
-						var sqlite = Wlniao.IO.PathTool.Map(Wlniao.XCore.StartupRoot, XCore.FrameworkRoot, "xcore.db");
-						if (IO.FileEx.Exists(sqlite))
-						{
-							connstr_sqlite = "Data Source=" + sqlite;
-						}
+						connstr_sqlite = "Data Source=" + Wlniao.IO.PathTool.Map(Wlniao.XCore.StartupRoot, XCore.FrameworkRoot, "xcore.db");
 					}
 				}
 				return connstr_sqlite;

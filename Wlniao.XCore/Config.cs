@@ -222,7 +222,7 @@ namespace Wlniao
         /// <param name="key">项的名称</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>返回一个字符串值</returns>
-        private static String GetEnvironment(String key, String defaultValue = "")
+        public static String GetEnvironment(String key, String defaultValue = "")
         {
             if (_env == null || _env.Count == 0)
             {
