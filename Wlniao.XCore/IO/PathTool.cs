@@ -71,7 +71,7 @@ namespace Wlniao.IO
                 {
                     path = path.Replace("~", "");
                 }
-                if (path.IndexOf(':') < 0 && path.IndexOf('/') < 0)
+                if (path.IndexOf(':') < 0 && path[0] != '/')
                 {
                     path = JoinPath(XCore.StartupRoot, path);
                 }
@@ -91,14 +91,14 @@ namespace Wlniao.IO
                 //返回程序根目录的绝对路径
                 return XCore.StartupRoot;
             }
-            else if (relativePath.Length == 1)
-            {
-                path = relativePath[0];
-            }
             else
             {
                 path = relativePath[0];
-                for (int i = 1; i < relativePath.Length; i++)
+				if (path.IndexOf(':') < 0 && path[0] != '/')
+				{
+					path = JoinPath(XCore.StartupRoot, path);
+				}
+				for (int i = 1; i < relativePath.Length; i++)
                 {
                     path = JoinPath(path, relativePath[i]);
                 }
