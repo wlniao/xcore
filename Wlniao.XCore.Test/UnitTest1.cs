@@ -2,6 +2,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System;
 using Wlniao.XServer;
+using System.Threading.Tasks;
 
 namespace Wlniao.XCore.Test
 {
@@ -34,11 +35,86 @@ namespace Wlniao.XCore.Test
 
         [Test]
         public void Loger()
-        {
-            for(var i = 0; i < 10000; i++)
-            {
-                Wlniao.log.Topic("test", DateTools.GetUnix() + strUtil.CreateRndStrE(16));
-            }
+		{
+			Task.Run(() =>
+			{
+				while (true)
+				{
+					Wlniao.log.Topic("test1", strUtil.CreateRndStrE(50));
+				}
+			});
+			Task.Run(() =>
+			{
+				while (true)
+				{
+					Wlniao.log.Topic("test2", strUtil.CreateRndStrE(50));
+					//System.Threading.Thread.Sleep(73);
+				}
+			});
+			Task.Run(() =>
+			{
+				while (true)
+				{
+					Wlniao.log.Topic("test1", strUtil.CreateRndStrE(50));
+				}
+			});
+			Task.Run(() =>
+			{
+				while (true)
+				{
+					Wlniao.log.Topic("test3", strUtil.CreateRndStrE(50));
+					//System.Threading.Thread.Sleep(21);
+				}
+			});
+			Task.Run(() =>
+			{
+				while (true)
+				{
+					Wlniao.log.Topic("test5", strUtil.CreateRndStrE(50));
+					//System.Threading.Thread.Sleep(91);
+				}
+			});
+			Task.Run(() =>
+			{
+				while (true)
+				{
+					Wlniao.log.Topic("test4", strUtil.CreateRndStrE(50));
+					//System.Threading.Thread.Sleep(130);
+				}
+			});
+			Task.Run(() =>
+			{
+				while (true)
+				{
+					Wlniao.log.Topic("test2", strUtil.CreateRndStrE(50));
+					//System.Threading.Thread.Sleep(73);
+				}
+			});
+			Task.Run(() =>
+			{
+				while (true)
+				{
+					Wlniao.log.Topic("test5", strUtil.CreateRndStrE(50));
+					//System.Threading.Thread.Sleep(91);
+				}
+			});
+			Task.Run(() =>
+			{
+				while (true)
+				{
+					Wlniao.log.Topic("test4", strUtil.CreateRndStrE(50));
+					//System.Threading.Thread.Sleep(130);
+				}
+			});
+			Task.Run(() =>
+			{
+				while (true)
+				{
+					Wlniao.log.Topic("test5", strUtil.CreateRndStrE(50));
+					//System.Threading.Thread.Sleep(91);
+				}
+			});
+            System.Threading.Thread.Sleep(3600000);
             Assert.Pass();
             //Assert.Pass();
         }

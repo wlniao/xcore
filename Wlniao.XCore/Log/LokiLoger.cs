@@ -41,10 +41,10 @@ namespace Wlniao.Log
         /// 服务器地址
         /// </summary>
         private string serverHost = null;
-        /// <summary>
-        /// 
-        /// </summary>
-        private Dictionary<String, List<Entrie>> cache = null;
+		/// <summary>
+		/// 
+		/// </summary>
+		private Dictionary<String, List<Entrie>> cache = null;
         /// <summary>
         /// 
         /// </summary>
@@ -71,23 +71,82 @@ namespace Wlniao.Log
         /// <param name="server">服务器地址</param>
         /// <param name="interval">落盘时间间隔（秒）</param>
         public LokiLoger(LogLevel level = LogLevel.Information, string server = null, int interval = 0)
-        {
-            this.level = level;
-            this.cache = new Dictionary<String, List<Entrie>>();
-            this.Interval = interval > 0 ? interval : cvt.ToInt(Config.GetConfigs("WLN_LOG_INTERVAL ", "10"));
-            if (string.IsNullOrEmpty(server))
-            {
-                serverHost = Config.GetConfigs("WLN_LOG_SERVER").TrimEnd('/');
-                if (string.IsNullOrEmpty(serverHost))
-                {
-                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(), "WLN_LOG_SERVER not configured, please set loki server."), ConsoleColor.Red);
-                }
-            }
-            else
-            {
-                serverHost = server.TrimEnd('/');
-            }
-        }
+		{
+			this.level = level;
+			this.Interval = interval > 0 ? interval : cvt.ToInt(Config.GetConfigs("WLN_LOG_INTERVAL ", "3"));
+			if (string.IsNullOrEmpty(server))
+			{
+				serverHost = Config.GetConfigs("WLN_LOG_SERVER").TrimEnd('/');
+				if (string.IsNullOrEmpty(serverHost))
+				{
+					Loger.Console(string.Format("{0} => {1}", DateTools.Format(), "WLN_LOG_SERVER not configured, please set loki server."), ConsoleColor.Red);
+				}
+			}
+			else
+			{
+				serverHost = server.TrimEnd('/');
+			}
+			if (this.cache == null && !string.IsNullOrEmpty(serverHost))
+			{
+				this.cache = new Dictionary<String, List<Entrie>>();
+				Task.Run(() =>
+				{
+					while (this.Interval > 0)
+					{
+						try
+						{
+							Task.Delay(Interval * 1000).Wait();
+							var list = new List<object>();
+							if (cache.Count == 0)
+							{
+								continue;
+							}
+							var content = new Dictionary<string, List<Entrie>>(cache);
+							cache = new Dictionary<String, List<Entrie>>();
+							foreach (var item in content)
+							{
+								if (item.Value.Count > 0)
+								{
+									list.Add(new
+									{
+										stream = new { topic = item.Key, node = XCore.WebNode },
+										values = item.Value.Select(o => new[] { o.ts, o.line }).ToArray()
+									});
+								}
+							}
+							var handler = new HttpClientHandler();
+							if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+							{
+								handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+							}
+							using (var client = new HttpClient(handler))
+							{
+								var start = DateTime.Now;
+								var json = Newtonsoft.Json.JsonConvert.SerializeObject(new { streams = list.ToArray() });
+								var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
+								reqest.Headers.Date = DateTime.Now;
+								reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
+								reqest.Content.Headers.Add("Content-Type", "application/json");
+								client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+								var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
+								if (!string.IsNullOrEmpty(result))
+								{
+									Loger.Console(string.Format("{0} => {1}", DateTools.Format(), result), ConsoleColor.Red);
+								}
+							}
+						}
+						catch (Exception ex)
+						{
+							Loger.Console(string.Format("{0} => {1}", DateTools.Format(), "Loki Push:" + ex.Message), ConsoleColor.Red);
+						}
+					}
+				});
+			}
+			else if (this.cache == null)
+			{
+				this.cache = new Dictionary<String, List<Entrie>>();
+			}
+		}
         /// <summary>
         /// 输出Debug级别的日志
         /// </summary>
@@ -114,6 +173,7 @@ namespace Wlniao.Log
                 Write("info", entrie);
             }
         }
+
         /// <summary>
         /// 输出Warn级别的日志
         /// </summary>
@@ -127,6 +187,7 @@ namespace Wlniao.Log
                 Write("warn", entrie);
             }
         }
+
         /// <summary>
         /// 输出Error级别的日志
         /// </summary>
@@ -140,6 +201,7 @@ namespace Wlniao.Log
                 Write("error", entrie, true);
             }
         }
+
         /// <summary>
         /// 输出Fatal级别的日志
         /// </summary>
@@ -197,87 +259,54 @@ namespace Wlniao.Log
         /// <param name="push">是否立即回写</param>
         private void Write(String topic, Entrie entrie, Boolean push = false)
         {
-            if (cache.ContainsKey(topic))
+            try
             {
-                cache[topic].Add(entrie);
-                if (cache[topic][0].time.AddSeconds(Interval) < DateTime.UtcNow)
-                {
-                    push = true;
-                }
-            }
-            else if (push)
-            {
-                cache.TryAdd(topic, new List<Entrie> { entrie });
-            }
-            else
-            {
-                //指定时间后进行落盘
-                cache.TryAdd(topic, new List<Entrie> { entrie });
-                Task.Run(() =>
-                {
-                    Task.Delay(Interval * 1000).Wait();
-                    if (cache.ContainsKey(topic))
-                    {
-                        Push(topic, cache[topic]);
-                        cache.Remove(topic);
-                    }
-                });
-            }
-            if (push)
-            {
-                Push(topic, cache[topic]);
-                cache.Remove(topic);
-            }
-        }
-        /// <summary>
-        /// 推送日志
-        /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="entries"></param>
-        public void Push(String topic, List<Entrie> entries)
-        {
-            if (string.IsNullOrEmpty(topic) || string.IsNullOrEmpty(serverHost) || entries == null || entries.Count == 0)
-            {
-                return;
-            }
-            else
-            {
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(new
-                {
-                    streams = new[] {
-                        new {
-                            stream = new { topic = topic, node = XCore.WebNode },
-                            values = entries.Select(o => new[] { o.ts, o.line}).ToArray()
-                        }
-                    }
-                });
-                try
-                {
-                    var handler = new HttpClientHandler();
-                    if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
-                    {
-                        handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
-                    }
-                    using (var client = new HttpClient(handler))
-                    {
-                        var start = DateTime.Now;
-                        var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
-                        reqest.Headers.Date = DateTime.Now;
-                        reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
-                        reqest.Content.Headers.Add("Content-Type", "application/json");
-                        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                        var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
-                        if (!string.IsNullOrEmpty(result))
-                        {
-                            Loger.Console(string.Format("{0} => {1}", DateTools.Format(), result), ConsoleColor.Red);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(), "Loki Push:" + ex.Message), ConsoleColor.Red);
-                }
-            }
-        }
+                if (push)
+				{
+                    // 实时推送日志
+					var json = Newtonsoft.Json.JsonConvert.SerializeObject(new
+					{
+						streams = new[] {
+								new {
+									stream = new { topic = topic, node = XCore.WebNode },
+									values = new[] { entrie }
+								}
+							}
+					});
+					var handler = new HttpClientHandler();
+					if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+					{
+						handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+					}
+					using (var client = new HttpClient(handler))
+					{
+						var start = DateTime.Now;
+						var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
+						reqest.Headers.Date = DateTime.Now;
+						reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
+						reqest.Content.Headers.Add("Content-Type", "application/json");
+						client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+						var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
+						if (!string.IsNullOrEmpty(result))
+						{
+							Loger.Console(string.Format("{0} => {1}", DateTools.Format(), result), ConsoleColor.Red);
+						}
+					}
+				}
+				else if (cache.ContainsKey(topic))
+				{
+					cache[topic].Add(entrie);
+				}
+				else
+				{
+					cache.TryAdd(topic, new List<Entrie> { entrie });
+				}
+			}
+			catch (Exception ex)
+			{
+				Loger.Console(string.Format("{0} => {1}", DateTools.Format(), "Loki Push:" + ex.Message), ConsoleColor.Red);
+			}
+		}
+
     }
 }
