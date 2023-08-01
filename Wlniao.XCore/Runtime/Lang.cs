@@ -35,7 +35,7 @@ namespace Wlniao.Runtime
     {
         private const string defaultLang = "zh-cn";
         // 这个一定要放在第一行，以保证第一个加载
-        private static Dictionary<String, Dictionary<String, String>> langSetting = new Dictionary<String, Dictionary<String, String>>();
+        private static Dictionary<String, Dictionary<String, String>> langSetting = new Dictionary<String, Dictionary<String, String>>(StringComparer.OrdinalIgnoreCase);
         /// <summary>
         /// 获取某 key 的语言值
         /// </summary>
@@ -72,67 +72,60 @@ namespace Wlniao.Runtime
             {
                 lock (XCore.Lock)
                 {
-                    var langPath = PathTool.Map(XCore.FrameworkRoot, "lang");
-                    if (Directory.Exists(langPath))
+                    if (langSetting.Count == 0)
                     {
-                        foreach (String file in Directory.GetFiles(langPath))
+                        try
                         {
-                            if (file.EndsWith(".ini"))
+                            var langPath = PathTool.Map(XCore.FrameworkRoot, "lang");
+                            foreach (String file in Directory.GetFiles(langPath))
                             {
-                                var str = Wlniao.file.Read(file);
-                                var langKey = Path.GetFileNameWithoutExtension(file);
-                                if (langSetting.ContainsKey(langKey))
+                                if (file.EndsWith(".ini"))
                                 {
-                                    langSetting[langKey] = cvt.ToDictionary(str);
-                                }
-                                else
-                                {
-                                    langSetting.Add(langKey, cvt.ToDictionary(str));
+                                    var str = Wlniao.file.Read(file);
+                                    var langKey = Path.GetFileNameWithoutExtension(file);
+                                    langSetting.TryAdd(Path.GetFileNameWithoutExtension(file), cvt.ToDictionary(str));
                                 }
                             }
                         }
-                    }
-                    else
-                    {
-                        var dicDefault = new Dictionary<String, String>();
-                        if (langStr == defaultLang)
+                        catch { }
+                        if (!langSetting.ContainsKey(langStr))
                         {
-                            dicDefault.TryAdd("today", "今天");
-                            dicDefault.TryAdd("yesterday", "昨天");
-                            dicDefault.TryAdd("thedaybeforeyesterday", "前天");
-                            dicDefault.TryAdd("houresAgo", "小时前");
-                            dicDefault.TryAdd("minuteAgo", "分钟前");
-                            dicDefault.TryAdd("secondAgo", "秒前");
-                            dicDefault.TryAdd("justNow", "刚刚");
-                            dicDefault.TryAdd("findtotal", "共找到{0}条记录");
-                            dicDefault.TryAdd("empty", "加载完成 暂无数据");
+                            langSetting.TryAdd(langStr, new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase));
+                            if (langStr == defaultLang)
+                            {
+                                langSetting[defaultLang].TryAdd("today", "今天");
+                                langSetting[defaultLang].TryAdd("yesterday", "昨天");
+                                langSetting[defaultLang].TryAdd("thedaybeforeyesterday", "前天");
+                                langSetting[defaultLang].TryAdd("houresAgo", "小时前");
+                                langSetting[defaultLang].TryAdd("minuteAgo", "分钟前");
+                                langSetting[defaultLang].TryAdd("secondAgo", "秒前");
+                                langSetting[defaultLang].TryAdd("justNow", "刚刚");
+                                langSetting[defaultLang].TryAdd("findtotal", "共找到{0}条记录");
+                                langSetting[defaultLang].TryAdd("empty", "加载完成 暂无数据");
+                            }
                         }
-                        langSetting.Add(langStr, dicDefault);
                     }
                 }
             }
-            if (langSetting.ContainsKey(langStr))
+
+            if (langSetting[langStr].ContainsKey(key) && !string.IsNullOrEmpty(langSetting[langStr][key]))
             {
-                if (langSetting[langStr].ContainsKey(key) && !string.IsNullOrEmpty(langSetting[langStr][key]))
-                {
-                    return langSetting[langStr][key];
-                }
-                if (defaultStr == null)
+                return langSetting[langStr][key];
+            }
+            else if (defaultStr == null)
+            {
+                try
                 {
                     // 写入空行到语言包
                     langSetting[langStr].TryAdd(key, defaultStr);
                     Config.Write(langSetting[langStr], PathTool.Map(XCore.FrameworkRoot, "lang", langStr + ".ini"));
-                    return "{" + key + "}";
                 }
-            }
-            // 返回默认内容
-            if (defaultStr == null)
-            {
-                return "{" + key + "}";
+                catch { }
+                return "{" + key + "}"; // 返回约定内容
             }
             else
             {
-                return defaultStr;
+                return defaultStr; // 返回用户默认内容
             }
         }
         /// <summary>
@@ -144,7 +137,7 @@ namespace Wlniao.Runtime
             var list = new List<Dictionary<String, String>>();
             foreach (String key in langSetting.Keys)
             {
-                Dictionary<String, String> pair = new Dictionary<String, String>();
+                Dictionary<String, String> pair = new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase);
                 pair.TryAdd("Name", GetLangName(key));
                 pair.TryAdd("Value", key);
                 list.Add(pair);
