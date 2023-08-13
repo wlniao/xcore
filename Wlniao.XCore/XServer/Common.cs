@@ -355,8 +355,8 @@ namespace Wlniao.XServer
                                         System.Threading.Thread.Sleep(3);
                                     }
                                 }
-                                    #region HTTP协议处理
-                                    var lines = Encoding.UTF8.GetString(buffer).Split(new string[] { "\r\n" }, StringSplitOptions.None);
+                                #region HTTP协议处理
+                                var lines = Encoding.UTF8.GetString(buffer).Split(new string[] { "\r\n" }, StringSplitOptions.None);
                                 if (lines.Length > 0)
                                 {
                                     var index = 0;
@@ -389,8 +389,8 @@ namespace Wlniao.XServer
                                         str = sbuilder.ToString();
                                     }
                                 }
-                                    #endregion
-                                }
+                                #endregion
+                            }
                         }).Wait();
                         #endregion
                     }

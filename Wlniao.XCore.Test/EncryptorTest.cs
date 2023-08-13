@@ -89,8 +89,7 @@ namespace Wlniao.XCore.Test
             Assert.GreaterOrEqual(value, "dce717c7430e26a0f41d33840bbe6baa64e3d915d4d54d1bf8f7a07b093dfec0");
         }
 
-
-        [Test]
+		[Test]
         public void SM4EncryptECBToHex()
         {
             var value = Wlniao.Encryptor.SM4EncryptECBToHex("wlniao studio", "a8c9d69e29080f1d");

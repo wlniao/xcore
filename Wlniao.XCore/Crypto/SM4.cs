@@ -50,6 +50,11 @@ namespace Wlniao.Crypto
 			return SHL(x, n) | x >> (32 - n);
 		}
 
+		/// <summary>
+		/// 使用一个32位的数组完成加密/解密密钥的交换
+		/// </summary>
+		/// <param name="sk"></param>
+		/// <param name="i"></param>
 		private void SWAP(long[] sk, int i)
 		{
 			long t = sk[i];

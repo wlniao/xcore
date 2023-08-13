@@ -31,10 +31,16 @@ namespace Wlniao.XCore.Test
         {
             var result = Wlniao.strUtil.IsIdentity("51020219640204655X");
             Assert.IsTrue(result);
-        }
+		}
 
-        [Test]
-        public void Loger()
+		[Test]
+		public void FileLoger()
+		{
+			log.File("test1", strUtil.CreateRndStrE(50));
+		}
+
+		[Test]
+		public void Loger()
 		{
 			Task.Run(() =>
 			{

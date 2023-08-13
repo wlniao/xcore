@@ -38,9 +38,13 @@ namespace Wlniao.Log
         /// </summary>
         private static ILogProvider logProvider = null;
         /// <summary>
-        /// 当前日志输出等级
+        /// 文件日志输出工具
         /// </summary>
-        public static LogLevel LogLevel
+		private static ILogProvider fileProvider = new FileLoger(LogLevel);
+		/// <summary>
+		/// 当前日志输出等级
+		/// </summary>
+		public static LogLevel LogLevel
         {
             get
             {
@@ -99,23 +103,33 @@ namespace Wlniao.Log
         public static void SetLogger(ILogProvider provider)
         {
             logProvider = provider;
-        }
-        /// <summary>
-        /// 直接在控制台打印内容
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="color"></param>
-        public static void Console(String message, ConsoleColor color = ConsoleColor.White)
+		}
+		/// <summary>
+		/// 直接在控制台打印内容
+		/// </summary>
+		/// <param name="message"></param>
+		/// <param name="color"></param>
+		public static void Console(String message, ConsoleColor color = ConsoleColor.White)
+		{
+			System.Console.ForegroundColor = color;
+			System.Console.WriteLine(message);
+			System.Console.ForegroundColor = ConsoleColor.White;
+		}
+		/// <summary>
+		/// 直接在文件及控制台中输出日志
+		/// </summary>
+		/// <param name="topic"></param>
+		/// <param name="message"></param>
+		/// <param name="color"></param>
+		public static void File(String topic, String message, ConsoleColor color = ConsoleColor.White)
         {
-            System.Console.ForegroundColor = color;
-            System.Console.WriteLine(message);
-            System.Console.ForegroundColor = ConsoleColor.White;
+            fileProvider.Topic(topic, message);
         }
-        /// <summary>
-        /// 输出Debug级别的日志
-        /// </summary>
-        /// <param name="message"></param>
-        public static void Debug(String message)
+		/// <summary>
+		/// 输出Debug级别的日志
+		/// </summary>
+		/// <param name="message"></param>
+		public static void Debug(String message)
         {
             LogProvider.Debug(message);
         }

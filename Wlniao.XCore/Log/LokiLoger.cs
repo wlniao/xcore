@@ -89,58 +89,69 @@ namespace Wlniao.Log
 			if (this.cache == null && !string.IsNullOrEmpty(serverHost))
 			{
 				this.cache = new Dictionary<String, List<Entrie>>();
-				Task.Run(() =>
-				{
-					while (this.Interval > 0)
-					{
-						try
-						{
-							Task.Delay(Interval * 1000).Wait();
-							var list = new List<object>();
-							if (cache.Count == 0)
-							{
-								continue;
-							}
-							var content = new Dictionary<string, List<Entrie>>(cache);
-							cache = new Dictionary<String, List<Entrie>>();
-							foreach (var item in content)
-							{
-								if (item.Value.Count > 0)
+                Task.Run(() =>
+                {
+                    while (this.Interval > 0)
+                    {
+                        try
+                        {
+                            Task.Delay(Interval * 1000).Wait();
+                            var list = new List<object>();
+                            if (cache.Count == 0)
+                            {
+                                continue;
+                            }
+                            var content = new Dictionary<string, List<Entrie>>(cache);
+                            cache = new Dictionary<String, List<Entrie>>();
+                            foreach (var item in content)
+                            {
+                                if (item.Value.Count > 0)
+                                {
+                                    list.Add(new
+                                    {
+                                        stream = new { topic = item.Key, node = XCore.WebNode },
+                                        values = item.Value.Select(o => new[] { o.ts, o.line }).ToArray()
+                                    });
+                                }
+                            }
+                            var handler = new HttpClientHandler();
+                            if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+                            {
+                                handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+                            }
+                            using (var client = new HttpClient(handler))
+                            {
+                                var start = DateTime.Now;
+                                var json = Newtonsoft.Json.JsonConvert.SerializeObject(new { streams = list.ToArray() });
+                                var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
+                                reqest.Headers.Date = DateTime.Now;
+                                reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
+                                reqest.Content.Headers.Add("Content-Type", "application/json");
+                                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                                var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
+                                if (!string.IsNullOrEmpty(result))
 								{
-									list.Add(new
+									foreach (var item in content)
 									{
-										stream = new { topic = item.Key, node = XCore.WebNode },
-										values = item.Value.Select(o => new[] { o.ts, o.line }).ToArray()
-									});
-								}
-							}
-							var handler = new HttpClientHandler();
-							if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
-							{
-								handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
-							}
-							using (var client = new HttpClient(handler))
-							{
-								var start = DateTime.Now;
-								var json = Newtonsoft.Json.JsonConvert.SerializeObject(new { streams = list.ToArray() });
-								var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
-								reqest.Headers.Date = DateTime.Now;
-								reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
-								reqest.Content.Headers.Add("Content-Type", "application/json");
-								client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-								var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
-								if (!string.IsNullOrEmpty(result))
-								{
-									Loger.Console(string.Format("{0} => {1}", DateTools.Format(), result), ConsoleColor.Red);
-								}
-							}
-						}
-						catch (Exception ex)
-						{
-							Loger.Console(string.Format("{0} => {1}", DateTools.Format(), "Loki Push:" + ex.Message), ConsoleColor.Red);
-						}
-					}
-				});
+										if (cache.ContainsKey(item.Key))
+										{
+											cache[item.Key].AddRange(item.Value);
+										}
+										else
+										{
+											cache.TryAdd(item.Key, item.Value);
+										}
+									}
+									Loger.File("Loki", string.Format("{0} => {1}", DateTools.Format(), result), ConsoleColor.Red);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Loger.File("Loki", string.Format("{0} => {1}", DateTools.Format(), "Loki Push:" + ex.Message), ConsoleColor.Red);
+                        }
+                    }
+                });
 			}
 			else if (this.cache == null)
 			{
@@ -267,11 +278,11 @@ namespace Wlniao.Log
 					var json = Newtonsoft.Json.JsonConvert.SerializeObject(new
 					{
 						streams = new[] {
-								new {
-									stream = new { topic = topic, node = XCore.WebNode },
-									values = new[] { entrie }
-								}
+							new {
+								stream = new { topic = topic, node = XCore.WebNode },
+								values = new[] { entrie }
 							}
+						}
 					});
 					var handler = new HttpClientHandler();
 					if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
