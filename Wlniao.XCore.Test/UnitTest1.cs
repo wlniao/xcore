@@ -36,8 +36,9 @@ namespace Wlniao.XCore.Test
 		[Test]
 		public void FileLoger()
 		{
-			log.File("test1", strUtil.CreateRndStrE(50));
-		}
+			log.Topic("test1", strUtil.CreateRndStrE(50));
+            System.Threading.Thread.Sleep(3600000);
+        }
 
 		[Test]
 		public void Loger()

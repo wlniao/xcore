@@ -28,6 +28,7 @@ using System.Reflection.Emit;
 using System.Security.Policy;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Wlniao.Caching;
 using static Wlniao.Log.LokiLoger;
 
 namespace Wlniao.Log
@@ -41,10 +42,10 @@ namespace Wlniao.Log
         /// 服务器地址
         /// </summary>
         private string serverHost = null;
-		/// <summary>
-		/// 
-		/// </summary>
-		private Dictionary<String, List<Entrie>> cache = null;
+        /// <summary>
+        /// 
+        /// </summary>
+        private static Queue<KeyValuePair<string, Entrie>> queue = new Queue<KeyValuePair<string, Entrie>>();
         /// <summary>
         /// 
         /// </summary>
@@ -86,76 +87,81 @@ namespace Wlniao.Log
 			{
 				serverHost = server.TrimEnd('/');
 			}
-			if (this.cache == null && !string.IsNullOrEmpty(serverHost))
+			if (!string.IsNullOrEmpty(serverHost))
 			{
-				this.cache = new Dictionary<String, List<Entrie>>();
                 Task.Run(() =>
                 {
-                    while (this.Interval > 0)
+                    while (true)
                     {
                         try
                         {
-                            Task.Delay(Interval * 1000).Wait();
-                            var list = new List<object>();
-                            if (cache.Count == 0)
+                            for (var c = 0; c < 100 && queue.Count > 0; c++)
                             {
-                                continue;
-                            }
-                            var content = new Dictionary<string, List<Entrie>>(cache);
-                            cache = new Dictionary<String, List<Entrie>>();
-                            foreach (var item in content)
-                            {
-                                if (item.Value.Count > 0)
+                                var cache = new Dictionary<String, List<Entrie>>();
+                                for (var i = 0; i < 100 && queue.Count > 0; i++)
                                 {
-                                    list.Add(new
+                                    var item = queue.Dequeue();
+                                    if (item.Key != null && item.Value != null)
                                     {
-                                        stream = new { topic = item.Key, node = XCore.WebNode },
-                                        values = item.Value.Select(o => new[] { o.ts, o.line }).ToArray()
-                                    });
+                                        if (!cache.ContainsKey(item.Key))
+                                        {
+                                            cache.TryAdd(item.Key, new List<Entrie>());
+                                        }
+                                        cache[item.Key].Add(item.Value);
+                                    }
                                 }
-                            }
-                            var handler = new HttpClientHandler();
-                            if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
-                            {
-                                handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
-                            }
-                            using (var client = new HttpClient(handler))
-                            {
-                                var start = DateTime.Now;
-                                var json = Newtonsoft.Json.JsonConvert.SerializeObject(new { streams = list.ToArray() });
-                                var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
-                                reqest.Headers.Date = DateTime.Now;
-                                reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
-                                reqest.Content.Headers.Add("Content-Type", "application/json");
-                                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                                var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
-                                if (!string.IsNullOrEmpty(result))
-								{
-									foreach (var item in content)
-									{
-										if (cache.ContainsKey(item.Key))
-										{
-											cache[item.Key].AddRange(item.Value);
-										}
-										else
-										{
-											cache.TryAdd(item.Key, item.Value);
-										}
-									}
-									Loger.File("Loki", string.Format("{0} => {1}", DateTools.Format(), result), ConsoleColor.Red);
+                                if (cache.Count > 0)
+                                {
+                                    var err = false;
+                                    var list = new List<object>();
+                                    foreach (var item in cache)
+                                    {
+                                        list.Add(new
+                                        {
+                                            stream = new { topic = item.Key, node = XCore.WebNode },
+                                            values = item.Value.Select(o => new[] { o.ts, o.line }).ToArray()
+                                        });
+                                    }
+                                    try
+                                    {
+                                        var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = (message, cert, chain, error) => true };
+                                        using (var client = new HttpClient(handler))
+                                        {
+                                            var start = DateTime.Now;
+                                            var json = Newtonsoft.Json.JsonConvert.SerializeObject(new { streams = list.ToArray() });
+                                            var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
+                                            reqest.Headers.Date = DateTime.Now;
+                                            reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
+                                            reqest.Content.Headers.Add("Content-Type", "application/json");
+                                            client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                                            var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
+                                            if (!string.IsNullOrEmpty(result))
+                                            {
+                                                err = true;
+                                            }
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Loger.File("Loki", string.Format("{0} => {1}", DateTools.Format(), "Loki Push:" + ex.Message), ConsoleColor.Red);
+                                    }
+                                    if (err)
+                                    {
+                                        foreach (var kv in cache)
+                                        {
+                                            foreach (var item in kv.Value)
+                                            {
+                                                queue.Enqueue(new KeyValuePair<string, Entrie>(kv.Key, item));
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            Loger.File("Loki", string.Format("{0} => {1}", DateTools.Format(), "Loki Push:" + ex.Message), ConsoleColor.Red);
-                        }
+                        catch { }
+                        Task.Delay(Interval * 1000).Wait();
                     }
                 });
-			}
-			else if (this.cache == null)
-			{
-				this.cache = new Dictionary<String, List<Entrie>>();
 			}
 		}
         /// <summary>
@@ -273,45 +279,42 @@ namespace Wlniao.Log
             try
             {
                 if (push)
-				{
+                {
                     // 实时推送日志
-					var json = Newtonsoft.Json.JsonConvert.SerializeObject(new
-					{
-						streams = new[] {
-							new {
-								stream = new { topic = topic, node = XCore.WebNode },
-								values = new[] { entrie }
-							}
-						}
-					});
-					var handler = new HttpClientHandler();
-					if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
-					{
-						handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
-					}
-					using (var client = new HttpClient(handler))
-					{
-						var start = DateTime.Now;
-						var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
-						reqest.Headers.Date = DateTime.Now;
-						reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
-						reqest.Content.Headers.Add("Content-Type", "application/json");
-						client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-						var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
-						if (!string.IsNullOrEmpty(result))
-						{
-							Loger.Console(string.Format("{0} => {1}", DateTools.Format(), result), ConsoleColor.Red);
-						}
-					}
-				}
-				else if (cache.ContainsKey(topic))
-				{
-					cache[topic].Add(entrie);
-				}
-				else
-				{
-					cache.TryAdd(topic, new List<Entrie> { entrie });
-				}
+                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(new
+                    {
+                        streams = new[] {
+                            new {
+                                stream = new { topic = topic, node = XCore.WebNode },
+                                values = new[] { entrie }
+                            }
+                        }
+                    });
+                    var handler = new HttpClientHandler();
+                    if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
+                    {
+                        handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
+                    }
+                    using (var client = new HttpClient(handler))
+                    {
+                        var start = DateTime.Now;
+                        var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
+                        reqest.Headers.Date = DateTime.Now;
+                        reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
+                        reqest.Content.Headers.Add("Content-Type", "application/json");
+                        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                        var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
+                        if (!string.IsNullOrEmpty(result))
+                        {
+                            queue.Enqueue(new KeyValuePair<string, Entrie>(topic, entrie));
+                            Loger.Console(string.Format("{0} => {1}", DateTools.Format(), result), ConsoleColor.Red);
+                        }
+                    }
+                }
+                else
+                {
+                    queue.Enqueue(new KeyValuePair<string, Entrie>(topic, entrie));
+                }
 			}
 			catch (Exception ex)
 			{
