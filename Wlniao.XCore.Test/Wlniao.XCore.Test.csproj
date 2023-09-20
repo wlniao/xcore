@@ -16,8 +16,4 @@
     <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="xcore\logs\" />
-  </ItemGroup>
-
 </Project>

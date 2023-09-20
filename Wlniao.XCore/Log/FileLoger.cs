@@ -145,7 +145,7 @@ namespace Wlniao.Log
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
-        private void Write(String topic, String message)
+        internal void Write(String topic, String message)
         {
             try
             {
