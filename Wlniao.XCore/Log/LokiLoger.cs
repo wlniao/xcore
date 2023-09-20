@@ -144,13 +144,13 @@ namespace Wlniao.Log
                                             if (!string.IsNullOrEmpty(result))
                                             {
                                                 err = true;
-                                                LokiErrorLog("Loki Push:" + result);
+                                                LokiErrorLog("Push Result:" + result);
                                             }
                                         }
                                     }
                                     catch (Exception ex)
                                     {
-                                        LokiErrorLog("Loki Exception:" + ex.Message);
+                                        LokiErrorLog("Exception:" + ex.Message);
                                     }
                                     if (err)
                                     {
@@ -357,7 +357,7 @@ namespace Wlniao.Log
                         if (!string.IsNullOrEmpty(result))
                         {
                             queue.Enqueue(new KeyValuePair<string, Entrie>(topic, entrie));
-                            LokiErrorLog("Loki Push:" + result);
+                            LokiErrorLog("Push Result:" + result);
                         }
                     }
                 }
@@ -368,7 +368,7 @@ namespace Wlniao.Log
 			}
 			catch (Exception ex)
             {
-                LokiErrorLog("Loki Exception:" + ex.Message);
+                LokiErrorLog("Exception:" + ex.Message);
             }
 		}
 
@@ -378,7 +378,7 @@ namespace Wlniao.Log
             if (message != tmpmsg)
             {
                 tmpmsg = message;
-                Loger.File("Loki", "Loki Push:" + message, ConsoleColor.Red);
+                Loger.File("Loki", message, ConsoleColor.Red);
             }
         }
     }
