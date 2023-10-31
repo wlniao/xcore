@@ -262,10 +262,10 @@ namespace Wlniao.Serialization
 
         internal static Object setValueToObject(Type t, Dictionary<String, object> map)
         {
-            var result = rft.GetInstance(t);
+            var result = Runtime.Reflection.GetInstance(t);
             if (map != null)
             {
-                var properties = rft.GetPropertyList(t);
+                var properties = Runtime.Reflection.GetPropertyList(t);
                 foreach (KeyValuePair<String, object> pair in map)
                 {
 
@@ -322,7 +322,7 @@ namespace Wlniao.Serialization
                             objValue = dic;
                             Runtime.Reflection.SetPropertyValue(result, pName, objValue);
                         }
-                        else if (rft.IsInterface(info.PropertyType, typeof(IList)))
+                        else if (Runtime.Reflection.IsInterface(info.PropertyType, typeof(IList)))
                         {
                             try
                             {
@@ -335,7 +335,7 @@ namespace Wlniao.Serialization
                         {
                             try
                             {
-                                objValue = rft.GetInstance(info.PropertyType);
+                                objValue = Runtime.Reflection.GetInstance(info.PropertyType);
                                 try
                                 {
                                     var keys = (Dictionary<String, object>.KeyCollection)Runtime.Reflection.GetPropertyValue(pair.Value, "Keys");

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Wlniao;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Wlniao.XServer
 {
@@ -16,7 +15,9 @@ namespace Wlniao.XServer
         /// <summary>
         /// 加密密钥
         /// </summary>
+#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         protected String token = null;
+#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 默认返回对象
         /// </summary>
@@ -27,7 +28,7 @@ namespace Wlniao.XServer
         /// <param name="func"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult Check(Func<Dictionary<String, Object>, IActionResult> func)
+        public IActionResult? Check(Func<Dictionary<String, Object>, IActionResult> func)
         {
             try
             {
@@ -74,10 +75,13 @@ namespace Wlniao.XServer
                     }
                     else
                     {
-                        Dictionary<String, Object> req = null;
+                        var req = new Dictionary<String, Object>();
                         try
                         {
-                            req = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, Object>>(json);
+                            foreach (var kv in Wlniao.Json.ToObject<Dictionary<String, Object>>(json))
+                            {
+                                req.TryAdd(kv.Key, kv.Value);
+                            }
                         }
                         catch { }
                         if (req == null && !string.IsNullOrEmpty(data))
@@ -87,7 +91,7 @@ namespace Wlniao.XServer
                         }
                         else
                         {
-                            return func?.Invoke(req);
+                            return func?.Invoke(req ?? new Dictionary<string, object>());
                         }
                     }
                 }
@@ -123,7 +127,7 @@ namespace Wlniao.XServer
             }
             else
             {
-                txt = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+                txt = Wlniao.Json.ToString(obj);
             }
             var dic = new Dictionary<string, object>();
             dic.Add("node", result.node);
@@ -173,7 +177,7 @@ namespace Wlniao.XServer
             }
             else
             {
-                txt = Newtonsoft.Json.JsonConvert.SerializeObject(result.data);
+                txt = Wlniao.Json.ToString(result.data);
             }
             var dic = new Dictionary<string, object>();
             dic.Add("node", result.node);

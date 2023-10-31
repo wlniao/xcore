@@ -1,9 +1,8 @@
-﻿using Org.BouncyCastle.Utilities.Encoders;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-
+using Org.BouncyCastle.Utilities.Encoders;
 namespace Wlniao.Crypto
 {
     /// <summary>

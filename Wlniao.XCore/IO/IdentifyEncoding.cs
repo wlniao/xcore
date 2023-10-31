@@ -40,7 +40,7 @@ namespace Wlniao.IO
         {
             try
             {
-                if (file.Exists(absolutePath))
+                if (File.Exists(absolutePath))
                 {
                     using (FileStream fs = new FileStream(absolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using Wlniao.XServer;
 using System.Threading.Tasks;
+using StackExchange.Redis;
 
 namespace Wlniao.XCore.Test
 {
@@ -16,14 +17,195 @@ namespace Wlniao.XCore.Test
         [Test]
         public void Redis()
         {
-            Wlniao.Cache.UseRedis("127.0.0.1", "123466");
-            var input = Wlniao.Cache.Set("xcore_test", "123456", 300);
-            var value = Wlniao.Cache.Get("xcore_test");
-            if (input)
+            Wlniao.Cache.UseRedis("192.168.31.254:6379,password=123456");
+
+            Task.Run(() =>
             {
-                input = value == "123456";
-            }
-            Assert.IsTrue(input);
+                while (true)
+                {
+                    Wlniao.log.Topic("test1", strUtil.CreateRndStrE(50));
+                }
+            });
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    Wlniao.log.Topic("test2", strUtil.CreateRndStrE(50));
+                    //System.Threading.Thread.Sleep(73);
+                }
+            });
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    Wlniao.log.Topic("test1", strUtil.CreateRndStrE(50));
+                }
+            });
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    Wlniao.log.Topic("test3", strUtil.CreateRndStrE(50));
+                    //System.Threading.Thread.Sleep(21);
+                }
+            });
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    Wlniao.log.Topic("test5", strUtil.CreateRndStrE(50));
+                    //System.Threading.Thread.Sleep(91);
+                }
+            });
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    Wlniao.log.Topic("test4", strUtil.CreateRndStrE(50));
+                    //System.Threading.Thread.Sleep(130);
+                }
+            });
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    Wlniao.log.Topic("test2", strUtil.CreateRndStrE(50));
+                    //System.Threading.Thread.Sleep(73);
+                }
+            });
+            //         var value = Wlniao.Cache.Get("test");
+            //         Wlniao.Cache.Set("test1", strUtil.CreateRndStrE(8), -1);
+            //Wlniao.Cache.Set("test2", strUtil.CreateRndStrE(8), 300);
+            //Wlniao.Cache.Set("test3", Json.ToString(new
+            //{
+            //	test = 123,
+            //	daddlg = "sdgew",
+            //	tesdgw = new Dictionary<string, string>
+            //	{
+            //		{ "a1","23"},
+            //		{ "a2","dsdr"}
+            //	},
+            //	tesdgsdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesd224gsdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesdgs221dgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesdgs34dgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tes2dgsdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesdg9sdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesdg11sdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesd44gsdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tes22dgsdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesdgsd55gw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesdg22sdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesdg34sdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesdgs4dgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesd126gsdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesdgs2dgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesd45gsdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 },
+            //	tesd32gsdgw = new Dictionary<string, object>
+            //			 {
+            //				 { "o1",442},
+            //				 { "o2","dsdr"},
+            //				 { "o3",false},
+            //				 { "o4",39293.313m }
+            //			 }
+            //}), 300);
+            Assert.IsTrue(value.IsNotNullAndEmpty());
         }
 
         [Test]

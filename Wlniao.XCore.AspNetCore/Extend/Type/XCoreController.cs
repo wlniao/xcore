@@ -21,11 +21,15 @@ namespace Wlniao
         /// <summary>
         /// 当前请求Host
         /// </summary>
+#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         private string host = null;
+#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 链路追踪ID
         /// </summary>
+#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         private string trace = null;
+#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 当前请求开始时间
         /// </summary>
@@ -77,7 +81,10 @@ namespace Wlniao
         /// <param name="context"></param>
         public override void OnActionExecuted(ActionExecutedContext context)
         {
-            Response.Headers.Add("X-Wlniao-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
+            if (Response.Headers != null)
+            {
+                Response.Headers.TryAdd("X-Wlniao-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
+            }
             if (!RequestSecurity)
             {
                 errorMsg = Config.GetConfigs("NoSecurityMessage");
@@ -89,13 +96,13 @@ namespace Wlniao
                 {
                     trace = Request.Headers["X-Wlniao-Trace"].ToString();
                 }
-                if (!string.IsNullOrEmpty(trace))
+                if (!string.IsNullOrEmpty(trace) && Response.Headers != null)
                 {
-                    Response.Headers.Add("X-Wlniao-Trace", trace);
+                    Response.Headers.TryAdd("X-Wlniao-Trace", trace);
                 }
-                if (!string.IsNullOrEmpty(XCore.XServerId))
+                if (!string.IsNullOrEmpty(XCore.XServerId) && Response.Headers != null)
                 {
-                    Response.Headers.Add("X-Wlniao-XServerId", XCore.XServerId);
+                    Response.Headers.TryAdd("X-Wlniao-XServerId", XCore.XServerId);
                 }
             }
             else if (string.IsNullOrEmpty(method))
@@ -131,7 +138,7 @@ namespace Wlniao
         {
             if (!string.IsNullOrEmpty(message) && !Response.Headers.ContainsKey("X-Wlniao-Debug"))
             {
-                Response.Headers.Add("X-Wlniao-Debug", message);
+                Response.Headers.TryAdd("X-Wlniao-Debug", message);
             }
         }
         /// <summary>
@@ -160,7 +167,7 @@ namespace Wlniao
             }
             else
             {
-                return Content(jsonStr, "text/json", System.Text.Encoding.UTF8);
+                return Content(jsonStr ?? "", "text/json", System.Text.Encoding.UTF8);
             }
         }
         /// <summary>
@@ -190,7 +197,7 @@ namespace Wlniao
             }
             else
             {
-                return Content(jsonStr, "text/json", encoding ?? System.Text.Encoding.UTF8);
+                return Content(jsonStr ?? "", "text/json", encoding ?? System.Text.Encoding.UTF8);
             }
         }
         /// <summary>
@@ -234,7 +241,7 @@ namespace Wlniao
         /// <param name="message"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult ErrorMsg(String message = null)
+        public ActionResult ErrorMsg(String? message = null)
         {
             if (string.IsNullOrEmpty(message))
             {
@@ -266,11 +273,12 @@ namespace Wlniao
         public string GetCookies(String key)
         {
             key = key.ToLower();
-            foreach (var item in Request.Cookies.Keys)
+            if (Request.Cookies != null)
             {
-                if (item.ToLower() == key)
+                var item = Request.Cookies.Where(o => o.Key.ToLower() == key).FirstOrDefault();
+                if (item.Value != null)
                 {
-                    return Request.Cookies[item];
+                    return item.Value;
                 }
             }
             return "";
@@ -374,16 +382,20 @@ namespace Wlniao
                     strPost = System.Text.Encoding.UTF8.GetString(buffer);
                 }
             }
-            return strPost;
+            return strPost ?? "";
         }
         /// <summary>
         /// 
         /// </summary>
+#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         private string strPost = null;
+#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 
         /// </summary>
+#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         private Dictionary<string, string> ctxPost = null;
+#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
         /// </summary>
@@ -444,7 +456,7 @@ namespace Wlniao
                                 }
                                 if (!string.IsNullOrEmpty(strPost))
                                 {
-                                    var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(strPost);
+                                    var tmpPost = Wlniao.Json.ToObject<Dictionary<String, String>>(strPost);
                                     if (tmpPost != null)
                                     {
                                         foreach (var kv in tmpPost)

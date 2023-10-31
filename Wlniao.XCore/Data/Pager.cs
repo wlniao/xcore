@@ -171,11 +171,11 @@ namespace Wlniao.Data
                 {
                     if (total > 0)
                     {
-                        return string.Format(lang.Get("", "findtotal", "{0} records found"), total);
+                        return string.Format(Runtime.Lang.Get("", "findtotal", "{0} records found"), total);
                     }
                     else
                     {
-                        return lang.Get("", "empty", "without data");
+                        return Runtime.Lang.Get("", "empty", "without data");
                     }
                 }
                 return _message;

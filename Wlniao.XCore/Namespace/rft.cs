@@ -24,5 +24,5 @@ namespace Wlniao
     /// <summary>
     /// 封装了反射的常用操作方法
     /// </summary>
-    public class rft : Wlniao.Runtime.Reflection { }
+    public class rft2 : Wlniao.Runtime.Reflection { }
 }

@@ -217,7 +217,7 @@ namespace Wlniao.IO
         /// <param name="absolutePath">文件的绝对路径</param>
         public static void Delete(String absolutePath)
         {
-            File.Delete(absolutePath);
+            System.IO.File.Delete(absolutePath);
         }
         /// <summary>
         /// 判断文件是否存在
@@ -228,7 +228,7 @@ namespace Wlniao.IO
         {
             if (!string.IsNullOrEmpty(absolutePath) && System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(absolutePath)))
             {
-                return File.Exists(absolutePath);
+                return System.IO.File.Exists(absolutePath);
             }
             return false;
         }
@@ -240,7 +240,7 @@ namespace Wlniao.IO
         public static void Move(String sourceFileName, String destFileName)
         {
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(destFileName));
-            File.Move(sourceFileName, destFileName);
+            System.IO.File.Move(sourceFileName, destFileName);
         }
         /// <summary>
         /// 拷贝文件(如果目标存在，不覆盖)
@@ -249,7 +249,7 @@ namespace Wlniao.IO
         /// <param name="destFileName">需要挪到的新路径</param>
         public static void Copy(String sourceFileName, String destFileName)
         {
-            File.Copy(sourceFileName, destFileName, false);
+            System.IO.File.Copy(sourceFileName, destFileName, false);
         }
         /// <summary>
         /// 拷贝文件
@@ -259,7 +259,7 @@ namespace Wlniao.IO
         /// <param name="overwrite">如果目标存在，是否覆盖</param>
         public static void Copy(String sourceFileName, String destFileName, Boolean overwrite)
         {
-            File.Copy(sourceFileName, destFileName, overwrite);
+            System.IO.File.Copy(sourceFileName, destFileName, overwrite);
         }
         /// <summary>
         /// 将内容追加到文件中(采用UTF8编码)

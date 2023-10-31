@@ -16,7 +16,9 @@ namespace Wlniao.XServer
         /// <summary>
         /// 当前客户端的App信息
         /// </summary>
+#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         protected XServer.XsApp app = null;
+#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 默认返回的ApiResult对象
         /// </summary>
@@ -69,12 +71,14 @@ namespace Wlniao.XServer
                         {
                             app = rlt.data;
                             _rlt.PutLog(rlt.logs);
+#pragma warning disable CS8602 // 解引用可能出现空引用。
                             if (app.xclient && !filterContext.ActionDescriptor.FilterDescriptors.Any(a => a.Filter.ToString().Contains("Wlniao.Mvc.XClientAttribute")))
                             {
                                 _rlt.message = "not allow xclient app";
                                 filterContext.Result = new ContentResult() { Content = Wlniao.Json.ToString(_rlt) };
                                 return;
                             }
+#pragma warning restore CS8602 // 解引用可能出现空引用。
                         }
                     }
                 }
@@ -88,7 +92,7 @@ namespace Wlniao.XServer
                     var list = new List<KeyValuePair<String, String>>();
                     foreach (string key in Request.Query.Keys)
                     {
-                        list.Add(new KeyValuePair<string, string>(key, Request.Query[key]));
+                        list.Add(new KeyValuePair<string, string>(key, Request.Query[key].ToString()));
                     }
                     list.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
                     var values = new System.Text.StringBuilder();
@@ -145,7 +149,7 @@ namespace Wlniao.XServer
             }
             if (string.IsNullOrEmpty(GetRequest("callback")))
             {
-                return Content(jsonStr, "text/json", System.Text.Encoding.UTF8);
+                return Content(jsonStr ?? "", "text/json", System.Text.Encoding.UTF8);
             }
             else
             {
@@ -175,7 +179,7 @@ namespace Wlniao.XServer
             }
             if (string.IsNullOrEmpty(GetRequest("callback")))
             {
-                return Content(jsonStr, "text/json", encoding ?? System.Text.Encoding.UTF8);
+                return Content(jsonStr ?? "", "text/json", encoding ?? System.Text.Encoding.UTF8);
             }
             else
             {
@@ -293,10 +297,14 @@ namespace Wlniao.XServer
                     strPost = System.Text.Encoding.UTF8.GetString(buffer);
                 }
             }
-            return strPost;
+            return strPost ?? "";
         }
+#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         private string strPost = null;
+#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
+#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         private Dictionary<string, string> ctxPost = null;
+#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
         /// </summary>
@@ -357,7 +365,7 @@ namespace Wlniao.XServer
                                 }
                                 if (!string.IsNullOrEmpty(strPost))
                                 {
-                                    var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(strPost);
+                                    var tmpPost = Wlniao.Json.ToObject<Dictionary<String, String>>(strPost);
                                     if (tmpPost != null)
                                     {
                                         foreach (var kv in tmpPost)
@@ -381,7 +389,7 @@ namespace Wlniao.XServer
                 }
                 catch { }
             }
-            if (ctxPost.ContainsKey(key) && !string.IsNullOrEmpty(ctxPost[key]))
+            if (ctxPost != null && ctxPost.ContainsKey(key) && !string.IsNullOrEmpty(ctxPost[key]))
             {
                 Default = ctxPost[key];
             }

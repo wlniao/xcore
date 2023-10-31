@@ -23,11 +23,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Logging;
 using Wlniao.Log;
 
 namespace Wlniao
@@ -122,7 +117,7 @@ namespace Wlniao
                 Console.WriteLine("\r\nXCore Runtime:");
                 Console.WriteLine("    LogType          " + Loger.LogProvider.GetType().Name);
                 Console.WriteLine("    LogLevel         " + Loger.LogLevel.ToString());
-                Console.WriteLine("    Language         " + lang.GetLang());
+                Console.WriteLine("    Language         " + Runtime.Lang.GetLang());
                 Console.WriteLine("    StartupRoot      " + StartupRoot);
                 Console.WriteLine("    StartupTime      " + StartupTime);
                 Console.WriteLine("    PublishTime      " + DateTools.FormatUnix(PublishTime));
@@ -138,27 +133,6 @@ namespace Wlniao
             catch { }
         }
 
-        /// <summary>
-        /// 服务停用及停用消息
-        /// </summary>
-        /// <param name="node"></param>
-        /// <param name="code"></param>
-        /// <param name="message"></param>
-        public static void ServiceStop(String node, String code = "302", String message = "服务器正在维护中 Server maintenance.")
-        {
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(new { node, code, success = false, message });
-            new WebHostBuilder().UseKestrel(o => { o.Listen(System.Net.IPAddress.IPv6Any, ListenPort); }).Configure(app =>
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Node " + node + " on maintenance mode: " + code);
-                Console.ForegroundColor = ConsoleColor.White;
-                app.Run((HttpContext context) =>
-                {
-                    context.Response.Headers.TryAdd("Content-Type", "application/json");
-                    return context.Response.WriteAsync(json);
-                });
-            }).Build().Run();
-        }
 
         /// <summary>
         /// HTTPS证书验证

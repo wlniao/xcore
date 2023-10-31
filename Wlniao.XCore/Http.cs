@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Wlniao
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class Http
     {
         /// <summary>
@@ -18,6 +21,9 @@ namespace Wlniao
         /// </summary>
         public Action<Context> Handler { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public class Context
         {
             private string contentType = "text/plain; charset=utf-8";
@@ -32,27 +38,27 @@ namespace Wlniao
             /// <summary>  
             /// 请求路径
             /// </summary>  
-            public String? Path { get; set; }
+            public String Path { get; set; }
             /// <summary>  
             /// 请求参数
             /// </summary>  
-            public String? Query { get; set; }
+            public String Query { get; set; }
             /// <summary>  
             /// 请求方式
             /// </summary>  
-            public String? Method { get; set; }
+            public String Method { get; set; }
             /// <summary>  
             /// 请求内容
             /// </summary>  
-            public String? Request { get; set; }
+            public String Request { get; set; }
             /// <summary>  
             /// 输出内容
             /// </summary>  
-            public Object? Response { get; set; }
+            public Object Response { get; set; }
             /// <summary>  
             /// 身份令牌
             /// </summary>  
-            public String? AuthToken { get; set; }
+            public String AuthToken { get; set; }
             /// <summary>  
             /// 输出格式
             /// </summary>  

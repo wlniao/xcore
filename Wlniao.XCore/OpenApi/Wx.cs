@@ -299,14 +299,14 @@ namespace Wlniao.OpenApi
                 {
                     if (_response.IndexOf("access_token") > 0)
                     {
-                        var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<Wlniao.OpenApi.Wx.AccessToken>(_response);
+                        var obj = Json.ToObject<Wlniao.OpenApi.Wx.AccessToken>(_response);
                         rlt.success = obj != null && !string.IsNullOrEmpty(obj.access_token);
                         rlt.message = "expires in " + obj.expires_in;
                         rlt.data = obj.access_token;
                     }
                     else
                     {
-                        var err = Newtonsoft.Json.JsonConvert.DeserializeObject<Wlniao.OpenApi.Wx.ErrMsg>(_response);
+                        var err = Json.ToObject<Wlniao.OpenApi.Wx.ErrMsg>(_response);
                         rlt.message = err.errmsg;
                     }
                 }

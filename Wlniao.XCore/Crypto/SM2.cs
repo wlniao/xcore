@@ -8,7 +8,6 @@ using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.Utilities.Encoders;
 
 namespace Wlniao.Crypto
 {

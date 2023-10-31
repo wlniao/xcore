@@ -1,7 +1,7 @@
 /*==============================================================================
-    鏂囦欢鍚嶇О锛歭ang.cs
-    閫傜敤鐜锛欳oreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    鍔熻兘鎻忚堪锛氭彁渚涘厤鍛藉悕绌洪棿蹇嵎璋冪敤鏂规硶
+    文件名称：LogLevel.cs
+    适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    功能描述：日志的等级
 ================================================================================
  
     Copyright 2015 XieChaoyi
@@ -19,10 +19,39 @@
     limitations under the License.
 
 ===============================================================================*/
-namespace Wlniao
+using System;
+namespace Wlniao.Log
 {
     /// <summary>
-    /// 璇█鍖呭伐鍏凤紝鐢ㄤ簬鍔犺浇澶氬浗璇█
+    /// 日志的等级
+    /// Fatal>>Error>>Warn>>Debug(SQL)>>Info>>None
     /// </summary>
-    public class Lang2 : Wlniao.Runtime.Lang { }
+    public enum LogLevel
+    {
+        /// <summary>
+        /// 无等级
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// 调试信息日志
+        /// </summary>
+        Debug = 1,
+        /// <summary>
+        /// 普通信息日志
+        /// </summary>
+        Information = 2,
+        /// <summary>
+        /// 警告信息日志
+        /// </summary>
+        Warning = 3,
+        /// <summary>
+        /// 错误信息日志
+        /// </summary>
+        Error = 4,
+        /// <summary>
+        /// 崩溃信息日志
+        /// </summary>
+        Critical = 5,
+    }
 }
+

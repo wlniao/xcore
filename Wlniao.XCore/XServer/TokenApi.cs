@@ -22,12 +22,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Security;
-using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis;
-using Microsoft.Extensions.Logging;
 
 namespace Wlniao.XServer
 {
@@ -60,12 +54,12 @@ namespace Wlniao.XServer
                 {
                     traceid = strUtil.CreateLongId();
                 }
-                var txt = data is String ? data.ToString() : Newtonsoft.Json.JsonConvert.SerializeObject(data);
+                var txt = data is String ? data.ToString() : Json.ToString(data);
                 var start = DateTime.Now;
                 var usetime = "";
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
                 var resStr = "";
-                var reqStr = Newtonsoft.Json.JsonConvert.SerializeObject(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
+                var reqStr = Json.ToString(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
                 try
                 {
                     var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
@@ -110,7 +104,7 @@ namespace Wlniao.XServer
                     Wlniao.ApiResult<String> resObj = null;
                     try
                     {
-                        resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Wlniao.ApiResult<String>>(resStr);
+                        resObj = Json.ToObject<Wlniao.ApiResult<String>>(resStr);
                     }
                     catch { }
                     if (resObj == null || (string.IsNullOrEmpty(resObj.node) && string.IsNullOrEmpty(resObj.code)))
@@ -145,8 +139,8 @@ namespace Wlniao.XServer
 						else
 						{
                             try
-							{
-								if (Log.Loger.LogLevel <= LogLevel.Information)
+                            {
+                                if (Log.Loger.LogLevel <= Log.LogLevel.Information)
                                 {
                                     var msg = string.IsNullOrEmpty(usetime) ? url + " [" : url + " [usetime:" + usetime + ",";
                                     msg += "duration:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms,traceid:" + rlt.traceid + "]\r\n >>> " + txt;
@@ -160,14 +154,14 @@ namespace Wlniao.XServer
                                 }
                                 else
                                 {
-                                    rlt.data = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(plaintext);
+                                    rlt.data = Json.ToObject<T>(plaintext);
                                     rlt.tips = resObj.tips;
                                 }
                             }
-                            catch
+                            catch (Exception ex)
                             {
                                 rlt.code = "107";
-                                rlt.message = "收到远端输出，但反序列化失败";
+                                rlt.message = "收到远端输出，但反序列化失败：" + ex.Message;
                             }
                         }
                     }

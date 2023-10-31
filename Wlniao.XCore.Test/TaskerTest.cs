@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using Wlniao;
 
 namespace Wlniao.XCore.Test
 {
@@ -9,23 +10,23 @@ namespace Wlniao.XCore.Test
         [SetUp]
         public void Setup()
         {
-            Tasker.Subscribe("test", (ctx) =>
+            Tasker.Redis.Subscribe("test", (ctx) =>
             {
                 Console.WriteLine(ctx.topic + ":" + ctx.key);
             });
-            Tasker.Trigger("test");
+            Tasker.Redis.Trigger("test");
         }
 
         [Test]
         public void Insert()
 		{
-			Tasker.InsertDelayQueue("abc111", "test");
-			Tasker.RemoveJob("abc111", "test");
-            Tasker.InsertDelayQueue("test111", "test", 2, 8, 12, 20, 30, 50);
-			Tasker.InsertDelayQueue("test222", "test", 2, 8, 12, 20, 30, 50);
-			Tasker.InsertDelayQueue("test333", "test", 2, 8, 12, 20, 30, 50);
+			Tasker.Redis.InsertDelayQueue("abc111", "test");
+            Tasker.Redis.RemoveJob("abc111", "test");
+            Tasker.Redis.InsertDelayQueue("test111", "test", 2, 8, 12, 20, 30, 50);
+            Tasker.Redis.InsertDelayQueue("test222", "test", 2, 8, 12, 20, 30, 50);
+            Tasker.Redis.InsertDelayQueue("test333", "test", 2, 8, 12, 20, 30, 50);
 			System.Threading.Thread.Sleep(10000);
-			Tasker.RemoveJob("test*", "test");
+            Tasker.Redis.RemoveJob("test*", "test");
 			Assert.Warn("test");
 		}
         [Test]

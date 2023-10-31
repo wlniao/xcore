@@ -24,5 +24,7 @@ namespace Wlniao
     /// <summary>
     /// 日志输出工具
     /// </summary>
+#pragma warning disable CS8981 // 该类型名称仅包含小写 ascii 字符。此类名称可能会成为该语言的保留值。
     public class log : Log.Loger { }
+#pragma warning restore CS8981 // 该类型名称仅包含小写 ascii 字符。此类名称可能会成为该语言的保留值。
 }

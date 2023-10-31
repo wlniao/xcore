@@ -56,6 +56,7 @@ namespace Wlniao.Serialization
         /// 将对象转换成 json 字符串
         /// </summary>
         /// <param name="obj"></param>
+        /// <param name="reSort"></param>
         /// <returns></returns>
         public static String Convert(Object obj, Boolean reSort)
         {
@@ -65,6 +66,7 @@ namespace Wlniao.Serialization
         /// 将对象转换成 json 字符串
         /// </summary>
         /// <param name="obj"></param>
+        /// <param name="reSort"></param>
         /// <param name="TypeList"></param>
         /// <returns></returns>
         public static String Convert(Object obj, Boolean reSort, String TypeList)
@@ -75,6 +77,7 @@ namespace Wlniao.Serialization
         /// 将对象转换成 json 字符串
         /// </summary>
         /// <param name="obj"></param>
+        /// <param name="reSort"></param>
         /// <param name="isBreakline">是否换行(默认不换行)</param>
         /// <param name="TypeList"></param>
         /// <returns></returns>

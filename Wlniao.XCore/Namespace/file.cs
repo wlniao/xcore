@@ -25,5 +25,5 @@ namespace Wlniao
     /// <summary>
     /// 封装了文件常用操作方法
     /// </summary>
-    public class file : Wlniao.IO.FileEx { }
+    public class File : Wlniao.IO.FileEx { }
 }

@@ -5,31 +5,59 @@ using StackExchange.Redis;
 using System.Threading.Tasks;
 using Wlniao;
 using Wlniao.Caching;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Security.Cryptography;
 using System.IO;
-using static Microsoft.AspNetCore.Razor.Language.TagHelperMetadata;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace Wlniao
+namespace Wlniao.Tasker
 {
     /// <summary>
     /// 延迟执行的队列任务
     /// </summary>
-    public class Tasker
+    public class Redis
     {
-        /// <summary>
-        /// 标识是否默认获取的实例
-        /// </summary>
-        private static bool instanceDefault = true;
-        /// <summary>
-        /// Instance内部字段
-        /// </summary>
-        private static ConnectionMultiplexer instance = null;
         /// <summary>
         /// 订阅任务监视缓存
         /// </summary>
         private static Dictionary<String, DateTime> watcher = new Dictionary<String, DateTime>();
+
+        private static string connstr = "";
+        /// <summary>
+        /// 数据库链接字符串
+        /// </summary>
+        public static string ConnStr
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(connstr))
+                {
+                    lock (connstr)
+                    {
+                        var _connstr = Config.GetConfigs("WLN_REDIS");
+                        if (string.IsNullOrEmpty(_connstr))
+                        {
+                            var host = Config.GetConfigs("WLN_REDIS_HOST");
+                            var pass = Config.GetConfigs("WLN_REDIS_PASS");
+                            var port = cvt.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
+                            if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
+                            {
+                                _connstr = host + ":" + port;
+                                if (!string.IsNullOrEmpty(pass))
+                                {
+                                    _connstr += ",password=" + pass;
+                                }
+                            }
+                        }
+                        connstr = _connstr;
+                    }
+                }
+                return connstr;
+            }
+            set
+            {
+                connstr = value;
+            }
+        }
         /// <summary>
         /// Delays内部字段
         /// </summary>
@@ -60,6 +88,13 @@ namespace Wlniao
                 return delays;
             }
         }
+
+        /// <summary>
+        /// Instance内部字段
+        /// </summary>
+#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
+        private static ConnectionMultiplexer instance = null;
+#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// Redis/kakfa实例
         /// </summary>
@@ -67,31 +102,37 @@ namespace Wlniao
         {
             get
             {
-                if (instance == null)
+                try
                 {
-                    instance = Redis.Reconnect();
+                    if (instance == null && nextconnect < DateTime.Now)
+                    {
+                        nextconnect = DateTime.Now.AddSeconds(1);
+                        instance = ConnectionMultiplexer.Connect(ConnStr);
+                    }
+                }
+                catch
+                {
+                    log.Warn("Tasker redis connect error");
                 }
                 return instance;
             }
             set
             {
                 instance = value;
-                instanceDefault = false;
             }
         }
         /// <summary>
-        /// 任务消息
+        /// 下次尝试链接时间
         /// </summary>
-        public class Context
+        private static DateTime nextconnect = DateTime.MinValue;
+        /// <summary>
+        /// 重新链接
+        /// </summary>
+        public static ConnectionMultiplexer Reconnect()
         {
-            /// <summary>
-            /// 任务编号
-            /// </summary>
-            public string key { get; set; }
-            /// <summary>
-            /// 任务主题
-            /// </summary>
-            public string topic { get; set; }
+            instance = null;
+            nextconnect = DateTime.MinValue;
+            return Instance;
         }
         /// <summary>
         /// 延时任务实体
@@ -135,7 +176,7 @@ namespace Wlniao
 					{
 						if (Instance != null && instance.IsConnected)
 						{
-							var db = instance.GetDatabase(Redis.Select);
+							var db = Instance.GetDatabase(Caching.Redis.Select);
 							var now = DateTools.GetUnix();
 							var tran = db.CreateTransaction();
 							tran.SortedSetAddAsync(index, "tasker", now - 1);
@@ -310,7 +351,7 @@ namespace Wlniao
             {
                 if (Instance != null && instance.IsConnected)
                 {
-                    var db = instance.GetDatabase(Redis.Select);
+                    var db = Instance.GetDatabase(Caching.Redis.Select);
                     var tran = db.CreateTransaction();
                     foreach (var topic in topics.SplitBy())
 					{
@@ -335,10 +376,7 @@ namespace Wlniao
             }
             catch
             {
-                if (instanceDefault)
-                {
-                    instance = null;
-                }
+                instance = null;
             }
             return false;
         }
@@ -355,7 +393,7 @@ namespace Wlniao
             {
                 if (Instance != null && instance.IsConnected)
                 {
-                    var tran = instance.GetDatabase(Redis.Select).CreateTransaction();
+                    var tran = Instance.GetDatabase(Caching.Redis.Select).CreateTransaction();
                     foreach (var topic in topics.SplitBy())
                     {
                         tran.SortedSetAddAsync("tasker_queue_" + topic, key, runtime > 0 ? runtime : XCore.NowUnix);
@@ -365,10 +403,7 @@ namespace Wlniao
             }
             catch
             {
-                if (instanceDefault)
-                {
-                    instance = null;
-                }
+                instance = null;
             }
             return false;
         }
@@ -395,7 +430,7 @@ namespace Wlniao
                     {
                         times.Add(now + delay);
                     }
-                    var tran = instance.GetDatabase(Redis.Select).CreateTransaction();
+                    var tran = Instance.GetDatabase(Caching.Redis.Select).CreateTransaction();
                     foreach (var topic in topics.SplitBy())
                     {
                         if (topic == "queue")
@@ -414,10 +449,7 @@ namespace Wlniao
             }
             catch
             {
-                if (instanceDefault)
-                {
-                    instance = null;
-                }
+                instance = null;
             }
             return false;
         }

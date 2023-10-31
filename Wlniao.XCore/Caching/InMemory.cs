@@ -71,13 +71,13 @@ namespace Wlniao.Caching
             if (cache.ContainsKey(key))
             {
                 cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
-                cache[key].Value = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+                cache[key].Value = Json.ToString(obj);
             }
             else
             {
                 var data = new CacheData();
                 data.Expire = DateTime.Now.AddSeconds(expireSeconds);
-                data.Value = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+                data.Value = Json.ToString(obj);
                 cache.Add(key, data);
             }
             return true;
@@ -177,7 +177,7 @@ namespace Wlniao.Caching
         {
             if (cache.ContainsKey(key) && cache[key].Expire > DateTime.Now)
             {
-                return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(cache[key].Value);
+                return Json.ToObject<T>(cache[key].Value);
             }
             return default(T);
         }

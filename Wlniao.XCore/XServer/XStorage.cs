@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http;
 
 namespace Wlniao.XServer
@@ -323,9 +321,9 @@ namespace Wlniao.XServer
                             {
                                 Directory.CreateDirectory(toFilePath);
                             }
-                            else if (file.Exists(toFileName))
+                            else if (File.Exists(toFileName))
                             {
-                                file.Delete(toFileName);
+                                File.Delete(toFileName);
                             }
                             using (var fs = new System.IO.FileStream(toFileName, FileMode.CreateNew))
                             {
@@ -470,7 +468,7 @@ namespace Wlniao.XServer
         public static Byte[] Read(String FileName)
         {
             byte[] buffur = null;
-            if (file.Exists(FileName))
+            if (File.Exists(FileName))
             {
                 var fs = new FileStream(FileName.StartsWith(UploadPath) ? FileName : UploadPath + FileName, FileMode.Open, FileAccess.Read);
                 try

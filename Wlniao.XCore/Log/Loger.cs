@@ -20,8 +20,6 @@
 
 ===============================================================================*/
 using System;
-using Microsoft.Extensions.Logging;
-
 namespace Wlniao.Log
 {
     /// <summary>
@@ -51,7 +49,11 @@ namespace Wlniao.Log
                 if (logLevel == LogLevel.None)
                 {
                     var level = Config.GetConfigs("WLN_LOG_LEVEL").ToLower();
-                    if (level == "warn")
+                    if (level == "info")
+                    {
+                        logLevel = LogLevel.Information;
+                    }
+                    else if (level == "warn")
                     {
                         logLevel = LogLevel.Warning;
                     }

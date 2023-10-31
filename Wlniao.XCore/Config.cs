@@ -23,7 +23,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.AspNetCore.DataProtection;
 
 namespace Wlniao
 {
@@ -61,7 +60,7 @@ namespace Wlniao
             {
                 if (_file == null)
                 {
-                    if (file.Exists(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.dev.config")))
+                    if (File.Exists(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.dev.config")))
                     {
                         _file = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.dev.config");
                     }
@@ -308,9 +307,9 @@ namespace Wlniao
         {
             lock (XCore.Lock)
             {
-                if (file.Exists(path))
+                if (File.Exists(path))
                 {
-                    _config = cvt.ToDictionary(file.Read(path));
+                    _config = cvt.ToDictionary(File.Read(path));
 				}
                 else
 				{
@@ -360,7 +359,7 @@ namespace Wlniao
                     {
                         path = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config");
                     }
-                    file.Write(path, sb.ToString(), true);
+                    File.Write(path, sb.ToString(), true);
                     return true;
                 }
             }

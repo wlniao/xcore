@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -13,7 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
+    <ProjectReference Include="..\Wlniao.Tasker\Wlniao.Tasker.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="xcore\logs\" />
   </ItemGroup>
 
 </Project>

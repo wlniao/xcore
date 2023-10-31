@@ -40,7 +40,7 @@ namespace Wlniao.Caching
                 if (ctype == CacheType.None)
                 {
                     var cacheType = Config.GetConfigs("WLN_CACHE_TYPE", "auto").ToLower();
-                    if (cacheType == "auto" && !string.IsNullOrEmpty(Redis.ConnStr))
+                    if (cacheType == "auto" && Redis.CanUse)
                     {
                         ctype = CacheType.Redis;
                     }
@@ -69,30 +69,34 @@ namespace Wlniao.Caching
             ctype = CacheType.Redis;
             if (!string.IsNullOrEmpty(connstr))
             {
-                Redis.ConnStr = connstr;
+                Redis.UseConnStr(connstr);
             }
         }
         /// <summary>
         /// 启用Redis作为缓存机制
         /// </summary>
-        /// <param name="host"></param>
-        /// <param name="pass"></param>
-        /// <param name="port"></param>
-        public static void UseRedis(string host, string pass, int port = 6379)
+        /// <param name="server"></param>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        public static void UseRedis(string server, string username, string password)
         {
             ctype = CacheType.Redis;
-            if (string.IsNullOrEmpty(host))
+            if (string.IsNullOrEmpty(server))
             {
-                Redis.ConnStr = null;
+                Redis.Instance = null;
             }
             else
             {
-                var connstr = host + ":" + port;
-                if (!string.IsNullOrEmpty(pass))
+                var connstr = server;
+                if (!string.IsNullOrEmpty(username))
                 {
-                    connstr += ",password=" + pass;
+                    connstr += ",username=" + username;
                 }
-                Redis.ConnStr = connstr;
+                if (!string.IsNullOrEmpty(password))
+                {
+                    connstr += ",password=" + password;
+                }
+                Redis.UseConnStr(connstr);
             }
         }
 
@@ -148,21 +152,6 @@ namespace Wlniao.Caching
             else
             {
                 return InMemory.Del(key);
-            }
-        }
-        /// <summary>
-        /// 删除缓存内容
-        /// </summary>
-        /// <param name="keys"></param>
-        public static Boolean DelAll(String keys)
-        {
-            if (cType == CacheType.Redis)
-            {
-                return Redis.RangeDelete(keys);
-            }
-            else
-            {
-                return InMemory.RangeDelete(keys);
             }
         }
 
@@ -281,7 +270,7 @@ namespace Wlniao.Caching
             }
             try
             {
-                file.Write(CachePath + key, value);
+                File.Write(CachePath + key, value);
                 return true;
             }
             catch { return false; }
@@ -300,7 +289,7 @@ namespace Wlniao.Caching
             var fileinfo = new System.IO.FileInfo(CachePath + key);
             if (fileinfo.Exists && fileinfo.LastWriteTime.AddSeconds(expireSeconds) > DateTime.Now)
             {
-                return file.Read(fileinfo.FullName);
+                return File.Read(fileinfo.FullName);
             }
             return "";
         }

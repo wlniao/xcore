@@ -1,15 +1,14 @@
-﻿using Org.BouncyCastle.Asn1.GM;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Text.RegularExpressions;
+using Org.BouncyCastle.Asn1.GM;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities.Encoders;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
-
 namespace Wlniao.Crypto
 {
     /// <summary>

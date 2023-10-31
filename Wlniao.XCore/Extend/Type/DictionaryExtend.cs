@@ -157,8 +157,8 @@ namespace Wlniao
             {
                 try
                 {
-                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(dic[key]);
-                    return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
+                    var json = Json.ToString(dic[key]);
+                    return Json.ToObject<T>(json);
                 }
                 catch { }
             }

@@ -81,7 +81,7 @@ namespace Wlniao.Runtime
                             {
                                 if (file.EndsWith(".ini"))
                                 {
-                                    var str = Wlniao.file.Read(file);
+                                    var str = Wlniao.File.Read(file);
                                     var langKey = Path.GetFileNameWithoutExtension(file);
                                     langSetting.TryAdd(Path.GetFileNameWithoutExtension(file), cvt.ToDictionary(str));
                                 }

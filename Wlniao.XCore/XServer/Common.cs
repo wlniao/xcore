@@ -25,7 +25,6 @@ using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
-using Microsoft.Extensions.Logging;
 using Wlniao.Log;
 
 namespace Wlniao.XServer
@@ -1000,7 +999,7 @@ namespace Wlniao.XServer
                         }
                         #endregion
                     }
-                    if (console && Loger.LogLevel == Microsoft.Extensions.Logging.LogLevel.Information)
+                    if (console && Loger.LogLevel == Log.LogLevel.Information)
                     {
                         common.WriteLog(apilog);
                     }

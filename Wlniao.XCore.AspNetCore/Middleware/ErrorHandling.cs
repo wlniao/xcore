@@ -20,6 +20,7 @@
 
 ===============================================================================*/
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
@@ -69,7 +70,7 @@ namespace Wlniao.Middleware
             {
                 if (!context.Response.Headers.ContainsKey("X-Wlniao-Debug"))
                 {
-                    context.Response.Headers.Add("X-Wlniao-Debug", message);
+                    context.Response.Headers.TryAdd("X-Wlniao-Debug", message);
                 }
             }
             catch { }

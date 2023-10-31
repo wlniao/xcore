@@ -19,13 +19,15 @@
     limitations under the License.
 
 ===============================================================================*/
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Newtonsoft.Json.Linq;
-using StackExchange.Redis;
 using System;
+using System.Net;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.InteropServices.JavaScript;
 using System.Text;
+using Wlniao.Handler;
+using Wlniao.Net;
 
 namespace Wlniao.Caching
 {
@@ -34,140 +36,111 @@ namespace Wlniao.Caching
     /// </summary>
     public class Redis
     {
+        private static int _canuse = 0;
+        private static object _lock = new { };
+        private static RedisClient _instance = null;
         /// <summary>
         /// 使用的数据库序号
         /// </summary>
         public static int Select = cvt.ToInt(Config.GetConfigs("WLN_REDIS_DB"));
-        private static string connstr = "";
+        /// <summary>
+        /// 判断Redis缓存是否可用
+        /// </summary>
+        internal static bool CanUse
+        {
+            get
+            {
+                if (_canuse == 0 && Instance == null)
+                {
+                    return _canuse > 0;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+        }
         /// <summary>
         /// 下次尝试链接时间
         /// </summary>
         private static DateTime nextconnect = DateTime.MinValue;
-        /// <summary>
-        /// 
-        /// </summary>
-        private static ConnectionMultiplexer redis = null;
 
         /// <summary>
         /// 数据库链接字符串
         /// </summary>
-        public static string ConnStr
+        public static RedisClient Instance
         {
             get
             {
-                if (string.IsNullOrEmpty(connstr))
+                if(_instance == null)
                 {
-                    lock (connstr)
+                    lock (_lock)
                     {
-                        var _connstr = Config.GetConfigs("WLN_REDIS");
-                        if (string.IsNullOrEmpty(_connstr))
+                        try
                         {
-                            var host = Config.GetConfigs("WLN_REDIS_HOST");
-                            var pass = Config.GetConfigs("WLN_REDIS_PASS");
-                            var port = cvt.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
-                            if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
+                            _canuse = -1;
+                            var connstr = Config.GetConfigs("WLN_REDIS");
+                            if (string.IsNullOrEmpty(connstr))
                             {
-                                _connstr = host + ":" + port;
-                                if (!string.IsNullOrEmpty(pass))
+                                var host = Config.GetConfigs("WLN_REDIS_HOST");
+                                var pass = Config.GetConfigs("WLN_REDIS_PASS");
+                                var port = cvt.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
+                                if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
                                 {
-                                    _connstr += ",password=" + pass;
+                                    _canuse = 1;
+                                    _instance = new RedisClient(new DnsEndPoint(host, port), pass);
+                                    _instance.SelectDB = Select;
                                 }
                             }
+                            else
+                            {
+                                UseConnStr(connstr);
+                            }
                         }
-                        connstr = _connstr;
+                        catch (Exception ex)
+                        {
+                            throw new Exception("Redis connection configuration error: " + ex.Message);
+                        }
                     }
                 }
-                return connstr;
+                return _instance;
             }
             set
             {
-                connstr = value;
+                _instance = value;
+                _canuse = value == null || value.EndPointList.Count == 0 ? -1 : 1;
             }
         }
-
         /// <summary>
-        /// 
+        /// 应用连接字符串
         /// </summary>
-        /// <returns></returns>
-        public static ConnectionMultiplexer Instance
+        /// <param name="connstr"></param>
+        internal static void UseConnStr(string connstr)
         {
-            get
+            var args = connstr.SplitBy(",");
+            foreach (var item in args)
             {
-                try
+                if (_instance == null)
                 {
-                    if (redis == null && nextconnect < DateTime.Now)
-                    {
-                        nextconnect = DateTime.Now.AddSeconds(1);
-                        redis = ConnectionMultiplexer.Connect(ConnStr);
-                    }
+                    _instance = new RedisClient();
+                    _instance.SelectDB = Select;
                 }
-                catch
+                var arg = item.Trim();
+                if (arg.StartsWith("password="))
                 {
-                    log.Warn("Redis connect error");
+                    _instance.Password = arg.Substring(arg.IndexOf('=') + 1);
                 }
-                return redis;
+                else if (arg.StartsWith("username="))
+                {
+                    _instance.Username = arg.Substring(arg.IndexOf('=') + 1);
+                }
+                else
+                {
+                    var ips = arg.SplitBy(":");
+                    _canuse = 1;
+                    _instance.AddEndPoint(new DnsEndPoint(ips[0], ips.Length == 2 ? int.Parse(ips[1]) : 6379));
+                }
             }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public static IDatabase Database
-        {
-            get
-            {
-                try
-                {
-                    if (Instance != null && redis.IsConnected)
-                    {
-                        return redis.GetDatabase(Select);
-                    }
-                    else
-                    {
-                        redis = null;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex.Message);
-                }
-                return null;
-            }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public static ISubscriber Subscriber
-        {
-            get
-            {
-                try
-                {
-                    if (Instance != null && redis.IsConnected)
-                    {
-                        return redis.GetSubscriber();
-                    }
-                    else
-                    {
-                        redis = null;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex.Message);
-                }
-                return null;
-            }
-        }
-        /// <summary>
-        /// 重新链接
-        /// </summary>
-        public static ConnectionMultiplexer Reconnect()
-        {
-            redis = null;
-            nextconnect = DateTime.MinValue;
-            return Instance;
         }
         /// <summary>
         /// 
@@ -178,22 +151,11 @@ namespace Wlniao.Caching
         {
             try
             {
-                if (Instance != null && redis.IsConnected)
-                {
-                    var val = redis.GetDatabase(Select).StringGet(key);
-                    if (val.HasValue && !val.IsNullOrEmpty)
-                    {
-                        return val.ToString();
-                    }
-                }
-                else
-                {
-                    redis = null;
-                }
+                return Instance.Get(key);
             }
             catch (Exception ex)
             {
-                log.Error(ex.Message);
+                log.Topic("xcore", "Caching.Redis.Get => " + ex.Message);
             }
             return "";
         }
@@ -219,24 +181,27 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <param name="expire"></param>
-        public static Boolean Set(String key, String value, Int32 expire)
+        public static Boolean Set(String key, Byte[] value, Int32 expire)
         {
             try
             {
-                if (Instance != null && redis.IsConnected)
-                {
-                    return redis.GetDatabase(Select).StringSet(key, value, TimeSpan.FromSeconds(expire));
-                }
-                else
-                {
-                    redis = null;
-                }
+                return Instance.Set(key, value, expire);
             }
             catch (Exception ex)
             {
-                log.Error(ex.Message);
+                log.Topic("xcore", "Caching.Redis.Set => " + ex.Message);
             }
             return false;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="expire"></param>
+        public static Boolean Set(String key, String value, Int32 expire)
+        {
+            return Set(key, UTF8Encoding.UTF8.GetBytes(value), expire);
         }
         /// <summary>
         /// 
@@ -259,45 +224,15 @@ namespace Wlniao.Caching
         {
             try
             {
-                if (Instance != null && redis.IsConnected)
-                {
-                    return redis.GetDatabase(Select).KeyDelete(key);
-                }
-                else
-                {
-                    redis = null;
-                }
+                return Instance.KeyDelete(key);
             }
             catch (Exception ex)
             {
-                log.Error(ex.Message);
+                log.Topic("xcore", "Caching.Redis.KeyDelete => " + ex.Message);
             }
             return false;
         }
 
-        /// <summary>
-        /// 批量删除
-        /// </summary>
-        /// <param name="keys"></param>
-        public static Boolean RangeDelete(String keys)
-        {
-            try
-            {
-                if (Instance != null && redis.IsConnected)
-                {
-                    return redis.GetDatabase(Select).KeyDelete(keys + "*");
-                }
-                else
-                {
-                    redis = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex.Message);
-            }
-            return false;
-        }
         /// <summary>
         /// 
         /// </summary>
@@ -306,20 +241,19 @@ namespace Wlniao.Caching
         {
             try
             {
-                if (Instance != null && redis.IsConnected)
-                {
-                    return redis.GetDatabase(Select).KeyExists(key);
-                }
-                else
-                {
-                    redis = null;
-                }
+                return Instance.KeyExists(key);
             }
             catch (Exception ex)
             {
-                log.Error(ex.Message);
+                log.Topic("xcore", "Caching.Redis.KeyExists => " + ex.Message);
             }
             return false;
+
+
         }
+
+
+
     }
+
 }

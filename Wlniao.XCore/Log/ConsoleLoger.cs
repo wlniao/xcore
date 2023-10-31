@@ -20,8 +20,6 @@
 
 ===============================================================================*/
 using System;
-using Microsoft.Extensions.Logging;
-
 namespace Wlniao.Log
 {
     /// <summary>
@@ -51,6 +49,7 @@ namespace Wlniao.Log
         {
             this.level = level;
         }
+        /// <summary>
         /// 输出Debug级别的日志
         /// </summary>
         /// <param name="message"></param>

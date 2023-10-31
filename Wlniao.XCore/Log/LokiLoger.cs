@@ -21,13 +21,9 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection.Emit;
-using System.Security.Policy;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Wlniao.Caching;
 using static Wlniao.Log.LokiLoger;
 
@@ -134,7 +130,7 @@ namespace Wlniao.Log
                                         using (var client = new HttpClient(handler))
                                         {
                                             var start = DateTime.Now;
-                                            var json = Newtonsoft.Json.JsonConvert.SerializeObject(new { streams = list.ToArray() });
+                                            var json = Json.ToString(new { streams = list.ToArray() });
                                             var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
                                             reqest.Headers.Date = DateTime.Now;
                                             reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
@@ -179,16 +175,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Debug)
             {
-                var entrie = new Entrie { line = message, time = DateTime.UtcNow };
-                if (LogLocal == "console")
-                {
-                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.DarkGray);
-                }
-                else if (LogLocal == "file")
-                {
-                    flog.Write("debug", message);
-                }
-                Write("debug", entrie);
+                Loger.Console(string.Format("{0} => {1}", DateTools.Format(DateTime.UtcNow), message), ConsoleColor.DarkGray);
             }
         }
         /// <summary>
@@ -331,7 +318,7 @@ namespace Wlniao.Log
                 if (push)
                 {
                     // 实时推送日志
-                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(new
+                    var json = Wlniao.Json.ToString(new
                     {
                         streams = new[] {
                             new {
