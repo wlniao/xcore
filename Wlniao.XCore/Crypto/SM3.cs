@@ -1,12 +1,10 @@
 ﻿using System;
-using Org.BouncyCastle.Crypto;
-
 namespace Wlniao.Crypto
 {
     /// <summary>
     /// SM3杂凑算法
     /// </summary>
-    public class SM3 : IDigest
+    public class SM3
     {
         /// <summary>
         /// 内部缓冲区的大小

@@ -75,7 +75,7 @@ namespace Wlniao.Crypto
             {
                 data = C132ToC123(data);
             }
-            var sm2 = new SM2Engine(new SM3());
+            var sm2 = new SM2Engine();
             sm2.Init(false, key.PrivateKeyParameters);
             return sm2.ProcessBlock(data, 0, data.Length);
         }
@@ -95,7 +95,7 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public byte[] Encrypt(byte[] data)
         {
-            var sm2 = new SM2Engine(new SM3());
+            var sm2 = new SM2Engine();
             sm2.Init(true, new ParametersWithRandom(key.PublicKeyParameters));
             data = sm2.ProcessBlock(data, 0, data.Length);
             if (mode == SM2Mode.C1C3C2)
@@ -121,7 +121,7 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public byte[] Sign(byte[] msg, byte[] id = null)
         {
-            var sm2 = new SM2Signer(new SM3());
+            var sm2 = new SM2Signer();
             ICipherParameters cp;
             if (id != null)
             {
@@ -166,7 +166,7 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public bool VerifySign(byte[] msg, byte[] signature, byte[] id = null)
         {
-            var sm2 = new SM2Signer(new SM3());
+            var sm2 = new SM2Signer();
             ICipherParameters cp;
             if (id != null)
             {
