@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System;
 using Wlniao.XServer;
 using System.Threading.Tasks;
-using StackExchange.Redis;
+using System.Text;
 
 namespace Wlniao.XCore.Test
 {
@@ -17,63 +17,37 @@ namespace Wlniao.XCore.Test
         [Test]
         public void Redis()
         {
+            var encode = System.Text.UTF8Encoding.UTF8;
             Wlniao.Cache.UseRedis("192.168.31.254:6379,password=123456");
-
-            Task.Run(() =>
+            for(var c = 0; c < 1000; c++)
             {
-                while (true)
+                Task.Run(() =>
                 {
-                    Wlniao.log.Topic("test1", strUtil.CreateRndStrE(50));
-                }
-            });
-            Task.Run(() =>
-            {
-                while (true)
-                {
-                    Wlniao.log.Topic("test2", strUtil.CreateRndStrE(50));
-                    //System.Threading.Thread.Sleep(73);
-                }
-            });
-            Task.Run(() =>
-            {
-                while (true)
-                {
-                    Wlniao.log.Topic("test1", strUtil.CreateRndStrE(50));
-                }
-            });
-            Task.Run(() =>
-            {
-                while (true)
-                {
-                    Wlniao.log.Topic("test3", strUtil.CreateRndStrE(50));
-                    //System.Threading.Thread.Sleep(21);
-                }
-            });
-            Task.Run(() =>
-            {
-                while (true)
-                {
-                    Wlniao.log.Topic("test5", strUtil.CreateRndStrE(50));
-                    //System.Threading.Thread.Sleep(91);
-                }
-            });
-            Task.Run(() =>
-            {
-                while (true)
-                {
-                    Wlniao.log.Topic("test4", strUtil.CreateRndStrE(50));
-                    //System.Threading.Thread.Sleep(130);
-                }
-            });
-            Task.Run(() =>
-            {
-                while (true)
-                {
-                    Wlniao.log.Topic("test2", strUtil.CreateRndStrE(50));
-                    //System.Threading.Thread.Sleep(73);
-                }
-            });
-            //         var value = Wlniao.Cache.Get("test");
+                    var data = new List<KeyValuePair<string, string>>();
+                    for (var i = 0; i < 100; i++)
+                    {
+                        data.Add(new KeyValuePair<string, string>(strUtil.CreateRndStrE(10), strUtil.CreateRndStrE(32)));
+                    }
+                    var start = DateTime.Now;
+                    foreach (var kv in data)
+                    {
+                        Wlniao.Caching.Redis.Set(kv.Key, kv.Value, -1);
+                    }
+                    log.Topic("utest", "Set:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
+                    start = DateTime.Now;
+                    foreach (var kv in data)
+                    {
+                        var tmp = Wlniao.Caching.Redis.Get(kv.Key);
+                        if (tmp != kv.Value)
+                        {
+                            log.Topic("error", "Get: error => " + kv.Key + " => " + kv.Value + " => " + tmp);
+                        }
+                    }
+                    log.Topic("utest", "Get:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
+                });
+            }
+            System.Threading.Thread.Sleep(120000);
+            var value = Wlniao.Cache.Get("test");
             //         Wlniao.Cache.Set("test1", strUtil.CreateRndStrE(8), -1);
             //Wlniao.Cache.Set("test2", strUtil.CreateRndStrE(8), 300);
             //Wlniao.Cache.Set("test3", Json.ToString(new

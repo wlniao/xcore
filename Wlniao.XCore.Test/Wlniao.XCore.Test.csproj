@@ -13,11 +13,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Wlniao.Tasker\Wlniao.Tasker.csproj" />
+    <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="xcore\logs\" />
+    <Folder Include="xcore\logs\2023-11-01\" />
   </ItemGroup>
 
 </Project>

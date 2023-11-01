@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using Wlniao.Runtime;
 
 namespace Wlniao.Net
 {
@@ -123,9 +124,8 @@ namespace Wlniao.Net
             }
             catch (Exception ex)
             {
-                log.Topic("xcore", "Caching.Redis.Get => " + ex.Message);
+                throw new XCoreException("RedisClient.Get => " + ex.Message, ex);
             }
-            return "";
         }
         /// <summary>
         /// 
@@ -147,9 +147,8 @@ namespace Wlniao.Net
             }
             catch (Exception ex)
             {
-                log.Topic("xcore", "Caching.Redis.Set => " + ex.Message);
+                throw new XCoreException("RedisClient.Set => " + ex.Message, ex);
             }
-            return false;
         }
         /// <summary>
         /// 
@@ -165,9 +164,8 @@ namespace Wlniao.Net
             }
             catch (Exception ex)
             {
-                log.Topic("xcore", "Caching.Redis.KeyDelete => " + ex.Message);
+                throw new XCoreException("RedisClient.KeyDelete => " + ex.Message, ex);
             }
-            return false;
         }
 
         /// <summary>
@@ -184,11 +182,8 @@ namespace Wlniao.Net
             }
             catch (Exception ex)
             {
-                log.Topic("xcore", "Caching.Redis.KeyExists => " + ex.Message);
+                throw new XCoreException("RedisClient.KeyExists => " + ex.Message, ex);
             }
-            return false;
-
-
         }
 
 
@@ -265,89 +260,92 @@ namespace Wlniao.Net
         /// <returns></returns>
         private WlnSocket GetSocket()
         {
-        beginCheck:
-            foreach (var socket in SocketList.OrderBy(a => a.LastUse))
+            lock (Encoding)
             {
-                if (socket.Catch || !socket.Connected)
+            beginCheck:
+                foreach (var socket in SocketList.OrderBy(a => a.LastUse))
                 {
-                    SocketList.Remove(socket);
-                    try
+                    if (socket.Catch || !socket.Connected)
                     {
-                        if (socket.Connected)
+                        SocketList.Remove(socket);
+                        try
                         {
-                            socket.Shutdown(SocketShutdown.Both);
+                            if (socket.Connected)
+                            {
+                                socket.Shutdown(SocketShutdown.Both);
+                            }
+                            socket.Close();
                         }
-                        socket.Close();
+                        catch { }
+                        goto beginCheck;
                     }
-                    catch { }
-                    goto beginCheck;
-                }
-                if (!socket.Using && socket.Connected && socket.LastUse < XCore.NowUnix - 3)
-                {
-                    socket.Using = true;
-                    socket.LastUse = XCore.NowUnix;
-                    return socket;
-                }
-            }
-            var connMsg = "Redis connection configuration error: not config server";
-            var newsocket = new WlnSocket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            newsocket.Using = true;
-            newsocket.LastUse = XCore.NowUnix;
-            newsocket.NoDelay = NoDelaySocket;
-            //newsocket.SendTimeout = TimeOutSeconds * 1000;  //10s
-            //newsocket.ReceiveTimeout = TimeOutSeconds * 1000;  //10s
-            try
-            {
-                foreach (var endPoint in EndPointList)
-                {
-                    newsocket.Connect(endPoint);
-                    if (newsocket.Connected)
+                    if (!socket.Using && socket.Connected)
                     {
-                        break;
+                        socket.Using = true;
+                        socket.LastUse = DateTime.Now.Ticks;
+                        return socket;
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                connMsg = "Redis connection configuration error: " + ex.Message;
-                log.Error(connMsg);
-            }
-            if (newsocket.Connected)
-            {
-                if (!string.IsNullOrEmpty(Password))
+                var connMsg = "Redis connection configuration error: not config server";
+                var newsocket = new WlnSocket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                newsocket.Using = true;
+                newsocket.LastUse = DateTime.Now.Ticks;
+                newsocket.NoDelay = NoDelaySocket;
+                //newsocket.SendTimeout = TimeOutSeconds * 1000;  //10s
+                //newsocket.ReceiveTimeout = TimeOutSeconds * 1000;  //10s
+                try
                 {
-                    if (string.IsNullOrEmpty(Username))
+                    foreach (var endPoint in EndPointList)
                     {
-                        Username = "default";
-                    }
-                    if (!ResToBool(SendCommand(newsocket, RedisCommand.Auth, Encoding.GetBytes(Username), Encoding.GetBytes(Password))))
-                    {
+                        newsocket.Connect(endPoint);
                         if (newsocket.Connected)
                         {
-                            newsocket.Shutdown(SocketShutdown.Both);
+                            break;
                         }
-                        newsocket.Close();
-                        throw new Exception("Redis password is error!");
                     }
                 }
-                if (SelectDB > 0)
+                catch (Exception ex)
                 {
-                    if (!ResToBool(SendCommand(newsocket, RedisCommand.Select, Encoding.GetBytes(SelectDB.ToString()))))
-                    {
-                        if (newsocket.Connected)
-                        {
-                            newsocket.Shutdown(SocketShutdown.Both);
-                        }
-                        newsocket.Close();
-                        throw new Exception("Redis database select error!");
-                    }
+                    connMsg = "Redis connection configuration error: " + ex.Message;
+                    log.Error(connMsg);
                 }
-                SocketList.Add(newsocket);
-                return newsocket;
-            }
-            else
-            {
-                throw new Exception(connMsg);
+                if (newsocket.Connected)
+                {
+                    if (!string.IsNullOrEmpty(Password))
+                    {
+                        if (string.IsNullOrEmpty(Username))
+                        {
+                            Username = "default";
+                        }
+                        if (!ResToBool(SendCommand(newsocket, RedisCommand.Auth, Encoding.GetBytes(Username), Encoding.GetBytes(Password))))
+                        {
+                            if (newsocket.Connected)
+                            {
+                                newsocket.Shutdown(SocketShutdown.Both);
+                            }
+                            newsocket.Close();
+                            throw new XCoreException("Redis: client password is error!");
+                        }
+                    }
+                    if (SelectDB > 0)
+                    {
+                        if (!ResToBool(SendCommand(newsocket, RedisCommand.Select, Encoding.GetBytes(SelectDB.ToString()))))
+                        {
+                            if (newsocket.Connected)
+                            {
+                                newsocket.Shutdown(SocketShutdown.Both);
+                            }
+                            newsocket.Close();
+                            throw new XCoreException("Redis: client database select error!");
+                        }
+                    }
+                    SocketList.Add(newsocket);
+                    return newsocket;
+                }
+                else
+                {
+                    throw new XCoreException(connMsg);
+                }
             }
         }
         /// <summary>
@@ -439,36 +437,6 @@ namespace Wlniao.Net
                 if (count > 0)
                 {
                     buffer.AddRange(rev.Take(count));
-                    //var data = Encoding.GetString(rev, 0, temp);
-                    //if (data[0] == '+')
-                    //{
-                    //    if (!keepConnect)
-                    //    {
-                    //        socket.Using = false;
-                    //    }
-                    //    return data;
-                    //}
-                    //else if (data[0] == '$')
-                    //{
-                    //    var length = cvt.ToInt(data.Substring(1, data.IndexOf('\r') - 1));
-                    //    if (length > 0)
-                    //    {
-                    //        buffer.AddRange(rev.Skip(data.IndexOf('\n') + 1).Take(length));
-                    //    }
-                    //}
-                    //else if (data[0] == '-')
-                    //{
-                    //    socket.Using = false;
-                    //    throw new Exception(data.Substring(1, data.LastIndexOf('\r')));
-                    //}
-                    //else
-                    //{
-                    //    if (!keepConnect)
-                    //    {
-                    //        socket.Using = false;
-                    //    }
-                    //    return data;
-                    //}
                 }
                 if (count < rev.Length)
                 {
@@ -490,7 +458,12 @@ namespace Wlniao.Net
             if (res.Length > 0)
             {
                 var temp = Encoding.GetString(res, 0, res.Length > 16 ? 16 : res.Length);
-                if (temp[0] == '$')
+                if (temp[0] == '-')
+                {
+                    temp = Encoding.GetString(res);
+                    throw new XCoreException("Redis: " + temp.Substring(1, temp.LastIndexOf('\r')));
+                }
+                else if (temp[0] == '$')
                 {
                     var length = cvt.ToInt(temp.Substring(1, temp.IndexOf('\r') - 1));
                     if (length > 0)
@@ -503,11 +476,20 @@ namespace Wlniao.Net
         }
         private Boolean ResToBool(byte[] res)
         {
-            if (res.Length > 3 && Encoding.GetString(res, 0, 3) == "+OK")
+            var temp = Encoding.GetString(res, 0, res.Length > 16 ? 16 : res.Length);
+            if (temp.StartsWith("+OK"))
             {
                 return true;
             }
-            return false;
+            else if (temp[0] == '-')
+            {
+                temp = Encoding.GetString(res);
+                throw new XCoreException("Redis: " + temp.Substring(1, temp.LastIndexOf('\r')));
+            }
+            else
+            {
+                return false;
+            }
         }
         #endregion
 

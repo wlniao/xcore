@@ -28,6 +28,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 using Wlniao.Handler;
 using Wlniao.Net;
+using Wlniao.Runtime;
 
 namespace Wlniao.Caching
 {
@@ -187,6 +188,10 @@ namespace Wlniao.Caching
             {
                 return Instance.Set(key, value, expire);
             }
+            catch (XCoreException ex)
+            {
+                log.Topic("xcore", ex.Message);
+            }
             catch (Exception ex)
             {
                 log.Topic("xcore", "Caching.Redis.Set => " + ex.Message);
@@ -226,6 +231,10 @@ namespace Wlniao.Caching
             {
                 return Instance.KeyDelete(key);
             }
+            catch (XCoreException ex)
+            {
+                log.Topic("xcore", ex.Message);
+            }
             catch (Exception ex)
             {
                 log.Topic("xcore", "Caching.Redis.KeyDelete => " + ex.Message);
@@ -242,6 +251,10 @@ namespace Wlniao.Caching
             try
             {
                 return Instance.KeyExists(key);
+            }
+            catch (XCoreException ex)
+            {
+                log.Topic("xcore", ex.Message);
             }
             catch (Exception ex)
             {
