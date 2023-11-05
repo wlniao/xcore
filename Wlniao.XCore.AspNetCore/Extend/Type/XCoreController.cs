@@ -21,15 +21,11 @@ namespace Wlniao
         /// <summary>
         /// 当前请求Host
         /// </summary>
-#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         private string host = null;
-#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 链路追踪ID
         /// </summary>
-#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         private string trace = null;
-#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 当前请求开始时间
         /// </summary>
@@ -387,15 +383,11 @@ namespace Wlniao
         /// <summary>
         /// 
         /// </summary>
-#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         private string strPost = null;
-#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 
         /// </summary>
-#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         private Dictionary<string, string> ctxPost = null;
-#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
         /// </summary>
@@ -611,7 +603,7 @@ namespace Wlniao
             }
         }
         /// <summary>
-        /// 当前请求Host
+        /// 当前请求Host（带协议头）
         /// </summary>
         public string UrlHost
         {
@@ -619,13 +611,50 @@ namespace Wlniao
             {
                 if (string.IsNullOrEmpty(host))
                 {
-                    if (!string.IsNullOrEmpty(XCore.WebHost) && strUtil.IsIP(Request.Host.Host))
+                    var webroxy = new Microsoft.Extensions.Primitives.StringValues();
+                    if (Request.Headers.TryGetValue("X-Webroxy", out webroxy))
                     {
-                        host = XCore.WebHost;
+                        host = webroxy.ToString();
                     }
-                    else
+                    if (string.IsNullOrEmpty(host))
                     {
-                        host = (IsHttps ? "https://" : "http://") + Request.Host.Value;
+                        if (!string.IsNullOrEmpty(XCore.WebHost) && strUtil.IsIP(Request.Host.Host))
+                        {
+                            host = XCore.WebHost;
+                        }
+                        else
+                        {
+                            host = (IsHttps ? "https://" : "http://") + Request.Host.Value;
+                        }
+                    }
+                }
+                return host;
+            }
+        }
+        /// <summary>
+        /// 当前请求域名
+        /// </summary>
+        public string UrlDomain
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(host))
+                {
+                    var webroxy = new Microsoft.Extensions.Primitives.StringValues();
+                    if (Request.Headers.TryGetValue("X-Webroxy", out webroxy))
+                    {
+                        host = webroxy.ToString();
+                    }
+                    if (string.IsNullOrEmpty(host))
+                    {
+                        if (!string.IsNullOrEmpty(XCore.WebHost) && strUtil.IsIP(Request.Host.Host))
+                        {
+                            host = XCore.WebHost;
+                        }
+                        else
+                        {
+                            host =  Request.Host.Value;
+                        }
                     }
                 }
                 return host;

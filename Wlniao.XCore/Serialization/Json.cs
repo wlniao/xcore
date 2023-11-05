@@ -120,8 +120,9 @@ namespace Wlniao.Serialization
         /// <returns></returns>
         public static T ToObject<T>(String jsonString)
         {
-            Object result = ToObject(jsonString, typeof(T));
-            return (T)result;
+            return System.Text.Json.JsonSerializer.Deserialize<T>(jsonString);
+            //Object result = ToObject(jsonString, typeof(T));
+            //return (T)result;
         }
 
         /// <summary>

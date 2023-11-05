@@ -25,6 +25,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>False</IncludeSymbols>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
+    <NoWarn>CS8625</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,7 +33,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.0-rc.2.23480.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0-rc.2.23479.6" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0-rc.2.23479.6" />
-    <PackageReference Include="Wlniao.XCore" Version="8.0.0-beta2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,6 +44,10 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
   </ItemGroup>
 
 </Project>
