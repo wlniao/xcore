@@ -227,7 +227,7 @@ namespace Wlniao
             {
                 lock (XCore.Lock)
                 {
-                    _env = new Dictionary<string, string>();
+                    _env = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
                     while (en.MoveNext())
                     {

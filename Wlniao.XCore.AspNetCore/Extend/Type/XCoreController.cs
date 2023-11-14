@@ -23,6 +23,10 @@ namespace Wlniao
         /// </summary>
         private string host = null;
         /// <summary>
+        /// 当前请求域名
+        /// </summary>
+        private string domain = null;
+        /// <summary>
         /// 链路追踪ID
         /// </summary>
         private string trace = null;
@@ -402,7 +406,7 @@ namespace Wlniao
             {
                 try
                 {
-                    ctxPost = new Dictionary<string, string>();
+                    ctxPost = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     if (Request.Method == "POST")
                     {
                         try
@@ -448,12 +452,12 @@ namespace Wlniao
                                 }
                                 if (!string.IsNullOrEmpty(strPost))
                                 {
-                                    var tmpPost = Wlniao.Json.ToObject<Dictionary<String, String>>(strPost);
+                                    var tmpPost = Wlniao.Json.ToObject<Dictionary<String, Object>>(strPost);
                                     if (tmpPost != null)
                                     {
                                         foreach (var kv in tmpPost)
                                         {
-                                            ctxPost.TryAdd(kv.Key.ToLower(), kv.Value == null ? "" : kv.Value.Trim());
+                                            ctxPost.TryAdd(kv.Key.ToLower(), tmpPost.GetString(kv.Key));
                                         }
                                     }
                                 }
@@ -472,7 +476,7 @@ namespace Wlniao
                 }
                 catch { }
             }
-            if (ctxPost.ContainsKey(key) && !string.IsNullOrEmpty(ctxPost[key]))
+            if (ctxPost != null && ctxPost.ContainsKey(key) && !string.IsNullOrEmpty(ctxPost[key]))
             {
                 Default = ctxPost[key];
             }
@@ -638,26 +642,19 @@ namespace Wlniao
         {
             get
             {
-                if (string.IsNullOrEmpty(host))
+                if (string.IsNullOrEmpty(domain))
                 {
                     var webroxy = new Microsoft.Extensions.Primitives.StringValues();
                     if (Request.Headers.TryGetValue("X-Webroxy", out webroxy))
                     {
-                        host = webroxy.ToString();
+                        domain = webroxy.ToString();
                     }
-                    if (string.IsNullOrEmpty(host))
+                    if (string.IsNullOrEmpty(domain))
                     {
-                        if (!string.IsNullOrEmpty(XCore.WebHost) && strUtil.IsIP(Request.Host.Host))
-                        {
-                            host = XCore.WebHost;
-                        }
-                        else
-                        {
-                            host =  Request.Host.Value;
-                        }
+                        domain = Request.Host.Value;
                     }
                 }
-                return host;
+                return domain;
             }
         }
         /// <summary>
