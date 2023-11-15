@@ -21,6 +21,7 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using Wlniao.Log;
@@ -135,23 +136,20 @@ namespace Wlniao
 
 
         /// <summary>
-        /// HTTPS证书验证
+        /// 内置SSL证书检查服务
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="certificate"></param>
-        /// <param name="chain"></param>
-        /// <param name="sslPolicyErrors"></param>
-        /// <returns></returns>
-        public static bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-        {
-            return true;
-        }
+        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ValidateServerCertificate = delegate { return true; };
+        /// <summary>
+        /// 内置SSL证书检查服务
+        /// </summary>
+        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback = ValidateServerCertificate;
         /// <summary>
         /// 关闭服务端SSL证书检查
         /// </summary>
         public static void CloseServerCertificateValidation()
         {
-            System.Net.ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(ValidateServerCertificate);
+            XCore.ServerCertificateCustomValidationCallback = delegate { return true; };
+            System.Net.ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(delegate { return true; });
         }
 
         #region 系统信息

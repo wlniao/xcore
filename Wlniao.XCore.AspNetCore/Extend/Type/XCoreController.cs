@@ -651,7 +651,7 @@ namespace Wlniao
                     }
                     if (string.IsNullOrEmpty(domain))
                     {
-                        domain = Request.Host.Value;
+                        domain = Request.Host.Host;
                     }
                 }
                 return domain;

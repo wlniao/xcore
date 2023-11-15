@@ -64,10 +64,7 @@ namespace Wlniao.XServer
                 {
                     var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
                     var handler = new System.Net.Http.HttpClientHandler();
-                    if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
-                    {
-                        handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
-                    }
+                    handler.ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback;
                     using (var client = new System.Net.Http.HttpClient(handler))
 					{
 						log.Debug(url + " request:" + reqStr);
