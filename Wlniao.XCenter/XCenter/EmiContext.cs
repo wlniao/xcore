@@ -1,0 +1,411 @@
+﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.Extensions.Hosting;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection.Emit;
+using System.Security.Principal;
+using System.Text;
+using Wlniao;
+
+namespace Wlniao.XCenter
+{
+    /// <summary>
+    /// 交互状态
+    /// </summary>
+    public class EmiContext : Context
+    {
+        private static string XCenterEmi = Wlniao.Config.GetConfigs("XCenterEmi");
+
+        /// <summary>
+        /// 是否支持Https
+        /// </summary>
+        public Boolean https { get; set; }
+        /// <summary>
+        /// 是否已经注册
+        /// </summary>
+        public Boolean install { get; set; }
+        /// <summary>
+        /// 下次注册时间
+        /// </summary>
+        public DateTime register { get; set; }
+        /// <summary>
+        /// EMI服务器地址
+        /// </summary>
+        public string EmiHost
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(XCenterEmi))
+                {
+                    return XCenterEmi;
+                }
+                else if (https)
+                {
+                    return "https://" + domain;
+                }
+                else
+                {
+                    return "http://" + domain;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 根据host生成一个EmiContext对象
+        /// </summary>
+        /// <param name="domain"></param>
+        /// <returns></returns>
+        public static new EmiContext Load(String domain)
+        {
+            var ctx = Context.Load(domain);
+            var emi = new EmiContext()
+            {
+                app = ctx.app,
+                name = ctx.name,
+                brand = ctx.brand,
+                owner = ctx.owner,
+                token = ctx.token,
+                domain = ctx.domain,
+                message = ctx.message,
+                register = DateTime.MinValue,
+                https = true
+            };
+            if (!string.IsNullOrEmpty(ctx.message))
+            {
+                emi.message = ctx.message;
+            }
+            else if (string.IsNullOrEmpty(ctx.app))
+            {
+                emi.message = "参数XCenterApp未配置，请配置";
+            }
+            else
+            {
+                var check = emi.EmiGet<String>("app", "check", new KeyValuePair<string, string>("app", ctx.app));
+                if (check.success || check.message == "install")
+                {
+                    emi.install = true;
+                    emi.register = DateTime.Now.AddMinutes(5);
+                }
+                else if (check.success)
+                {
+                    emi.install = false;
+                    emi.register = DateTime.MinValue;
+                    emi.message = "模块未安装，请先安装";
+                }
+                else if (check.message == "request is expired")
+                {
+                    emi.message = "请求超时，请检查服务器时间是否同步";
+                }
+                else if (check.message == "token not config")
+                {
+                    emi.message = "Token参数未配置，请先配置或注册";
+                }
+                else if (check.message == "token error")
+                {
+                    emi.message = "参数Token配置错误，请重新配置或注册";
+                }
+                else if (check.message == "request exception")
+                {
+                    emi.message = "Emi服务器链接失败，请确保服务器已启动并检查您填写的地址是否正确!";
+                }
+                else
+                {
+                    emi.message = "Emi服务器链接失败!";
+                }
+            }
+            return emi;
+        }
+        /// <summary>
+        /// 生成访问连接
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="controller"></param>
+        /// <param name="action"></param>
+        /// <param name="kvList"></param>
+        /// <returns></returns>
+        private static String CreateUrl(EmiContext ctx, string controller, string action, List<KeyValuePair<String, String>> kvList)
+        {
+            var url = ctx.EmiHost + "/" + controller + "/" + action;
+            #region 处理接口基本参数及签名
+            if (!string.IsNullOrEmpty(ctx.token))
+            {
+                kvList.Add(new KeyValuePair<String, String>("timespan", DateTools.GetUnix().ToString()));
+                kvList = kvList.OrderBy(o => o.Key).ToList();
+                var values = new System.Text.StringBuilder();
+                foreach (var kv in kvList)
+                {
+                    if (!string.IsNullOrEmpty(kv.Key))
+                    {
+                        values.Append(kv.Value);
+                    }
+                }
+                values.Append(ctx.token);
+                kvList.Add(new KeyValuePair<String, String>("sig", Wlniao.Encryptor.Md5Encryptor32(values.ToString())));
+            }
+            #endregion
+            #region 拼接请求参数
+            foreach (var kv in kvList)
+            {
+                url += url.IndexOf('?') > 0 ? "&" : "?";
+                url += kv.Key + "=" + kv.Value;
+            }
+            #endregion
+            log.Debug(url);
+            return url;
+        }
+
+
+        /// <summary>
+        /// Get请求Emi服务器
+        /// </summary>
+        /// <param name="controller"></param>
+        /// <param name="action"></param>
+        /// <param name="kvs"></param>
+        /// <returns>服务器返回的泛型实例</returns>
+        public String EmiGet(string controller, string action, params KeyValuePair<string, string>[] kvs)
+        {
+            var rlt = new ApiResult<Object>();
+            var list = new List<KeyValuePair<string, string>>();
+            foreach (var kv in kvs)
+            {
+                list.Add(kv);
+            }
+            if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
+            {
+                list.Add(new KeyValuePair<string, string>("app", this.app));
+            }
+            return XServer.Common.GetResponseString(CreateUrl(this, controller, action, list));
+        }
+        /// <summary>
+        /// Get请求Emi服务器
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="controller"></param>
+        /// <param name="action"></param>
+        /// <param name="kvs"></param>
+        /// <returns>服务器返回的泛型实例</returns>
+        public ApiResult<T> EmiGet<T>(string controller, string action, params KeyValuePair<string, string>[] kvs)
+        {
+            var list = new List<KeyValuePair<string, string>>();
+            foreach (var kv in kvs)
+            {
+                list.Add(kv);
+            }
+            if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
+            {
+                list.Add(new KeyValuePair<string, string>("app", this.app));
+            }
+            var json = XServer.Common.GetResponseString(CreateUrl(this, controller, action, list));
+            return Wlniao.Json.ToObject<ApiResult<T>>(json);
+        }
+
+        /// <summary>
+        /// Get请求Emi服务器
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="controller"></param>
+        /// <param name="action"></param>
+        /// <param name="postdata"></param>
+        /// <param name="kvs"></param>
+        /// <returns>服务器返回的泛型实例</returns>
+        public ApiResult<T> EmiPost<T>(string controller, string action, string postdata, params KeyValuePair<string, string>[] kvs)
+        {
+            var list = new List<KeyValuePair<string, string>>();
+            foreach (var kv in kvs)
+            {
+                list.Add(kv);
+            }
+            if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
+            {
+                list.Add(new KeyValuePair<string, string>("app", this.app));
+            }
+            var json = XServer.Common.PostResponseString(CreateUrl(this, controller, action, list), postdata);
+            return Wlniao.Json.ToObject<ApiResult<T>>(json);
+        }
+
+        /// <summary>
+        /// 获取Label值
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <param name="label">默认值</param>
+        /// <returns></returns>
+        public string GetLabel(String key, String label = "")
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                return "";
+            }
+            var val = Cache.Get("emi_" + this.owner + "_label_" + key);
+            if (string.IsNullOrEmpty(val))
+            {
+                var rlt = EmiGet<String>("app", "getlabel", new KeyValuePair<string, string>("key", key), new KeyValuePair<string, string>("label", label));
+                if (rlt.success && !string.IsNullOrEmpty(rlt.data))
+                {
+                    val = rlt.data;
+                }
+                else if (string.IsNullOrEmpty(label))
+                {
+                    val = key;
+                }
+                else
+                {
+                    val = label;
+                }
+                Cache.Set("emi_" + this.owner + "_label_" + key, val, 3600);
+            }
+            return val;
+        }
+
+        /// <summary>
+        /// 获取配置信息
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <param name="value">默认值</param>
+        /// <returns></returns>
+        public string GetSetting(String key, String value = "")
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                return "";
+            }
+            var val = Cache.Get("emi_" + this.owner + "_setting_" + key);
+            if (string.IsNullOrEmpty(val))
+            {
+                var rlt = EmiGet<String>("app", "setting", new KeyValuePair<string, string>("key", key), new KeyValuePair<string, string>("value", value));
+                if (rlt.success && !string.IsNullOrEmpty(rlt.data))
+                {
+                    val = rlt.data;
+                    Cache.Set("emi_" + this.owner + "_setting_" + key, val, 180);
+                }
+                else if (string.IsNullOrEmpty(value))
+                {
+                    val = "";
+                }
+                else
+                {
+                    val = value;
+                }
+            }
+            return val;
+        }
+
+        /// <summary>
+        /// 获取一个账号信息
+        /// </summary>
+        /// <param name="eid"></param>
+        /// <param name="mobile"></param>
+        /// <returns></returns>
+        public String GetAccountName(String eid, string mobile = "")
+        {
+            if (string.IsNullOrEmpty(eid))
+            {
+                return "";
+            }
+            var val = Wlniao.Cache.Get("emi_" + this.owner + "_accountname_" + eid);
+            if (string.IsNullOrEmpty(val))
+            {
+                var rlt = EmiGet<Dictionary<string, object>>("app", "getaccount", new KeyValuePair<string, string>("sid", eid));
+                if (rlt.success && rlt.data != null && rlt.data.ContainsKey("name"))
+                {
+                    val = rlt.data.GetString("name");
+                }
+                if (string.IsNullOrEmpty(val))
+                {
+                    val = mobile;
+                }
+                if (!string.IsNullOrEmpty(val))
+                {
+                    Wlniao.Cache.Set("emi_" + this.owner + "_accountname_" + eid, val, 3600);
+                }
+            }
+            return val;
+        }
+
+        /// <summary>
+        /// 检查用户权限
+        /// </summary>
+        /// <param name="Sid"></param>
+        /// <param name="Code"></param>
+        /// <returns></returns>
+        public bool Permission(String Sid, String Code)
+        {
+            if (!string.IsNullOrEmpty(Code))
+            {
+                var rlt = EmiGet<Boolean>("app", "permission"
+                    , new KeyValuePair<string, string>("sid", Sid)
+                    , new KeyValuePair<string, string>("code", Code));
+                return rlt.data;
+            }
+            return false;
+        }
+        /// <summary>
+        /// 检查机构数据查看权限
+        /// </summary>
+        /// <param name="Sid"></param>
+        /// <param name="Code"></param>
+        /// <param name="Organ"></param>
+        /// <returns></returns>
+        public bool PermissionOrgan(String Sid, String Code, String Organ)
+        {
+            if (!string.IsNullOrEmpty(Code))
+            {
+                var rlt = EmiGet<Boolean>("app", "permissionorgan"
+                    , new KeyValuePair<string, string>("sid", Sid)
+                    , new KeyValuePair<string, string>("code", Code)
+                    , new KeyValuePair<string, string>("organ", Organ));
+                return rlt.data;
+            }
+            return false;
+        }
+        /// <summary>
+        /// 记录日志
+        /// </summary>
+        /// <param name="Sid">操作用户</param>
+        /// <param name="Comments">日志内容</param>
+        /// <param name="ClientIP">终端IP</param>
+        /// <returns></returns>
+        public bool Log(String Sid, String Comments, String ClientIP)
+        {
+            return Log("", "", "", "", Sid, Comments, ClientIP);
+        }
+        /// <summary>
+        /// 记录日志
+        /// </summary>
+        /// <param name="Organ">所属部门</param>
+        /// <param name="Sid">操作用户</param>
+        /// <param name="Comments">日志内容</param>
+        /// <param name="ClientIP">终端IP</param>
+        /// <returns></returns>
+        public bool Log(String Organ, String Sid, String Comments, String ClientIP)
+        {
+            return Log("", "", "", Organ, Sid, Comments, ClientIP);
+        }
+        /// <summary>
+        /// 记录日志
+        /// </summary>
+        /// <param name="Model">模型表名</param>
+        /// <param name="Key">模型主键</param>
+        /// <param name="Method">操作方法</param>
+        /// <param name="Organ">所属部门</param>
+        /// <param name="Sid">操作用户</param>
+        /// <param name="Comments">日志内容</param>
+        /// <param name="ClientIP">终端IP</param>
+        /// <returns></returns>
+        public bool Log(String Model, String Key, String Method, String Organ, String Sid, String Comments, String ClientIP)
+        {
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(new
+            {
+                sid = Sid,
+                key = Key,
+                model = Model,
+                method = Method,
+                comments = Comments,
+                clientip = ClientIP
+            });
+            var rlt = EmiPost<Boolean>("app", "log", json);
+            return rlt.data;
+        }
+    }
+}

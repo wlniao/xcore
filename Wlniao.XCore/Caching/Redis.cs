@@ -29,6 +29,9 @@ using System.Text;
 using Wlniao.Handler;
 using Wlniao.Net;
 using Wlniao.Runtime;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 
 namespace Wlniao.Caching
 {
@@ -171,7 +174,10 @@ namespace Wlniao.Caching
             var str = Get(key);
             if (!string.IsNullOrEmpty(str))
             {
-                return Json.ToObject<T>(str);
+                return JsonSerializer.Deserialize<T>(str, new JsonSerializerOptions
+                {
+                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                });
             }
             return default(T);
         }
@@ -218,7 +224,10 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static Boolean Set<T>(String key, T obj, Int32 expire)
         {
-            return Set(key, Json.ToString(obj), expire);
+            return Set(key, JsonSerializer.Serialize(obj, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+            }), expire);
         }
 
         /// <summary>

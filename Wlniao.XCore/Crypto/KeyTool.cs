@@ -36,7 +36,7 @@ namespace Wlniao.Crypto
         ICipherParameters _publicKeyParameters;
         ICipherParameters _privateKeyParameters;
         /// <summary>
-        /// 
+        /// Hex格式公钥以04开头
         /// </summary>
         public byte[] PublicKey
         {

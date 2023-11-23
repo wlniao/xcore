@@ -26,6 +26,7 @@ using System.IO;
 using System.Security.Cryptography;
 using Wlniao.Text;
 using Wlniao.Crypto;
+using System.Text.RegularExpressions;
 
 namespace Wlniao
 {
@@ -247,15 +248,15 @@ namespace Wlniao
         /// 
         /// </summary>
         /// <param name="plainText"></param>
-        /// <param name="publickey"></param>
+        /// <param name="publicKey"></param>
         /// <returns></returns>
-        public static String SM2EncryptByPublicKey(string plainText, string publickey)
+        public static String SM2EncryptByPublicKey(string plainText, string publicKey)
         {
             if (string.IsNullOrEmpty(plainText))
             {
                 return "";
             }
-            var sm2 = new SM2(Helper.Decode(publickey), null, SM2Mode.C1C2C3);
+            var sm2 = new SM2(Helper.Decode(publicKey), null, SM2Mode.C1C3C2);
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             var encryBytes = sm2.Encrypt(plainBytes);
             return cvt.BytesToHexString(encryBytes);
@@ -263,17 +264,53 @@ namespace Wlniao
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="encryText"></param>
-        /// <param name="privatekey"></param>
+        /// <param name="plainBytes"></param>
+        /// <param name="publicKey"></param>
         /// <returns></returns>
-        public static String SM2DecryptByPrivateKey(string encryText, string privatekey)
+        public static String SM2EncryptByPublicKey(byte[] plainBytes, byte[] publicKey)
+        {
+            if (plainBytes == null || publicKey == null)
+            {
+                return "";
+            }
+            var sm2 = new SM2(publicKey, null, SM2Mode.C1C3C2);
+            var encryBytes = sm2.Encrypt(plainBytes);
+            return cvt.BytesToHexString(encryBytes);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="encryText"></param>
+        /// <param name="privateKey"></param>
+        /// <returns></returns>
+        public static String SM2DecryptByPrivateKey(string encryText, string privateKey)
         {
             if (string.IsNullOrEmpty(encryText))
             {
                 return "";
             }
-            var sm2 = new SM2(null, Helper.Decode(privatekey), SM2Mode.C1C2C3);
+            else if (encryText[0] != '0' && encryText[1] != '4' && Regex.IsMatch(encryText, "^[0-9a-f]+$", RegexOptions.IgnoreCase))
+            {
+                encryText = "04" + encryText;
+            }
+            var sm2 = new SM2(null, Helper.Decode(privateKey), SM2Mode.C1C3C2);
             var encryBytes = Helper.Decode(encryText);
+            var plainBytes = sm2.Decrypt(encryBytes);
+            return System.Text.Encoding.UTF8.GetString(plainBytes);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="encryBytes"></param>
+        /// <param name="privateKey"></param>
+        /// <returns></returns>
+        public static String SM2DecryptByPrivateKey(byte[] encryBytes, byte[] privateKey)
+        {
+            if (encryBytes == null || privateKey == null)
+            {
+                return "";
+            }
+            var sm2 = new SM2(null, privateKey, SM2Mode.C1C3C2);
             var plainBytes = sm2.Decrypt(encryBytes);
             return System.Text.Encoding.UTF8.GetString(plainBytes);
         }

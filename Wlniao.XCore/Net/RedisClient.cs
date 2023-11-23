@@ -481,6 +481,15 @@ namespace Wlniao.Net
             {
                 return true;
             }
+            else if (temp[0] == '*')
+            {
+                var lines = temp.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length == 3 && lines[1].StartsWith("+OK"))
+                {
+                    return true;
+                }
+                return false;
+            }
             else if (temp[0] == '-')
             {
                 temp = Encoding.GetString(res);

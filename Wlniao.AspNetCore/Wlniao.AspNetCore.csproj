@@ -3,9 +3,9 @@
   <PropertyGroup>
     <Authors>XieChaoyi</Authors>
     <Nullable>enable</Nullable>
-    <Version>8.0.0-beta1</Version>
+    <Version>8.0.0</Version>
     <TargetFramework>net8.0</TargetFramework>
-    <PackageId>Wlniao.XCore.AspNetCore</PackageId>
+    <PackageId>Wlniao.AspNetCore</PackageId>
     <PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
     <Description>Wlniao XCore.AspNetCore for CoreCLR Framework</Description>
     <AssemblyName>Wlniao.XCore.AspNetCore</AssemblyName>
@@ -25,14 +25,16 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>False</IncludeSymbols>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
+    <NoWarn>CS8618</NoWarn>
     <NoWarn>CS8625</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.0-rc.2.23480.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.0-rc.2.23480.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0-rc.2.23479.6" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0-rc.2.23479.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Wlniao.XCore" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,10 +46,6 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
   </ItemGroup>
 
 </Project>

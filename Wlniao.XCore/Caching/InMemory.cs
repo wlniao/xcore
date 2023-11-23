@@ -23,6 +23,9 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 
 namespace Wlniao.Caching
 {
@@ -71,13 +74,19 @@ namespace Wlniao.Caching
             if (cache.ContainsKey(key))
             {
                 cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
-                cache[key].Value = Json.ToString(obj);
+                cache[key].Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+                {
+                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                });
             }
             else
             {
                 var data = new CacheData();
                 data.Expire = DateTime.Now.AddSeconds(expireSeconds);
-                data.Value = Json.ToString(obj);
+                data.Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+                {
+                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                });
                 cache.Add(key, data);
             }
             return true;
@@ -177,7 +186,10 @@ namespace Wlniao.Caching
         {
             if (cache.ContainsKey(key) && cache[key].Expire > DateTime.Now)
             {
-                return Json.ToObject<T>(cache[key].Value);
+                return JsonSerializer.Deserialize<T>(cache[key].Value, new JsonSerializerOptions
+                {
+                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                });
             }
             return default(T);
         }

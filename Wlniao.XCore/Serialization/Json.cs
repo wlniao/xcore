@@ -23,6 +23,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 namespace Wlniao.Serialization
 {
     /// <summary>
@@ -132,7 +135,10 @@ namespace Wlniao.Serialization
         /// <returns></returns>
         public static String ToString(Object obj)
         {
-            return Serialization.JsonString.Convert(obj);
+            return System.Text.Json.JsonSerializer.Serialize(obj, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+            });
         }
         /// <summary>
         /// 将对象序列化为json字符串,支持子对象的序列化

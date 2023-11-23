@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Net.Http.Headers;
+using static Wlniao.OpenApi.Wx;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 
 namespace Wlniao
 {
@@ -158,7 +162,10 @@ namespace Wlniao
                 }
                 else if (data != null)
                 {
-                    jsonStr = Wlniao.Json.ToString(data);
+                    jsonStr = System.Text.Json.JsonSerializer.Serialize(data, new JsonSerializerOptions
+                    {
+                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                    });
                 }
             }
             if (Request.Query.ContainsKey("callback"))
@@ -188,7 +195,10 @@ namespace Wlniao
                 }
                 else if (data != null)
                 {
-                    jsonStr = Wlniao.Json.ToString(data);
+                    jsonStr = System.Text.Json.JsonSerializer.Serialize(data, new JsonSerializerOptions
+                    {
+                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                    });
                 }
             }
             if (Request.Query.ContainsKey("callback"))
@@ -495,6 +505,23 @@ namespace Wlniao
         }
 
         /// <summary>
+        /// 获取请求请求头信息
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <param name="Default"></param>
+        /// <returns></returns>
+        [NonAction]
+        protected String HeaderRequest(String Key, String Default = "")
+        {
+            var key = Key.ToLower();
+            var value = new Microsoft.Extensions.Primitives.StringValues();
+            if (Request.Headers.TryGetValue(key, out value))
+            {
+                Default = value.ToString();
+            }
+            return Default.Trim();
+        }
+        /// <summary>
         /// 客户端请求是否为HTTPS协议(兼容X-Forwarded-Proto属性)
         /// </summary>
         public bool IsHttps
@@ -628,8 +655,12 @@ namespace Wlniao
                         }
                         else
                         {
-                            host = (IsHttps ? "https://" : "http://") + Request.Host.Value;
+                            host = Request.Host.Value;
                         }
+                    }
+                    if (host.IndexOf("://") < 0)
+                    {
+                        host = (IsHttps ? "https://" : "http://") + host;
                     }
                 }
                 return host;
