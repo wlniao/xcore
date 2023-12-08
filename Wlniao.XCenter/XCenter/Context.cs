@@ -91,7 +91,7 @@ namespace Wlniao.XCenter
             {
                 if (_XCenterSm4Key == null)
                 {
-                    _XCenterSm4Key = Wlniao.Config.GetSetting("XCenterSm4Key");
+                    _XCenterSm4Key = Wlniao.Config.GetConfigs("XCenterSm4Key");
                 }
                 return _XCenterSm4Key;
             }
@@ -228,19 +228,26 @@ namespace Wlniao.XCenter
                         ctx.name = res.data.GetString("name");
                         ctx.brand = res.data.GetString("brand");
                         ctx.owner = res.data.GetString("owner");
-                        try
+                        if (string.IsNullOrEmpty(ctx.app))
                         {
-                            var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
-                            if (!string.IsNullOrEmpty(sm2token))
-                            {
-                                ctx.token = sm2token;
-                            }
+                            ctx.app = XCenterApp;
                         }
-                        catch
+                        if (string.IsNullOrEmpty(ctx.token))
                         {
-                            if (string.IsNullOrEmpty(ctx.token))
+                            try
                             {
-                                ctx.message = "XCenterToken加载失败";
+                                var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
+                                if (!string.IsNullOrEmpty(sm2token))
+                                {
+                                    ctx.token = sm2token;
+                                }
+                            }
+                            catch
+                            {
+                                if (string.IsNullOrEmpty(ctx.token))
+                                {
+                                    ctx.message = "XCenterToken加载失败";
+                                }
                             }
                         }
                     }

@@ -26,6 +26,10 @@ namespace Wlniao.XCenter
         /// </summary>
         public string name = "";
         /// <summary>
+        /// Auth平台ID
+        /// </summary>
+        public string authid = "";
+        /// <summary>
         /// 登录账号
         /// </summary>
         public string account = "";

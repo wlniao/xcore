@@ -642,18 +642,18 @@ namespace Wlniao
             {
                 if (string.IsNullOrEmpty(host))
                 {
-                    var webroxy = new Microsoft.Extensions.Primitives.StringValues();
-                    if (Request.Headers.TryGetValue("X-Webroxy", out webroxy))
+                    if (!string.IsNullOrEmpty(XCore.WebHost))
                     {
-                        host = webroxy.ToString();
+                        host = XCore.WebHost;
                     }
                     if (string.IsNullOrEmpty(host))
                     {
-                        if (!string.IsNullOrEmpty(XCore.WebHost) && strUtil.IsIP(Request.Host.Host))
+                        var webroxy = new Microsoft.Extensions.Primitives.StringValues();
+                        if (Request.Headers.TryGetValue("X-Webroxy", out webroxy))
                         {
-                            host = XCore.WebHost;
+                            host = webroxy.ToString();
                         }
-                        else
+                        if (string.IsNullOrEmpty(host))
                         {
                             host = Request.Host.Value;
                         }
