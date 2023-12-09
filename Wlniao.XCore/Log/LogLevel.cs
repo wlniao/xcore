@@ -33,11 +33,11 @@ namespace Wlniao.Log
         /// </summary>
         None = 0,
         /// <summary>
-        /// 调试信息日志
+        /// 调试信息日志（通常用于打印开发调试明文内容）
         /// </summary>
         Debug = 1,
         /// <summary>
-        /// 普通信息日志
+        /// 普通信息日志（通常用于记录接口通讯原始日志）
         /// </summary>
         Information = 2,
         /// <summary>

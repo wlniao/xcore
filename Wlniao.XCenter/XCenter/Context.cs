@@ -1,9 +1,13 @@
 ﻿using Microsoft.Extensions.Hosting;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Wlniao.Serialization;
+using static System.Net.Mime.MediaTypeNames;
 
 
 namespace Wlniao.XCenter
@@ -296,29 +300,92 @@ namespace Wlniao.XCenter
             }
             var now = Wlniao.XCore.NowUnix.ToString();
             var rlt = new Wlniao.ApiResult<T>();
-            var txt = Wlniao.Json.ToString(data);
+            var utime = "";
+            var start = DateTime.Now;
+            var msgid = strUtil.CreateLongId();
             var token = XCenterSm4Key.Length == 16 ? XCenterSm4Key : strUtil.CreateRndStrE(16);
-            var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
+            var plainData = Wlniao.Json.ToString(data);
+            var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
             var sm2token = Wlniao.Encryptor.SM2EncryptByPublicKey(ASCIIEncoding.ASCII.GetBytes(token), XCenterPublicKey);
             var sign = Wlniao.Encryptor.SM3Encrypt(encdata + now);
-            var reqStr = Newtonsoft.Json.JsonConvert.SerializeObject(new { sn = XCenterCertSn, token = sm2token, timestamp = now, data = encdata, sign });
-            var resStr = Wlniao.XServer.Common.PostResponseString(XCenterHost + path, reqStr);
-            var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Wlniao.ApiResult<String>>(resStr);
-            if (resObj != null)
+            var resStr = "";
+            var reqStr = Wlniao.Json.ToString(new { sn = XCenterCertSn, token = sm2token, timestamp = now, data = encdata, sign });
+            log.Info("msgid:" + msgid + "[authify:/" + path + "]\n >>> " + reqStr);
+            try
             {
-                rlt.node = resObj.node;
-                rlt.code = resObj.code;
-                rlt.message = resObj.message;
-                rlt.success = resObj.success;
-                if (resObj.success)
+                var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
+                var handler = new System.Net.Http.HttpClientHandler();
+                handler.ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback;
+                using (var client = new System.Net.Http.HttpClient(handler))
                 {
-                    var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
-                    if (!string.IsNullOrEmpty(json))
+                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, XCenterHost + path);
+                    reqest.Headers.Date = DateTime.Now;
+                    reqest.Content = new System.Net.Http.StreamContent(stream);
+                    reqest.Content.Headers.Add("Content-Type", "application/json");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", msgid);
+                    var respose = client.Send(reqest);
+                    resStr = respose.Content.ReadAsStringAsync().Result;
+                    if (respose.Headers.Contains("X-Wlniao-Trace"))
                     {
-                        rlt.data = System.Text.Json.JsonSerializer.Deserialize<T>(json);
+                        rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
+                    }
+                    if (respose.Headers.Contains("X-Wlniao-UseTime"))
+                    {
+                        utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                     }
                 }
             }
+            catch { }
+            log.Info("msgid:" + msgid + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + resStr);
+            var logDebug = "msgid:" + msgid + "[authify:/" + path + ", usetime:" + utime + "]\n >>> " + plainData;
+            try
+            {
+                var resObj = Wlniao.Json.ToObject<Wlniao.ApiResult<String>>(resStr);
+                if (resObj != null)
+                {
+                    rlt.node = resObj.node;
+                    rlt.code = resObj.code;
+                    rlt.message = resObj.message;
+                    rlt.success = resObj.success;
+                    if (resObj.success)
+                    {
+                        var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                        if (string.IsNullOrEmpty(json))
+                        {
+                            logDebug += "\n <<< RESPONSE EMPTY";
+                        }
+                        else
+                        {
+                            try
+                            {
+                                if (typeof(T) == typeof(string))
+                                {
+                                    rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
+                                }
+                                else
+                                {
+                                    rlt.data = Wlniao.Json.ToObject<T>(json);
+                                }
+                                logDebug += "\n <<< " + Wlniao.Json.ToString(rlt);
+                            }
+                            catch
+                            {
+                                logDebug += "\n <<< " + json;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        logDebug += "\n <<< " + rlt.message;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logDebug += "\n <<< Exception" + ex.Message;
+            }
+            log.Debug(logDebug + "\n");
             return rlt;
         }
         /// <summary>
@@ -332,36 +399,94 @@ namespace Wlniao.XCenter
         {
             var now = Wlniao.XCore.NowUnix.ToString();
             var rlt = new Wlniao.ApiResult<T>();
-            var plainData = Newtonsoft.Json.JsonConvert.SerializeObject(data);
+            var utime = "";
+            var start = DateTime.Now;
+            var msgid = strUtil.CreateLongId();
+            var plainData = Wlniao.Json.ToString(data);
             var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
             var sign = Wlniao.Encryptor.SM3Encrypt(owner + encdata + now + token);
-            var reqStr = Newtonsoft.Json.JsonConvert.SerializeObject(new { appid = owner, sign, data = encdata, timestamp = now });
-            var resStr = Wlniao.XServer.Common.PostResponseString(XCenterHost + path, reqStr);
-            var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Wlniao.ApiResult<String>>(resStr);
-            if (resObj != null)
+            var resStr = "";
+            var reqStr = Wlniao.Json.ToString(new { appid = owner, sign, data = encdata, timestamp = now });
+            log.Info("msgid:" + msgid + "[authify:/" + path + "]\n >>> " + reqStr);
+            try
             {
-                rlt.node = resObj.node;
-                rlt.code = resObj.code;
-                rlt.message = resObj.message;
-                rlt.success = resObj.success;
-                if (resObj.success)
+                var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
+                var handler = new System.Net.Http.HttpClientHandler();
+                handler.ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback;
+                using (var client = new System.Net.Http.HttpClient(handler))
                 {
-                    var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
-                    log.Info(XCenterHost + path + ":\r\n" + json);
-                    if (typeof(T) == typeof(string))
+                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, XCenterHost + path);
+                    reqest.Headers.Date = DateTime.Now;
+                    reqest.Content = new System.Net.Http.StreamContent(stream);
+                    reqest.Content.Headers.Add("Content-Type", "application/json");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", msgid);
+                    var respose = client.Send(reqest);
+                    resStr = respose.Content.ReadAsStringAsync().Result;
+                    if (respose.Headers.Contains("X-Wlniao-Trace"))
                     {
-                        rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
+                        rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
                     }
-                    else
+                    if (respose.Headers.Contains("X-Wlniao-UseTime"))
                     {
-                        rlt.data = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
+                        utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                     }
                 }
             }
-            else
+            catch { }
+            log.Info("msgid:" + msgid + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + resStr);
+            var logDebug = "msgid:" + msgid + "[authify:/" + path + ", usetime:" + utime + "]\n >>> " + plainData;
+            try
             {
-                rlt.message = "网络错误，返回异常";
+                var resObj = Json.ToObject<Wlniao.ApiResult<String>>(resStr);
+                if (resObj != null)
+                {
+                    rlt.node = resObj.node;
+                    rlt.code = resObj.code;
+                    rlt.message = resObj.message;
+                    rlt.success = resObj.success;
+                    if (resObj.success)
+                    {
+                        var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                        if (string.IsNullOrEmpty(json))
+                        {
+                            logDebug += "\n <<< RESPONSE EMPTY";
+                        }
+                        else
+                        {
+                            try
+                            {
+                                if (typeof(T) == typeof(string))
+                                {
+                                    rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
+                                }
+                                else
+                                {
+                                    rlt.data = Wlniao.Json.ToObject<T>(json);
+                                }
+                                logDebug += "\n <<< " + Wlniao.Json.ToString(rlt);
+                            }
+                            catch
+                            {
+                                logDebug += "\n <<< " + json;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        logDebug += "\n <<< " + rlt.message;
+                    }
+                }
+                else
+                {
+                    rlt.message = "网络错误，返回异常";
+                }
             }
+            catch (Exception ex)
+            {
+                logDebug += "\n <<< Exception" + ex.Message;
+            }
+            log.Debug(logDebug + "\n");
             return rlt;
         }
         /// <summary>

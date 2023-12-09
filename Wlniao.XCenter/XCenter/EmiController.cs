@@ -47,9 +47,12 @@ namespace Wlniao.XCenter
                 Response.Cookies.Append("wsession", session, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
             }
             ctx = EmiContext.Load(ehost);
-            xsession = new XSession(ctx, session);
+            if (ctx.install || string.IsNullOrEmpty(ctx.app))
+            {
+                xsession = new XSession(ctx, session);
+            }
             #endregion
-            if (xsession.login || filterContext.ActionDescriptor.FilterDescriptors.Where(a => a.Filter.ToString().Contains("Wlniao.Mvc.NoLoginAttribute")).ToList().Count() > 0)
+            if (xsession != null && (xsession.login || filterContext.ActionDescriptor.FilterDescriptors.Where(a => a.Filter.ToString().Contains("Wlniao.Mvc.NoLoginAttribute")).ToList().Count() > 0))
             {
                 ViewBag.eHost = ctx.EmiHost;
                 base.OnActionExecuting(filterContext);

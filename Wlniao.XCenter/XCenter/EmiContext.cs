@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,6 +9,7 @@ using System.Reflection.Emit;
 using System.Security.Principal;
 using System.Text;
 using Wlniao;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Wlniao.XCenter
 {
@@ -59,60 +61,65 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public static new EmiContext Load(String domain)
         {
-            var ctx = Context.Load(domain);
-            var emi = new EmiContext()
+            var emi = Cache.Get<EmiContext>("emi_context_" + domain);
+            if (emi == null || !emi.install)
             {
-                app = ctx.app,
-                name = ctx.name,
-                brand = ctx.brand,
-                owner = ctx.owner,
-                token = ctx.token,
-                domain = ctx.domain,
-                message = ctx.message,
-                register = DateTime.MinValue,
-                https = true
-            };
-            if (!string.IsNullOrEmpty(ctx.message))
-            {
-                emi.message = ctx.message;
-            }
-            else if (string.IsNullOrEmpty(ctx.app))
-            {
-                emi.message = "参数XCenterApp未配置，请配置";
-            }
-            else
-            {
-                var check = emi.EmiGet<String>("app", "check", new KeyValuePair<string, string>("app", ctx.app));
-                if (check.success || check.message == "install")
+                var ctx = Context.Load(domain);
+                emi = new EmiContext()
                 {
-                    emi.install = true;
-                    emi.register = DateTime.Now.AddMinutes(5);
+                    app = ctx.app,
+                    name = ctx.name,
+                    brand = ctx.brand,
+                    owner = ctx.owner,
+                    token = ctx.token,
+                    domain = ctx.domain,
+                    message = ctx.message,
+                    register = DateTime.MinValue,
+                    https = true
+                };
+                if (!string.IsNullOrEmpty(ctx.message))
+                {
+                    emi.message = ctx.message;
                 }
-                else if (check.success)
+                else if (string.IsNullOrEmpty(ctx.app))
                 {
-                    emi.install = false;
-                    emi.register = DateTime.MinValue;
-                    emi.message = "模块未安装，请先安装";
-                }
-                else if (check.message == "request is expired")
-                {
-                    emi.message = "请求超时，请检查服务器时间是否同步";
-                }
-                else if (check.message == "token not config")
-                {
-                    emi.message = "Token参数未配置，请先配置或注册";
-                }
-                else if (check.message == "token error")
-                {
-                    emi.message = "参数Token配置错误，请重新配置或注册";
-                }
-                else if (check.message == "request exception")
-                {
-                    emi.message = "Emi服务器链接失败，请确保服务器已启动并检查您填写的地址是否正确!";
+                    emi.message = "参数XCenterApp未配置，请配置";
                 }
                 else
                 {
-                    emi.message = "Emi服务器链接失败!";
+                    var check = emi.EmiGet<String>("app", "check", new KeyValuePair<string, string>("app", ctx.app));
+                    if (check.success || check.message == "install")
+                    {
+                        emi.install = true;
+                        emi.register = DateTime.Now.AddMinutes(5);
+                        Cache.Set("emi_context_" + domain, emi, 600);
+                    }
+                    else if (check.success)
+                    {
+                        emi.install = false;
+                        emi.register = DateTime.MinValue;
+                        emi.message = "模块未安装，请先安装";
+                    }
+                    else if (check.message == "request is expired")
+                    {
+                        emi.message = "请求超时，请检查服务器时间是否同步";
+                    }
+                    else if (check.message == "token not config")
+                    {
+                        emi.message = "Token参数未配置，请先配置或注册";
+                    }
+                    else if (check.message.Contains("token error"))
+                    {
+                        emi.message = "参数Token配置错误，请重新配置或注册";
+                    }
+                    else if (check.message == "request exception")
+                    {
+                        emi.message = "Emi服务器链接失败，请确保服务器已启动并检查您填写的地址是否正确!";
+                    }
+                    else
+                    {
+                        emi.message = "Emi服务器链接失败!";
+                    }
                 }
             }
             return emi;
@@ -152,7 +159,6 @@ namespace Wlniao.XCenter
                 url += kv.Key + "=" + kv.Value;
             }
             #endregion
-            log.Debug(url);
             return url;
         }
 
@@ -176,7 +182,11 @@ namespace Wlniao.XCenter
             {
                 list.Add(new KeyValuePair<string, string>("app", this.app));
             }
-            return XServer.Common.GetResponseString(CreateUrl(this, controller, action, list));
+            var start = DateTime.Now;
+            var url = CreateUrl(this, controller, action, list);
+            var json = XServer.Common.GetResponseString(url);
+            Wlniao.Log.Loger.Debug("EMI: " + url + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + json + "\n");
+            return json;
         }
         /// <summary>
         /// Get请求Emi服务器
@@ -197,7 +207,10 @@ namespace Wlniao.XCenter
             {
                 list.Add(new KeyValuePair<string, string>("app", this.app));
             }
-            var json = XServer.Common.GetResponseString(CreateUrl(this, controller, action, list));
+            var start = DateTime.Now;
+            var url = CreateUrl(this, controller, action, list);
+            var json = XServer.Common.GetResponseString(url);
+            Wlniao.Log.Loger.Debug("EMI: " + url + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + json + "\n");
             return Wlniao.Json.ToObject<ApiResult<T>>(json);
         }
 
@@ -221,7 +234,10 @@ namespace Wlniao.XCenter
             {
                 list.Add(new KeyValuePair<string, string>("app", this.app));
             }
-            var json = XServer.Common.PostResponseString(CreateUrl(this, controller, action, list), postdata);
+            var start = DateTime.Now;
+            var url = CreateUrl(this, controller, action, list);
+            var json = XServer.Common.PostResponseString(url, postdata);
+            Wlniao.Log.Loger.Debug("EMI: " + url + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + postdata + "\n <<< " + json + "\n");
             return Wlniao.Json.ToObject<ApiResult<T>>(json);
         }
 

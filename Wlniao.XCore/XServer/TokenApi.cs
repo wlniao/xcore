@@ -21,7 +21,9 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using Wlniao.OpenApi;
 
 namespace Wlniao.XServer
 {
@@ -67,8 +69,8 @@ namespace Wlniao.XServer
                     handler.ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback;
                     using (var client = new System.Net.Http.HttpClient(handler))
 					{
-						log.Debug(url + " request:" + reqStr);
-						var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
+                        log.Info("traceid:" + traceid + "[" + url + "]\n >>> " + reqStr);
+                        var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
                         reqest.Headers.Date = DateTime.Now;
                         reqest.Content = new System.Net.Http.StreamContent(stream);
                         reqest.Content.Headers.Add("Content-Type", "application/json");
@@ -84,7 +86,7 @@ namespace Wlniao.XServer
                         {
                             usetime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                         }
-                        log.Debug(url + " response:" + resStr + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]");
+                        log.Info("traceid:" + traceid + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + reqStr);
                     }
                 }
                 catch { }
@@ -94,7 +96,8 @@ namespace Wlniao.XServer
                     rlt.code = "101";
                     rlt.debuger = url + "[Error]";
                     rlt.message = "通讯异常，网络异常或请求错误";
-                    log.Warn(url + " response: " + rlt.message + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]");
+                    log.Info("traceid:" + traceid + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
+                    log.Warn(url + " >>> " + rlt.message);
                 }
                 else
                 {
