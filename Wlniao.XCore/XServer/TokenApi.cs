@@ -57,8 +57,8 @@ namespace Wlniao.XServer
                     traceid = strUtil.CreateLongId();
                 }
                 var txt = data is String ? data.ToString() : Json.ToString(data);
+                var utime = "";
                 var start = DateTime.Now;
-                var usetime = "";
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
                 var resStr = "";
                 var reqStr = Json.ToString(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
@@ -84,9 +84,9 @@ namespace Wlniao.XServer
                         }
                         if (respose.Headers.Contains("X-Wlniao-UseTime"))
                         {
-                            usetime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
+                            utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                         }
-                        log.Info("traceid:" + traceid + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + reqStr);
+                        log.Info("traceid:" + traceid + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + resStr);
                     }
                 }
                 catch { }
@@ -142,8 +142,7 @@ namespace Wlniao.XServer
                             {
                                 if (Log.Loger.LogLevel <= Log.LogLevel.Information)
                                 {
-                                    var msg = string.IsNullOrEmpty(usetime) ? url + " [" : url + " [usetime:" + usetime + ",";
-                                    msg += "duration:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms,traceid:" + rlt.traceid + "]\r\n >>> " + txt;
+                                    var msg = url + (string.IsNullOrEmpty(utime) ? " [" : (" [usetime:" + utime + ",")) + "traceid:" + rlt.traceid + "]\r\n >>> " + txt;
                                     msg += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + plaintext + "}\r\n";
                                     log.Topic(XCore.WebNode, msg);
                                 }
