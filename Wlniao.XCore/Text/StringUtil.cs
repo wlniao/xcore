@@ -1914,6 +1914,27 @@ namespace Wlniao.Text
             });
         }
 
+        /// <summary>
+        /// 字符串转16进制字节数组
+        /// </summary>
+        /// <param name="hexString"></param>
+        /// <returns></returns>
+        public static string HexStringToUTF8(string hexString)
+        {
+            var bytes = Wlniao.Convert.HexStringToBytes(hexString);
+            return System.Text.UTF8Encoding.UTF8.GetString(bytes);
+        }
+
+        /// <summary>
+        /// byte[]数组转16进制字符串
+        /// </summary>
+        /// <param name="utf8String">byte[]数组</param>
+        /// <returns>16进制字符串</returns>
+        public static string UTF8ToHexString(string utf8String)
+        {
+            var bytes = System.Text.UTF8Encoding.UTF8.GetBytes(utf8String);
+            return Wlniao.Convert.BytesToHexString(bytes);
+        }
 
         /// <summary>
         /// 检测敏感词（自动过滤符号，只支持中文）

@@ -420,8 +420,7 @@ namespace Wlniao.XCenter
                 comments = Comments,
                 clientip = ClientIP
             });
-            var rlt = EmiPost<Boolean>("app", "log", json);
-            return rlt.data;
+            return EmiPost<string>("app", "log", json).success;
         }
     }
 }

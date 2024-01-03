@@ -88,6 +88,12 @@ namespace Wlniao.XCore.Test
             var value = Wlniao.Encryptor.SM3Encrypt("wlniao studio");
             Assert.GreaterOrEqual(value, "dce717c7430e26a0f41d33840bbe6baa64e3d915d4d54d1bf8f7a07b093dfec0");
         }
+        [Test]
+        public void SM3Hmac()
+        {
+            var value = Wlniao.Encryptor.HmacSM3("1688731164967428096abcdefghijk", "39611fdb0f615f936d877c068127e8e6");
+            Assert.GreaterOrEqual(value, "07fdcb2b59245113d0c59fa159831dc6a9d172ca0b9c880d7262533e7b99f0e1");
+        }
 
 		[Test]
         public void SM4EncryptECBToHex()

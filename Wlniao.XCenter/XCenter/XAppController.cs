@@ -105,7 +105,7 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
-                    dic.Add("data", Encryptor.SM4EncryptECBToHex(System.Text.Json.JsonSerializer.Serialize(res.data, new JsonSerializerOptions
+                    dic.Add("data", Encryptor.SM4EncryptECBToHex(JsonSerializer.Serialize(res.data, new JsonSerializerOptions
                     {
                         Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
                     }), sm2key, true));
@@ -161,10 +161,9 @@ namespace Wlniao.XCenter
         /// 验证登录状态并生成调用参数
         /// </summary>
         /// <param name="func"></param>
-        /// <param name="authurl"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult HandleByLogin(Action<Dictionary<String, Object>> func, string authurl = null)
+        public IActionResult HandleByLogin(Action<Dictionary<String, Object>> func)
         {
             var authorization = HeaderRequest("Authorization");
             if (string.IsNullOrEmpty(authorization))
@@ -183,7 +182,7 @@ namespace Wlniao.XCenter
                 }
             }
             catch { }
-            if (auth.Count == 0 || auth.GetInt64("expire_time") < XCore.NowUnix)
+            if (auth.Count == 0 || auth.GetInt64("expire") < XCore.NowUnix)
             {
                 if (auth.Count == 0)
                 {
@@ -195,11 +194,8 @@ namespace Wlniao.XCenter
                     res.code = "103";
                     res.message = "authorization is expire";
                 }
-                Response.Headers.TryAdd("noauth", new Microsoft.Extensions.Primitives.StringValues("true"));
-                if (!string.IsNullOrEmpty(authurl))
-                {
-                    Response.Headers.TryAdd("redirect", new Microsoft.Extensions.Primitives.StringValues(authurl));
-                }
+                Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("Authify-State"));
+                Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
                 return OutDefault();
             }
             else

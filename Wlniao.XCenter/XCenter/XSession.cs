@@ -14,10 +14,6 @@ namespace Wlniao.XCenter
         /// </summary>
         public string sid = "";
         /// <summary>
-        /// Session Key
-        /// </summary>
-        public string key = "";
-        /// <summary>
         /// 系统Wkey
         /// </summary>
         public string wkey = "";
@@ -53,10 +49,20 @@ namespace Wlniao.XCenter
         /// 
         /// </summary>
         /// <param name="ctx"></param>
+        public XSession(EmiContext ctx)
+        {
+            if (ctx != null)
+            {
+                this.wkey = ctx.owner;
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ctx"></param>
         /// <param name="key"></param>
         public XSession(EmiContext ctx, String key)
         {
-            this.key = key;
             if (ctx != null && !string.IsNullOrEmpty(key))
             {
                 var jsonStr = Wlniao.Cache.Get("wsession_" + key);

@@ -1048,7 +1048,9 @@ namespace Wlniao.XServer
 
                     var contentMd5 = System.Convert.ToBase64String(request.Content.Headers.ContentMD5);
                     var policy = method + '\n' + contentMd5 + '\n' + contentType + '\n' + date + "\n/" + bucket + path;
-                    var signature = System.Convert.ToBase64String(Encryptor.GetHMACSHA1(policy, ossaccesskeySecret));
+                    var bytesPolicy = Wlniao.Text.Encoding.UTF8.GetBytes(policy);
+                    var bytesSecret = Wlniao.Text.Encoding.UTF8.GetBytes(ossaccesskeySecret);
+                    var signature = System.Convert.ToBase64String(Encryptor.HmacSHA1(bytesPolicy, bytesSecret));
 
                     headers.Add("Authorization", "OSS " + ossaccesskeyid + ':' + signature);
                     foreach (DictionaryEntry kv in headers)
@@ -1117,7 +1119,9 @@ namespace Wlniao.XServer
                     }
                     var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"]]}";
                     var policy = Encryptor.Base64Encrypt(json);
-                    var signature = System.Convert.ToBase64String(Encryptor.GetHMACSHA1(policy, ossaccesskeySecret));
+                    var bytesPolicy = Wlniao.Text.Encoding.UTF8.GetBytes(policy);
+                    var bytesSecret = Wlniao.Text.Encoding.UTF8.GetBytes(ossaccesskeySecret);
+                    var signature = System.Convert.ToBase64String(Encryptor.HmacSHA1(bytesPolicy, bytesSecret));
                     var host = ossdomain.IndexOf("://") < 0 ? "//" + ossdomain : ossdomain;
                     return Json.ToString(new { to = "oss", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
                 }
@@ -1330,11 +1334,11 @@ namespace Wlniao.XServer
 
 
                     var keytime = (XCore.NowUnix - 10) + ";" + (XCore.NowUnix + 3590);
-                    var signKey = Encryptor.GetHMACSHA1String(keytime, cosaccesskeySecret);
+                    var signKey = Encryptor.HmacSHA1(keytime, cosaccesskeySecret);
                     var contentMd5 = System.Convert.ToBase64String(request.Content.Headers.ContentMD5);
                     var httpString = method.ToLower() + '\n' + path + '\n' + httpParameters + '\n' + httpHeaders + '\n';
-                    var stringToSign = "sha1\n" + keytime + '\n' + Encryptor.GetSHA1(httpString).ToLower() + '\n';
-                    var signature = Encryptor.GetHMACSHA1String(stringToSign, signKey);
+                    var stringToSign = "sha1\n" + keytime + '\n' + Encryptor.Sha1(httpString).ToLower() + '\n';
+                    var signature = Encryptor.HmacSHA1(stringToSign, signKey);
                     var authorization = "q-sign-algorithm=sha1"
                         + "&q-ak=" + cosaccesskeyid
                         + "&q-sign-time=" + keytime
@@ -1411,9 +1415,9 @@ namespace Wlniao.XServer
                     var keytime = XCore.NowUnix + ";" + (XCore.NowUnix + expire);
                     var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"],{\"q-sign-algorithm\":\"sha1\"},{\"q-ak\":\"" + cosaccesskeyid + "\"},{\"q-sign-time\":\"" + keytime + "\"}]}";
                     var policy = Encryptor.Base64Encrypt(json);
-                    var stringToSign = Encryptor.GetSHA1(json).ToLower();
-                    var signKey = Encryptor.GetHMACSHA1String(keytime, cosaccesskeySecret);
-                    var signature = Encryptor.GetHMACSHA1String(stringToSign, signKey);
+                    var stringToSign = Encryptor.Sha1(json).ToLower();
+                    var signKey = Encryptor.HmacSHA1(keytime, cosaccesskeySecret);
+                    var signature = Encryptor.HmacSHA1(stringToSign, signKey);
                     var host = cosdomain.IndexOf("://") < 0 ? "//" + cosdomain : cosdomain;
                     return Json.ToString(new { to = "cos", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, domain = host, keytime = keytime, secretid = cosaccesskeyid, dir, max, policy, signature });
                 }

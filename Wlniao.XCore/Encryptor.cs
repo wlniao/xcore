@@ -27,7 +27,7 @@ using System.Security.Cryptography;
 using Wlniao.Text;
 using Wlniao.Crypto;
 using System.Text.RegularExpressions;
-
+using Org.BouncyCastle.Crypto.Macs;
 namespace Wlniao
 {
     /// <summary>
@@ -76,13 +76,77 @@ namespace Wlniao
             return BitConverter.ToString(s, 4, 8).Replace("-", "");
         }
 
+
         /// <summary>
-        ///  HmacSHA256算法加密
+        /// 获取SHA1值
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string Sha1(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return "";
+            }
+            var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
+            var dataHashed = SHA1.Create().ComputeHash(dataToHash);//Hash运算
+            return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
+        }
+
+        /// <summary>
+        /// Hmac SM3算法加密
         /// </summary>
         /// <param name="str"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static string HmacSHA256Encryptor(string str, string key)
+        public static string HmacSM3(string str, string key)
+        {
+            var sm3 = new Crypto.SM3();
+            var keyBytes = System.Text.Encoding.UTF8.GetBytes(key);
+            var dataBytes = System.Text.Encoding.UTF8.GetBytes(str);
+            return cvt.BytesToHexString(sm3.Hmac(dataBytes, keyBytes));
+        }
+
+        /// <summary>
+        /// HMAC SHA1加密
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static string HmacSHA1(string str, string key)
+        {
+            var enText = "";
+            if (!string.IsNullOrEmpty(str))
+            {
+                var keyBytes = Encoding.UTF8.GetBytes(key);
+                var dataBytes = Encoding.UTF8.GetBytes(str);
+                foreach (byte b in HmacSHA1(dataBytes, keyBytes))
+                {
+                    enText += b.ToString("x2");
+                }
+            }
+            return enText;
+        }
+
+        /// <summary>
+        /// HMAC SHA1加密
+        /// </summary>
+        /// <param name="dataBytes"></param>
+        /// <param name="keyBytes"></param>
+        /// <returns></returns>
+        public static byte[] HmacSHA1(byte[] dataBytes, byte[] keyBytes)
+        {
+            var hashAlgorithm = new HMACSHA1(keyBytes);
+            return hashAlgorithm.ComputeHash(dataBytes);
+        }
+
+        /// <summary>
+        /// Hmac SHA256算法加密
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static string HmacSHA256(string str, string key)
         {
             var hashAlgorithm = new HMACSHA256(Encoding.UTF8.GetBytes(key));
             var bytes = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(str));
@@ -516,52 +580,6 @@ namespace Wlniao
             sm3.BlockUpdate(buffer, 0, buffer.Length);
             buffer = sm3.DoFinal();
             return cvt.BytesToHexString(buffer);
-        }
-        /// <summary>
-        /// 获取SHA1值
-        /// </summary>
-        /// <param name="str"></param>
-        /// <returns></returns>
-        public static string GetSHA1(string str)
-        {
-            if (string.IsNullOrEmpty(str))
-            {
-                return "";
-            }
-            var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
-            var dataHashed = SHA1.Create().ComputeHash(dataToHash);//Hash运算
-            return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
-        }
-        /// <summary>
-        /// HMACMD5加密
-        /// </summary>
-        /// <param name="str"></param>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public static byte[] GetHMACSHA1(string str, string key)
-        {
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var hashAlgorithm = new HMACSHA1(keyBytes);
-            return hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(str));
-        }
-        /// <summary>
-        /// HMACMD5加密
-        /// </summary>
-        /// <param name="str"></param>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public static string GetHMACSHA1String(string str, string key)
-        {
-            if (string.IsNullOrEmpty(str))
-            {
-                return "";
-            }
-            var enText = "";
-            foreach (byte b in GetHMACSHA1(str, key))
-            {
-                enText += b.ToString("x2");
-            }
-            return enText;
         }
     }
 }

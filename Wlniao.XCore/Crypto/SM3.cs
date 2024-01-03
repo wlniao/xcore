@@ -1,10 +1,13 @@
-﻿using System;
+﻿using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Digests;
+using Org.BouncyCastle.Crypto.Parameters;
+using System;
 namespace Wlniao.Crypto
 {
     /// <summary>
     /// SM3杂凑算法
     /// </summary>
-    public class SM3
+    public class SM3 : IDigest
     {
         /// <summary>
         /// 内部缓冲区的大小
@@ -337,6 +340,23 @@ namespace Wlniao.Crypto
             return buffer;
         }
 
+
+        /// <summary>
+        /// 基于SM3的Hmac算法
+        /// </summary>
+        /// <param name="dataBytes"></param>
+        /// <param name="keyBytes"></param>
+        /// <returns></returns>
+        public byte[] Hmac(byte[] dataBytes, byte[] keyBytes)
+        {
+            var mac = new Org.BouncyCastle.Crypto.Macs.HMac(this);//带密钥的杂凑算法
+            var keyParameter = new KeyParameter(keyBytes);
+            mac.Init(keyParameter);
+            mac.BlockUpdate(dataBytes, 0, dataBytes.Length);
+            byte[] result = new byte[mac.GetMacSize()];
+            mac.DoFinal(result, 0);
+            return result;
+        }
 
 
 

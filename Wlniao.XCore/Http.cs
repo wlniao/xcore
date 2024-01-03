@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Wlniao.Serialization;
 
 namespace Wlniao
 {
@@ -48,6 +52,10 @@ namespace Wlniao
             /// </summary>  
             public String Method { get; set; }
             /// <summary>  
+            /// 客户端IP
+            /// </summary>  
+            public String ClientIP { get; set; }
+            /// <summary>  
             /// 请求内容
             /// </summary>  
             public String Request { get; set; }
@@ -57,7 +65,7 @@ namespace Wlniao
             public Object Response { get; set; }
             /// <summary>  
             /// 身份令牌
-            /// </summary>  
+            /// </summary>
             public String AuthToken { get; set; }
             /// <summary>  
             /// 输出格式
@@ -111,7 +119,7 @@ namespace Wlniao
                                 var encoding = Encoding.UTF8;
                                 var tempRequest = new System.Collections.Generic.List<byte>();
                                 var msg = encoding.GetString(request, 0, receiveNumber);
-                                var ctx = new Context() { Path = "/", Query = "", Request = "", StatusCode = 200, Time = start.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000 };
+                                var ctx = new Context() { Path = "/", Query = "", Request = "", ClientIP = ((IPEndPoint)socket.RemoteEndPoint).Address.MapToIPv4().ToString(), StatusCode = 200, Time = start.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000 };
                                 var req = msg.Substring(0, msg.IndexOf('\n')).Trim('\r').Split(' ', StringSplitOptions.RemoveEmptyEntries);
                                 var idx = msg.IndexOf("\r\n\r\n");
                                 if (req.Length == 3)
@@ -150,28 +158,31 @@ namespace Wlniao
                                 sb.Append("Date: " + DateTime.UtcNow.ToString("r") + "\r\n");
                                 sb.Append("Server: wlniao/1.0\r\n");
                                 sb.Append("X-UseTime: " + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\r\n");
-                                if (ctx.Request != null)
+                                var data = ctx.Response as byte[];
+                                if (data == null)
                                 {
-                                    var res = "";
                                     if (ctx.Response is string)
                                     {
-                                        res = ctx.Response.ToString();
+                                        data = encoding.GetBytes(ctx.Response.ToString());
                                     }
                                     else if (ctx.Response != null)
                                     {
                                         ctx.ContentType = "application/json; charset=utf-8";
-                                        res = Serialization.JsonString.Convert(ctx.Response);
-                                    }
-                                    if (res != null)
-                                    {
-                                        sb.Append("Content-Type: " + ctx.ContentType + "\r\n");
-                                        sb.Append("Content-Length: " + encoding.GetByteCount(res) + "\r\n");
-                                        sb.Append("\r\n" + res);
+                                        data = encoding.GetBytes(JsonString.Convert(ctx.Response));
                                     }
                                 }
-                                msg = sb.ToString();
-                                var response = encoding.GetBytes(msg);
-                                socket.Send(response, response.Length, SocketFlags.None);
+                                if (data != null)
+                                {
+                                    sb.Append("Content-Type: " + ctx.ContentType + "\r\n");
+                                    sb.Append("Content-Length: " + data.Length + "\r\n");
+                                    sb.Append("\r\n");
+                                }
+                                var res = encoding.GetBytes(sb.ToString());
+                                if (data != null)
+                                {
+                                    res = res.Concat(data).ToArray();
+                                }
+                                socket.Send(res, res.Length, SocketFlags.None);
                                 socket.SendTimeout = 100;
                             }
                         }
@@ -188,7 +199,7 @@ namespace Wlniao
             }
             catch (Exception ex)
             {
-                log.Error(ex.Message);
+                Console.WriteLine(ex.Message);
             }
         }
     }
