@@ -135,7 +135,7 @@ namespace Wlniao.Log
         public void Topic(String topic, String message)
         {
             Write(topic, message);
-            Loger.Console(string.Format("[{0}]{1} => {2}", topic, DateTools.Format(), message), ConsoleColor.White);
+            Loger.Console(string.Format("[{0}]{1} => {2}", topic, DateTools.Format(), message), ConsoleColor.DarkGray);
         }
         /// <summary>
         /// 输出日志

@@ -272,7 +272,7 @@ namespace Wlniao.Log
             var entrie = new Entrie { line = message, time = DateTime.UtcNow };
             if (LogLocal == "console")
             {
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.White);
+                Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.DarkGray);
             }
             else if (LogLocal == "file")
             {
