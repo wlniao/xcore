@@ -126,7 +126,7 @@ namespace Wlniao.Log
                                     }
                                     try
                                     {
-                                        var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = (message, cert, chain, error) => true };
+                                        var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                                         using (var client = new HttpClient(handler))
                                         {
                                             var start = DateTime.Now;
@@ -327,11 +327,7 @@ namespace Wlniao.Log
                             }
                         }
                     });
-                    var handler = new HttpClientHandler();
-                    if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
-                    {
-                        handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
-                    }
+                    var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                     using (var client = new HttpClient(handler))
                     {
                         var start = DateTime.Now;

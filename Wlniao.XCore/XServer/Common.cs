@@ -308,8 +308,7 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static string GetResponseString(String url)
         {
-            var handler = new System.Net.Http.HttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback;
+            var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
             using (var client = new System.Net.Http.HttpClient(handler))
             {
                 client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
@@ -333,9 +332,7 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static string PostResponseString(String url, String postData, String contentType = "application/json")
         {
-
-            var handler = new System.Net.Http.HttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback;
+            var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
             using (var client = new System.Net.Http.HttpClient(handler))
             {
                 var stream = cvt.ToStream(string.IsNullOrEmpty(postData) ? new byte[0] : System.Text.Encoding.UTF8.GetBytes(postData));
@@ -363,11 +360,7 @@ namespace Wlniao.XServer
         {
             var str = "";
             var err = "";
-            var handler = new System.Net.Http.HttpClientHandler();
-            if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
-            {
-                handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
-            }
+            var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
             using (var client = new System.Net.Http.HttpClient(handler))
             {
                 var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
@@ -670,11 +663,7 @@ namespace Wlniao.XServer
                     var encode = System.Text.Encoding.UTF8;
                     var byteArray = encode.GetBytes(postData);
                     var stream = cvt.ToStream(byteArray);
-                    var handler = new System.Net.Http.HttpClientHandler();
-                    if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
-                    {
-                        handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
-                    }
+                    var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                     using (var client = new System.Net.Http.HttpClient(handler))
                     {
                         var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
@@ -882,12 +871,9 @@ namespace Wlniao.XServer
                 try
                 {
                     em.Current.Value.Start();
-                    var handler = new System.Net.Http.HttpClientHandler();
-                    if (System.Net.ServicePointManager.ServerCertificateValidationCallback != null)
-                    {
-                        handler.ServerCertificateCustomValidationCallback = XCore.ValidateServerCertificate;
-                    }
-                    using var client = new System.Net.Http.HttpClient(handler);
+
+                    var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback }; 
+                    var client = new System.Net.Http.HttpClient(handler);
                     var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
                     reqest.Headers.Date = DateTime.UtcNow;
                     reqest.Headers.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Wlniao-XCore-XServer", "beta"));

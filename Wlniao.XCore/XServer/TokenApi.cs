@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using Wlniao.OpenApi;
 
 namespace Wlniao.XServer
@@ -65,8 +66,7 @@ namespace Wlniao.XServer
                 try
                 {
                     var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
-                    var handler = new System.Net.Http.HttpClientHandler();
-                    handler.ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback;
+                    var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                     using (var client = new System.Net.Http.HttpClient(handler))
 					{
                         log.Info("traceid:" + traceid + "[" + url + "]\n >>> " + reqStr);

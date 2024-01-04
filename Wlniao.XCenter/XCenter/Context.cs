@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using Wlniao.Serialization;
@@ -314,8 +315,7 @@ namespace Wlniao.XCenter
             try
             {
                 var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
-                var handler = new System.Net.Http.HttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback;
+                var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
                     var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, XCenterHost + path);
@@ -411,8 +411,7 @@ namespace Wlniao.XCenter
             try
             {
                 var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
-                var handler = new System.Net.Http.HttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback;
+                var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
                     var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, XCenterHost + path);

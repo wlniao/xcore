@@ -21,6 +21,7 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -142,14 +143,38 @@ namespace Wlniao
         /// <summary>
         /// 内置SSL证书检查服务
         /// </summary>
-        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback = ValidateServerCertificate;
+        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback = ServerCertificateCustomValidation;
         /// <summary>
         /// 关闭服务端SSL证书检查
         /// </summary>
         public static void CloseServerCertificateValidation()
         {
-            XCore.ServerCertificateCustomValidationCallback = delegate { return true; };
+            XCore.ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
             System.Net.ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(delegate { return true; });
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="requestMessage"></param>
+        /// <param name="certificate"></param>
+        /// <param name="chain"></param>
+        /// <param name="sslErrors"></param>
+        /// <returns></returns>
+        private static bool ServerCertificateCustomValidation(HttpRequestMessage requestMessage, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors sslErrors)
+        {
+            if (sslErrors == SslPolicyErrors.None)
+            {
+                return true;
+            }
+            else if (chain != null && chain.ChainPolicy != null && chain.ChainPolicy.ExtraStore.Count > 0
+                && chain.ChainPolicy.ExtraStore.LastOrDefault().Thumbprint == "C7A791CAAF68B5B46BDE11175463F11071FA8675")
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         #region 系统信息
@@ -395,8 +420,8 @@ namespace Wlniao
                 }
                 return _WebHost;
             }
-		}
-		#endregion
+        }
+        #endregion
 
-	}
+    }
 }
