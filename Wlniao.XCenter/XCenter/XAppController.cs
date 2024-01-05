@@ -31,7 +31,7 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 
         /// </summary>
-        protected ApiResult<Object> res = new ApiResult<Object> { code = "-1", message = "未知错误" };
+        protected ApiResult<Object> res = new ApiResult<Object> { code = XCore.WebNode, message = "未知错误" };
         /// <summary>
         /// 
         /// </summary>
