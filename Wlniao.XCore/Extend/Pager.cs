@@ -22,7 +22,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-namespace Wlniao.Data
+namespace Wlniao
 {
     /// <summary>
     /// 数据分页工具
@@ -136,7 +136,7 @@ namespace Wlniao.Data
                             _list = _data;
                             _page = 1;
                         }
-                        else if (_data.Count > (size * (_page - 1)))
+                        else if (_data.Count > size * (_page - 1))
                         {
                             if (_data.Count > size * _page)
                             {
@@ -192,7 +192,7 @@ namespace Wlniao.Data
         /// <param name="page"></param>
         /// <param name="size"></param>
         /// <returns></returns>
-        public static Pager<T> PutIn(List<T> source, Int32 page = 1, Int32 size = 10)
+        public static Pager<T> PutIn(List<T> source, int page = 1, int size = 10)
         {
             var pager = new Pager<T>();
             if (source == null)
@@ -215,7 +215,7 @@ namespace Wlniao.Data
         /// <param name="Page"></param>
         /// <param name="Size"></param>
         /// <returns></returns>
-        public static Pager<T> Format(List<T> Data, Int32 Total, Int32 Page, Int32 Size = 0)
+        public static Pager<T> Format(List<T> Data, int Total, int Page, int Size = 0)
         {
             var pager = new Pager<T>();
             pager.page = Page < 1 ? 1 : Page;

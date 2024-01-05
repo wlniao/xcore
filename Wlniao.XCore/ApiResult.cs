@@ -61,7 +61,7 @@ namespace Wlniao
         public string node { get; set; }
 
         /// <summary>
-        /// 状态码
+        /// 状态码，0为成功
         /// </summary>
         public string code { get; set; }
 
@@ -129,6 +129,7 @@ namespace Wlniao
             }
         }
         #endregion
+
         /// <summary>
         /// 
         /// </summary>

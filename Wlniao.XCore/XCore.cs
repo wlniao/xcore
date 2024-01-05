@@ -137,23 +137,11 @@ namespace Wlniao
 
 
         /// <summary>
-        /// 内置SSL证书检查服务
-        /// </summary>
-        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ValidateServerCertificate = delegate { return true; };
-        /// <summary>
-        /// 内置SSL证书检查服务
+        /// 托管的SSL证书检查服务
         /// </summary>
         public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback = ServerCertificateCustomValidation;
         /// <summary>
-        /// 关闭服务端SSL证书检查
-        /// </summary>
-        public static void CloseServerCertificateValidation()
-        {
-            XCore.ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-            System.Net.ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(delegate { return true; });
-        }
-        /// <summary>
-        /// 
+        /// 内置SSL证书检查服务（放通内部自签CA）
         /// </summary>
         /// <param name="requestMessage"></param>
         /// <param name="certificate"></param>
@@ -177,10 +165,20 @@ namespace Wlniao
             }
         }
 
+        /// <summary>
+        /// 关闭服务端SSL证书检查
+        /// </summary>
+        public static void CloseServerCertificateValidation()
+        {
+            XCore.ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            System.Net.ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(delegate { return true; });
+        }
+
         #region 系统信息
         private static Int64 nowUnix = 0;
         private static String startupTime = null;
         private static String startupRoot = null;
+        private static String sessionEncryptKey = null;
         private static String _XServerId = null;
         private static String _XServerIP = null;
         private static String _WebNode = null;
@@ -398,11 +396,7 @@ namespace Wlniao
             {
                 if (_WebNode == null)
                 {
-                    _WebNode = Config.GetConfigs("WLN_NODE");
-                    if (string.IsNullOrEmpty(_WebNode))
-                    {
-                        _WebNode = "xcore";
-                    }
+                    _WebNode = Config.GetConfigs("WLN_NODE", "xcore");
                 }
                 return _WebNode;
             }
@@ -416,9 +410,27 @@ namespace Wlniao
             {
                 if (_WebHost == null)
                 {
-                    _WebHost = Config.GetConfigs("WLN_HOST");
+                    _WebHost = Config.GetConfigs("WLN_HOST", "http://127.0.0.1:" + ListenPort);
                 }
                 return _WebHost;
+            }
+        }
+        /// <summary>
+        /// 根据配置信息计算得出相对固定的加密密钥
+        /// </summary>
+        public static string SessionEncryptKey
+        {
+            get
+            {
+                if (sessionEncryptKey == null)
+                {
+                    sessionEncryptKey = Config.GetConfigs("SessionEncryptKey");
+                    if (string.IsNullOrEmpty(sessionEncryptKey))
+                    {
+                        sessionEncryptKey = Encryptor.Md5Encryptor16(WebNode + WebHost + DbConnectInfo.WLN_CONNSTR_TYPE + DbConnectInfo.WLN_CONNSTR_NAME).ToLower();
+                    }
+                }
+                return sessionEncryptKey;
             }
         }
         #endregion
