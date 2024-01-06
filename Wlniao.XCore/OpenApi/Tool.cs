@@ -22,6 +22,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Wlniao.OpenApi
@@ -86,6 +87,51 @@ namespace Wlniao.OpenApi
                 }
             }
             return "";
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="webroxy"></param>
+        /// <returns></returns>
+        public static string GetOutIP(string webroxy = null)
+        {
+            var ip = "";
+            try
+            {
+                if (string.IsNullOrEmpty(webroxy))
+                {
+                    webroxy = XCore.Webroxy;
+                }
+                var host = "https://openapi.wlniao.com";
+                var apiurl = (string.IsNullOrEmpty(webroxy) ? host + "/tool/getip" : webroxy + "/webroxy/getip");
+                var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                using (var client = new System.Net.Http.HttpClient(handler))
+                {
+                    var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, apiurl);
+                    if (!string.IsNullOrEmpty(webroxy))
+                    {
+                        host = host.Substring(host.IndexOf("://") + 3).Trim('/').Trim();
+                        request.Headers.TryAddWithoutValidation("X-Webroxy", host);
+                    }
+                    client.SendAsync(request).ContinueWith((requestTask) =>
+                    {
+                        var response = requestTask.Result;
+                        response.Content.ReadAsStringAsync().ContinueWith((readTask) =>
+                        {
+                            ip = readTask.Result;
+                        }).Wait();
+                    }).Wait();
+                }
+            }
+            catch { }
+            if (strUtil.IsIPv4(ip))
+            {
+                return ip;
+            }
+            else
+            {
+                return "获取失败!!!!";
+            }
         }
         /// <summary>
         /// 将汉字转换成拼音

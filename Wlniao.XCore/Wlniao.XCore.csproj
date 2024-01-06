@@ -24,6 +24,7 @@
 		<IncludeSymbols>False</IncludeSymbols>
 		<EnableNETAnalyzers>False</EnableNETAnalyzers>
 		<AnalysisLevel>6.0-all</AnalysisLevel>
+    <NoWarn>CS8632</NoWarn>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 	  <Optimize>False</Optimize>

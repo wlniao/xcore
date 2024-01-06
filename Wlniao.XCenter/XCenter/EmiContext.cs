@@ -5,11 +5,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Net;
 using System.Reflection.Emit;
 using System.Security.Principal;
 using System.Text;
 using Wlniao;
 using static System.Net.Mime.MediaTypeNames;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 
 namespace Wlniao.XCenter
 {
@@ -239,6 +244,54 @@ namespace Wlniao.XCenter
             var json = XServer.Common.PostResponseString(url, postdata);
             Wlniao.Log.Loger.Debug("EMI: " + url + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + postdata + "\n <<< " + json + "\n");
             return Wlniao.Json.ToObject<ApiResult<T>>(json);
+        }
+
+        /// <summary>
+        /// 通过EMI上传文件
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="name"></param>
+        /// <param name="ticket"></param>
+        /// <returns></returns>
+        public ApiResult<String> EmiUpload(byte[] data, string ename, string ticket = null)
+        {
+            try
+            {
+                var url = this.EmiHost + "/upload";
+                if (string.IsNullOrEmpty(ticket))
+                {
+                    url += ("?ticket=" + Encryptor.SM4EncryptECBToHex((XCore.NowUnix + 300).ToString(), this.token));
+                }
+                else
+                {
+                    url += ("?ticket=" + ticket);
+                }
+                var content = new MultipartFormDataContent();
+                content.Add(new ByteArrayContent(data), "file", name);
+                var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                using (var client = new System.Net.Http.HttpClient(handler))
+                {
+                    var response = client.PostAsync(url, content).GetAwaiter().GetResult();
+                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                    {
+                        var res = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        var result = JsonSerializer.Deserialize<ApiResult<String>>(res, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
+                        if (result == null)
+                        {
+                            result = new ApiResult<String> { message = "上传结果返回无效，请稍后再试" };
+                        }
+                        return result;
+                    }
+                    else
+                    {
+                        throw new Exception("StatusCode:" + response.StatusCode + " " + response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult<string> { message = ex.Message };
+            }
         }
 
         /// <summary>

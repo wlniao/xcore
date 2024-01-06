@@ -183,6 +183,7 @@ namespace Wlniao
         private static String _XServerIP = null;
         private static String _WebNode = null;
         private static String _WebHost = null;
+        private static String _Webroxy = null;
         /// <summary>
         /// 当前系统Unix时间戳
         /// </summary>
@@ -413,6 +414,20 @@ namespace Wlniao
                     _WebHost = Config.GetConfigs("WLN_HOST", "http://127.0.0.1:" + ListenPort);
                 }
                 return _WebHost;
+            }
+        }
+        /// <summary>
+        /// Webroxy代理服务器地址
+        /// </summary>
+        public static string Webroxy
+        {
+            get
+            {
+                if (_Webroxy == null)
+                {
+                    _Webroxy = Config.GetConfigs("Webroxy");
+                }
+                return _Webroxy;
             }
         }
         /// <summary>
