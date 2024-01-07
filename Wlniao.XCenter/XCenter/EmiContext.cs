@@ -123,7 +123,7 @@ namespace Wlniao.XCenter
                     }
                     else
                     {
-                        emi.message = "Emi服务器链接失败!";
+                        emi.message = check.message;
                     }
                 }
             }
@@ -177,21 +177,28 @@ namespace Wlniao.XCenter
         /// <returns>服务器返回的泛型实例</returns>
         public String EmiGet(string controller, string action, params KeyValuePair<string, string>[] kvs)
         {
-            var rlt = new ApiResult<Object>();
-            var list = new List<KeyValuePair<string, string>>();
-            foreach (var kv in kvs)
+            try
             {
-                list.Add(kv);
+                var rlt = new ApiResult<Object>();
+                var list = new List<KeyValuePair<string, string>>();
+                foreach (var kv in kvs)
+                {
+                    list.Add(kv);
+                }
+                if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
+                {
+                    list.Add(new KeyValuePair<string, string>("app", this.app));
+                }
+                var start = DateTime.Now;
+                var url = CreateUrl(this, controller, action, list);
+                var json = XServer.Common.GetResponseString(url);
+                Wlniao.Log.Loger.Debug("EMI: " + url + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + json + "\n");
+                return json;
             }
-            if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
+            catch (Exception ex)
             {
-                list.Add(new KeyValuePair<string, string>("app", this.app));
+                return JsonSerializer.Serialize(new { code = "", success = false, message = "EMI服务器请求异常：" + ex.Message }, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
             }
-            var start = DateTime.Now;
-            var url = CreateUrl(this, controller, action, list);
-            var json = XServer.Common.GetResponseString(url);
-            Wlniao.Log.Loger.Debug("EMI: " + url + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + json + "\n");
-            return json;
         }
         /// <summary>
         /// Get请求Emi服务器
@@ -203,20 +210,27 @@ namespace Wlniao.XCenter
         /// <returns>服务器返回的泛型实例</returns>
         public ApiResult<T> EmiGet<T>(string controller, string action, params KeyValuePair<string, string>[] kvs)
         {
-            var list = new List<KeyValuePair<string, string>>();
-            foreach (var kv in kvs)
+            try
             {
-                list.Add(kv);
+                var list = new List<KeyValuePair<string, string>>();
+                foreach (var kv in kvs)
+                {
+                    list.Add(kv);
+                }
+                if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
+                {
+                    list.Add(new KeyValuePair<string, string>("app", this.app));
+                }
+                var start = DateTime.Now;
+                var url = CreateUrl(this, controller, action, list);
+                var json = XServer.Common.GetResponseString(url);
+                Wlniao.Log.Loger.Debug("EMI: " + url + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + json + "\n");
+                return JsonSerializer.Deserialize<ApiResult<T>>(json, new JsonSerializerOptions { });
             }
-            if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
+            catch (Exception ex)
             {
-                list.Add(new KeyValuePair<string, string>("app", this.app));
+                return new ApiResult<T> { message = "EMI服务器请求异常：" + ex.Message, data = default(T) };
             }
-            var start = DateTime.Now;
-            var url = CreateUrl(this, controller, action, list);
-            var json = XServer.Common.GetResponseString(url);
-            Wlniao.Log.Loger.Debug("EMI: " + url + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + json + "\n");
-            return Wlniao.Json.ToObject<ApiResult<T>>(json);
         }
 
         /// <summary>
@@ -230,20 +244,27 @@ namespace Wlniao.XCenter
         /// <returns>服务器返回的泛型实例</returns>
         public ApiResult<T> EmiPost<T>(string controller, string action, string postdata, params KeyValuePair<string, string>[] kvs)
         {
-            var list = new List<KeyValuePair<string, string>>();
-            foreach (var kv in kvs)
+            try
             {
-                list.Add(kv);
+                var list = new List<KeyValuePair<string, string>>();
+                foreach (var kv in kvs)
+                {
+                    list.Add(kv);
+                }
+                if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
+                {
+                    list.Add(new KeyValuePair<string, string>("app", this.app));
+                }
+                var start = DateTime.Now;
+                var url = CreateUrl(this, controller, action, list);
+                var json = XServer.Common.PostResponseString(url, postdata);
+                Wlniao.Log.Loger.Debug("EMI: " + url + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + postdata + "\n <<< " + json + "\n");
+                return JsonSerializer.Deserialize<ApiResult<T>>(json, new JsonSerializerOptions { });
             }
-            if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
+            catch (Exception ex)
             {
-                list.Add(new KeyValuePair<string, string>("app", this.app));
+                return new ApiResult<T> { message = "EMI服务器请求异常：" + ex.Message, data = default(T) };
             }
-            var start = DateTime.Now;
-            var url = CreateUrl(this, controller, action, list);
-            var json = XServer.Common.PostResponseString(url, postdata);
-            Wlniao.Log.Loger.Debug("EMI: " + url + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + postdata + "\n <<< " + json + "\n");
-            return Wlniao.Json.ToObject<ApiResult<T>>(json);
         }
 
         /// <summary>
@@ -253,7 +274,7 @@ namespace Wlniao.XCenter
         /// <param name="name"></param>
         /// <param name="ticket"></param>
         /// <returns></returns>
-        public ApiResult<String> EmiUpload(byte[] data, string ename, string ticket = null)
+        public ApiResult<String> EmiUpload(byte[] data, string name, string ticket = null)
         {
             try
             {
@@ -391,7 +412,6 @@ namespace Wlniao.XCenter
             }
             return val;
         }
-
         /// <summary>
         /// 检查用户权限
         /// </summary>

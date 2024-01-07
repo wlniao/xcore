@@ -36,6 +36,10 @@ namespace Wlniao.Caching
         /// </summary>
         InMemory,
         /// <summary>
+        /// 使用文件作为缓存
+        /// </summary>
+        InFile,
+        /// <summary>
         /// Redis服务器作为缓存
         /// </summary>
         Redis,

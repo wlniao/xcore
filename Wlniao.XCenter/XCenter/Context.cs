@@ -50,9 +50,9 @@ namespace Wlniao.XCenter
         internal static string XCenterApp = Wlniao.Config.GetSetting("XCenterApp");
         internal static string XCenterName = Wlniao.Config.GetConfigs("XCenterName");
         internal static string XCenterOwner = Wlniao.Config.GetSetting("XCenterOwner");
-        internal static string XCenterToken = Wlniao.Config.GetConfigs("XCenterToken");
+        internal static string XCenterToken = Wlniao.Config.GetSetting("XCenterToken");
         internal static string XCenterBrand = Wlniao.Config.GetConfigs("XCenterBrand");
-        internal static string XCenterDomain = Wlniao.Config.GetConfigs("XCenterDomain").Replace("https://", "").Replace("http://", "").Trim('/');
+        internal static string XCenterDomain = Wlniao.Config.GetSetting("XCenterDomain").Replace("https://", "").Replace("http://", "").Trim('/');
         private static string _XCenterApi = null;
         private static string _XCenterHost = null;
         private static string _XCenterSm4Key = null;

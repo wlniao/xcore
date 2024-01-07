@@ -1,6 +1,10 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 
 namespace Wlniao.XCenter
 {
@@ -10,80 +14,167 @@ namespace Wlniao.XCenter
     public class XSession
     {
         /// <summary>
-        /// 账号Sid
+        /// 
         /// </summary>
         public string sid = "";
         /// <summary>
-        /// 系统Wkey
+        /// 
         /// </summary>
         public string wkey = "";
         /// <summary>
-        /// 账号名称
-        /// </summary>
-        public string name = "";
-        /// <summary>
-        /// Auth平台ID
-        /// </summary>
-        public string authid = "";
-        /// <summary>
-        /// 登录账号
-        /// </summary>
-        public string account = "";
-        /// <summary>
-        /// 所在部门（多个）
-        /// </summary>
-        public string departments = "";
-        /// <summary>
-        /// 当前平台
-        /// </summary>
-        public string platform = "";
-        /// <summary>
-        /// 当前平台Id
-        /// </summary>
-        public string platformId = "";
-        /// <summary>
-        /// 是否登录
-        /// </summary>
-        public bool login = false;
-        /// <summary>
         /// 
         /// </summary>
-        /// <param name="ctx"></param>
-        public XSession(EmiContext ctx)
+        private string token = "";
+        /// <summary>
+        /// 过期时间
+        /// </summary>
+        public long ExpireTime { get; set; }
+        /// <summary>
+        /// 平台标识
+        /// </summary>
+        public string AppCode { get; set; }
+        /// <summary>
+        /// 租户标识
+        /// </summary>
+        public string OwnerId { get { return wkey; } set { wkey = value; } }
+        /// <summary>
+        /// 用户标识
+        /// </summary>
+        public string UserSid { get { return sid; } set { sid = value; } }
+        /// <summary>
+        /// 扩展数据
+        /// </summary>
+        public Dictionary<string, object> ExtData { get; set; }
+        /// <summary>
+        /// 认证是否有效
+        /// </summary>
+        public bool IsValid
         {
-            if (ctx != null)
+            get
             {
-                this.wkey = ctx.owner;
+                if (ExpireTime > XCore.NowUnix && !string.IsNullOrEmpty(UserSid))
+                {
+                    return true;
+                }
+                return false;
             }
         }
         /// <summary>
-        /// 
+        /// 用户姓名
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// 用户姓名
+        /// </summary>
+        public string Account { get; set; }
+        /// <summary>
+        /// 所在部门列表
+        /// </summary>
+        public string DepartmentIds { get; set; }
+
+        /// <summary>
+        /// 通过令牌生成Session
         /// </summary>
         /// <param name="ctx"></param>
-        /// <param name="key"></param>
-        public XSession(EmiContext ctx, String key)
+        /// <param name="ticket"></param>
+        public XSession(EmiContext ctx, String ticket)
         {
-            if (ctx != null && !string.IsNullOrEmpty(key))
+            this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            if (ctx != null && !string.IsNullOrEmpty(ticket) && !string.IsNullOrEmpty(ctx.token))
             {
-                var jsonStr = Wlniao.Cache.Get("wsession_" + key);
-                if (string.IsNullOrEmpty(jsonStr))
+                try
                 {
-                    jsonStr = ctx.EmiGet("app", "wsession", new KeyValuePair<string, string>("key", key));
-                    Wlniao.Cache.Set("wsession_" + key, jsonStr, 60);
+                    this.token = ctx.token;
+                    var data = Encryptor.SM4DecryptECBFromHex(ticket, ctx.token).Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    if (data.Length > 4)
+                    {
+                        this.ExpireTime = cvt.ToLong(data[0]);
+                        this.AppCode = data[1];
+                        this.OwnerId = data[2];
+                        this.UserSid = data[3];
+                    }
+                    if (data.Length == 5)
+                    {
+                        var plain = strUtil.HexStringToUTF8(data[4]);
+                        var kvs = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(plain, new System.Text.Json.JsonSerializerOptions { });
+                        if (kvs != null)
+                        {
+                            foreach (var kv in kvs)
+                            {
+                                if (kv.Key == "n")
+                                {
+                                    this.Name = kv.Value;
+                                }
+                                else if (kv.Key == "u")
+                                {
+                                    this.Account = kv.Value;
+                                }
+                                else if (kv.Key == "d")
+                                {
+                                    this.DepartmentIds = kv.Value;
+                                }
+                                else
+                                {
+                                    this.ExtData.TryAdd(kv.Key, kv.Value);
+                                }
+                            }
+                        }
+                    }
                 }
-                var res = Wlniao.Json.ToObject<Dictionary<string, object>>(jsonStr);
-                if (res != null && res.GetBoolean("success"))
+                catch { }
+                if (this.Name == null)
                 {
-                    this.sid = res.GetString("sid");
-                    this.name = res.GetString("name");
-                    this.account = res.GetString("account");
-                    this.departments = res.GetString("departments");
-                    this.platform = res.GetString("platform");
-                    this.platformId = res.GetString("platformId");
-                    this.wkey = ctx.owner;
-                    this.login = true;
+                    this.Name = "";
+                }
+                if (this.Account == null)
+                {
+                    this.Account = "";
+                }
+                if (this.AppCode == null)
+                {
+                    this.AppCode = "";
+                }
+                if (this.DepartmentIds == null)
+                {
+                    this.DepartmentIds = "";
+                }
+                if (string.IsNullOrEmpty(this.UserSid))
+                {
+                    this.ExpireTime = 0;
                 }
             }
+        }
+
+        /// <summary>
+        /// 重新构造新的令牌
+        /// </summary>
+        /// <returns></returns>
+        public String BuildTicket()
+        {
+            var plain = (XCore.NowUnix + 3600) + "," + AppCode + "," + OwnerId;
+            if (!string.IsNullOrEmpty(UserSid))
+            {
+                var obj = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                if (!string.IsNullOrEmpty(this.Name))
+                {
+                    obj.Add("n", this.Name);
+                }
+                if (!string.IsNullOrEmpty(this.Account))
+                {
+                    obj.Add("u", this.Account);
+                }
+                if (!string.IsNullOrEmpty(this.DepartmentIds))
+                {
+                    obj.Add("d", this.DepartmentIds);
+                }
+                foreach (var kv in ExtData)
+                {
+                    obj.TryAdd(kv.Key, kv.Value);
+                }
+                var ext = System.Text.Json.JsonSerializer.Serialize(obj, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
+                plain += "," + UserSid + "," + strUtil.UTF8ToHexString(ext);
+            }
+            return Encryptor.SM4EncryptECBToHex(plain, this.token);
         }
     }
 }

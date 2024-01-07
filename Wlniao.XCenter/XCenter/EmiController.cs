@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -17,13 +22,13 @@ namespace Wlniao.XCenter
     public partial class EmiController : XCoreController
     {
         /// <summary>
-        /// 主平台登录会话状态
-        /// </summary>
-        protected XSession xsession = null;
-        /// <summary>
         /// EMI主程序接口访问工具
         /// </summary>
-        protected EmiContext ctx = null;
+        private EmiContext ctx = null;
+        /// <summary>
+        /// 主平台登录会话状态
+        /// </summary>
+        private XSession xsession = null;
         /// <summary>
         /// 
         /// </summary>
@@ -37,111 +42,6 @@ namespace Wlniao.XCenter
             base.OnActionExecuted(context);
         }
 
-        //    #region 解析请求Session
-        //    var ehost = GetCookies("ehost");
-        //    var session = GetCookies("wsession");
-        //    if (Request.Query.Keys.Contains("ehost"))
-        //    {
-        //        ehost = GetRequestNoSecurity("ehost");
-        //        Response.Cookies.Append("ehost", ehost, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
-        //    }
-        //    else if (string.IsNullOrEmpty(ehost))
-        //    {
-        //        ehost = UrlDomain;
-        //    }
-        //    if (Request.Query.Keys.Contains("wsession"))
-        //    {
-        //        session = GetRequestNoSecurity("wsession");
-        //        Response.Cookies.Append("wsession", session, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
-        //    }
-        //    ctx = EmiContext.Load(ehost);
-        //    if (ctx.install || string.IsNullOrEmpty(ctx.app))
-        //    {
-        //        xsession = new XSession(ctx, session);
-        //    }
-        //    #endregion
-        //    if (xsession != null && (xsession.login || filterContext.ActionDescriptor.FilterDescriptors.Where(a => a.Filter.ToString().Contains("Wlniao.Mvc.NoLoginAttribute")).ToList().Count() > 0))
-        //    {
-        //        ViewBag.eHost = ctx.EmiHost;
-        //        base.OnActionExecuting(filterContext);
-        //    }
-        //    else
-        //    {
-        //        errorMsg = "您的访问已失效，请重新登录";
-        //        if (ctx != null && !string.IsNullOrEmpty(ctx.message) && ctx.message != "install")
-        //        {
-        //            errorMsg = ctx.message;
-        //        }
-        //        var errorPage = new ContentResult();
-        //        if (Request.Method == "POST" || Request.Query.ContainsKey("do"))
-        //        {
-        //            errorPage.ContentType = "text/json";
-        //            errorPage.Content = Wlniao.Json.ToString(new { success = false, message = errorMsg });
-        //        }
-        //        else
-        //        {
-        //            errorPage.ContentType = "text/html;charset=utf-8";
-        //            errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-        //        }
-        //        filterContext.Result = errorPage;
-        //    }
-        //}
-
-
-        /// <summary>
-        /// 检查用户系统权限权限
-        /// </summary>
-        /// <param name="Code"></param>
-        /// <param name="Sid"></param>
-        /// <returns></returns>
-        [NonAction]
-        public bool Permission(String Code, String Sid = "")
-        {
-            if (ctx == null || xsession == null)
-            {
-                return false;
-            }
-            if (!string.IsNullOrEmpty(Code))
-            {
-                var rlt = ctx.EmiGet<Boolean>("app", "permission"
-                    , new KeyValuePair<string, string>("sid", string.IsNullOrEmpty(Sid) ? xsession.sid : Sid)
-                    , new KeyValuePair<string, string>("code", Code));
-                if (rlt.data)
-                {
-                    return rlt.data;
-                }
-            }
-            return false;
-        }
-        /// <summary>
-        /// 检查机构数据查看权限
-        /// </summary>
-        /// <param name="Organ"></param>
-        /// <param name="Code"></param>
-        /// <param name="Sid"></param>
-        /// <returns></returns>
-        [NonAction]
-        public bool PermissionOrgan(String Organ, String Code, String Sid = "")
-        {
-            if (ctx == null || xsession == null)
-            {
-                return false;
-            }
-            if (!string.IsNullOrEmpty(Organ) && !string.IsNullOrEmpty(Code))
-            {
-                var rlt = ctx.EmiGet<Boolean>("app", "permissionorgan"
-                    , new KeyValuePair<string, string>("sid", string.IsNullOrEmpty(Sid) ? xsession.sid : Sid)
-                    , new KeyValuePair<string, string>("code", Code)
-                    , new KeyValuePair<string, string>("organ", Organ));
-                if (rlt.data)
-                {
-                    return rlt.data;
-                }
-                errorMsg = "您暂无执行当前操作的权限";
-            }
-            return false;
-        }
-
         /// <summary>
         /// 构造认证令牌
         /// </summary>
@@ -151,15 +51,7 @@ namespace Wlniao.XCenter
         {
             return CheckSession((xsession, ctx) =>
             {
-                var ticket = Encryptor.SM4EncryptECBToHex(Wlniao.Json.ToString(new
-                {
-                    xsession.sid,
-                    xsession.name,
-                    xsession.authid,
-                    xsession.account,
-                    expire = XCore.NowUnix + 3600
-                }), ctx.token, true);
-                return Json(new { success = true, ctx.domain, ticket });
+                return Json(new { success = true, ctx.domain, ticket = xsession.BuildTicket() });
             }, true);
         }
         /// <summary>
@@ -180,11 +72,11 @@ namespace Wlniao.XCenter
             }
             else if (string.IsNullOrEmpty(ehost))
             {
-                ehost = HeaderRequest("x-domain", UrlDomain);
+                ehost = HeaderRequest("x-domain", EmiContext.XCenterDomain);
             }
             if (string.IsNullOrEmpty(ehost))
             {
-                msg = "验证失败，缺少授权参数";
+                msg = "访问无效，请求超时或已失效";
             }
             else
             {
@@ -219,38 +111,18 @@ namespace Wlniao.XCenter
             return CheckAuth((ctx) =>
             {
                 var msg = "";
-                var session = GetCookies("wsession");
-                if (Request.Query.Keys.Contains("wsession"))
+                var authorization = HeaderRequest("Authorization");
+                if (Request.Query.Keys.Contains("xsession"))
                 {
-                    session = GetRequestNoSecurity("wsession");
-                    Response.Cookies.Append("wsession", session, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
+                    authorization = GetRequestNoSecurity("xsession");
+                    Response.Cookies.Append("xs_" + ctx.app, authorization, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
                 }
-                if (string.IsNullOrEmpty(session))
+                else if (string.IsNullOrEmpty(authorization))
                 {
-                    var authorization = HeaderRequest("Authorization");
-                    if (!string.IsNullOrEmpty(authorization))
-                    {
-                        try
-                        {
-                            var plainData = Encryptor.SM4DecryptECBFromHex(authorization, ctx.token, true);
-                            var auth = Wlniao.Json.ToObject<Dictionary<string, object>>(plainData);
-                            if (auth.GetInt64("expire") > XCore.NowUnix)
-                            {
-                                xsession = new XSession(ctx) { login = true };
-                                xsession.sid = auth.GetString("sid");
-                                xsession.name = auth.GetString("name");
-                                xsession.authid = auth.GetString("authid");
-                                xsession.account = auth.GetString("account");
-                            }
-                        }
-                        catch { }
-                    }
+                    authorization = GetCookies("xs_" + ctx.app);
                 }
-                else
-                {
-                    xsession = new XSession(ctx, session);
-                }
-                if (xsession != null && xsession.login && xsession.wkey == ctx.owner && !string.IsNullOrEmpty(xsession.sid))
+                xsession = new XSession(ctx, authorization);
+                if (xsession.IsValid && xsession.OwnerId == ctx.owner)
                 {
                     return func.Invoke(xsession, ctx);
                 }
@@ -304,7 +176,7 @@ namespace Wlniao.XCenter
             else
             {
                 var rlt = ctx.EmiGet<Boolean>("app", "permission"
-                    , new KeyValuePair<string, string>("sid", xsession.sid)
+                    , new KeyValuePair<string, string>("sid", xsession.UserSid)
                     , new KeyValuePair<string, string>("code", Code));
                 if (rlt.data)
                 {
@@ -360,7 +232,7 @@ namespace Wlniao.XCenter
             else
             {
                 var rlt = ctx.EmiGet<Boolean>("app", "permissionorgan"
-                    , new KeyValuePair<string, string>("sid", xsession.sid)
+                    , new KeyValuePair<string, string>("sid", xsession.UserSid)
                     , new KeyValuePair<string, string>("code", Code)
                     , new KeyValuePair<string, string>("organ", Organ));
                 if (rlt.data)
@@ -514,7 +386,7 @@ namespace Wlniao.XCenter
                 {
                     for (var i = 0; i < codes.Length; i++)
                     {
-                        var auth = allow == "ALL" || allow == codes[i].ToUpper() ? true : ctx.Permission(xsession.sid, codes[i]);
+                        var auth = allow == "ALL" || allow == codes[i].ToUpper() ? true : ctx.Permission(xsession.UserSid, codes[i]);
                         ht.Add(codes[i], auth);
                         if (i == 0)
                         {
@@ -526,7 +398,7 @@ namespace Wlniao.XCenter
                 {
                     for (var i = 0; i < codes.Length; i++)
                     {
-                        var auth = allow == "ALL" || allow == codes[i].ToUpper() ? true : ctx.PermissionOrgan(xsession.sid, codes[i], organ);
+                        var auth = allow == "ALL" || allow == codes[i].ToUpper() ? true : ctx.PermissionOrgan(xsession.UserSid, codes[i], organ);
                         ht.Add(codes[i], auth);
                         if (i == 0)
                         {

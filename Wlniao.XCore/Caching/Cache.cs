@@ -39,7 +39,7 @@ namespace Wlniao.Caching
             {
                 if (ctype == CacheType.None)
                 {
-                    var cacheType = Config.GetConfigs("WLN_CACHE_TYPE", "auto").ToLower();
+                    var cacheType = Config.GetConfigs("WLN_CACHE", "auto").ToLower();
                     if (cacheType == "auto" && Redis.CanUse)
                     {
                         ctype = CacheType.Redis;
@@ -47,6 +47,10 @@ namespace Wlniao.Caching
                     else if (cacheType == "redis")
                     {
                         ctype = CacheType.Redis;
+                    }
+                    else if (cacheType.Contains("file"))
+                    {
+                        ctype = CacheType.InFile;
                     }
                     else if (cacheType.Contains("memory"))
                     {
@@ -113,6 +117,10 @@ namespace Wlniao.Caching
             {
                 return Redis.Set(key, value, expireSeconds);
             }
+            else if (cType == CacheType.InFile)
+            {
+                return FileCache.Set(key, value, expireSeconds);
+            }
             else
             {
                 return InMemory.Set(key, value, expireSeconds);
@@ -133,6 +141,10 @@ namespace Wlniao.Caching
             {
                 return Redis.Set<T>(key, obj, expireSeconds);
             }
+            else if (cType == CacheType.InFile)
+            {
+                return FileCache.Set<T>(key, obj, expireSeconds);
+            }
             else
             {
                 return InMemory.Set<T>(key, obj, expireSeconds);
@@ -148,6 +160,10 @@ namespace Wlniao.Caching
             if (cType == CacheType.Redis)
             {
                 return Redis.KeyDelete(key);
+            }
+            else if (cType == CacheType.InFile)
+            {
+                return FileCache.Del(key);
             }
             else
             {
@@ -165,6 +181,10 @@ namespace Wlniao.Caching
             {
                 return Redis.KeyExists(key);
             }
+            else if (cType == CacheType.InFile)
+            {
+                return FileCache.Exists(key);
+            }
             else
             {
                 return InMemory.Exists(key);
@@ -181,6 +201,10 @@ namespace Wlniao.Caching
             {
                 return Redis.Get(key);
             }
+            else if (cType == CacheType.InFile)
+            {
+                return FileCache.Get(key);
+            }
             else
             {
                 return InMemory.Get(key);
@@ -195,6 +219,10 @@ namespace Wlniao.Caching
             if (cType == CacheType.Redis)
             {
                 return Redis.Get(key);
+            }
+            else if (cType == CacheType.InFile)
+            {
+                return FileCache.Get(key);
             }
             else
             {
@@ -212,6 +240,10 @@ namespace Wlniao.Caching
             if (cType == CacheType.Redis)
             {
                 return Redis.Get<T>(key);
+            }
+            else if (cType == CacheType.InFile)
+            {
+                return FileCache.Get<T>(key);
             }
             else
             {
