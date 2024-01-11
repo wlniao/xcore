@@ -196,6 +196,13 @@ namespace Wlniao.XCore.Test
             System.Threading.Thread.Sleep(3600000);
         }
 
+
+        [Test]
+        public void GTM()
+        {
+            var ut = DateTools.GetUnix("2024-01-08T07:40:25+08:00");
+            Assert.Equals(1704670825, ut);
+        }
 		[Test]
 		public void Loger()
 		{
