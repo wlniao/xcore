@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Authors>XieChaoyi</Authors>
     <Nullable>enable</Nullable>
-    <Version>8.0.9-beta1</Version>
+    <Version>8.0.10-beta1</Version>
     <TargetFramework>net8.0</TargetFramework>
     <PackageId>Wlniao.AspNetCore</PackageId>
     <PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
@@ -34,7 +34,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Wlniao.XCore" Version="8.0.8" />
+    <PackageReference Include="Wlniao.XCore" Version="8.0.9" />
   </ItemGroup>
 
   <ItemGroup>

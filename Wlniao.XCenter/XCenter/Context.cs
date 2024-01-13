@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
+using Org.BouncyCastle.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -344,54 +345,89 @@ namespace Wlniao.XCenter
                 }
             }
             catch { }
-            var logDebug = "msgid:" + msgid + ", authify:/" + path + ", usetime:" + utime + "\n >>> " + plainData;
+            var logs = "msgid:" + msgid + ", authify:/" + path + ", usetime:" + utime + "\n >>> " + plainData;
             try
             {
-                var resObj = Wlniao.Json.ToObject<Wlniao.ApiResult<String>>(resStr);
+                var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiResult<String>>(resStr);
                 if (resObj != null)
                 {
                     rlt.node = resObj.node;
                     rlt.code = resObj.code;
                     rlt.message = resObj.message;
                     rlt.success = resObj.success;
-                    if (resObj.success)
+                    var plaintext = string.IsNullOrEmpty(resObj.data) ? "" : Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                    if (!string.IsNullOrEmpty(plaintext))
                     {
-                        var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
-                        if (string.IsNullOrEmpty(json))
+                        try
                         {
-                            logDebug += "\n <<< RESPONSE EMPTY";
-                        }
-                        else
-                        {
-                            try
+                            if (typeof(T) == typeof(string))
                             {
-                                if (typeof(T) == typeof(string))
-                                {
-                                    rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
-                                }
-                                else
-                                {
-                                    rlt.data = Wlniao.Json.ToObject<T>(json);
-                                }
-                                logDebug += "\n <<< " + Wlniao.Json.ToString(rlt);
+                                rlt.data = (T)System.Convert.ChangeType(plaintext, typeof(T));
+                                rlt.tips = resObj.tips;
                             }
-                            catch
+                            else
                             {
-                                logDebug += "\n <<< " + json;
+                                rlt.data = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(plaintext);
+                                rlt.tips = resObj.tips;
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            rlt.code = "107";
+                            rlt.message = "收到远端输出，但反序列化失败：" + ex.Message;
+                        }
                     }
-                    else
+                    else if (!string.IsNullOrEmpty(resObj.code) && !string.IsNullOrEmpty(resObj.data))
                     {
-                        logDebug += "\n <<< " + rlt.message;
+                        rlt.code = "106";
+                        rlt.message = "远端返回内容无法解密";
                     }
+                    else if (string.IsNullOrEmpty(resObj.code) && string.IsNullOrEmpty(resObj.data))
+                    {
+                        rlt.code = "105";
+                        rlt.message = "远端暂无返回内容";
+                    }
+
+                    //if (resObj.success)
+                    //{
+                    //    var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                    //    if (string.IsNullOrEmpty(json))
+                    //    {
+                    //        logDebug += "\n <<< RESPONSE EMPTY";
+                    //    }
+                    //    else
+                    //    {
+                    //        try
+                    //        {
+                    //            if (typeof(T) == typeof(string))
+                    //            {
+                    //                rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
+                    //            }
+                    //            else
+                    //            {
+                    //                rlt.data = Wlniao.Json.ToObject<T>(json);
+                    //            }
+                    //            logDebug += "\n <<< " + Wlniao.Json.ToString(rlt);
+                    //        }
+                    //        catch
+                    //        {
+                    //            logDebug += "\n <<< " + json;
+                    //        }
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    logDebug += "\n <<< " + rlt.message;
+                    //}
+
+                    logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + (string.IsNullOrEmpty(plaintext) ? "\"\"" : plaintext) + "}";
                 }
             }
             catch (Exception ex)
             {
-                logDebug += "\n <<< Exception" + ex.Message;
+                logs += "\n <<< Exception" + ex.Message;
             }
-            log.Debug(logDebug);
+            log.Debug(logs);
             return rlt;
         }
         /// <summary>
