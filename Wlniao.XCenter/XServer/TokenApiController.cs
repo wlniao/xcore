@@ -179,6 +179,10 @@ namespace Wlniao.XServer
             {
                 txt = Wlniao.Json.ToString(result.data);
             }
+            if (string.IsNullOrEmpty(result.code))
+            {
+                result.code = "1";
+            }
             var dic = new Dictionary<string, object>();
             dic.Add("node", result.node);
             dic.Add("code", result.code);

@@ -145,27 +145,8 @@ namespace Wlniao.XServer
                         {
                             rlt.traceid = resObj.traceid;
                         }
-                        var plaintext = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
-                        if (string.IsNullOrEmpty(resObj.data))
-                        {
-                            rlt.message = "远端暂无返回内容";
-                            logs += "\n <<< " + rlt.message;
-                            if (log.LogLevel <= Log.LogLevel.Information)
-                            {
-                                log.Topic(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
-                            }
-                        }
-                        else if (string.IsNullOrEmpty(plaintext))
-                        {
-                            rlt.code = "106";
-                            rlt.message = "远端返回内容无法解密";
-                            logs += "\n <<< " + rlt.message;
-                            if (log.LogLevel <= Log.LogLevel.Information)
-                            {
-                                log.Topic(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
-                            }
-                        }
-                        else
+                        var plaintext = string.IsNullOrEmpty(resObj.data) ? "" : Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                        if (!string.IsNullOrEmpty(plaintext))
                         {
                             try
                             {
@@ -179,19 +160,24 @@ namespace Wlniao.XServer
                                     rlt.data = Json.ToObject<T>(plaintext);
                                     rlt.tips = resObj.tips;
                                 }
-                                logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + plaintext + "}";
                             }
                             catch (Exception ex)
                             {
                                 rlt.code = "107";
                                 rlt.message = "收到远端输出，但反序列化失败：" + ex.Message;
-                                logs += "\n <<< " + rlt.message;
-                                if (log.LogLevel <= Log.LogLevel.Information)
-                                {
-                                    log.Topic(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
-                                }
                             }
                         }
+                        else if (!string.IsNullOrEmpty(resObj.code) && !string.IsNullOrEmpty(resObj.data))
+                        {
+                            rlt.code = "106";
+                            rlt.message = "远端返回内容无法解密";
+                        }
+                        else if (string.IsNullOrEmpty(resObj.code) && string.IsNullOrEmpty(resObj.data))
+                        {
+                            rlt.code = "105";
+                            rlt.message = "远端暂无返回内容";
+                        }
+                        logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + (string.IsNullOrEmpty(plaintext) ? "\"\"" : plaintext) + "}";
                     }
                 }
                 log.Debug(logs);
