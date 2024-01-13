@@ -111,7 +111,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public void Topic(String topic, String message)
         {
-            Loger.Console(string.Format("[{0}]{1} => {2}", topic, DateTools.Format(), message), ConsoleColor.DarkGray);
+            Loger.Console(string.Format("{0} => {2} => {1}", DateTools.Format(), message, topic), ConsoleColor.DarkGray);
         }
 
     }

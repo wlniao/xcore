@@ -311,7 +311,10 @@ namespace Wlniao.XCenter
             var sign = Wlniao.Encryptor.SM3Encrypt(encdata + now);
             var resStr = "";
             var reqStr = Wlniao.Json.ToString(new { sn = XCenterCertSn, token = sm2token, timestamp = now, data = encdata, sign });
-            log.Info("msgid:" + msgid + "[authify:/" + path + "]\n >>> " + reqStr);
+            if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
+            {
+                log.Topic("authify", "msgid:" + msgid + ", " + XCenterHost + path + "\n >>> " + reqStr);
+            }
             try
             {
                 var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
@@ -335,10 +338,13 @@ namespace Wlniao.XCenter
                         utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                     }
                 }
+                if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
+                {
+                    log.Topic("authify", "msgid:" + msgid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + resStr);
+                }
             }
             catch { }
-            log.Info("msgid:" + msgid + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + resStr);
-            var logDebug = "msgid:" + msgid + "[authify:/" + path + ", usetime:" + utime + "]\n >>> " + plainData;
+            var logDebug = "msgid:" + msgid + ", authify:/" + path + ", usetime:" + utime + "\n >>> " + plainData;
             try
             {
                 var resObj = Wlniao.Json.ToObject<Wlniao.ApiResult<String>>(resStr);
@@ -385,7 +391,7 @@ namespace Wlniao.XCenter
             {
                 logDebug += "\n <<< Exception" + ex.Message;
             }
-            log.Debug(logDebug + "\n");
+            log.Debug(logDebug);
             return rlt;
         }
         /// <summary>
@@ -407,7 +413,10 @@ namespace Wlniao.XCenter
             var sign = Wlniao.Encryptor.SM3Encrypt(owner + encdata + now + token);
             var resStr = "";
             var reqStr = Wlniao.Json.ToString(new { appid = owner, sign, data = encdata, timestamp = now });
-            log.Info("msgid:" + msgid + "[authify:/" + path + "]\n >>> " + reqStr);
+            if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
+            {
+                log.Topic(app, "msgid:" + msgid + ", " + XCenterHost + path + "\n >>> " + reqStr);
+            }
             try
             {
                 var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
@@ -433,8 +442,11 @@ namespace Wlniao.XCenter
                 }
             }
             catch { }
-            log.Info("msgid:" + msgid + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + resStr);
-            var logDebug = "msgid:" + msgid + "[authify:/" + path + ", usetime:" + utime + "]\n >>> " + plainData;
+            if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
+            {
+                log.Topic(app, "msgid:" + msgid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + resStr);
+            }
+            var logDebug = "msgid:" + msgid + ", authify:/" + path + ", usetime:" + utime + "\n >>> " + plainData;
             try
             {
                 var resObj = Json.ToObject<Wlniao.ApiResult<String>>(resStr);
@@ -485,7 +497,8 @@ namespace Wlniao.XCenter
             {
                 logDebug += "\n <<< Exception" + ex.Message;
             }
-            log.Debug(logDebug + "\n");
+
+            log.Debug(logDebug);
             return rlt;
         }
         /// <summary>

@@ -37,12 +37,13 @@ namespace Wlniao.XServer
         /// 获取平台接口数据
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="apinode"></param>
         /// <param name="url"></param>
         /// <param name="token"></param>
         /// <param name="data"></param>
         /// <param name="traceid"></param>
         /// <returns></returns>
-        public static Wlniao.ApiResult<T> Request<T>(String url, String token, Object data, String traceid = "")
+        public static Wlniao.ApiResult<T> Request<T>(String apinode, String url, String token, Object data, String traceid = "")
         {
             var now = DateTools.GetUnix().ToString();
             var rlt = new Wlniao.ApiResult<T>();
@@ -57,6 +58,7 @@ namespace Wlniao.XServer
                 {
                     traceid = strUtil.CreateLongId();
                 }
+                var uri = new Uri(url);
                 var txt = data is String ? data.ToString() : Json.ToString(data);
                 var utime = "";
                 var start = DateTime.Now;
@@ -67,16 +69,19 @@ namespace Wlniao.XServer
                 {
                     var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
                     var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                    using (var client = new System.Net.Http.HttpClient(handler))
-					{
-                        log.Info("traceid:" + traceid + "[" + url + "]\n >>> " + reqStr);
-                        var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
+                    using (var client = new HttpClient(handler))
+                    {
+                        if (log.LogLevel <= Log.LogLevel.Information)
+                        {
+                            log.Topic(apinode, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr);
+                        }
+                        var reqest = new HttpRequestMessage(HttpMethod.Post, uri);
                         reqest.Headers.Date = DateTime.Now;
-                        reqest.Content = new System.Net.Http.StreamContent(stream);
+                        reqest.Content = new StreamContent(stream);
                         reqest.Content.Headers.Add("Content-Type", "application/json");
                         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
                         client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
-						var respose = client.Send(reqest);
+                        var respose = client.Send(reqest);
                         resStr = respose.Content.ReadAsStringAsync().Result;
                         if (respose.Headers.Contains("X-Wlniao-Trace"))
                         {
@@ -86,18 +91,29 @@ namespace Wlniao.XServer
                         {
                             utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                         }
-                        log.Info("traceid:" + traceid + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + resStr);
+                        if (log.LogLevel <= Log.LogLevel.Information)
+                        {
+                            log.Topic(apinode, "msgid:" + traceid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + resStr);
+                        }
                     }
                 }
                 catch { }
+                if (string.IsNullOrEmpty(utime))
+                {
+                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                }
+                var logs = "msgid:" + traceid + ", " + apinode + ":/" + uri.AbsolutePath + ", usetime:" + utime + "\n >>> " + txt;
                 if (string.IsNullOrEmpty(resStr))
                 {
                     rlt.tips = true;
                     rlt.code = "101";
                     rlt.debuger = url + "[Error]";
                     rlt.message = "通讯异常，网络异常或请求错误";
-                    log.Info("traceid:" + traceid + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
-                    log.Warn(url + " >>> " + rlt.message);
+                    logs += "\n <<< " + rlt.message;
+                    if (log.LogLevel <= Log.LogLevel.Information)
+                    {
+                        log.Topic(apinode, "msgid:" + traceid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + rlt.message);
+                    }
                 }
                 else
                 {
@@ -111,7 +127,11 @@ namespace Wlniao.XServer
                     {
                         rlt.code = "104";
                         rlt.message = "远端输出格式不满足本地要求";
-                        log.Debug(url + ": " + rlt.message);
+                        logs += "\n <<< " + rlt.message;
+                        if (log.LogLevel <= Log.LogLevel.Information)
+                        {
+                            log.Topic(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
+                        }
                     }
                     else
                     {
@@ -122,30 +142,33 @@ namespace Wlniao.XServer
                         rlt.debuger = resObj.debuger;
                         rlt.success = resObj.success;
                         if (!string.IsNullOrEmpty(resObj.traceid))
-						{
-							rlt.traceid = resObj.traceid;
-						}
+                        {
+                            rlt.traceid = resObj.traceid;
+                        }
                         var plaintext = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
-						if (string.IsNullOrEmpty(resObj.data))
-						{
-							log.Debug(url + ": 远端暂无返回内容");
-						}
-						else if (string.IsNullOrEmpty(plaintext))
-						{
-							rlt.code = "106";
-							rlt.message = "远端返回内容无法解密";
-							log.Warn(url + ": " + rlt.message);
-						}
-						else
-						{
+                        if (string.IsNullOrEmpty(resObj.data))
+                        {
+                            rlt.message = "远端暂无返回内容";
+                            logs += "\n <<< " + rlt.message;
+                            if (log.LogLevel <= Log.LogLevel.Information)
+                            {
+                                log.Topic(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
+                            }
+                        }
+                        else if (string.IsNullOrEmpty(plaintext))
+                        {
+                            rlt.code = "106";
+                            rlt.message = "远端返回内容无法解密";
+                            logs += "\n <<< " + rlt.message;
+                            if (log.LogLevel <= Log.LogLevel.Information)
+                            {
+                                log.Topic(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
+                            }
+                        }
+                        else
+                        {
                             try
                             {
-                                if (Log.Loger.LogLevel <= Log.LogLevel.Information)
-                                {
-                                    var msg = url + (string.IsNullOrEmpty(utime) ? " [" : (" [usetime:" + utime + ",")) + "traceid:" + rlt.traceid + "]\r\n >>> " + txt;
-                                    msg += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + plaintext + "}\r\n";
-                                    log.Topic(XCore.WebNode, msg);
-                                }
                                 if (typeof(T) == typeof(string))
                                 {
                                     rlt.data = (T)System.Convert.ChangeType(plaintext, typeof(T));
@@ -156,15 +179,22 @@ namespace Wlniao.XServer
                                     rlt.data = Json.ToObject<T>(plaintext);
                                     rlt.tips = resObj.tips;
                                 }
+                                logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + plaintext + "}";
                             }
                             catch (Exception ex)
                             {
                                 rlt.code = "107";
                                 rlt.message = "收到远端输出，但反序列化失败：" + ex.Message;
+                                logs += "\n <<< " + rlt.message;
+                                if (log.LogLevel <= Log.LogLevel.Information)
+                                {
+                                    log.Topic(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
+                                }
                             }
                         }
                     }
                 }
+                log.Debug(logs);
             }
             return rlt;
         }
