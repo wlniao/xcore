@@ -155,7 +155,7 @@ namespace Wlniao
                 return true;
             }
             else if (chain != null && chain.ChainPolicy != null && chain.ChainPolicy.ExtraStore.Count > 0
-                && chain.ChainPolicy.ExtraStore.LastOrDefault().Thumbprint == "C7A791CAAF68B5B46BDE11175463F11071FA8675")
+                && chain.ChainPolicy.ExtraStore.LastOrDefault().Thumbprint == "FF32D07177D55D328A1307595CA21331E1B8149F")
             {
                 return true;
             }

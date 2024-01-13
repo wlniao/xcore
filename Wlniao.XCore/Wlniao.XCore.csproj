@@ -28,6 +28,10 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 	  <Optimize>False</Optimize>
+	  <IsTrimmable>True</IsTrimmable>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <IsTrimmable>True</IsTrimmable>
 	</PropertyGroup>
 	<ItemGroup>
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
