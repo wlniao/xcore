@@ -135,7 +135,7 @@ namespace Wlniao.Serialization
         /// <returns></returns>
         public static String ToString(Object obj)
         {
-            return System.Text.Json.JsonSerializer.Serialize(obj, new JsonSerializerOptions
+            return JsonSerializer.Serialize(obj, new JsonSerializerOptions
             {
                 Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
             });

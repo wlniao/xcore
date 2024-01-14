@@ -8,6 +8,7 @@ using System.Text.Unicode;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Wlniao;
@@ -37,7 +38,7 @@ namespace Wlniao.XCenter
         {
             if (ctx != null && string.IsNullOrEmpty(ViewBag.eHost))
             {
-                ViewBag.eHost = ctx.EmiHost;
+                ViewBag.eHost = ctx?.EmiHost;
             }
             base.OnActionExecuted(context);
         }
@@ -52,16 +53,16 @@ namespace Wlniao.XCenter
             return CheckSession((xsession, ctx) =>
             {
                 return Json(new { success = true, ctx.domain, ticket = xsession.BuildTicket() });
-            }, true);
+            });
         }
         /// <summary>
         /// 检查系统使用授权
         /// </summary>
         /// <param name="func"></param>
-        /// <param name="outJson"></param>
+        /// <param name="result"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult CheckAuth(Func<EmiContext, IActionResult> func, Boolean outJson = false)
+        public IActionResult CheckAuth(Func<EmiContext, IActionResult> func, IActionResult result = null)
         {
             var msg = "";
             var ehost = GetCookies("ehost");
@@ -74,11 +75,7 @@ namespace Wlniao.XCenter
             {
                 ehost = HeaderRequest("x-domain", EmiContext.XCenterDomain);
             }
-            if (string.IsNullOrEmpty(ehost))
-            {
-                msg = "访问无效，请求超时或已失效";
-            }
-            else
+            if (!string.IsNullOrEmpty(ehost))
             {
                 ctx = EmiContext.Load(ehost);
                 if (ctx.install)
@@ -90,23 +87,33 @@ namespace Wlniao.XCenter
                     msg = ctx.message;
                 }
             }
-            if (outJson)
-            {
-                return Json(new { success = false, message = msg });
-            }
             else
             {
-                return ErrorMsg(msg);
+                msg = "访问无效，请求超时或已失效";
             }
+            if (result == null)
+            {
+                if (Request.Query != null && Request.Query.ContainsKey("do"))
+                {
+                    Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
+                    Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
+                    result = Json(new { success = false, message = msg });
+                }
+                else
+                {
+                    result = ErrorMsg(msg);
+                }
+            }
+            return result;
         }
         /// <summary>
         /// 检查登录认证状态
         /// </summary>
         /// <param name="func"></param>
-        /// <param name="outJson"></param>
+        /// <param name="result"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult CheckSession(Func<XSession, EmiContext, IActionResult> func, Boolean outJson = false)
+        public IActionResult CheckSession(Func<XSession, EmiContext, IActionResult> func, IActionResult result = null)
         {
             return CheckAuth((ctx) =>
             {
@@ -128,19 +135,23 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
-                    msg = "暂未登录或已失效，请登录";
-                    if (outJson)
+                    if (result == null)
                     {
-                        Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
-                        Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
-                        return Json(new { success = false, message = msg });
+                        msg = "暂未登录或已失效，请登录";
+                        if (Request.Query != null && Request.Query.ContainsKey("do"))
+                        {
+                            Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
+                            Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
+                            result = Json(new { success = false, message = msg });
+                        }
+                        else
+                        {
+                            result = ErrorMsg(msg);
+                        }
                     }
-                    else
-                    {
-                        return ErrorMsg(msg);
-                    }
+                    return result;
                 }
-            }, outJson);
+            }, result);
         }
 
         /// <summary>
@@ -148,9 +159,10 @@ namespace Wlniao.XCenter
         /// </summary>
         /// <param name="Code"></param>
         /// <param name="func"></param>
+        /// <param name="result"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult? CheckPermission(String Code, Func<IActionResult> func)
+        public IActionResult? CheckPermission(String Code, Func<IActionResult> func, IActionResult result = null)
         {
             if (ctx == null || xsession == null)
             {
@@ -262,7 +274,7 @@ namespace Wlniao.XCenter
         /// <param name="ajax"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult NoPermission(Boolean ajax = false)
+        public IActionResult NoPermission(Boolean ajax = false)
         {
             if (ajax || !string.IsNullOrEmpty(method))
             {

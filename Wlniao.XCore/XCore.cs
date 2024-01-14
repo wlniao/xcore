@@ -154,15 +154,15 @@ namespace Wlniao
             {
                 return true;
             }
-            else if (chain != null && chain.ChainPolicy != null && chain.ChainPolicy.ExtraStore.Count > 0
-                && chain.ChainPolicy.ExtraStore.LastOrDefault().Thumbprint == "FF32D07177D55D328A1307595CA21331E1B8149F")
+            if (chain != null && chain.ChainPolicy != null && chain.ChainPolicy.ExtraStore != null && chain.ChainPolicy.ExtraStore.Count > 0)
             {
-                return true;
+                var print = chain.ChainPolicy.ExtraStore.LastOrDefault().Thumbprint.ToLower();
+                if (print == "ff32d07177d55d328a1307595ca21331e1b8149f" || print == "c7a791caaf68b5b46bde11175463f11071fa8675")
+                {
+                    return true;
+                }
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         /// <summary>
