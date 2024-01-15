@@ -642,10 +642,7 @@ namespace Wlniao
             {
                 if (string.IsNullOrEmpty(host))
                 {
-                    if (!string.IsNullOrEmpty(XCore.WebHost))
-                    {
-                        host = XCore.WebHost;
-                    }
+                    host = Config.GetConfigs("WLN_HOST");
                     if (string.IsNullOrEmpty(host))
                     {
                         var webroxy = new Microsoft.Extensions.Primitives.StringValues();

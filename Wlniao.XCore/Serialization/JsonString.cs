@@ -392,6 +392,10 @@ namespace Wlniao.Serialization
                     {
                         jsonValue = ConvertList((IList)propertyValue, reSort, isBreakline, "");
                     }
+                    else if (info.PropertyType.IsGenericType)
+                    {
+                        jsonValue = Convert(propertyValue, reSort, isBreakline, TypeList);
+                    }
                     else
                     {
                         jsonValue = Convert(propertyValue, reSort, isBreakline, TypeList);

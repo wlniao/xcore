@@ -4,6 +4,7 @@ using System;
 using Wlniao.XServer;
 using System.Threading.Tasks;
 using System.Text;
+using Wlniao.Serialization;
 
 namespace Wlniao.XCore.Test
 {
@@ -181,6 +182,145 @@ namespace Wlniao.XCore.Test
             //}), 300);
             Assert.IsTrue(value.IsNotNullAndEmpty());
         }
+
+        [Test]
+        public void JsonToString()
+        {
+            var json = JsonString.Convert(new
+            {
+                test = 123,
+                daddlg = "sdgew",
+                objects = new
+                {
+                    list = new List<object> { "ab3", 123, true }
+                },
+                tesdgw = new Dictionary<string, string>
+                {
+                    { "a1","23"},
+                    { "a2","dsdr"}
+                },
+                tesdgsdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesd224gsdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesdgs221dgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesdgs34dgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tes2dgsdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesdg9sdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesdg11sdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesd44gsdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tes22dgsdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesdgsd55gw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesdg22sdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesdg34sdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesdgs4dgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesd126gsdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesdgs2dgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesd45gsdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         },
+                tesd32gsdgw = new Dictionary<string, object>
+                         {
+                             { "o1",442},
+                             { "o2","dsdr"},
+                             { "o3",false},
+                             { "o4",39293.313m }
+                         }
+            });
+            Assert.IsEmpty(json);
+		}
 
         [Test]
         public void IsIdentity()

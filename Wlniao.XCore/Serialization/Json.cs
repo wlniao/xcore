@@ -133,9 +133,9 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="obj">序列化的对象</param>
         /// <returns></returns>
-        public static String ToString(Object obj)
+        public static String ToString<T>(T obj)
         {
-            return JsonSerializer.Serialize(obj, new JsonSerializerOptions
+            return JsonSerializer.Serialize<T>(obj, new JsonSerializerOptions
             {
                 Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
             });
@@ -146,9 +146,9 @@ namespace Wlniao.Serialization
         /// <param name="obj">序列化的对象</param>
         /// <param name="kvs">序列化的对象</param>
         /// <returns></returns>
-        public static String ToString(Object obj, params KeyValuePair<string, string>[] kvs)
+        public static String ToString<T>(T obj, params KeyValuePair<string, string>[] kvs)
         {
-            string s = Serialization.JsonString.Convert(obj);
+            string s = JsonString.Convert(obj, false, typeof(T).Name);
             if (kvs != null && kvs.Length > 0)
             {
                 string strPx = "";
