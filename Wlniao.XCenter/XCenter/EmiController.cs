@@ -93,7 +93,7 @@ namespace Wlniao.XCenter
             }
             if (result == null)
             {
-                if (Request.Query != null && Request.Query.ContainsKey("do"))
+                if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                 {
                     Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
                     Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
@@ -138,7 +138,7 @@ namespace Wlniao.XCenter
                     if (result == null)
                     {
                         msg = "暂未登录或已失效，请登录";
-                        if (Request.Query != null && Request.Query.ContainsKey("do"))
+                        if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                         {
                             Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
                             Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
@@ -170,7 +170,7 @@ namespace Wlniao.XCenter
             }
             else if (string.IsNullOrEmpty(Code))
             {
-                if (!string.IsNullOrEmpty(method))
+                if (Request.Method == "POST" || !string.IsNullOrEmpty(method))
                 {
                     errorMsg = "";
                     return Json(new { success = false, message = "要验证的权限无效，请检查权限编码是否正确" });
@@ -194,7 +194,7 @@ namespace Wlniao.XCenter
                 {
                     return func?.Invoke();
                 }
-                else if (string.IsNullOrEmpty(method))
+                else if (Request.Method == "POST" || string.IsNullOrEmpty(method))
                 {
                     errorMsg = rlt.message;
                     errorTitle = "操作未授权";
@@ -226,7 +226,7 @@ namespace Wlniao.XCenter
             }
             else if (string.IsNullOrEmpty(Code))
             {
-                if (!string.IsNullOrEmpty(method))
+                if (Request.Method == "POST" || !string.IsNullOrEmpty(method))
                 {
                     errorMsg = "";
                     return Json(new { success = false, message = "要验证的权限无效，请检查权限编码是否正确" });
@@ -251,7 +251,7 @@ namespace Wlniao.XCenter
                 {
                     return func?.Invoke();
                 }
-                else if (string.IsNullOrEmpty(method))
+                else if (Request.Method == "POST" || string.IsNullOrEmpty(method))
                 {
                     errorMsg = rlt.message;
                     errorTitle = "操作未授权";
@@ -276,7 +276,7 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult NoPermission(Boolean ajax = false)
         {
-            if (ajax || !string.IsNullOrEmpty(method))
+            if (ajax || Request.Method == "POST" || !string.IsNullOrEmpty(method))
             {
                 errorMsg = "";
                 return Json(new { success = false, message = "您暂无执行当前操作的权限" });
