@@ -238,10 +238,11 @@ namespace Wlniao.XCenter
                         {
                             ctx.app = XCenterApp;
                         }
-                        if (string.IsNullOrEmpty(ctx.token))
+                        if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
                         {
                             try
                             {
+                                //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
                                 var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
                                 if (!string.IsNullOrEmpty(sm2token))
                                 {
@@ -284,7 +285,7 @@ namespace Wlniao.XCenter
         }
 
         /// <summary>
-        /// 获取平台接口数据
+        /// 获取平台接口数据（获取Saas租户信息）
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="path"></param>
@@ -431,7 +432,7 @@ namespace Wlniao.XCenter
             return rlt;
         }
         /// <summary>
-        /// 获取应用API接口数据
+        /// 获取应用API接口数据（租户调用获取业务数据）
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="path"></param>
@@ -446,9 +447,9 @@ namespace Wlniao.XCenter
             var msgid = strUtil.CreateLongId();
             var plainData = Wlniao.Json.ToString(data);
             var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
-            var sign = Wlniao.Encryptor.SM3Encrypt(owner + encdata + now + token);
+            var sign = Wlniao.Encryptor.SM3Encrypt(owner + app + encdata + now + token);
             var resStr = "";
-            var reqStr = Wlniao.Json.ToString(new { appid = owner, sign, data = encdata, timestamp = now });
+            var reqStr = Wlniao.Json.ToString(new { app, oid = owner, sign, data = encdata, timestamp = now });
             if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
             {
                 log.Topic(app, "msgid:" + msgid + ", " + XCenterHost + path + "\n >>> " + reqStr);

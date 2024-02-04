@@ -146,6 +146,17 @@ namespace Wlniao
             }
         }
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="seconds"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult RedirectWait(String url, Int32 seconds)
+        {
+            return Content("<html><head><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\"><meta http-equiv=\"refresh\" content=\"" + seconds + ";url=" + url + "\"></head></html>", "text/html");
+        }
+        /// <summary>
         /// Object输出
         /// </summary>
         /// <param name="data"></param>

@@ -102,6 +102,7 @@ namespace Wlniao.XCenter
                 else if (res.data is string)
                 {
                     dic.Add("data", Encryptor.SM4EncryptECBToHex(res.data.ToString(), sm2key, true));
+                    dic.Add("encrypt", true);
                 }
                 else
                 {
