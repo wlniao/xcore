@@ -20,7 +20,7 @@ namespace Wlniao.XCenter
     /// <summary>
     /// Emi应用基础Controller
     /// </summary>
-    public partial class EmiController : XCoreController
+    public partial class EmiJsController : XCoreController
     {
         /// <summary>
         /// EMI主程序接口访问工具
@@ -30,22 +30,18 @@ namespace Wlniao.XCenter
         /// 主平台登录会话状态
         /// </summary>
         private XSession xsession = null;
-        /// <summary>
-        /// 会话加密密钥
-        /// </summary>
-        private String sm4key = null;
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="context"></param>
-        public override void OnActionExecuted(ActionExecutedContext context)
-        {
-            if (ctx != null && string.IsNullOrEmpty(ViewBag.eHost))
-            {
-                ViewBag.eHost = ctx?.EmiHost;
-            }
-            base.OnActionExecuted(context);
-        }
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="context"></param>
+        //public override void OnActionExecuted(ActionExecutedContext context)
+        //{
+        //    if (ctx != null && string.IsNullOrEmpty(ViewBag.eHost))
+        //    {
+        //        ViewBag.eHost = ctx?.EmiHost;
+        //    }
+        //    base.OnActionExecuted(context);
+        //}
 
         /// <summary>
         /// 构造认证令牌
@@ -58,81 +54,6 @@ namespace Wlniao.XCenter
             {
                 return Json(new { success = true, ctx.domain, ticket = xsession.BuildTicket() });
             });
-        }
-        /// <summary>
-        /// 请求内容反序列化
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        [NonAction]
-        public T InputDeserialize<T>(String sm4key = null)
-        {
-            this.sm4key = sm4key;
-            var input = GetPostString();
-            if (string.IsNullOrEmpty(input))
-            {
-                return default(T);
-            }
-            else if (string.IsNullOrEmpty(this.sm4key))
-            {
-                var sm2token = HeaderRequest("sm2token");
-                if (!string.IsNullOrEmpty(input) && !string.IsNullOrEmpty(sm2token) && Context.XCenterPublicKey != null)
-                {
-                    this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPublicKey);
-                }
-            }
-            if (!string.IsNullOrEmpty(this.sm4key))
-            {
-                input = Wlniao.Encryptor.SM4DecryptECBFromHex(input, this.sm4key, true);
-                if (string.IsNullOrEmpty(input))
-                {
-                    return default(T);
-                    throw new Exception("请求内容解密失败");
-                }
-            }
-            return JsonSerializer.Deserialize<T>(input, new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-            });
-        }
-
-        /// <summary>
-        /// 输出内容序列化
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        [NonAction]
-        public String OutputSerialize<T>(ApiResult<T> result)
-        {
-            var output = "";
-            var option = new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-            if (string.IsNullOrEmpty(this.sm4key))
-            {
-                output = JsonSerializer.Serialize<ApiResult<T>>(result, option);
-            }
-            else
-            {
-                var tmp = new ApiResult<String>
-                {
-                    code = result.code,
-                    node = result.node,
-                    tips = result.tips,
-                    traceid = result.traceid,
-                    message = result.message,
-                    success = result.success,
-                };
-                if (result.data is string)
-                {
-                    tmp.data = Encryptor.SM4EncryptECBToHex(result.data.ToString(), this.sm4key, true);
-                }
-                else
-                {
-                    var json = JsonSerializer.Serialize<T>(result.data, option);
-                    tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
-                }
-                output = JsonSerializer.Serialize<ApiResult<String>>(tmp, option);
-            }
-            return output;
         }
         /// <summary>
         /// 检查系统使用授权
@@ -371,6 +292,135 @@ namespace Wlniao.XCenter
             }
         }
 
+
+
+        /// <summary>
+        /// 获取常用日期段
+        /// </summary>
+        /// <returns></returns>
+        public IActionResult dates()
+        {
+            var now = DateTools.GetNow();
+            var quarter = now.Month / 3 * 3;
+            if (now.Month % 3 == 0)
+            {
+                quarter -= 3;
+            }
+            var Today = now.ToString("yyyy-MM-dd");
+            var Yeserday = now.AddDays(-1).ToString("yyyy-MM-dd");
+            var MonthStart = now.ToString("yyyy-MM-01");
+            var MonthEnd = DateTools.Convert(now.ToString("yyyy-MM-01 12:00:00")).AddMonths(1).AddDays(-1).ToString("yyyy-MM-dd");
+            var QuarterStart = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Unspecified).AddMonths(quarter).ToString("yyyy-MM-01");
+            var QuarterEnd = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Unspecified).AddMonths(quarter + 3).AddDays(-1).ToString("yyyy-MM-dd");
+            var YearStart = now.ToString("yyyy-01-01");
+            var YearEnd = now.ToString("yyyy-12-31");
+            var PrevYearStart = now.AddYears(-1).ToString("yyyy-01-01");
+            var PrevYearEnd = now.AddYears(-1).ToString("yyyy-12-31");
+            var PrevMonthStart = now.AddMonths(-1).ToString("yyyy-MM-01");
+            var PrevMonthEnd = DateTools.Convert(now.ToString("yyyy-MM-01 12:00:00")).AddDays(-1).ToString("yyyy-MM-dd");
+            var PrevQuarterStart = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Unspecified).AddMonths(quarter - 3).ToString("yyyy-MM-01");
+            var PrevQuarterEnd = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Unspecified).AddMonths(quarter).AddDays(-1).ToString("yyyy-MM-dd");
+            return Json(new
+            {
+                Today,
+                Yeserday,
+                MonthStart,
+                MonthEnd,
+                QuarterStart,
+                QuarterEnd,
+                YearStart,
+                YearEnd,
+                PrevYearStart,
+                PrevYearEnd,
+                PrevMonthStart,
+                PrevMonthEnd,
+                PrevQuarterStart,
+                PrevQuarterEnd,
+                success = true
+            });
+        }
+        /// <summary>
+        /// 获取枚举数据
+        /// </summary>
+        /// <returns></returns>
+        public IActionResult enums()
+        {
+            return CheckAuth(ctx =>
+            {
+                var key = GetRequest("key");
+                var list = new List<Object>();
+                var rlt = ctx.EmiGet<List<Dictionary<string, object>>>("app", "getenumlist", new KeyValuePair<string, string>("parent", key));
+                if (rlt.success && rlt.data != null)
+                {
+                    foreach (var row in rlt.data)
+                    {
+                        list.Add(new { value = row.GetString("key"), label = row.GetString("label"), description = row.GetString("description") });
+                    }
+                }
+                return Json(list);
+            });
+        }
+        /// <summary>
+        /// 获取UI标签
+        /// </summary>
+        /// <returns></returns>
+        public IActionResult label()
+        {
+            return CheckAuth(ctx =>
+            {
+                var ht = new System.Collections.Hashtable();
+                var keys = PostRequest("keys").SplitBy(",", "|");
+                foreach (var key in keys)
+                {
+                    ht.Add(key, ctx.GetLabel(key));
+                }
+                ht.Add("success", true);
+                return Json(ht);
+            });
+        }
+        /// <summary>
+        /// 权限检查
+        /// </summary>
+        /// <returns></returns>
+        public IActionResult permission()
+        {
+            return CheckSession((xsession, ctx) =>
+            {
+                var ht = new System.Collections.Hashtable();
+                var codes = PostRequest("code").SplitBy(",", "|");
+                var organ = PostRequest("organ");
+                var allow = Config.GetConfigs("AllowPermission").ToUpper();
+                if (codes.Length == 0)
+                {
+                    ht.Add("success", false);
+                }
+                else if (string.IsNullOrEmpty(organ))
+                {
+                    for (var i = 0; i < codes.Length; i++)
+                    {
+                        var auth = allow == "ALL" || allow == codes[i].ToUpper() ? true : ctx.Permission(xsession.UserSid, codes[i]);
+                        ht.Add(codes[i], auth);
+                        if (i == 0)
+                        {
+                            ht.Add("success", auth);
+                        }
+                    }
+                }
+                else
+                {
+                    for (var i = 0; i < codes.Length; i++)
+                    {
+                        var auth = allow == "ALL" || allow == codes[i].ToUpper() ? true : ctx.PermissionOrgan(xsession.UserSid, codes[i], organ);
+                        ht.Add(codes[i], auth);
+                        if (i == 0)
+                        {
+                            ht.Add("success", auth);
+                        }
+                    }
+                }
+                return Json(ht);
+            });
+        }
 
     }
 }

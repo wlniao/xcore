@@ -76,7 +76,6 @@ namespace Wlniao.XServer
                 , new KeyValuePair<String, String>("state", Config.GetConfigs("XServerState", "2"))
                 , new KeyValuePair<String, String>("appcode", AppCode));
             var rlt = new ApiResult<Dictionary<String, Int32>>() { success = _rlt.success, message = _rlt.message, data = new Dictionary<string, int>() };
-            rlt.PutLog(_rlt.logs);
             if (_rlt.success && _rlt.data != null)
             {
                 var em = _rlt.data.GetEnumerator();
@@ -101,7 +100,6 @@ namespace Wlniao.XServer
                 , new KeyValuePair<String, String>("state", Config.GetConfigs("XServerState", "2"))
                 , new KeyValuePair<String, String>("appid", AppId));
             var rlt = new ApiResult<Dictionary<String, Int32>>() { success = _rlt.success, message = _rlt.message, data = new Dictionary<string, int>() };
-            rlt.PutLog(_rlt.logs);
             if (_rlt.success && _rlt.data != null)
             {
                 var em = _rlt.data.GetEnumerator();

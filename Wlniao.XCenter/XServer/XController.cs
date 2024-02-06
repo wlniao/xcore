@@ -70,7 +70,6 @@ namespace Wlniao.XServer
                         if (rlt.success)
                         {
                             app = rlt.data;
-                            _rlt.PutLog(rlt.logs);
 #pragma warning disable CS8602 // 解引用可能出现空引用。
                             if (app.xclient && !filterContext.ActionDescriptor.FilterDescriptors.Any(a => a.Filter.ToString().Contains("Wlniao.Mvc.XClientAttribute")))
                             {

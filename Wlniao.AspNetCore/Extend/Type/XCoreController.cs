@@ -10,6 +10,10 @@ using static Wlniao.OpenApi.Wx;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
+using Microsoft.AspNetCore.Http;
+using System.Text;
+using System.Buffers;
+using System.IO;
 
 namespace Wlniao
 {
@@ -179,14 +183,7 @@ namespace Wlniao
                     });
                 }
             }
-            if (Request.Query.ContainsKey("callback"))
-            {
-                return Content(GetRequest("callback") + "(" + jsonStr + ")", "text/javascript", System.Text.Encoding.UTF8);
-            }
-            else
-            {
-                return Content(jsonStr ?? "", "text/json", System.Text.Encoding.UTF8);
-            }
+            return Content(jsonStr ?? "", "application/json", System.Text.Encoding.UTF8);
         }
         /// <summary>
         /// Object输出
@@ -212,14 +209,7 @@ namespace Wlniao
                     });
                 }
             }
-            if (Request.Query.ContainsKey("callback"))
-            {
-                return Content(GetRequest("callback") + "(" + jsonStr + ")", "text/javascript", encoding ?? System.Text.Encoding.UTF8);
-            }
-            else
-            {
-                return Content(jsonStr ?? "", "text/json", encoding ?? System.Text.Encoding.UTF8);
-            }
+            return Content(jsonStr ?? "", "application/json", encoding ?? System.Text.Encoding.UTF8);
         }
         /// <summary>
         /// Json字符串输出
@@ -231,11 +221,11 @@ namespace Wlniao
         {
             if (string.IsNullOrEmpty(GetRequest("callback")) || jsonStr.LastIndexOf(')') > jsonStr.LastIndexOf(':'))
             {
-                return Content(jsonStr, "text/json", System.Text.Encoding.UTF8);
+                return Content(jsonStr, "application/json", System.Text.Encoding.UTF8);
             }
             else
             {
-                return Content(GetRequest("callback") + "(" + jsonStr + ")", "text/json", System.Text.Encoding.UTF8);
+                return Content(GetRequest("callback") + "(" + jsonStr + ")", "application/json", System.Text.Encoding.UTF8);
             }
         }
         /// <summary>
@@ -249,11 +239,11 @@ namespace Wlniao
         {
             if (string.IsNullOrEmpty(GetRequest("callback")) || jsonStr.LastIndexOf(')') > jsonStr.LastIndexOf(':'))
             {
-                return Content(jsonStr, "text/json", encoding ?? System.Text.Encoding.UTF8);
+                return Content(jsonStr, "application/json", encoding ?? System.Text.Encoding.UTF8);
             }
             else
             {
-                return Content(GetRequest("callback") + "(" + jsonStr + ")", "text/json", encoding ?? System.Text.Encoding.UTF8);
+                return Content(GetRequest("callback") + "(" + jsonStr + ")", "application/json", encoding ?? System.Text.Encoding.UTF8);
             }
         }
         /// <summary>
@@ -278,7 +268,7 @@ namespace Wlniao
             }
             else if (string.IsNullOrEmpty(GetRequest("callback")))
             {
-                return Content(Wlniao.Json.ToString(new { success = false, message = message }), "text/json", System.Text.Encoding.UTF8);
+                return Content(Wlniao.Json.ToString(new { success = false, message = message }), "application/json", System.Text.Encoding.UTF8);
             }
             else
             {
@@ -390,11 +380,18 @@ namespace Wlniao
         [NonAction]
         protected String GetPostString()
         {
-            if (strPost == null && Request.Method == "POST" && Request.ContentLength > 0 && (Request.ContentType == null || !Request.ContentType.Contains("form")))
+            if (strPost == null && Request.Method == "POST" && Request.BodyReader != null)
             {
                 try
                 {
-                    strPost = new System.IO.StreamReader(Request.Body).ReadToEnd();
+                    strPost = new StreamReader(Request.Body).ReadToEnd();
+                    if (string.IsNullOrEmpty(strPost))
+                    {
+                        using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
+                        {
+                            strPost = reader.ReadToEnd();
+                        }
+                    }
                 }
                 catch
                 {

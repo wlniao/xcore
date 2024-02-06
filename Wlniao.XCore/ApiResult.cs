@@ -21,7 +21,9 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
+using System.Text.Json.Serialization;
 namespace Wlniao
 {
     /// <summary>
@@ -31,44 +33,51 @@ namespace Wlniao
     public class ApiResult<T>
     {
         /// <summary>
-        /// 结果是否有效
+        /// 业务返回数据
         /// </summary>
-        public bool success { get; set; }
-
-        /// <summary>
-        /// 返回的调试消息
-        /// </summary>
-        public string debuger { get; set; }
-
-        /// <summary>
-        /// 附带返回的消息
-        /// </summary>
-        public string message { get; set; }
-
+        private T _data = default(T);
         /// <summary>
         /// 链路追踪ID
         /// </summary>
         public string traceid { get; set; }
 
         /// <summary>
-        /// 可否直接输出提示消息
+        /// 服务端消息提示
         /// </summary>
+        public string message { get; set; }
+
+        /// <summary>
+        /// 服务端调试消息
+        /// </summary>
+        [JsonIgnore]
+        public string debuger { get; set; }
+
+        /// <summary>
+        /// 结果是否有效
+        /// </summary>
+        [DefaultValue(false)]
+        public bool success { get; set; }
+
+        /// <summary>
+        /// 服务端消息提示可否直接输出
+        /// </summary>
+        [DefaultValue(false)]
         public bool tips { get; set; }
 
         /// <summary>
-        /// 错误消息提供节点
+        /// 消息提供节点
         /// </summary>
+        [JsonIgnore]
         public string node { get; set; }
 
         /// <summary>
         /// 状态码，0为成功
         /// </summary>
+        [DefaultValue("")]
         public string code { get; set; }
 
-        #region 附带返回的数据
-        private T _data = default(T);
         /// <summary>
-        /// 附带返回的数据
+        /// 业务返回数据
         /// </summary>
         public T data
         {
@@ -81,54 +90,6 @@ namespace Wlniao
                 _data = value;
             }
         }
-        #endregion
-
-        #region 附带返回的数据
-        private List<ApiLog> _logs = null;
-        /// <summary>
-        /// 请求日志
-        /// </summary>
-        public List<ApiLog> logs
-        {
-            get
-            {
-                return _logs;
-            }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="apiLog"></param>
-        public void PutLog(ApiLog apiLog)
-        {
-            if (apiLog != null && !string.IsNullOrEmpty(apiLog.apinode))
-            {
-                if (_logs == null)
-                {
-                    _logs = new List<ApiLog>();
-                }
-                _logs.Add(apiLog);
-            }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="apiLogs"></param>
-        public void PutLog(List<ApiLog> apiLogs)
-        {
-            if (apiLogs != null && apiLogs.Count > 0)
-            {
-                if (_logs == null)
-                {
-                    _logs = new List<ApiLog>();
-                }
-                foreach (var apiLog in apiLogs)
-                {
-                    _logs.Add(apiLog);
-                }
-            }
-        }
-        #endregion
 
         /// <summary>
         /// 
@@ -140,18 +101,7 @@ namespace Wlniao
             message = "";
             success = false;
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="apiLog"></param>
-        public ApiResult(ApiLog apiLog)
-        {
-            if (apiLog != null)
-            {
-                _logs = new List<ApiLog>();
-                _logs.Add(apiLog);
-            }
-        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -177,126 +127,6 @@ namespace Wlniao
             this.code = Code;
             this.message = Message;
             this.success = Success;
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="apiLogs"></param>
-        public ApiResult(List<ApiLog> apiLogs)
-        {
-            if (apiLogs != null && apiLogs.Count > 0)
-            {
-                if (_logs == null)
-                {
-                    _logs = new List<ApiLog>();
-                }
-                foreach (var apiLog in apiLogs)
-                {
-                    _logs.Add(apiLog);
-                }
-            }
-        }
-        /// <summary>
-        /// 拼接日志内容
-        /// </summary>
-        /// <param name="log"></param>
-        public void AddLog(String log)
-        {
-            AddLog(new ApiLog(null, null) { message = log });
-        }
-        /// <summary>
-        /// 拼接日志内容
-        /// </summary>
-        /// <param name="log"></param>
-        /// <param name="node"></param>
-        public void AddLog(String log, String node)
-        {
-            AddLog(new ApiLog(node, null) { message = log });
-        }
-        /// <summary>
-        /// 拼接日志内容
-        /// </summary>
-        /// <param name="log"></param>
-        /// <param name="node"></param>
-        /// <param name="apiurl"></param>
-        public void AddLog(String log, String node, String apiurl)
-        {
-            AddLog(new ApiLog(node, apiurl) { message = log });
-        }
-        /// <summary>
-        /// 拼接日志内容
-        /// </summary>
-        /// <param name="log"></param>
-        public void AddLog(ApiLog log)
-        {
-            if (_logs == null)
-            {
-                _logs = new List<ApiLog>();
-            }
-            _logs.Add(log);
-        }
-        /// <summary>
-        /// 拼接日志内容
-        /// </summary>
-        /// <param name="logs"></param>
-        public void AddLogs(List<String> logs)
-        {
-            if (_logs == null)
-            {
-                _logs = new List<ApiLog>();
-            }
-            foreach (var log in logs)
-            {
-                _logs.Add(new ApiLog(null, null) { message = log });
-            }
-        }
-        /// <summary>
-        /// 拼接日志内容
-        /// </summary>
-        /// <param name="logs"></param>
-        /// <param name="node"></param>
-        public void AddLogs(List<String> logs, String node)
-        {
-            if (_logs == null)
-            {
-                _logs = new List<ApiLog>();
-            }
-            foreach (var log in logs)
-            {
-                _logs.Add(new ApiLog(node, null) { message = log });
-            }
-        }
-        /// <summary>
-        /// 拼接日志内容
-        /// </summary>
-        /// <param name="logs"></param>
-        /// <param name="node"></param>
-        /// <param name="apiurl"></param>
-        public void AddLogs(List<String> logs, String node, String apiurl)
-        {
-            if (_logs == null)
-            {
-                _logs = new List<ApiLog>();
-            }
-            foreach (var log in logs)
-            {
-                _logs.Add(new ApiLog(node, apiurl) { message = log });
-            }
-        }
-        /// <summary>
-        /// 拼接日志内容
-        /// </summary>
-        /// <param name="logs"></param>
-        public void AddLogs(List<ApiLog> logs)
-        {
-            if (_logs == null)
-            {
-                _logs = new List<ApiLog>();
-            }
-            foreach (var log in logs)
-            {
-                _logs.Add(log);
-            }
         }
     }
 }

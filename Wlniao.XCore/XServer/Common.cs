@@ -525,9 +525,7 @@ namespace Wlniao.XServer
         {
             var common = GetInstances(app);
             var str = Get(common, controller, action, out List<ApiLog> logs, kvs);
-            var rlt = Json.ToObject<ApiResult<T>>(str);
-            rlt.PutLog(logs);
-            return rlt;
+            return Json.ToObject<ApiResult<T>>(str);
         }
         /// <summary>
         /// Get请求但只返回成功后的data部分
@@ -799,7 +797,6 @@ namespace Wlniao.XServer
         {
             var common = GetInstances(app);
             var rlt = Json.ToObject<ApiResult<T>>(Post(common, controller, action, postData, out List<ApiLog> logs, kvs));
-            rlt.PutLog(logs);
             return rlt;
         }
         /// <summary>
@@ -1002,7 +999,6 @@ namespace Wlniao.XServer
         {
             var common = GetInstances(app);
             var rlt = Json.ToObject<ApiResult<T>>(Post(common, controller, action, stream, out List<ApiLog> logs, kvs));
-            rlt.PutLog(logs);
             return rlt;
         }
         /// <summary>
