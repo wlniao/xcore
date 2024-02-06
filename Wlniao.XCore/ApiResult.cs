@@ -53,7 +53,7 @@ namespace Wlniao
         public string debuger { get; set; }
 
         /// <summary>
-        /// 结果是否有效
+        /// 是否成功获得预期结果
         /// </summary>
         [DefaultValue(false)]
         public bool success { get; set; }

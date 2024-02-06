@@ -110,12 +110,19 @@ namespace Wlniao.Swagger
                 o.OperationFilter<Filter>();
                 o.SwaggerDoc(name, info);
                 o.AddServer(new OpenApiServer { Url = XCore.WebHost, Description = XCore.WebNode });
-                o.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"Wlniao.XCore.xml"), true);
-                o.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name}.xml"), true);
+                if (System.IO.File.Exists(Path.Combine(AppContext.BaseDirectory, $"Wlniao.XCore.xml")))
+                {
+                    o.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"Wlniao.XCore.xml"), true);
+                }
+                if (System.IO.File.Exists(Path.Combine(AppContext.BaseDirectory, $"{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name}.xml")))
+                {
+                    o.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name}.xml"), true);
+                }
             });
             return services;
         }
     }
+
     /// <summary>
     /// 自定义参数设置
     /// </summary>

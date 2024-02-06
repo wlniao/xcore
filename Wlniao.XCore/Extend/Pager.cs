@@ -21,6 +21,7 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 namespace Wlniao
 {
@@ -47,14 +48,57 @@ namespace Wlniao
                 return (page - 1) * size;
             }
         }
+
         /// <summary>
-        /// 当前页码（将在下一个大版本中取消，已改名为page）
+        /// 是否成功获得预期结果
         /// </summary>
-        public int index
+        [DefaultValue(true)]
+        public bool success { get; set; } = true;
+        /// <summary>
+        /// 消息输出
+        /// </summary>
+        public string message
         {
             get
             {
-                return _page;
+                if (string.IsNullOrEmpty(_message))
+                {
+                    if (total > 0)
+                    {
+                        return string.Format(Runtime.Lang.Get("", "findtotal", "{0} records found"), total);
+                    }
+                    else
+                    {
+                        return Runtime.Lang.Get("", "empty", "without data");
+                    }
+                }
+                return _message;
+            }
+            set
+            {
+                _message = value;
+            }
+        }
+        /// <summary>
+        /// 结果总数
+        /// </summary>
+        public int total
+        {
+            get
+            {
+                if (_total < 0)
+                {
+                    if (_data == null)
+                    {
+                        return 0;
+                    }
+                    _total = _data.Count;
+                }
+                return _total;
+            }
+            set
+            {
+                _total = value;
             }
         }
         /// <summary>
@@ -91,28 +135,6 @@ namespace Wlniao
                     _size = value;
                     _list = null;
                 }
-            }
-        }
-        /// <summary>
-        /// 结果总数
-        /// </summary>
-        public int total
-        {
-            get
-            {
-                if (_total < 0)
-                {
-                    if (_data == null)
-                    {
-                        return 0;
-                    }
-                    _total = _data.Count;
-                }
-                return _total;
-            }
-            set
-            {
-                _total = value;
             }
         }
         /// <summary>
@@ -158,31 +180,6 @@ namespace Wlniao
             set
             {
                 _list = value;
-            }
-        }
-        /// <summary>
-        /// 消息输出
-        /// </summary>
-        public string message
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(_message))
-                {
-                    if (total > 0)
-                    {
-                        return string.Format(Runtime.Lang.Get("", "findtotal", "{0} records found"), total);
-                    }
-                    else
-                    {
-                        return Runtime.Lang.Get("", "empty", "without data");
-                    }
-                }
-                return _message;
-            }
-            set
-            {
-                _message = value;
             }
         }
         /// <summary>
