@@ -1,21 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.8.0-beta2</Version>
+    <Version>1.8.0-beta3</Version>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageOutputPath>C:\Users\Administrator\OneDrive\Path\packages</PackageOutputPath>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <NoWarn>CS8603;CS8618;CS8625</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="Tasker.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MQTTnet" Version="3.0.16" />
-    <PackageReference Include="StackExchange.Redis" Version="2.7.4" />
-    <PackageReference Include="Wlniao.XCore" Version="8.0.0-beta2" />
+    <PackageReference Include="MQTTnet" Version="3.1.2" />
+    <PackageReference Include="StackExchange.Redis" Version="2.7.17" />
+    <PackageReference Include="Wlniao.XCore" Version="8.0.12" />
   </ItemGroup>
 
 </Project>

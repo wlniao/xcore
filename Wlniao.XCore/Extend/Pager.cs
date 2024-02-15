@@ -39,17 +39,6 @@ namespace Wlniao
         private string _message = null;
 
         /// <summary>
-        /// 跳过的记录数量
-        /// </summary>
-        public int skip
-        {
-            get
-            {
-                return (page - 1) * size;
-            }
-        }
-
-        /// <summary>
         /// 是否成功获得预期结果
         /// </summary>
         [DefaultValue(true)]
@@ -57,6 +46,7 @@ namespace Wlniao
         /// <summary>
         /// 消息输出
         /// </summary>
+        [DefaultValue("查询完成，结果已输出")]
         public string message
         {
             get
@@ -101,27 +91,11 @@ namespace Wlniao
                 _total = value;
             }
         }
-        /// <summary>
-        /// 当前页码（从1开始）
-        /// </summary>
-        public int page
-        {
-            get
-            {
-                return _page;
-            }
-            set
-            {
-                if (value > 0)
-                {
-                    _page = value;
-                    _list = null;
-                }
-            }
-        }
+
         /// <summary>
         /// 分页大小
         /// </summary>
+        [DefaultValue(10)]
         public int size
         {
             get
@@ -137,8 +111,41 @@ namespace Wlniao
                 }
             }
         }
+
         /// <summary>
-        /// 结果集
+        /// 当前页码（从1开始）
+        /// </summary>
+        [DefaultValue(1)]
+        public int page
+        {
+            get
+            {
+                return _page;
+            }
+            set
+            {
+                if (value > 0)
+                {
+                    _page = value;
+                    _list = null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 跳过的记录数量
+        /// </summary>
+        [Serialization.NotSerialize]
+        [System.Text.Json.Serialization.JsonIgnore]
+        public int skip
+        {
+            get
+            {
+                return (page - 1) * size;
+            }
+        }
+        /// <summary>
+        /// 结果集（当前页）
         /// </summary>
         public List<T> rows
         {

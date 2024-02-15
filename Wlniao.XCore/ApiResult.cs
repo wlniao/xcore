@@ -42,7 +42,7 @@ namespace Wlniao
         public string traceid { get; set; }
 
         /// <summary>
-        /// 服务端消息提示
+        /// 服务端提示消息
         /// </summary>
         public string message { get; set; }
 
@@ -65,13 +65,13 @@ namespace Wlniao
         public bool tips { get; set; }
 
         /// <summary>
-        /// 消息提供节点
+        /// 产生提示消息的服务端节点
         /// </summary>
         [JsonIgnore]
         public string node { get; set; }
 
         /// <summary>
-        /// 状态码，0为成功
+        /// 业务受理状态码
         /// </summary>
         [DefaultValue("")]
         public string code { get; set; }

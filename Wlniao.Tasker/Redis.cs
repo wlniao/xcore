@@ -92,9 +92,7 @@ namespace Wlniao.Tasker
         /// <summary>
         /// Instance内部字段
         /// </summary>
-#pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
-        private static ConnectionMultiplexer instance = null;
-#pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
+        private static ConnectionMultiplexer? instance = null;
         /// <summary>
         /// Redis/kakfa实例
         /// </summary>
