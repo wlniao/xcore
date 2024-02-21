@@ -48,7 +48,7 @@ namespace Wlniao.XCenter
         /// </summary>
         public string message { get; set; }
 
-        internal static string XCenterApp = Wlniao.Config.GetSetting("XCenterApp");
+        public static string XCenterApp = Wlniao.Config.GetSetting("XCenterApp");
         internal static string XCenterName = Wlniao.Config.GetConfigs("XCenterName");
         internal static string XCenterOwner = Wlniao.Config.GetSetting("XCenterOwner");
         internal static string XCenterToken = Wlniao.Config.GetSetting("XCenterToken");
@@ -61,23 +61,9 @@ namespace Wlniao.XCenter
         private static byte[] _XCenterPrivkey = null;
         private static byte[] _XCenterPublicKey = null;
         /// <summary>
-        /// XCenter认证服务器Api地址
-        /// </summary>
-        internal static string XCenterApi
-        {
-            get
-            {
-                if (_XCenterApi == null)
-                {
-                    _XCenterApi = Wlniao.Config.GetConfigs("XCenterApi", "https://authify.cn");
-                }
-                return _XCenterApi;
-            }
-        }
-        /// <summary>
         /// XCenter认证服务器地址
         /// </summary>
-        internal static string XCenterHost
+        public static string XCenterHost
         {
             get
             {

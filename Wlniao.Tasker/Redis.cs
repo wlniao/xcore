@@ -177,60 +177,51 @@ namespace Wlniao.Tasker
 							var db = Instance.GetDatabase(Caching.Redis.Select);
 							var now = DateTools.GetUnix();
 							var tran = db.CreateTransaction();
-							tran.SortedSetAddAsync(index, "tasker", now - 1);
 							foreach (var s in db.SortedSetRangeByRankWithScores(index, 0, maxqueue, Order.Ascending))
 							{
-								if (s.Score <= now)
-								{
-									try
-									{
-										var jobid = s.Element.ToString();
-                                        if (jobid == "tasker")
+                                if (s.Score < begin)
+                                {
+                                    tran.SortedSetRemoveAsync(index, s.Element);
+                                }
+                                else if (s.Score <= now)
+                                {
+                                    try
+                                    {
+                                        if (s.Score > begin)
                                         {
-                                            continue;
+                                            db.PublishAsync(index, s.Element);
                                         }
-                                        else
-										{
-											var key = "tasker_tl" + topic + "_" + jobid;
-											if (s.Score > begin)
+                                        var key = "tasker_tl" + topic + "_" + s.Element.ToString();
+                                        if (db.KeyExists(key))
+                                        {
+                                            var times = new List<long>();
+                                            foreach (var item in db.StringGet(key).ToString().SplitBy())
                                             {
-                                                tran.PublishAsync(index, jobid);
-											}
-											if (db.KeyExists(key))
-											{
-												var next = 0L;
-												var times = new List<string>();
-												foreach (var item in db.StringGet(key).ToString().SplitBy())
-												{
-                                                    next = cvt.ToLong(item) - now;
-													if (next > 0)
-													{
-														times.Add(item);
-													}
-												}
-                                                if (next > 0)
+                                                var time = cvt.ToLong(item);
+                                                if (time > now)
                                                 {
-                                                    tran.StringSetAsync(key, string.Join(",", times), TimeSpan.FromSeconds(next));
-                                                    tran.SortedSetAddAsync(index, jobid, now + next);
-                                                }
-                                                else
-                                                {
-                                                    tran.KeyDeleteAsync(key);
-                                                    tran.SortedSetRemoveAsync(index, jobid);
+                                                    times.Add(time);
                                                 }
                                             }
+                                            if (times.Count > 0)
+                                            {
+                                                var value = string.Join(",", times.OrderBy(o => o).ToArray());
+                                                tran.StringSetAsync(key, value, TimeSpan.FromSeconds(times.LastOrDefault() + 1));
+                                                tran.SortedSetAddAsync(index, s.Element, times[0]);
+                                            }
                                             else
-											{
-												tran.SortedSetRemoveAsync(index, jobid);
-											}
-										}
-									}
-									catch { }
-								}
-								else
-								{
-									break;
-								}
+                                            {
+                                                tran.KeyDeleteAsync(key);
+                                                tran.SortedSetRemoveAsync(index, s.Element);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            tran.SortedSetRemoveAsync(index, s.Element);
+                                        }
+                                    }
+                                    catch { }
+                                }
 							}
 							tran.Execute();
 						}
@@ -347,6 +338,7 @@ namespace Wlniao.Tasker
             }
             try
             {
+                log.Topic("Tasker", "Tasker removed " + jobId + "[" + topics + "]");
                 if (Instance != null && instance.IsConnected)
                 {
                     var db = Instance.GetDatabase(Caching.Redis.Select);
