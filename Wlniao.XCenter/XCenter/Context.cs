@@ -24,14 +24,6 @@ namespace Wlniao.XCenter
         /// </summary>
         public string app { get; set; }
         /// <summary>
-        /// 
-        /// </summary>
-        public string name { get; set; }
-        /// <summary>
-        /// 
-        /// </summary>
-        public string brand { get; set; }
-        /// <summary>
         /// 认证系统分配的租户标识
         /// </summary>
         public string owner { get; set; }
@@ -47,14 +39,23 @@ namespace Wlniao.XCenter
         /// 来自平台的消息
         /// </summary>
         public string message { get; set; }
-
-        public static string XCenterApp = Wlniao.Config.GetSetting("XCenterApp");
+        /// <summary>
+        /// 
+        /// </summary>
+        public string name { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string brand { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public static string XCenterApp = Wlniao.Config.GetSetting("XCenterApp", XCore.WebNode);
         internal static string XCenterName = Wlniao.Config.GetConfigs("XCenterName");
         internal static string XCenterOwner = Wlniao.Config.GetSetting("XCenterOwner");
         internal static string XCenterToken = Wlniao.Config.GetSetting("XCenterToken");
         internal static string XCenterBrand = Wlniao.Config.GetConfigs("XCenterBrand");
         internal static string XCenterDomain = Wlniao.Config.GetSetting("XCenterDomain").Replace("https://", "").Replace("http://", "").Trim('/');
-        private static string _XCenterApi = null;
         private static string _XCenterHost = null;
         private static string _XCenterSm4Key = null;
         private static string _XCenterCertSn = null;
@@ -287,7 +288,7 @@ namespace Wlniao.XCenter
             {
                 return new ApiResult<T> { message = "参数“XCenterPublicKey”未配置，请先配置" };
             }
-            var now = Wlniao.XCore.NowUnix.ToString();
+            var now = XCore.NowUnix.ToString();
             var rlt = new Wlniao.ApiResult<T>();
             var utime = "";
             var start = DateTime.Now;

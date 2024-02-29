@@ -29,6 +29,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="XCenter\XAppController2.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>

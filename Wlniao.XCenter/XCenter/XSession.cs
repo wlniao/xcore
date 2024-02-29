@@ -22,7 +22,7 @@ namespace Wlniao.XCenter
         /// </summary>
         public string wkey = "";
         /// <summary>
-        /// 
+        /// 来自Context
         /// </summary>
         private string token = "";
         /// <summary>
@@ -73,11 +73,23 @@ namespace Wlniao.XCenter
         public string DepartmentIds { get; set; }
 
         /// <summary>
+        /// 通过Token生成Session
+        /// </summary>
+        /// <param name="ctx"></param>
+        public XSession(Context ctx)
+        {
+            this.token = ctx.token;
+            this.AppCode = ctx.app;
+            this.OwnerId = ctx.owner;
+            this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// 通过令牌生成Session
         /// </summary>
         /// <param name="ctx"></param>
         /// <param name="ticket"></param>
-        public XSession(EmiContext ctx, String ticket)
+        public XSession(Context ctx, String ticket)
         {
             this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             if (ctx != null && !string.IsNullOrEmpty(ticket) && !string.IsNullOrEmpty(ctx.token))
@@ -146,12 +158,13 @@ namespace Wlniao.XCenter
         }
 
         /// <summary>
-        /// 重新构造新的令牌
+        /// 生成用户登录凭据
         /// </summary>
+        /// <param name="exprie"></param>
         /// <returns></returns>
-        public String BuildTicket()
+        public String BuildTicket(int exprie = 7200)
         {
-            var plain = (XCore.NowUnix + 3600) + "," + AppCode + "," + OwnerId;
+            var plain = (XCore.NowUnix + exprie) + "," + (string.IsNullOrEmpty(AppCode) ? "app" : AppCode) + "," + (string.IsNullOrEmpty(OwnerId) ? "000000000" : OwnerId);
             if (!string.IsNullOrEmpty(UserSid))
             {
                 var obj = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -167,9 +180,12 @@ namespace Wlniao.XCenter
                 {
                     obj.Add("d", this.DepartmentIds);
                 }
-                foreach (var kv in ExtData)
+                if (ExtData != null)
                 {
-                    obj.TryAdd(kv.Key, kv.Value);
+                    foreach (var kv in ExtData)
+                    {
+                        obj.TryAdd(kv.Key, kv.Value);
+                    }
                 }
                 var ext = System.Text.Json.JsonSerializer.Serialize(obj, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
                 plain += "," + UserSid + "," + strUtil.UTF8ToHexString(ext);

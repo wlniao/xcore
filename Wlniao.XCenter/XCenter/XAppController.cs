@@ -3,15 +3,11 @@ using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Net.Http.Headers;
+using Microsoft.AspNetCore.Http;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
-using Newtonsoft.Json.Linq;
-using Wlniao.Crypto;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Wlniao.XCenter
 {
@@ -21,188 +17,280 @@ namespace Wlniao.XCenter
     public class XAppController : XCoreController
     {
         /// <summary>
-        /// 临时通讯密钥
+        /// 主平台接口访问工具
         /// </summary>
-        private string sm2key = "";
+        internal Context ctx = null;
         /// <summary>
-        /// 
+        /// 主平台登录会话状态
         /// </summary>
-        protected Context ctx = null;
+        internal XSession xsession = null;
         /// <summary>
-        /// 
+        /// 会话加密密钥
         /// </summary>
-        protected ApiResult<Object> res = new ApiResult<Object> { code = XCore.WebNode, message = "未知错误" };
+        internal String sm4key = null;
+
+
         /// <summary>
-        /// 
+        /// 检查系统使用授权
         /// </summary>
-        protected Dictionary<string, object> auth = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-        /// <summary>
-        /// 页面加载前事件
-        /// </summary>
-        /// <param name="filterContext"></param>
-        public override void OnActionExecuting(ActionExecutingContext filterContext)
-        {
-            var key = "ctx_" + UrlDomain;
-            try
-            {
-                ctx = Wlniao.Cache.Get<XCenter.Context>(key);
-                if (ctx == null || string.IsNullOrEmpty(ctx.owner))
-                {
-                    ctx = Context.Load(UrlDomain);
-                    if(!string.IsNullOrEmpty(ctx.owner))
-                    {
-                        Wlniao.Cache.Set(key, ctx, 300);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                ctx = new Context { message = ex.Message };
-            }
-            if (string.IsNullOrEmpty(ctx.message))
-            {
-                base.OnActionExecuting(filterContext);
-            }
-            else
-            {
-                var errorPage = new ContentResult();
-                if (Request.Method == "POST" || Request.Query.ContainsKey("do"))
-                {
-                    errorPage.ContentType = "text/json";
-                    errorPage.Content = Wlniao.Json.ToString(new { success = false, message = ctx.message });
-                }
-                else
-                {
-                    errorPage.ContentType = "text/html;charset=utf-8";
-                    errorPage.Content = errorHtml.Replace("{{errorMsg}}", ctx.message).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-                }
-                filterContext.Result = errorPage;
-            }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <param name="func"></param>
+        /// <param name="fail"></param>
+        /// <param name="host"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult OutDefault()
+        public IActionResult CheckAuth(Func<Context, IActionResult> func, Func<IActionResult> fail = null, String host = null)
         {
-            var dic = new Dictionary<string, object>();
-            dic.Add("success", res.success);
-            dic.Add("message", res.message);
-            if (!string.IsNullOrEmpty(res.code))
+            if (fail == null)
             {
-                dic.Add("code", res.code);
-            }
-            if (res.data != null)
-            {
-                if (string.IsNullOrEmpty(sm2key))
+                // Authify平台授权加载失败时执行
+                Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
+                Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
+                fail = new Func<IActionResult>(() =>
                 {
-                    dic.Add("data", res.data);
-                }
-                else if (res.data is string)
-                {
-                    dic.Add("data", Encryptor.SM4EncryptECBToHex(res.data.ToString(), sm2key, true));
-                    dic.Add("encrypt", true);
-                }
-                else
-                {
-                    dic.Add("data", Encryptor.SM4EncryptECBToHex(JsonSerializer.Serialize(res.data, new JsonSerializerOptions
+                    if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                     {
-                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                    }), sm2key, true));
-                }
+                        return Json(new { success = false, ctx?.message });
+                    }
+                    else
+                    {
+                        var errorPage = new ContentResult();
+                        errorPage.ContentType = "text/html;charset=utf-8";
+                        errorPage.Content = errorHtml.Replace("{{errorMsg}}", ctx?.message).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
+                        return errorPage;
+                    }
+                });
             }
-            return Json(dic);
+            if (string.IsNullOrEmpty(host) && string.IsNullOrEmpty(Context.XCenterDomain))
+            {
+                host = HeaderRequest("x-domain", UrlDomain);
+            }
+            ctx = Context.Load(host);
+            if (ctx == null || string.IsNullOrEmpty(ctx.owner) || string.IsNullOrEmpty(ctx.token) || !string.IsNullOrEmpty(ctx.message) || (string.IsNullOrEmpty(ctx.app) && string.IsNullOrEmpty(ctx.domain)))
+            {
+                return fail.Invoke();
+            }
+            return func.Invoke(ctx);
         }
 
         /// <summary>
-        /// 
+        /// 检查用户登录状态
         /// </summary>
         /// <param name="func"></param>
+        /// <param name="fail"></param>
+        /// <param name="host"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult Handle(Action<Dictionary<String, Object>> func)
+        public IActionResult CheckSession(Func<XSession, Context, IActionResult> func, Func<IActionResult> fail = null, String host = null)
         {
-            var sm2token = HeaderRequest("sm2token");
-            if (!string.IsNullOrEmpty(sm2token) && Context.XCenterPublicKey != null)
+            if (fail == null)
             {
-                sm2key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Helper.Decode(sm2token), Context.XCenterPublicKey);
-            }
-            if (!string.IsNullOrEmpty(sm2key) && sm2key.Length != 16)
-            {
-                sm2key = null;
-                res.code = "103";
-                res.message = "server sm2token private key error";
-            }
-            else
-            {
-                var obj = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                try
+                // Authify平台授权加载失败时执行
+                Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
+                Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
+                fail = new Func<IActionResult>(() =>
                 {
-                    var body = GetPostString();
-                    if (!string.IsNullOrEmpty(sm2key))
+                    if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                     {
-                        body = Encryptor.SM4DecryptECBFromHex(body, sm2key, true);
+                        var err = new { success = false, message = errorMsg };
+                        errorMsg = "";
+                        return Json(err);
                     }
-                    if (!string.IsNullOrEmpty(body))
+                    else
                     {
-                        foreach (var kv in Wlniao.Json.ToObject<Dictionary<String, Object>>(body))
-                        {
-                            obj.TryAdd(kv.Key, kv.Value);
-                        }
+                        var errorPage = new ContentResult();
+                        errorPage.ContentType = "text/html;charset=utf-8";
+                        errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
+                        errorMsg = "";
+                        return errorPage;
                     }
-                }
-                catch { }
-                func?.Invoke(obj);
+                });
             }
-            return OutDefault();
+            return CheckAuth((ctx) =>
+            {
+                var authorization = HeaderRequest("Authorization");
+                if (Request.Query.Keys.Contains("xsession"))
+                {
+                    authorization = GetRequestNoSecurity("xsession");
+                    Response.Cookies.Append("xs_" + ctx.app, authorization, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
+                }
+                else if (string.IsNullOrEmpty(authorization))
+                {
+                    authorization = GetCookies("xs_" + ctx.app);
+                }
+                xsession = new XSession(ctx, authorization);
+                if (xsession.IsValid && xsession.OwnerId == ctx.owner)
+                {
+                    return func.Invoke(xsession, ctx);
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(authorization))
+                    {
+                        errorMsg = "authorization is missing";
+                    }
+                    else if (xsession.ExpireTime < XCore.NowUnix && !string.IsNullOrEmpty(xsession.UserSid))
+                    {
+                        errorMsg = "authorization is expire";
+                    }
+                    else
+                    {
+                        errorMsg = "authorization is error";
+                    }
+                    return fail.Invoke();
+                }
+            }, fail, host);
         }
 
         /// <summary>
-        /// 验证登录状态并生成调用参数
+        /// 请求内容解析
         /// </summary>
-        /// <param name="func"></param>
+        /// <param name="sm4key"></param>
         /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         [NonAction]
-        public IActionResult HandleByLogin(Action<Dictionary<String, Object>> func)
+        public Dictionary<String, Object> InputDeserialize(String sm4key = null)
         {
-            var authorization = HeaderRequest("Authorization");
-            if (string.IsNullOrEmpty(authorization))
+            var result = new Dictionary<String, Object>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(sm4key))
             {
-                authorization = PostRequest("authorization");
+                this.sm4key = sm4key;
             }
             try
             {
-                var plainData = Encryptor.SM4DecryptECBFromHex(authorization, ctx.token, true);
-                if (!string.IsNullOrEmpty(plainData))
+                if (Request.Query != null)
                 {
-                    foreach (var kv in Wlniao.Json.ToObject<Dictionary<string, object>>(plainData))
+                    foreach (var item in Request.Query)
                     {
-                        auth.TryAdd(kv.Key, kv.Value);
+                        result.TryAdd(item.Key, item.Value);
+                    }
+                }
+                if (Request.Form != null && Request.Form.Count > 0)
+                {
+                    foreach (var item in Request.Form)
+                    {
+                        result.TryAdd(item.Key, item.Value);
                     }
                 }
             }
             catch { }
-            if (auth.Count == 0 || auth.GetInt64("expire") < XCore.NowUnix)
+            var input = GetPostString();
+            if (string.IsNullOrEmpty(input))
             {
-                if (auth.Count == 0)
+                return result;
+            }
+            else if (string.IsNullOrEmpty(this.sm4key))
+            {
+                var sm2token = HeaderRequest("sm2token");
+                if (!string.IsNullOrEmpty(sm2token) && Context.XCenterPublicKey != null)
                 {
-                    res.code = "102";
-                    res.message = string.IsNullOrEmpty(authorization) ? "authorization is missing" : "authorization is error";
+                    this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPublicKey);
                 }
-                else
+            }
+            if (!string.IsNullOrEmpty(this.sm4key))
+            {
+                input = Wlniao.Encryptor.SM4DecryptECBFromHex(input, this.sm4key, true);
+                if (string.IsNullOrEmpty(input))
                 {
-                    res.code = "103";
-                    res.message = "authorization is expire";
+                    throw new Exception("请求内容解密失败");
                 }
-                Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("Authify-State"));
-                Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
-                return OutDefault();
+            }
+            try
+            {
+                var obj = JsonSerializer.Deserialize<Dictionary<String, Object>>(input, new JsonSerializerOptions
+                {
+                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+                });
+                if (obj != null)
+                {
+                    foreach (var kv in obj)
+                    {
+                        result.TryAdd(kv.Key, kv.Value);
+                    }
+                }
+            }
+            catch { }
+            return result;
+        }
+
+
+        /// <summary>
+        /// 请求内容反序列化
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        [NonAction]
+        public T InputDeserialize<T>(String sm4key = null)
+        {
+            if (!string.IsNullOrEmpty(sm4key))
+            {
+                this.sm4key = sm4key;
+            }
+            var input = GetPostString();
+            if (string.IsNullOrEmpty(input))
+            {
+                return default(T);
+            }
+            else if (string.IsNullOrEmpty(this.sm4key))
+            {
+                var sm2token = HeaderRequest("sm2token");
+                if (!string.IsNullOrEmpty(input) && !string.IsNullOrEmpty(sm2token) && Context.XCenterPublicKey != null)
+                {
+                    this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPublicKey);
+                }
+            }
+            if (!string.IsNullOrEmpty(this.sm4key))
+            {
+                input = Wlniao.Encryptor.SM4DecryptECBFromHex(input, this.sm4key, true);
+                if (string.IsNullOrEmpty(input))
+                {
+                    throw new Exception("请求内容解密失败");
+                }
+            }
+            return JsonSerializer.Deserialize<T>(input, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            });
+        }
+
+
+        /// <summary>
+        /// 输出内容序列化
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        [NonAction]
+        public String OutputSerialize<T>(ApiResult<T> result)
+        {
+            var output = "";
+            var option = new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+            if (string.IsNullOrEmpty(this.sm4key))
+            {
+                output = JsonSerializer.Serialize<ApiResult<T>>(result, option);
             }
             else
             {
-                return Handle(func);
+                var tmp = new ApiResult<String>
+                {
+                    code = result.code,
+                    node = result.node,
+                    tips = result.tips,
+                    traceid = result.traceid,
+                    message = result.message,
+                    success = result.success,
+                };
+                if (result.data is string)
+                {
+                    tmp.data = Encryptor.SM4EncryptECBToHex(result.data.ToString(), this.sm4key, true);
+                }
+                else
+                {
+                    var json = JsonSerializer.Serialize<T>(result.data, option);
+                    tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
+                }
+                output = JsonSerializer.Serialize<ApiResult<String>>(tmp, option);
             }
+            return output;
         }
+
     }
 }

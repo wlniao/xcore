@@ -8,32 +8,22 @@ using System.Text.Unicode;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Wlniao;
 using Wlniao.XServer;
-using static System.Collections.Specialized.BitVector32;
 
 namespace Wlniao.XCenter
 {
     /// <summary>
     /// Emi应用基础Controller
     /// </summary>
-    public partial class EmiController : XCoreController
+    public partial class EmiController : XAppController
     {
         /// <summary>
         /// EMI主程序接口访问工具
         /// </summary>
-        private EmiContext ctx = null;
-        /// <summary>
-        /// 主平台登录会话状态
-        /// </summary>
-        private XSession xsession = null;
-        /// <summary>
-        /// 会话加密密钥
-        /// </summary>
-        private String sm4key = null;
+        internal new EmiContext ctx = null;
         /// <summary>
         /// 
         /// </summary>
@@ -60,88 +50,13 @@ namespace Wlniao.XCenter
             });
         }
         /// <summary>
-        /// 请求内容反序列化
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        [NonAction]
-        public T InputDeserialize<T>(String sm4key = null)
-        {
-            this.sm4key = sm4key;
-            var input = GetPostString();
-            if (string.IsNullOrEmpty(input))
-            {
-                return default(T);
-            }
-            else if (string.IsNullOrEmpty(this.sm4key))
-            {
-                var sm2token = HeaderRequest("sm2token");
-                if (!string.IsNullOrEmpty(input) && !string.IsNullOrEmpty(sm2token) && Context.XCenterPublicKey != null)
-                {
-                    this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPublicKey);
-                }
-            }
-            if (!string.IsNullOrEmpty(this.sm4key))
-            {
-                input = Wlniao.Encryptor.SM4DecryptECBFromHex(input, this.sm4key, true);
-                if (string.IsNullOrEmpty(input))
-                {
-                    return default(T);
-                    throw new Exception("请求内容解密失败");
-                }
-            }
-            return JsonSerializer.Deserialize<T>(input, new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-            });
-        }
-
-        /// <summary>
-        /// 输出内容序列化
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        [NonAction]
-        public String OutputSerialize<T>(ApiResult<T> result)
-        {
-            var output = "";
-            var option = new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-            if (string.IsNullOrEmpty(this.sm4key))
-            {
-                output = JsonSerializer.Serialize<ApiResult<T>>(result, option);
-            }
-            else
-            {
-                var tmp = new ApiResult<String>
-                {
-                    code = result.code,
-                    node = result.node,
-                    tips = result.tips,
-                    traceid = result.traceid,
-                    message = result.message,
-                    success = result.success,
-                };
-                if (result.data is string)
-                {
-                    tmp.data = Encryptor.SM4EncryptECBToHex(result.data.ToString(), this.sm4key, true);
-                }
-                else
-                {
-                    var json = JsonSerializer.Serialize<T>(result.data, option);
-                    tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
-                }
-                output = JsonSerializer.Serialize<ApiResult<String>>(tmp, option);
-            }
-            return output;
-        }
-        /// <summary>
         /// 检查系统使用授权
         /// </summary>
         /// <param name="func"></param>
-        /// <param name="result"></param>
+        /// <param name="fail"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult CheckAuth(Func<EmiContext, IActionResult> func, IActionResult result = null)
+        public IActionResult CheckAuth(Func<EmiContext, IActionResult> func, Func<IActionResult> fail = null)
         {
             var msg = "";
             var ehost = GetCookies("ehost");
@@ -154,49 +69,73 @@ namespace Wlniao.XCenter
             {
                 ehost = HeaderRequest("x-domain", EmiContext.XCenterDomain);
             }
-            if (!string.IsNullOrEmpty(ehost))
+            if (fail == null)
             {
-                ctx = EmiContext.Load(ehost);
+                fail = new Func<IActionResult>(() =>
+                {
+                    Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
+                    Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
+                    if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
+                    {
+                        var err = new { success = false, message = errorMsg };
+                        errorMsg = "";
+                        return Json(err);
+                    }
+                    else
+                    {
+                        return ErrorMsg(errorMsg);
+                    }
+                });
+            }
+            return base.CheckAuth((ct) =>
+            {
+                ctx = EmiContext.Load(ct);
                 if (ctx.install)
                 {
                     return func.Invoke(ctx);
                 }
                 else
                 {
-                    msg = ctx.message;
+                    errorMsg = ctx.message;
+                    return fail.Invoke();
                 }
-            }
-            else
-            {
-                msg = "访问无效，请求超时或已失效";
-            }
-            if (result == null)
-            {
-                if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
-                {
-                    Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
-                    Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
-                    result = Json(new { success = false, message = msg });
-                }
-                else
-                {
-                    result = ErrorMsg(msg);
-                }
-            }
-            return result;
+            }, fail, ehost);
         }
+
         /// <summary>
         /// 检查登录认证状态
         /// </summary>
         /// <param name="func"></param>
-        /// <param name="result"></param>
+        /// <param name="fail"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult CheckSession(Func<XSession, EmiContext, IActionResult> func, IActionResult result = null)
+        public IActionResult CheckSession(Func<XSession, EmiContext, IActionResult> func, Func<IActionResult> fail = null)
         {
-            return CheckAuth((ctx) =>
+            if (fail == null)
             {
-                var msg = "";
+                fail = new Func<IActionResult>(() =>
+                {
+                    errorTitle = "请先登录";
+                    Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
+                    Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
+                    if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
+                    {
+                        var err = new { success = false, message = string.IsNullOrEmpty(errorMsg) ? "暂未登录或已失效，请登录" : errorMsg };
+                        errorMsg = "";
+                        return Json(err);
+                    }
+                    else
+                    {
+                        var errorPage = new ContentResult();
+                        errorPage.ContentType = "text/html;charset=utf-8";
+                        errorPage.Content = errorHtml.Replace("{{errorMsg}}", "暂未登录或已失效，请登录").Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
+                        errorMsg = "";
+                        return errorPage;
+                    }
+                });
+            }
+            return this.CheckAuth((ctx) =>
+            {
                 var authorization = HeaderRequest("Authorization");
                 if (Request.Query.Keys.Contains("xsession"))
                 {
@@ -214,138 +153,11 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
-                    if (result == null)
-                    {
-                        msg = "暂未登录或已失效，请登录";
-                        if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
-                        {
-                            Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
-                            Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
-                            result = Json(new { success = false, message = msg });
-                        }
-                        else
-                        {
-                            result = ErrorMsg(msg);
-                        }
-                    }
-                    return result;
+                    return fail.Invoke();
                 }
-            }, result);
+            });
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Code"></param>
-        /// <param name="func"></param>
-        /// <param name="result"></param>
-        /// <returns></returns>
-        [NonAction]
-        public IActionResult? CheckPermission(String Code, Func<IActionResult> func, IActionResult result = null)
-        {
-            if (ctx == null || xsession == null)
-            {
-                return Json(new { success = false, message = "请先调用“CheckSession”后再进行权限验证" });
-            }
-            else if (string.IsNullOrEmpty(Code))
-            {
-                if (Request.Method == "POST" || !string.IsNullOrEmpty(method))
-                {
-                    errorMsg = "";
-                    return Json(new { success = false, message = "要验证的权限无效，请检查权限编码是否正确" });
-                }
-                else
-                {
-                    errorMsg = "要验证的权限无效，请检查权限编码是否正确";
-                    errorTitle = "操作未授权";
-                    var errorPage = new ContentResult();
-                    errorPage.ContentType = "text/html;charset=utf-8";
-                    errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-                    return errorPage;
-                }
-            }
-            else
-            {
-                var rlt = ctx.EmiGet<Boolean>("app", "permission"
-                    , new KeyValuePair<string, string>("sid", xsession.UserSid)
-                    , new KeyValuePair<string, string>("code", Code));
-                if (rlt.data)
-                {
-                    return func?.Invoke();
-                }
-                else if (Request.Method == "POST" || string.IsNullOrEmpty(method))
-                {
-                    errorMsg = rlt.message;
-                    errorTitle = "操作未授权";
-                    var errorPage = new ContentResult();
-                    errorPage.ContentType = "text/html;charset=utf-8";
-                    errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-                    return errorPage;
-                }
-                else
-                {
-                    errorMsg = "";
-                    return Json(new { success = false, message = rlt.message });
-                }
-            }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Code"></param>
-        /// <param name="Organ"></param>
-        /// <param name="func"></param>
-        /// <returns></returns>
-        [NonAction]
-        public IActionResult? CheckPermission(String Code, String Organ, Func<IActionResult> func)
-        {
-            if (ctx == null || xsession == null)
-            {
-                return Json(new { success = false, message = "请先调用“CheckSession”后再进行权限验证" });
-            }
-            else if (string.IsNullOrEmpty(Code))
-            {
-                if (Request.Method == "POST" || !string.IsNullOrEmpty(method))
-                {
-                    errorMsg = "";
-                    return Json(new { success = false, message = "要验证的权限无效，请检查权限编码是否正确" });
-                }
-                else
-                {
-                    errorMsg = "要验证的权限无效，请检查权限编码是否正确";
-                    errorTitle = "操作未授权";
-                    var errorPage = new ContentResult();
-                    errorPage.ContentType = "text/html;charset=utf-8";
-                    errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-                    return errorPage;
-                }
-            }
-            else
-            {
-                var rlt = ctx.EmiGet<Boolean>("app", "permissionorgan"
-                    , new KeyValuePair<string, string>("sid", xsession.UserSid)
-                    , new KeyValuePair<string, string>("code", Code)
-                    , new KeyValuePair<string, string>("organ", Organ));
-                if (rlt.data)
-                {
-                    return func?.Invoke();
-                }
-                else if (Request.Method == "POST" || string.IsNullOrEmpty(method))
-                {
-                    errorMsg = rlt.message;
-                    errorTitle = "操作未授权";
-                    var errorPage = new ContentResult();
-                    errorPage.ContentType = "text/html;charset=utf-8";
-                    errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-                    return errorPage;
-                }
-                else
-                {
-                    errorMsg = "";
-                    return Json(new { success = false, message = rlt.message });
-                }
-            }
-        }
 
         /// <summary>
         /// 返回无权限提示
@@ -355,22 +167,106 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult NoPermission(Boolean ajax = false)
         {
+            errorTitle = "操作未授权";
             if (ajax || Request.Method == "POST" || !string.IsNullOrEmpty(method))
             {
+                var err = new { success = false, message = string.IsNullOrEmpty(errorMsg) ? "您暂无执行当前操作的权限" : errorMsg };
                 errorMsg = "";
-                return Json(new { success = false, message = "您暂无执行当前操作的权限" });
+                return Json(err);
             }
             else
             {
-                errorMsg = "您暂无执行当前操作的权限";
-                errorTitle = "操作未授权";
                 var errorPage = new ContentResult();
                 errorPage.ContentType = "text/html;charset=utf-8";
-                errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
+                errorPage.Content = errorHtml.Replace("{{errorMsg}}", "您暂无执行当前操作的权限").Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
+                errorMsg = "";
                 return errorPage;
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="code"></param>
+        /// <param name="func"></param>
+        /// <param name="fail"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult? CheckPermission(String code, Func<IActionResult> func, Func<IActionResult> fail = null)
+        {
+            if (fail == null)
+            {
+                fail = new Func<IActionResult>(() =>
+                {
+                    return NoPermission();
+                });
+            }
+            if (ctx == null || xsession == null)
+            {
+                errorMsg = "请先调用“CheckSession”后再进行权限验证";
+            }
+            else if (string.IsNullOrEmpty(code))
+            {
+                errorMsg = "要验证的权限无效，请检查权限编码是否正确";
+            }
+            else
+            {
+                var rlt = ctx.EmiGet<Boolean>("app", "permission"
+                    , new KeyValuePair<string, string>("sid", xsession.UserSid)
+                    , new KeyValuePair<string, string>("code", code));
+                if (rlt.data)
+                {
+                    return func?.Invoke();
+                }
+                else
+                {
+                    errorMsg = rlt.message;
+                }
+            }
+            return fail?.Invoke();
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="code"></param>
+        /// <param name="organ"></param>
+        /// <param name="func"></param>
+        /// <param name="fail"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult? CheckPermission(String code, String organ, Func<IActionResult> func, Func<IActionResult> fail = null)
+        {
+            if (fail == null)
+            {
+                fail = new Func<IActionResult>(() =>
+                {
+                    return NoPermission();
+                });
+            }
+            if (ctx == null || xsession == null)
+            {
+                errorMsg = "请先调用“CheckSession”后再进行权限验证";
+            }
+            else if (string.IsNullOrEmpty(code))
+            {
+                errorMsg = "要验证的权限无效，请检查权限编码是否正确";
+            }
+            else
+            {
+                var rlt = ctx.EmiGet<Boolean>("app", "permissionorgan"
+                    , new KeyValuePair<string, string>("sid", xsession.UserSid)
+                    , new KeyValuePair<string, string>("code", code)
+                    , new KeyValuePair<string, string>("organ", organ));
+                if (rlt.data)
+                {
+                    return func?.Invoke();
+                }
+                else
+                {
+                    errorMsg = rlt.message;
+                }
+            }
+            return fail?.Invoke();
+        }
 
     }
 }

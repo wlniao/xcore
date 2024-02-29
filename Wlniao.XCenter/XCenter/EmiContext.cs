@@ -15,6 +15,7 @@ using static System.Net.Mime.MediaTypeNames;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
+using Newtonsoft.Json.Linq;
 
 namespace Wlniao.XCenter
 {
@@ -62,9 +63,78 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 根据host生成一个EmiContext对象
         /// </summary>
+        /// <param name="ctx"></param>
+        /// <returns></returns>
+        public static EmiContext Load(Context ctx)
+        {
+            var emi = Cache.Get<EmiContext>("emi_context_" + ctx.domain);
+            if (emi == null || !emi.install)
+            {
+                emi = new EmiContext()
+                {
+                    app = ctx.app,
+                    name = ctx.name,
+                    brand = ctx.brand,
+                    owner = ctx.owner,
+                    token = ctx.token,
+                    domain = ctx.domain,
+                    message = ctx.message,
+                    register = DateTime.MinValue,
+                    https = true
+                };
+                if (!string.IsNullOrEmpty(ctx.message))
+                {
+                    emi.message = ctx.message;
+                }
+                else if (string.IsNullOrEmpty(ctx.app))
+                {
+                    emi.message = "参数XCenterApp未配置，请配置";
+                }
+                else
+                {
+                    var check = emi.EmiGet<String>("app", "check", new KeyValuePair<string, string>("app", ctx.app));
+                    if (check.success || check.message == "install")
+                    {
+                        emi.install = true;
+                        emi.register = DateTime.Now.AddMinutes(5);
+                        Cache.Set("emi_context_" + ctx.domain, emi, 600);
+                    }
+                    else if (check.success)
+                    {
+                        emi.install = false;
+                        emi.register = DateTime.MinValue;
+                        emi.message = "模块未安装，请先安装";
+                    }
+                    else if (check.message == "request is expired")
+                    {
+                        emi.message = "请求超时，请检查服务器时间是否同步";
+                    }
+                    else if (check.message == "token not config")
+                    {
+                        emi.message = "Token参数未配置，请先配置或注册";
+                    }
+                    else if (check.message.Contains("token error"))
+                    {
+                        emi.message = "参数Token配置错误，请重新配置或注册";
+                    }
+                    else if (check.message == "request exception")
+                    {
+                        emi.message = "Emi服务器链接失败，请确保服务器已启动并检查您填写的地址是否正确!";
+                    }
+                    else
+                    {
+                        emi.message = check.message;
+                    }
+                }
+            }
+            return emi;
+        }
+        /// <summary>
+        /// 根据host生成一个EmiContext对象
+        /// </summary>
         /// <param name="domain"></param>
         /// <returns></returns>
-        public static new EmiContext Load(String domain)
+        public static EmiContext Load2(String domain)
         {
             var emi = Cache.Get<EmiContext>("emi_context_" + domain);
             if (emi == null || !emi.install)
@@ -390,6 +460,52 @@ namespace Wlniao.XCenter
             return val;
         }
 
+        /// <summary>
+        /// 根据类型获取枚举名称
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public String GetEnumName(String key)
+        {
+            var val = Cache.Get<String>("emi_" + this.owner + "_enumname_" + key);
+            if (string.IsNullOrEmpty(val))
+            {
+                var rlt = EmiGet<Wlniao.XCenter.Models.Enum>("app", "getenum", new KeyValuePair<string, string>("key", key));
+                if (rlt.success && rlt.data != null && !string.IsNullOrEmpty(rlt.data.label))
+                {
+                    val = rlt.data.label;
+                    Cache.Set("emi_" + this.owner + "_enumname_" + key, val, 300);
+                }
+            }
+            if (string.IsNullOrEmpty(val))
+            {
+                val = key;
+            }
+            return val;
+        }
+        /// <summary>
+        /// 根据类型获取枚举列表
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <returns></returns>
+        public List<Wlniao.XCenter.Models.Enum> GetEnumList(String parent)
+        {
+            var val = Cache.Get<List<Wlniao.XCenter.Models.Enum>>("emi_" + this.owner + "_enumlist_" + parent);
+            if (val == null || val.Count == 0)
+            {
+                var rlt = EmiGet<List<Wlniao.XCenter.Models.Enum>>("app", "getenumlist", new KeyValuePair<string, string>("parent", parent));
+                if (rlt.success && rlt.data != null && rlt.data.Count > 0)
+                {
+                    val = rlt.data;
+                    Cache.Set("emi_" + this.owner + "_enumlist_" + parent, val, 300);
+                }
+            }
+            if (val == null)
+            {
+                val = new List<Models.Enum>();
+            }
+            return val;
+        }
         /// <summary>
         /// 获取一个账号信息
         /// </summary>
