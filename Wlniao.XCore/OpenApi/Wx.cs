@@ -299,15 +299,16 @@ namespace Wlniao.OpenApi
                 {
                     if (_response.IndexOf("access_token") > 0)
                     {
-                        var obj = Json.ToObject<Wlniao.OpenApi.Wx.AccessToken>(_response);
-                        rlt.success = obj != null && !string.IsNullOrEmpty(obj.access_token);
-                        rlt.message = "expires in " + obj.expires_in;
-                        rlt.data = obj.access_token;
+                        //var obj = Json.ToObject<Wlniao.OpenApi.Wx.AccessToken>(_response);
+                        var obj = Json.ToObject<Dictionary<string, object>>(_response);
+                        rlt.data = obj.GetString("access_token");
+                        rlt.message = "expires in " + obj.GetString("expires_in");
+                        rlt.success = obj != null && !string.IsNullOrEmpty(rlt.data);
                     }
                     else
                     {
-                        var err = Json.ToObject<Wlniao.OpenApi.Wx.ErrMsg>(_response);
-                        rlt.message = err.errmsg;
+                        var obj = Json.ToObject<Dictionary<string, object>>(_response);
+                        rlt.message = obj.GetString("errmsg");
                     }
                 }
                 catch { }
