@@ -25,6 +25,10 @@ namespace Wlniao.XCenter
         /// </summary>
         internal new EmiContext ctx = null;
         /// <summary>
+        /// 无权限提示消息
+        /// </summary>
+        private String nopermissionMessage = "";
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="context"></param>
@@ -58,7 +62,6 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult CheckAuth(Func<EmiContext, IActionResult> func, Func<IActionResult> fail = null)
         {
-            var msg = "";
             var ehost = GetCookies("ehost");
             if (Request.Query.Keys.Contains("ehost"))
             {
@@ -77,9 +80,9 @@ namespace Wlniao.XCenter
                     Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
                     if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                     {
-                        var err = new { success = false, message = errorMsg };
+                        var err = new ApiResult<string> { message = errorMsg };
                         errorMsg = "";
-                        return Json(err);
+                        return OutputSerialize(err);
                     }
                     else
                     {
@@ -120,9 +123,9 @@ namespace Wlniao.XCenter
                     Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
                     if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                     {
-                        var err = new { success = false, message = string.IsNullOrEmpty(errorMsg) ? "暂未登录或已失效，请登录" : errorMsg };
+                        var err = new ApiResult<string> { message = string.IsNullOrEmpty(errorMsg) ? "暂未登录或已失效，请登录" : errorMsg };
                         errorMsg = "";
-                        return Json(err);
+                        return OutputSerialize(err);
                     }
                     else
                     {
@@ -168,18 +171,19 @@ namespace Wlniao.XCenter
         public IActionResult NoPermission(Boolean ajax = false)
         {
             errorTitle = "操作未授权";
+            if (string.IsNullOrEmpty(nopermissionMessage))
+            {
+                nopermissionMessage = "您暂无执行当前操作的权限";
+            }
             if (ajax || Request.Method == "POST" || !string.IsNullOrEmpty(method))
             {
-                var err = new { success = false, message = string.IsNullOrEmpty(errorMsg) ? "您暂无执行当前操作的权限" : errorMsg };
-                errorMsg = "";
-                return Json(err);
+                return OutputSerialize(new ApiResult<string> { message = nopermissionMessage });
             }
             else
             {
                 var errorPage = new ContentResult();
                 errorPage.ContentType = "text/html;charset=utf-8";
-                errorPage.Content = errorHtml.Replace("{{errorMsg}}", "您暂无执行当前操作的权限").Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-                errorMsg = "";
+                errorPage.Content = errorHtml.Replace("{{errorMsg}}", nopermissionMessage).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
                 return errorPage;
             }
         }
@@ -202,11 +206,11 @@ namespace Wlniao.XCenter
             }
             if (ctx == null || xsession == null)
             {
-                errorMsg = "请先调用“CheckSession”后再进行权限验证";
+                nopermissionMessage = "请先调用“CheckSession”后再进行权限验证";
             }
             else if (string.IsNullOrEmpty(code))
             {
-                errorMsg = "要验证的权限无效，请检查权限编码是否正确";
+                nopermissionMessage = "要验证的权限无效，请检查权限编码是否正确";
             }
             else
             {
@@ -219,7 +223,7 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
-                    errorMsg = rlt.message;
+                    nopermissionMessage = rlt.message;
                 }
             }
             return fail?.Invoke();
@@ -244,11 +248,11 @@ namespace Wlniao.XCenter
             }
             if (ctx == null || xsession == null)
             {
-                errorMsg = "请先调用“CheckSession”后再进行权限验证";
+                nopermissionMessage = "请先调用“CheckSession”后再进行权限验证";
             }
             else if (string.IsNullOrEmpty(code))
             {
-                errorMsg = "要验证的权限无效，请检查权限编码是否正确";
+                nopermissionMessage = "要验证的权限无效，请检查权限编码是否正确";
             }
             else
             {
@@ -262,7 +266,7 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
-                    errorMsg = rlt.message;
+                    nopermissionMessage = rlt.message;
                 }
             }
             return fail?.Invoke();

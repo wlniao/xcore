@@ -8,6 +8,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Hosting;
 
 namespace Wlniao.XCenter
 {
@@ -42,14 +43,11 @@ namespace Wlniao.XCenter
         {
             if (fail == null)
             {
-                // Authify平台授权加载失败时执行
-                Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
-                Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
                 fail = new Func<IActionResult>(() =>
                 {
                     if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                     {
-                        return Json(new { success = false, ctx?.message });
+                        return OutputSerialize(new ApiResult<string> { message = ctx?.message });
                     }
                     else
                     {
@@ -77,10 +75,10 @@ namespace Wlniao.XCenter
         /// </summary>
         /// <param name="func"></param>
         /// <param name="fail"></param>
-        /// <param name="host"></param>
+        /// <param name="ticket"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult CheckSession(Func<XSession, Context, IActionResult> func, Func<IActionResult> fail = null, String host = null)
+        public IActionResult CheckSession(Func<XSession, Context, IActionResult> func, Func<IActionResult> fail = null, String ticket = null)
         {
             if (fail == null)
             {
@@ -91,9 +89,9 @@ namespace Wlniao.XCenter
                 {
                     if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                     {
-                        var err = new { success = false, message = errorMsg };
+                        var err = new ApiResult<string> { message = errorMsg };
                         errorMsg = "";
-                        return Json(err);
+                        return OutputSerialize(err);
                     }
                     else
                     {
@@ -107,24 +105,18 @@ namespace Wlniao.XCenter
             }
             return CheckAuth((ctx) =>
             {
-                var authorization = HeaderRequest("Authorization");
-                if (Request.Query.Keys.Contains("xsession"))
+                if (string.IsNullOrEmpty(ticket))
                 {
-                    authorization = GetRequestNoSecurity("xsession");
-                    Response.Cookies.Append("xs_" + ctx.app, authorization, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
+                    ticket = HeaderRequest("Authorization");
                 }
-                else if (string.IsNullOrEmpty(authorization))
-                {
-                    authorization = GetCookies("xs_" + ctx.app);
-                }
-                xsession = new XSession(ctx, authorization);
+                xsession = new XSession(ctx, ticket);
                 if (xsession.IsValid && xsession.OwnerId == ctx.owner)
                 {
                     return func.Invoke(xsession, ctx);
                 }
                 else
                 {
-                    if (string.IsNullOrEmpty(authorization))
+                    if (string.IsNullOrEmpty(ticket))
                     {
                         errorMsg = "authorization is missing";
                     }
@@ -138,7 +130,7 @@ namespace Wlniao.XCenter
                     }
                     return fail.Invoke();
                 }
-            }, fail, host);
+            }, fail, null);
         }
 
         /// <summary>
@@ -181,9 +173,9 @@ namespace Wlniao.XCenter
             else if (string.IsNullOrEmpty(this.sm4key))
             {
                 var sm2token = HeaderRequest("sm2token");
-                if (!string.IsNullOrEmpty(sm2token) && Context.XCenterPublicKey != null)
+                if (!string.IsNullOrEmpty(sm2token) && Context.XCenterPrivkey != null)
                 {
-                    this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPublicKey);
+                    this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
                 }
             }
             if (!string.IsNullOrEmpty(this.sm4key))
@@ -233,9 +225,9 @@ namespace Wlniao.XCenter
             else if (string.IsNullOrEmpty(this.sm4key))
             {
                 var sm2token = HeaderRequest("sm2token");
-                if (!string.IsNullOrEmpty(input) && !string.IsNullOrEmpty(sm2token) && Context.XCenterPublicKey != null)
+                if (!string.IsNullOrEmpty(sm2token) && Context.XCenterPrivkey != null)
                 {
-                    this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPublicKey);
+                    this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
                 }
             }
             if (!string.IsNullOrEmpty(this.sm4key))
@@ -259,7 +251,7 @@ namespace Wlniao.XCenter
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         [NonAction]
-        public String OutputSerialize<T>(ApiResult<T> result)
+        public IActionResult OutputSerialize<T>(ApiResult<T> result)
         {
             var output = "";
             var option = new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
@@ -282,14 +274,14 @@ namespace Wlniao.XCenter
                 {
                     tmp.data = Encryptor.SM4EncryptECBToHex(result.data.ToString(), this.sm4key, true);
                 }
-                else
+                else if (result.data != null)
                 {
                     var json = JsonSerializer.Serialize<T>(result.data, option);
                     tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
                 }
                 output = JsonSerializer.Serialize<ApiResult<String>>(tmp, option);
             }
-            return output;
+            return JsonStr(output);
         }
 
     }
