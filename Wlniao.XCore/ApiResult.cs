@@ -36,10 +36,6 @@ namespace Wlniao
         /// 业务返回数据
         /// </summary>
         private T _data = default(T);
-        /// <summary>
-        /// 链路追踪ID
-        /// </summary>
-        public string traceid { get; set; }
 
         /// <summary>
         /// 服务端提示消息
@@ -75,6 +71,10 @@ namespace Wlniao
         /// </summary>
         [DefaultValue("")]
         public string code { get; set; }
+        /// <summary>
+        /// 链路追踪ID
+        /// </summary>
+        public string traceid { get; set; }
 
         /// <summary>
         /// 业务返回数据

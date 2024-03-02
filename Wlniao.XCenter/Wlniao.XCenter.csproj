@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Authors>XieChaoyi</Authors>
     <Nullable>enable</Nullable>
-    <Version>8.0.13-beta1</Version>
+    <Version>8.0.14-beta1</Version>
     <TargetFramework>net8.0</TargetFramework>
     <PackageId>Wlniao.XCenter</PackageId>
     <PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
@@ -44,6 +44,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Wlniao.AspNetCore" Version="8.0.12" />
+    <PackageReference Include="Wlniao.AspNetCore" Version="8.0.13" />
   </ItemGroup>
 </Project>

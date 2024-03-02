@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Version>8.0.13-beta3</Version>
+		<Version>8.0.14-beta1</Version>
 		<PackageId>Wlniao.XCore</PackageId>
 		<PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
