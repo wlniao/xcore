@@ -34,9 +34,20 @@ namespace Wlniao.XCenter
         /// <param name="context"></param>
         public override void OnActionExecuted(ActionExecutedContext context)
         {
-            if (ctx != null && string.IsNullOrEmpty(ViewBag.eHost))
+            if (ctx != null)
             {
-                ViewBag.eHost = ctx?.EmiHost;
+                if (string.IsNullOrEmpty(ViewBag.eHost))
+                {
+                    ViewBag.eHost = ctx?.EmiHost;
+                }
+                if (string.IsNullOrEmpty(ViewBag.EmiHost))
+                {
+                    ViewBag.EmiHost = ctx?.EmiHost;
+                }
+                if (string.IsNullOrEmpty(ViewBag.CdnHost))
+                {
+                    ViewBag.CdnHost = ctx?.CdnPrefix;
+                }
             }
             base.OnActionExecuted(context);
         }

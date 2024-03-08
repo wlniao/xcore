@@ -16,6 +16,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
 using Newtonsoft.Json.Linq;
+using Wlniao.Serialization;
 
 namespace Wlniao.XCenter
 {
@@ -26,6 +27,10 @@ namespace Wlniao.XCenter
     {
         private static string XCenterEmi = Wlniao.Config.GetConfigs("XCenterEmi");
 
+        /// <summary>
+        /// CDN服务地址
+        /// </summary>
+        public string cdn { get; set; }
         /// <summary>
         /// 是否支持Https
         /// </summary>
@@ -56,6 +61,38 @@ namespace Wlniao.XCenter
                 else
                 {
                     return "http://" + domain;
+                }
+            }
+        }
+        /// <summary>
+        /// CDN服务前缀
+        /// </summary>
+        public string CdnPrefix
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(cdn))
+                {
+                    return EmiHost;
+                }
+                else
+                {
+                    return cdn;
+                }
+            }
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    cdn = "";
+                }
+                else
+                {
+                    cdn = value.Trim().TrimEnd('/');
+                    //if (cdn.IndexOf("://") > 0)
+                    //{
+                    //    cdn = cdn.Substring(cdn.IndexOf(":") + 1);
+                    //}
                 }
             }
         }
@@ -92,11 +129,21 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
-                    var check = emi.EmiGet<String>("app", "check", new KeyValuePair<string, string>("app", ctx.app));
+                    var check = emi.EmiGet<Dictionary<string, object>>("app", "check", new KeyValuePair<string, string>("app", ctx.app));
                     if (check.success || check.message == "install")
                     {
                         emi.install = true;
                         emi.register = DateTime.Now.AddMinutes(5);
+                        if (check.data != null)
+                        {
+                            emi.cdn = check.data.GetString("cdn");
+                        }
+                        //try
+                        //{
+                        //    emi.cdn = "";
+                        //    var ext = JsonSerializer.Deserialize<Dictionary<string, object>>(check.data, new JsonSerializerOptions { });
+                        //}
+                        //catch { }
                         Cache.Set("emi_context_" + ctx.domain, emi, 600);
                     }
                     else if (check.success)
