@@ -64,7 +64,7 @@ namespace Wlniao.XCenter
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// 用户姓名
+        /// 登录账号
         /// </summary>
         public string Account { get; set; }
         /// <summary>

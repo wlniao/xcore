@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Authors>XieChaoyi</Authors>
     <Nullable>enable</Nullable>
-    <Version>8.0.15-beta1</Version>
+    <Version>8.0.16-beta1</Version>
     <TargetFramework>net8.0</TargetFramework>
     <PackageId>Wlniao.XCenter</PackageId>
     <PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>

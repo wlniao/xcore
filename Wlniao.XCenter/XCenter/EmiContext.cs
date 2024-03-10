@@ -63,6 +63,17 @@ namespace Wlniao.XCenter
                     return "http://" + domain;
                 }
             }
+            set
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    domain = value.Trim().Trim('/');
+                    if (domain.IndexOf("://") > 0)
+                    {
+                        domain = domain.Substring(domain.IndexOf("://") + 3);
+                    }
+                }
+            }
         }
         /// <summary>
         /// CDN服务前缀
@@ -89,10 +100,6 @@ namespace Wlniao.XCenter
                 else
                 {
                     cdn = value.Trim().TrimEnd('/');
-                    //if (cdn.IndexOf("://") > 0)
-                    //{
-                    //    cdn = cdn.Substring(cdn.IndexOf(":") + 1);
-                    //}
                 }
             }
         }
@@ -119,6 +126,10 @@ namespace Wlniao.XCenter
                     register = DateTime.MinValue,
                     https = true
                 };
+                if (!string.IsNullOrEmpty(XCenterEmi))
+                {
+                    emi.domain = XCenterEmi;
+                }
                 if (!string.IsNullOrEmpty(ctx.message))
                 {
                     emi.message = ctx.message;
@@ -138,12 +149,6 @@ namespace Wlniao.XCenter
                         {
                             emi.cdn = check.data.GetString("cdn");
                         }
-                        //try
-                        //{
-                        //    emi.cdn = "";
-                        //    var ext = JsonSerializer.Deserialize<Dictionary<string, object>>(check.data, new JsonSerializerOptions { });
-                        //}
-                        //catch { }
                         Cache.Set("emi_context_" + ctx.domain, emi, 600);
                     }
                     else if (check.success)

@@ -64,6 +64,7 @@ namespace Wlniao.XCenter
                 return Json(new { success = true, ctx.domain, ticket = xsession.BuildTicket() });
             });
         }
+
         /// <summary>
         /// 检查系统使用授权
         /// </summary>
@@ -172,7 +173,6 @@ namespace Wlniao.XCenter
             });
         }
 
-
         /// <summary>
         /// 返回无权限提示
         /// </summary>
@@ -198,6 +198,7 @@ namespace Wlniao.XCenter
                 return errorPage;
             }
         }
+
         /// <summary>
         /// 
         /// </summary>
@@ -239,6 +240,7 @@ namespace Wlniao.XCenter
             }
             return fail?.Invoke();
         }
+
         /// <summary>
         /// 
         /// </summary>

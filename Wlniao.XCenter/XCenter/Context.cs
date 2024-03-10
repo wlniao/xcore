@@ -56,23 +56,23 @@ namespace Wlniao.XCenter
         internal static string XCenterToken = Wlniao.Config.GetSetting("XCenterToken");
         internal static string XCenterBrand = Wlniao.Config.GetConfigs("XCenterBrand");
         internal static string XCenterDomain = Wlniao.Config.GetSetting("XCenterDomain").Replace("https://", "").Replace("http://", "").Trim('/');
-        private static string _XCenterHost = null;
+        private static string _AuthifyHost = null;
         private static string _XCenterSm4Key = null;
         private static string _XCenterCertSn = null;
         private static byte[] _XCenterPrivkey = null;
         private static byte[] _XCenterPublicKey = null;
         /// <summary>
-        /// XCenter认证服务器地址
+        /// Authify认证服务器地址
         /// </summary>
-        public static string XCenterHost
+        public static string AuthifyHost
         {
             get
             {
-                if (_XCenterHost == null)
+                if (_AuthifyHost == null)
                 {
-                    _XCenterHost = Wlniao.Config.GetConfigs("XCenterHost", "https://authify.cn");
+                    _AuthifyHost = Wlniao.Config.GetConfigs("AuthifyHost", "https://authify.cn");
                 }
-                return _XCenterHost;
+                return _AuthifyHost;
             }
         }
         /// <summary>
@@ -302,7 +302,7 @@ namespace Wlniao.XCenter
             var reqStr = Wlniao.Json.ToString(new { sn = XCenterCertSn, token = sm2token, timestamp = now, data = encdata, sign });
             if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
             {
-                log.Topic("authify", "msgid:" + msgid + ", " + XCenterHost + path + "\n >>> " + reqStr);
+                log.Topic("authify", "msgid:" + msgid + ", " + AuthifyHost + path + "\n >>> " + reqStr);
             }
             try
             {
@@ -310,7 +310,7 @@ namespace Wlniao.XCenter
                 var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
-                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, XCenterHost + path);
+                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path);
                     reqest.Headers.Date = DateTime.Now;
                     reqest.Content = new System.Net.Http.StreamContent(stream);
                     reqest.Content.Headers.Add("Content-Type", "application/json");
@@ -439,7 +439,7 @@ namespace Wlniao.XCenter
             var reqStr = Wlniao.Json.ToString(new { app, oid = owner, sign, data = encdata, timestamp = now });
             if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
             {
-                log.Topic(app, "msgid:" + msgid + ", " + XCenterHost + path + "\n >>> " + reqStr);
+                log.Topic(app, "msgid:" + msgid + ", " + AuthifyHost + path + "\n >>> " + reqStr);
             }
             try
             {
@@ -447,7 +447,7 @@ namespace Wlniao.XCenter
                 var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
-                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, XCenterHost + path);
+                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path);
                     reqest.Headers.Date = DateTime.Now;
                     reqest.Content = new System.Net.Http.StreamContent(stream);
                     reqest.Content.Headers.Add("Content-Type", "application/json");
