@@ -78,15 +78,13 @@ namespace Wlniao.XCenter
         /// <param name="ticket"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult CheckSession(Func<XSession, Context, IActionResult> func, Func<IActionResult> fail = null, String ticket = null)
+        public IActionResult CheckSession(Func<XSession, Context, IActionResult> func, Func<IActionResult> fail = null, String ticket = null, Boolean addHeader = true)
         {
             if (fail == null)
             {
-                // Authify平台授权加载失败时执行
-                Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
-                Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
                 fail = new Func<IActionResult>(() =>
                 {
+                    // Authify平台授权加载失败时执行
                     if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                     {
                         var err = new ApiResult<string> { message = errorMsg };
@@ -128,10 +126,57 @@ namespace Wlniao.XCenter
                     {
                         errorMsg = "authorization is error";
                     }
+                    if (addHeader)
+                    {
+                        AddHeaderWithLogout();
+                    }
                     return fail.Invoke();
                 }
             }, fail, null);
         }
+
+
+        /// <summary>
+        /// 检查用户登录状态
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="ticket"></param>
+        /// <returns></returns>
+        [NonAction]
+        public XSession CheckSessionBack(Context? ctx, String ticket = null)
+        {
+            if (ctx == null)
+            {
+                var host = "";
+                if (string.IsNullOrEmpty(host) && string.IsNullOrEmpty(Context.XCenterDomain))
+                {
+                    host = HeaderRequest("x-domain", UrlDomain);
+                }
+                ctx = Context.Load(host);
+            }
+            if (ctx == null || string.IsNullOrEmpty(ctx.owner) || string.IsNullOrEmpty(ctx.token) || !string.IsNullOrEmpty(ctx.message) || (string.IsNullOrEmpty(ctx.app) && string.IsNullOrEmpty(ctx.domain)))
+            {
+                return new XSession(ctx);
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(ticket))
+                {
+                    ticket = HeaderRequest("Authorization");
+                }
+                return new XSession(ctx, ticket);
+            }
+        }
+        /// <summary>
+        /// 添加要求客户端登录的头信息
+        /// </summary>
+        [NonAction]
+        public void AddHeaderWithLogout()
+        {
+            Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
+            Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
+        }
+
 
         /// <summary>
         /// 请求内容解析
@@ -203,7 +248,6 @@ namespace Wlniao.XCenter
             catch { }
             return result;
         }
-
 
         /// <summary>
         /// 请求内容反序列化

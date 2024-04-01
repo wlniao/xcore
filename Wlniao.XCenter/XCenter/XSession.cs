@@ -76,11 +76,14 @@ namespace Wlniao.XCenter
         /// 通过Token生成Session
         /// </summary>
         /// <param name="ctx"></param>
-        public XSession(Context ctx)
+        public XSession(Context? ctx)
         {
-            this.token = ctx.token;
-            this.AppCode = ctx.app;
-            this.OwnerId = ctx.owner;
+            if (ctx != null)
+            {
+                this.token = ctx.token;
+                this.AppCode = ctx.app;
+                this.OwnerId = ctx.owner;
+            }
             this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         }
 

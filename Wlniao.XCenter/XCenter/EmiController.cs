@@ -131,8 +131,6 @@ namespace Wlniao.XCenter
                 fail = new Func<IActionResult>(() =>
                 {
                     errorTitle = "请先登录";
-                    Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
-                    Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
                     if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                     {
                         var err = new ApiResult<string> { message = string.IsNullOrEmpty(errorMsg) ? "暂未登录或已失效，请登录" : errorMsg };
@@ -168,6 +166,8 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
+                    Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
+                    Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
                     return fail.Invoke();
                 }
             });
