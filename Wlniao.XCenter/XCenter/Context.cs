@@ -15,7 +15,7 @@ using static System.Net.Mime.MediaTypeNames;
 namespace Wlniao.XCenter
 {
     /// <summary>
-    /// 
+    /// XCenter接口访问工具
     /// </summary>
     public class Context
     {

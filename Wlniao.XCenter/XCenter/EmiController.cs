@@ -25,6 +25,10 @@ namespace Wlniao.XCenter
         /// </summary>
         internal new EmiContext ctx = null;
         /// <summary>
+        /// EMI主程序地址
+        /// </summary>
+        private String emihost = "";
+        /// <summary>
         /// 无权限提示消息
         /// </summary>
         private String nopermissionMessage = "";
@@ -36,13 +40,14 @@ namespace Wlniao.XCenter
         {
             if (ctx != null)
             {
+                var ehost = string.IsNullOrEmpty(emihost) ? ctx?.EmiHost : "//" + emihost;
                 if (string.IsNullOrEmpty(ViewBag.eHost))
                 {
-                    ViewBag.eHost = ctx?.EmiHost;
+                    ViewBag.eHost = ehost;
                 }
                 if (string.IsNullOrEmpty(ViewBag.EmiHost))
                 {
-                    ViewBag.EmiHost = ctx?.EmiHost;
+                    ViewBag.EmiHost = ehost;
                 }
                 if (string.IsNullOrEmpty(ViewBag.CdnHost))
                 {
@@ -74,15 +79,15 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult CheckAuth(Func<EmiContext, IActionResult> func, Func<IActionResult> fail = null)
         {
-            var ehost = GetCookies("ehost");
+            emihost = GetCookies("ehost");
             if (Request.Query.Keys.Contains("ehost"))
             {
-                ehost = GetRequestNoSecurity("ehost");
-                Response.Cookies.Append("ehost", ehost, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
+                emihost = GetRequestNoSecurity("ehost");
+                Response.Cookies.Append("ehost", emihost, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
             }
-            else if (string.IsNullOrEmpty(ehost))
+            else if (string.IsNullOrEmpty(emihost))
             {
-                ehost = HeaderRequest("x-domain", EmiContext.XCenterDomain);
+                emihost = HeaderRequest("x-domain", EmiContext.XCenterDomain);
             }
             if (fail == null)
             {
@@ -114,7 +119,7 @@ namespace Wlniao.XCenter
                     errorMsg = ctx.message;
                     return fail.Invoke();
                 }
-            }, fail, ehost);
+            }, fail, emihost);
         }
 
         /// <summary>
