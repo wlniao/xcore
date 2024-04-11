@@ -561,7 +561,7 @@ namespace Wlniao.XCenter
             return val;
         }
         /// <summary>
-        /// 获取一个账号信息
+        /// 获取一个账号姓名昵称
         /// </summary>
         /// <param name="eid"></param>
         /// <param name="mobile"></param>

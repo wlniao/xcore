@@ -208,46 +208,54 @@ namespace Wlniao.XCenter
             {
                 return new Context { message = "当前域名无效，请重新指定" };
             }
-            else if (string.IsNullOrEmpty(XCenterApp) || string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9)
+            else if (string.IsNullOrEmpty(XCenterApp) || string.IsNullOrEmpty(XCenterToken) || string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9)
             {
                 //需要使用公钥从服务器上加载应用信息
                 var ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };
                 try
                 {
-                    var res = AppData<Dictionary<string, object>>("/app/getapp_bydomain", new { domain = ctx.domain });
-                    if (res.success)
+                    if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPublicKey == null || XCenterPublicKey.Length < 201)
                     {
-                        ctx.app = res.data.GetString("app");
-                        ctx.name = res.data.GetString("name");
-                        ctx.brand = res.data.GetString("brand");
-                        ctx.owner = res.data.GetString("owner");
-                        if (string.IsNullOrEmpty(ctx.app))
-                        {
-                            ctx.app = XCenterApp;
-                        }
-                        if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
-                        {
-                            try
-                            {
-                                //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
-                                var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
-                                if (!string.IsNullOrEmpty(sm2token))
-                                {
-                                    ctx.token = sm2token;
-                                }
-                            }
-                            catch
-                            {
-                                if (string.IsNullOrEmpty(ctx.token))
-                                {
-                                    ctx.message = "XCenterToken加载失败";
-                                }
-                            }
-                        }
+                        ctx.message = "程序配置错误，请检查XCenter相关配置";
+                        log.Error("XCenterApp/XCenterOwner/XCenterToken 或 XCenterCertSn/XCenterPublicKey 至少需要配置一项");
                     }
                     else
                     {
-                        ctx.message = res.message;
+                        var res = AppData<Dictionary<string, object>>("/app/getapp_bydomain", new { domain = ctx.domain });
+                        if (res.success)
+                        {
+                            ctx.app = res.data.GetString("app");
+                            ctx.name = res.data.GetString("name");
+                            ctx.brand = res.data.GetString("brand");
+                            ctx.owner = res.data.GetString("owner");
+                            if (string.IsNullOrEmpty(ctx.app))
+                            {
+                                ctx.app = XCenterApp;
+                            }
+                            if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
+                            {
+                                try
+                                {
+                                    //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
+                                    var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
+                                    if (!string.IsNullOrEmpty(sm2token))
+                                    {
+                                        ctx.token = sm2token;
+                                    }
+                                }
+                                catch
+                                {
+                                    if (string.IsNullOrEmpty(ctx.token))
+                                    {
+                                        ctx.message = "XCenterToken加载失败";
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ctx.message = res.message;
+                        }
                     }
                 }
                 catch (Exception ex)

@@ -40,7 +40,7 @@ namespace Wlniao.XCenter
         {
             if (ctx != null)
             {
-                var ehost = string.IsNullOrEmpty(emihost) ? ctx?.EmiHost : "//" + emihost;
+                var ehost = string.IsNullOrEmpty(emihost) ? ctx?.EmiHost : (ctx.https ? "https://" : "//") + emihost;
                 if (string.IsNullOrEmpty(ViewBag.eHost))
                 {
                     ViewBag.eHost = ehost;
@@ -93,6 +93,18 @@ namespace Wlniao.XCenter
             {
                 fail = new Func<IActionResult>(() =>
                 {
+                    if (string.IsNullOrEmpty(errorMsg))
+                    {
+                        // 显示基础授权流程中的错误提示
+                        if (base.ctx != null && !string.IsNullOrEmpty(base.ctx.message))
+                        {
+                            errorMsg = base.ctx.message;
+                        }
+                        else if (ctx != null && !string.IsNullOrEmpty(ctx.message))
+                        {
+                            errorMsg = ctx.message;
+                        }
+                    }
                     Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
                     Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
                     if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
@@ -135,10 +147,26 @@ namespace Wlniao.XCenter
             {
                 fail = new Func<IActionResult>(() =>
                 {
-                    errorTitle = "请先登录";
+                    errorTitle = "用户身份校验异常";
+                    if (string.IsNullOrEmpty(errorMsg))
+                    {
+                        // 显示基础授权流程中的错误提示
+                        if (base.ctx != null && !string.IsNullOrEmpty(base.ctx.message))
+                        {
+                            errorMsg = base.ctx.message;
+                        }
+                        else if (ctx != null && !string.IsNullOrEmpty(ctx.message))
+                        {
+                            errorMsg = ctx.message;
+                        }
+                    }
+                    if (string.IsNullOrEmpty(errorMsg))
+                    {
+                        errorMsg = "暂未登录或已失效，请登录";
+                    }
                     if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                     {
-                        var err = new ApiResult<string> { message = string.IsNullOrEmpty(errorMsg) ? "暂未登录或已失效，请登录" : errorMsg };
+                        var err = new ApiResult<string> { message = errorMsg };
                         errorMsg = "";
                         return OutputSerialize(err);
                     }
@@ -146,7 +174,7 @@ namespace Wlniao.XCenter
                     {
                         var errorPage = new ContentResult();
                         errorPage.ContentType = "text/html;charset=utf-8";
-                        errorPage.Content = errorHtml.Replace("{{errorMsg}}", "暂未登录或已失效，请登录").Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
+                        errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
                         errorMsg = "";
                         return errorPage;
                     }

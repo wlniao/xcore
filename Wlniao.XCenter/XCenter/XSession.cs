@@ -108,6 +108,18 @@ namespace Wlniao.XCenter
                         this.OwnerId = data[2];
                         this.UserSid = data[3];
                     }
+                    else
+                    {
+                        if (string.IsNullOrEmpty(ctx.message) && !string.IsNullOrEmpty(Context.XCenterApp) && !string.IsNullOrEmpty(Context.XCenterToken) && !string.IsNullOrEmpty(Context.XCenterOwner))
+                        {
+                            ctx.message = "程序配置错误，请检查XCenterToken相关配置";
+                            log.Error("程序配置错误，建议检查XCenterApp与XCenterToken是否匹配");
+                        }
+                        else
+                        {
+                            ctx.message = "";
+                        }
+                    }
                     if (data.Length == 5)
                     {
                         var plain = strUtil.HexStringToUTF8(data[4]);
