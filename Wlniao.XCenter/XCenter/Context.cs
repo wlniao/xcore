@@ -52,11 +52,12 @@ namespace Wlniao.XCenter
         /// 
         /// </summary>
         public static string XCenterApp = Wlniao.Config.GetSetting("XCenterApp", XCore.WebNode);
+        internal static string XCenterAppToken = Wlniao.Config.GetConfigs("XCenterAppToken");
         internal static string XCenterName = Wlniao.Config.GetConfigs("XCenterName");
         internal static string XCenterOwner = Wlniao.Config.GetSetting("XCenterOwner");
         internal static string XCenterToken = Wlniao.Config.GetSetting("XCenterToken");
         internal static string XCenterBrand = Wlniao.Config.GetConfigs("XCenterBrand");
-        internal static string XCenterDomain = Wlniao.Config.GetSetting("XCenterDomain").Replace("https://", "").Replace("http://", "").Trim('/');
+        internal static string XCenterDomain = Wlniao.Config.GetSetting("XCenterDomain").ToLower().Replace("https://", "").Replace("http://", "").Trim('/');
         private static string _AuthifyHost = null;
         private static string _XCenterSm4Key = null;
         private static string _XCenterCertSn = null;
@@ -438,9 +439,12 @@ namespace Wlniao.XCenter
         public Wlniao.ApiResult<T> ApiData<T>(String path, Object data)
         {
             var rlt = new Wlniao.ApiResult<T>();
-            if (string.IsNullOrEmpty(token))
+            var apptoken = string.IsNullOrEmpty(token)
+                ? XCenterAppToken + ""
+                : Encryptor.Md5Encryptor16(app + ":" + token).ToLower();
+            if (string.IsNullOrEmpty(apptoken))
             {
-                rlt.message = "XCenterToken配置异常，请检查程序配置";
+                rlt.message = "配置异常，请检查XCenterToken或XCenterAppToken是否配置";
             }
             else
             {
@@ -449,8 +453,8 @@ namespace Wlniao.XCenter
                 var start = DateTime.Now;
                 var msgid = strUtil.CreateLongId();
                 var plainData = Wlniao.Json.ToString(data);
-                var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
-                var sign = Wlniao.Encryptor.SM3Encrypt(owner + app + encdata + now + token);
+                var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, apptoken);
+                var sign = Wlniao.Encryptor.SM3Encrypt(owner + app + encdata + now + apptoken);
                 var resStr = "";
                 var reqStr = Wlniao.Json.ToString(new { app, oid = owner, sign, data = encdata, timestamp = now });
                 if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
@@ -498,7 +502,7 @@ namespace Wlniao.XCenter
                         rlt.success = resObj.success;
                         if (resObj.success)
                         {
-                            var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                            var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, apptoken);
                             if (string.IsNullOrEmpty(json))
                             {
                                 logDebug += "\n <<< RESPONSE EMPTY";
@@ -644,6 +648,38 @@ namespace Wlniao.XCenter
             }
             catch { }
             return obj ?? new Dictionary<string, string>();
+        }
+
+        /// <summary>
+        /// 检查用户授权登录配置
+        /// </summary>
+        /// <param name="ticket"></param>
+        /// <returns></returns>
+        public Dictionary<String, Object> ApiCheckTicket(String ticket)
+        {
+            Dictionary<String, Object> obj = null;
+            try
+            {
+                if (string.IsNullOrEmpty(XCenterToken))
+                {
+                    var res = ApiData<Dictionary<String, Object>>("/api/check_ticket", new { app = app, ticket = ticket });
+                    if (res.success)
+                    {
+                        obj = res.data;
+                    }
+                }
+                else
+                {
+                    var json = Wlniao.Encryptor.SM4DecryptECBFromHex(ticket, XCenterToken);
+                    obj = string.IsNullOrEmpty(json) ? null : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, Object>>(json);
+                }
+            }
+            catch { }
+            if (obj != null && obj.GetInt64("expire") > XCore.NowUnix)
+            {
+                return obj;
+            }
+            return new Dictionary<String, Object>();
         }
     }
 }

@@ -26,24 +26,6 @@ namespace Wlniao.XCenter
     /// </summary>
     public class EmiContext : Context
     {
-        private static string emiDomain = "";
-        private static string EmiToken = Wlniao.Config.GetConfigs("EmiToken");
-        private static string EmiDomain
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(emiDomain))
-                {
-                    emiDomain = Wlniao.Config.GetConfigs("EmiDomain");
-                    if (!string.IsNullOrEmpty(emiDomain))
-                    {
-                        emiDomain = emiDomain.Substring(emiDomain.IndexOf("://") + 3);
-                    }
-                }
-                return emiDomain;
-            }
-        }
-
         /// <summary>
         /// CDN服务地址
         /// </summary>
@@ -65,6 +47,10 @@ namespace Wlniao.XCenter
         /// </summary>
         public string apptoken { get; set; }
         /// <summary>
+        /// 
+        /// </summary>
+        private static string XCenterEmi = Wlniao.Config.GetConfigs("XCenterEmi");
+        /// <summary>
         /// EMI服务器地址
         /// </summary>
         [JsonIgnore]
@@ -72,12 +58,11 @@ namespace Wlniao.XCenter
         {
             get
             {
-                if (string.IsNullOrEmpty(domain) && !string.IsNullOrEmpty(EmiDomain))
+                if (!string.IsNullOrEmpty(XCenterEmi))
                 {
-                    domain = EmiDomain;
+                    return XCenterEmi;
                 }
-
-                if (https)
+                else if (https)
                 {
                     return "https://" + domain;
                 }
@@ -147,13 +132,13 @@ namespace Wlniao.XCenter
                     domain = ctx.domain,
                     message = ctx.message,
                     register = DateTime.MinValue,
-                    apptoken = string.IsNullOrEmpty(ctx.token) ? EmiToken : Encryptor.Md5Encryptor16(ctx.token).ToLower(),
+                    apptoken = string.IsNullOrEmpty(ctx.token) ? Context.XCenterAppToken : Encryptor.Md5Encryptor16(ctx.app + ":" + ctx.token).ToLower(),
                     https = true
                 };
-                if (!string.IsNullOrEmpty(EmiDomain))
-                {
-                    emi.domain = EmiDomain;
-                }
+                //if (!string.IsNullOrEmpty(EmiDomain))
+                //{
+                //    emi.domain = EmiDomain;
+                //}
                 if (!string.IsNullOrEmpty(ctx.message))
                 {
                     emi.message = ctx.message;
