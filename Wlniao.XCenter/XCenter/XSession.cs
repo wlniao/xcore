@@ -22,9 +22,9 @@ namespace Wlniao.XCenter
         /// </summary>
         public string wkey = "";
         /// <summary>
-        /// 来自Context
+        /// 来自EmiContext
         /// </summary>
-        private string token = "";
+        private string apptoken = "";
         /// <summary>
         /// 过期时间
         /// </summary>
@@ -80,9 +80,9 @@ namespace Wlniao.XCenter
         {
             if (ctx != null)
             {
-                this.token = ctx.token;
                 this.AppCode = ctx.app;
                 this.OwnerId = ctx.owner;
+                this.apptoken = ctx.token;
             }
             this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         }
@@ -91,16 +91,16 @@ namespace Wlniao.XCenter
         /// 通过令牌生成Session
         /// </summary>
         /// <param name="ctx"></param>
+        /// <param name="token"></param>
         /// <param name="ticket"></param>
-        public XSession(Context ctx, String ticket)
+        public XSession(Context ctx, string token, String ticket)
         {
             this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            if (ctx != null && !string.IsNullOrEmpty(ticket) && !string.IsNullOrEmpty(ctx.token))
+            if (ctx != null && !string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(ticket))
             {
                 try
                 {
-                    this.token = ctx.token;
-                    var data = Encryptor.SM4DecryptECBFromHex(ticket, ctx.token).Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var data = Encryptor.SM4DecryptECBFromHex(ticket, token).Split(',', StringSplitOptions.RemoveEmptyEntries);
                     if (data.Length > 4)
                     {
                         this.ExpireTime = cvt.ToLong(data[0]);
@@ -175,9 +175,10 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 生成用户登录凭据
         /// </summary>
+        /// <param name="token"></param>
         /// <param name="exprie"></param>
         /// <returns></returns>
-        public String BuildTicket(int exprie = 7200)
+        public String BuildTicket(string token, int exprie = 7200)
         {
             var plain = (XCore.NowUnix + exprie) + "," + (string.IsNullOrEmpty(AppCode) ? "app" : AppCode) + "," + (string.IsNullOrEmpty(OwnerId) ? "000000000" : OwnerId);
             if (!string.IsNullOrEmpty(UserSid))
@@ -205,7 +206,7 @@ namespace Wlniao.XCenter
                 var ext = System.Text.Json.JsonSerializer.Serialize(obj, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
                 plain += "," + UserSid + "," + strUtil.UTF8ToHexString(ext);
             }
-            return Encryptor.SM4EncryptECBToHex(plain, this.token);
+            return Encryptor.SM4EncryptECBToHex(plain, token);
         }
     }
 }

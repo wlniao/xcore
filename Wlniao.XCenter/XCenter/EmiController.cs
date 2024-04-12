@@ -66,7 +66,7 @@ namespace Wlniao.XCenter
         {
             return CheckSession((xsession, ctx) =>
             {
-                return Json(new { success = true, ctx.domain, ticket = xsession.BuildTicket() });
+                return Json(new { success = true, ctx.domain, ticket = xsession.BuildTicket(ctx.apptoken) });
             });
         }
 
@@ -192,7 +192,7 @@ namespace Wlniao.XCenter
                 {
                     authorization = GetCookies("xs_" + ctx.app);
                 }
-                xsession = new XSession(ctx, authorization);
+                xsession = new XSession(ctx, ctx.apptoken, authorization);
                 if (xsession.IsValid && xsession.OwnerId == ctx.owner)
                 {
                     return func.Invoke(xsession, ctx);

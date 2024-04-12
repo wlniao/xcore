@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Utilities;
 using System;
 using System.Collections;
@@ -163,24 +164,25 @@ namespace Wlniao.XCenter
                     ctx.app = res.data.GetString("app");
                     ctx.name = res.data.GetString("name");
                     ctx.brand = res.data.GetString("brand");
-                    ctx.token = res.data.GetString("token");
                     ctx.domain = res.data.GetString("domain");
                     try
                     {
-                        var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
-                        if (!string.IsNullOrEmpty(sm2token))
+                        if (res.data.ContainsKey("token"))
                         {
-                            ctx.token = sm2token;
+                            //下个大版本中删除
+                            ctx.token = res.data.GetString("token");
+                        }
+                        if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
+                        {
+                            var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
+                            if (!string.IsNullOrEmpty(sm2token))
+                            {
+                                ctx.token = sm2token;
+                            }
                         }
                         Wlniao.Cache.Set("ctx_" + ctx.domain, ctx, 300);
                     }
-                    catch
-                    {
-                        if (string.IsNullOrEmpty(ctx.token))
-                        {
-                            ctx.message = "XCenterToken加载失败";
-                        }
-                    }
+                    catch { }
                 }
                 else
                 {
@@ -208,7 +210,7 @@ namespace Wlniao.XCenter
             {
                 return new Context { message = "当前域名无效，请重新指定" };
             }
-            else if (string.IsNullOrEmpty(XCenterApp) || string.IsNullOrEmpty(XCenterToken) || string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9)
+            else if (string.IsNullOrEmpty(XCenterApp) || string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9)
             {
                 //需要使用公钥从服务器上加载应用信息
                 var ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };
@@ -232,25 +234,25 @@ namespace Wlniao.XCenter
                             {
                                 ctx.app = XCenterApp;
                             }
-                            if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
+                            try
                             {
-                                try
+                                if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
                                 {
+                                    if (res.data.ContainsKey("token"))
+                                    {
+                                        //下个大版本中删除
+                                        ctx.token = res.data.GetString("token");
+                                    }
                                     //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
                                     var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
                                     if (!string.IsNullOrEmpty(sm2token))
                                     {
                                         ctx.token = sm2token;
                                     }
-                                }
-                                catch
-                                {
-                                    if (string.IsNullOrEmpty(ctx.token))
-                                    {
-                                        ctx.message = "XCenterToken加载失败";
-                                    }
+                                    Wlniao.Cache.Set("ctx_" + ctx.domain, ctx, 300);
                                 }
                             }
+                            catch { }
                         }
                         else
                         {
@@ -435,102 +437,109 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public Wlniao.ApiResult<T> ApiData<T>(String path, Object data)
         {
-            var now = Wlniao.XCore.NowUnix.ToString();
             var rlt = new Wlniao.ApiResult<T>();
-            var utime = "";
-            var start = DateTime.Now;
-            var msgid = strUtil.CreateLongId();
-            var plainData = Wlniao.Json.ToString(data);
-            var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
-            var sign = Wlniao.Encryptor.SM3Encrypt(owner + app + encdata + now + token);
-            var resStr = "";
-            var reqStr = Wlniao.Json.ToString(new { app, oid = owner, sign, data = encdata, timestamp = now });
-            if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
+            if (string.IsNullOrEmpty(token))
             {
-                log.Topic(app, "msgid:" + msgid + ", " + AuthifyHost + path + "\n >>> " + reqStr);
+                rlt.message = "XCenterToken配置异常，请检查程序配置";
             }
-            try
+            else
             {
-                var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
-                var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                using (var client = new System.Net.Http.HttpClient(handler))
+                var now = Wlniao.XCore.NowUnix.ToString();
+                var utime = "";
+                var start = DateTime.Now;
+                var msgid = strUtil.CreateLongId();
+                var plainData = Wlniao.Json.ToString(data);
+                var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
+                var sign = Wlniao.Encryptor.SM3Encrypt(owner + app + encdata + now + token);
+                var resStr = "";
+                var reqStr = Wlniao.Json.ToString(new { app, oid = owner, sign, data = encdata, timestamp = now });
+                if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
                 {
-                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path);
-                    reqest.Headers.Date = DateTime.Now;
-                    reqest.Content = new System.Net.Http.StreamContent(stream);
-                    reqest.Content.Headers.Add("Content-Type", "application/json");
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", msgid);
-                    var respose = client.Send(reqest);
-                    resStr = respose.Content.ReadAsStringAsync().Result;
-                    if (respose.Headers.Contains("X-Wlniao-Trace"))
+                    log.Topic(app, "msgid:" + msgid + ", " + AuthifyHost + path + "\n >>> " + reqStr);
+                }
+                try
+                {
+                    var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
+                    var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                    using (var client = new System.Net.Http.HttpClient(handler))
                     {
-                        rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
-                    }
-                    if (respose.Headers.Contains("X-Wlniao-UseTime"))
-                    {
-                        utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
+                        var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path);
+                        reqest.Headers.Date = DateTime.Now;
+                        reqest.Content = new System.Net.Http.StreamContent(stream);
+                        reqest.Content.Headers.Add("Content-Type", "application/json");
+                        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", msgid);
+                        var respose = client.Send(reqest);
+                        resStr = respose.Content.ReadAsStringAsync().Result;
+                        if (respose.Headers.Contains("X-Wlniao-Trace"))
+                        {
+                            rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
+                        }
+                        if (respose.Headers.Contains("X-Wlniao-UseTime"))
+                        {
+                            utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
+                        }
                     }
                 }
-            }
-            catch { }
-            if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
-            {
-                log.Topic(app, "msgid:" + msgid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + resStr);
-            }
-            var logDebug = "msgid:" + msgid + ", authify:/" + path + ", usetime:" + utime + "\n >>> " + plainData;
-            try
-            {
-                var resObj = Json.ToObject<Wlniao.ApiResult<String>>(resStr);
-                if (resObj != null)
+                catch { }
+                if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
                 {
-                    rlt.node = resObj.node;
-                    rlt.code = resObj.code;
-                    rlt.message = resObj.message;
-                    rlt.success = resObj.success;
-                    if (resObj.success)
+                    log.Topic(app, "msgid:" + msgid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + resStr);
+                }
+                var logDebug = "msgid:" + msgid + ", authify:/" + path + ", usetime:" + utime + "\n >>> " + plainData;
+                try
+                {
+                    var resObj = Json.ToObject<Wlniao.ApiResult<String>>(resStr);
+                    if (resObj != null)
                     {
-                        var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
-                        if (string.IsNullOrEmpty(json))
+                        rlt.node = resObj.node;
+                        rlt.code = resObj.code;
+                        rlt.message = resObj.message;
+                        rlt.success = resObj.success;
+                        if (resObj.success)
                         {
-                            logDebug += "\n <<< RESPONSE EMPTY";
+                            var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                            if (string.IsNullOrEmpty(json))
+                            {
+                                logDebug += "\n <<< RESPONSE EMPTY";
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    if (typeof(T) == typeof(string))
+                                    {
+                                        rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
+                                    }
+                                    else
+                                    {
+                                        rlt.data = Wlniao.Json.ToObject<T>(json);
+                                    }
+                                    logDebug += "\n <<< " + Wlniao.Json.ToString(rlt);
+                                }
+                                catch
+                                {
+                                    logDebug += "\n <<< " + json;
+                                }
+                            }
                         }
                         else
                         {
-                            try
-                            {
-                                if (typeof(T) == typeof(string))
-                                {
-                                    rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
-                                }
-                                else
-                                {
-                                    rlt.data = Wlniao.Json.ToObject<T>(json);
-                                }
-                                logDebug += "\n <<< " + Wlniao.Json.ToString(rlt);
-                            }
-                            catch
-                            {
-                                logDebug += "\n <<< " + json;
-                            }
+                            logDebug += "\n <<< " + rlt.message;
                         }
                     }
                     else
                     {
-                        logDebug += "\n <<< " + rlt.message;
+                        rlt.message = "网络错误，返回异常";
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    rlt.message = "网络错误，返回异常";
+                    logDebug += "\n <<< Exception" + ex.Message;
                 }
-            }
-            catch (Exception ex)
-            {
-                logDebug += "\n <<< Exception" + ex.Message;
-            }
 
-            log.Debug(logDebug);
+                log.Debug(logDebug);
+            }
             return rlt;
         }
         /// <summary>

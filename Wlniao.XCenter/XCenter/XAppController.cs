@@ -63,7 +63,7 @@ namespace Wlniao.XCenter
                 host = HeaderRequest("x-domain", UrlDomain);
             }
             ctx = Context.Load(host);
-            if (ctx == null || string.IsNullOrEmpty(ctx.owner) || string.IsNullOrEmpty(ctx.token) || !string.IsNullOrEmpty(ctx.message) || (string.IsNullOrEmpty(ctx.app) && string.IsNullOrEmpty(ctx.domain)))
+            if (ctx == null || !string.IsNullOrEmpty(ctx.message) || string.IsNullOrEmpty(ctx.owner) || (string.IsNullOrEmpty(ctx.app) && string.IsNullOrEmpty(ctx.domain)))
             {
                 return fail.Invoke();
             }
@@ -107,7 +107,7 @@ namespace Wlniao.XCenter
                 {
                     ticket = HeaderRequest("Authorization");
                 }
-                xsession = new XSession(ctx, ticket);
+                xsession = new XSession(ctx, ctx.token, ticket);
                 if (xsession.IsValid && xsession.OwnerId == ctx.owner)
                 {
                     return func.Invoke(xsession, ctx);
@@ -164,7 +164,7 @@ namespace Wlniao.XCenter
                 {
                     ticket = HeaderRequest("Authorization");
                 }
-                return new XSession(ctx, ticket);
+                return new XSession(ctx, ctx.token, ticket);
             }
         }
         /// <summary>
