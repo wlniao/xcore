@@ -206,7 +206,7 @@ namespace Wlniao.XCenter
             {
                 return new Context { message = "当前域名无效，请重新指定" };
             }
-            else if (string.IsNullOrEmpty(XCenterApp) || string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9)
+            else if (string.IsNullOrEmpty(XCenterApp) || string.IsNullOrEmpty(XCenterOwner) || string.IsNullOrEmpty(XCenterAppToken) || XCenterOwner.Length != 9)
             {
                 //需要使用公钥从服务器上加载应用信息
                 var ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };
@@ -215,7 +215,7 @@ namespace Wlniao.XCenter
                     if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPublicKey == null || XCenterPublicKey.Length < 20)
                     {
                         ctx.message = "程序配置错误，请检查XCenter相关配置";
-                        log.Error("XCenterApp/XCenterOwner/XCenterToken 或 XCenterCertSn/XCenterPublicKey 至少需要配置一项");
+                        log.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterPublicKey 至少需要配置一项");
                     }
                     else
                     {
