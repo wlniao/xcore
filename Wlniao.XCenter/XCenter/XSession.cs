@@ -22,10 +22,6 @@ namespace Wlniao.XCenter
         /// </summary>
         public string wkey = "";
         /// <summary>
-        /// 来自EmiContext
-        /// </summary>
-        private string apptoken = "";
-        /// <summary>
         /// 过期时间
         /// </summary>
         public long ExpireTime { get; set; }
@@ -45,6 +41,10 @@ namespace Wlniao.XCenter
         /// 扩展数据
         /// </summary>
         public Dictionary<string, object> ExtData { get; set; }
+        /// <summary>
+        /// Context
+        /// </summary>
+        private Context ctx = new Context();
         /// <summary>
         /// 认证是否有效
         /// </summary>
@@ -80,9 +80,9 @@ namespace Wlniao.XCenter
         {
             if (ctx != null)
             {
+                this.ctx = ctx;
                 this.AppCode = ctx.app;
                 this.OwnerId = ctx.owner;
-                this.apptoken = ctx.token;
             }
             this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         }
@@ -91,16 +91,25 @@ namespace Wlniao.XCenter
         /// 通过令牌生成Session
         /// </summary>
         /// <param name="ctx"></param>
-        /// <param name="token"></param>
         /// <param name="ticket"></param>
-        public XSession(Context ctx, string token, String ticket)
+        public XSession(Context ctx, String ticket)
         {
             this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            if (ctx != null && !string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(ticket))
+            if (ctx != null && !string.IsNullOrEmpty(ticket))
             {
                 try
                 {
-                    var data = Encryptor.SM4DecryptECBFromHex(ticket, token).Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var emi = ctx as EmiContext;
+                    var apptoken = Context.XCenterAppToken + "";
+                    if (emi != null && !string.IsNullOrEmpty(emi.apptoken))
+                    {
+                        apptoken = emi.apptoken;
+                    }
+                    else if (string.IsNullOrEmpty(apptoken))
+                    {
+                        apptoken = Encryptor.Md5Encryptor16(ctx.app + ":" + ctx.token).ToLower();
+                    }
+                    var data = Encryptor.SM4DecryptECBFromHex(ticket, apptoken).Split(',', StringSplitOptions.RemoveEmptyEntries);
                     if (data.Length > 4)
                     {
                         this.ExpireTime = cvt.ToLong(data[0]);
@@ -175,10 +184,9 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 生成用户登录凭据
         /// </summary>
-        /// <param name="token"></param>
         /// <param name="exprie"></param>
         /// <returns></returns>
-        public String BuildTicket(string token, int exprie = 7200)
+        public String BuildTicket(int exprie = 7200)
         {
             var plain = (XCore.NowUnix + exprie) + "," + (string.IsNullOrEmpty(AppCode) ? "app" : AppCode) + "," + (string.IsNullOrEmpty(OwnerId) ? "000000000" : OwnerId);
             if (!string.IsNullOrEmpty(UserSid))
@@ -206,7 +214,10 @@ namespace Wlniao.XCenter
                 var ext = System.Text.Json.JsonSerializer.Serialize(obj, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
                 plain += "," + UserSid + "," + strUtil.UTF8ToHexString(ext);
             }
-            return Encryptor.SM4EncryptECBToHex(plain, token);
+            var apptoken = string.IsNullOrEmpty(ctx.app) || string.IsNullOrEmpty(ctx.token)
+                ? Context.XCenterAppToken + ""
+                : Encryptor.Md5Encryptor16(ctx.app + ":" + ctx.token).ToLower();
+            return Encryptor.SM4EncryptECBToHex(plain, apptoken);
         }
     }
 }

@@ -159,7 +159,7 @@ namespace Wlniao.XCenter
             var ctx = new Context { owner = ownerId.ToString(), token = XCenterToken, app = XCenterApp };
             try
             {
-                var res = AppData<Dictionary<string, object>>("/app/getapp_byowner", new { owner = ctx.owner });
+                var res = AppData<Dictionary<string, object>>("/app/getapp_byowner", new { owner = ctx.owner, app = XCenterApp });
                 if (res.success)
                 {
                     ctx.app = res.data.GetString("app");
@@ -168,11 +168,6 @@ namespace Wlniao.XCenter
                     ctx.domain = res.data.GetString("domain");
                     try
                     {
-                        if (res.data.ContainsKey("token"))
-                        {
-                            //下个大版本中删除
-                            ctx.token = res.data.GetString("token");
-                        }
                         if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
                         {
                             var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
@@ -217,14 +212,14 @@ namespace Wlniao.XCenter
                 var ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };
                 try
                 {
-                    if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPublicKey == null || XCenterPublicKey.Length < 201)
+                    if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPublicKey == null || XCenterPublicKey.Length < 20)
                     {
                         ctx.message = "程序配置错误，请检查XCenter相关配置";
                         log.Error("XCenterApp/XCenterOwner/XCenterToken 或 XCenterCertSn/XCenterPublicKey 至少需要配置一项");
                     }
                     else
                     {
-                        var res = AppData<Dictionary<string, object>>("/app/getapp_bydomain", new { domain = ctx.domain });
+                        var res = AppData<Dictionary<string, object>>("/app/getapp_bydomain", new { domain = ctx.domain, app = XCenterApp });
                         if (res.success)
                         {
                             ctx.app = res.data.GetString("app");
@@ -239,11 +234,6 @@ namespace Wlniao.XCenter
                             {
                                 if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
                                 {
-                                    if (res.data.ContainsKey("token"))
-                                    {
-                                        //下个大版本中删除
-                                        ctx.token = res.data.GetString("token");
-                                    }
                                     //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
                                     var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
                                     if (!string.IsNullOrEmpty(sm2token))
@@ -308,7 +298,7 @@ namespace Wlniao.XCenter
             var plainData = Wlniao.Json.ToString(data);
             var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
             var sm2token = Wlniao.Encryptor.SM2EncryptByPublicKey(ASCIIEncoding.ASCII.GetBytes(token), XCenterPublicKey);
-            var sign = Wlniao.Encryptor.SM3Encrypt(encdata + now);
+            var sign = Wlniao.Encryptor.SM3Encrypt(encdata + now + token);
             var resStr = "";
             var reqStr = Wlniao.Json.ToString(new { sn = XCenterCertSn, token = sm2token, timestamp = now, data = encdata, sign });
             if (log.LogLevel <= Wlniao.Log.LogLevel.Information)
@@ -439,7 +429,7 @@ namespace Wlniao.XCenter
         public Wlniao.ApiResult<T> ApiData<T>(String path, Object data)
         {
             var rlt = new Wlniao.ApiResult<T>();
-            var apptoken = string.IsNullOrEmpty(token)
+            var apptoken = string.IsNullOrEmpty(app) || string.IsNullOrEmpty(token)
                 ? XCenterAppToken + ""
                 : Encryptor.Md5Encryptor16(app + ":" + token).ToLower();
             if (string.IsNullOrEmpty(apptoken))

@@ -172,11 +172,11 @@ namespace Wlniao.XCenter
                     }
                     else if (check.message == "token not config")
                     {
-                        emi.message = "EmiToken参数未配置，请先配置或注册";
+                        emi.message = "AppToken参数未配置，请先配置或注册";
                     }
                     else if (check.message.Contains("token error"))
                     {
-                        emi.message = "EmiToken参数配置错误，请重新配置或注册";
+                        emi.message = "AppToken参数配置错误，请重新配置或注册";
                     }
                     else if (check.message == "request exception")
                     {

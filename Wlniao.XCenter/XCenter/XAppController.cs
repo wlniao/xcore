@@ -107,7 +107,7 @@ namespace Wlniao.XCenter
                 {
                     ticket = HeaderRequest("Authorization");
                 }
-                xsession = new XSession(ctx, ctx.token, ticket);
+                xsession = new XSession(ctx, ticket);
                 if (xsession.IsValid && xsession.OwnerId == ctx.owner)
                 {
                     return func.Invoke(xsession, ctx);
@@ -164,7 +164,7 @@ namespace Wlniao.XCenter
                 {
                     ticket = HeaderRequest("Authorization");
                 }
-                return new XSession(ctx, ctx.token, ticket);
+                return new XSession(ctx, ticket);
             }
         }
         /// <summary>
