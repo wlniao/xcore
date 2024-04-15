@@ -76,6 +76,7 @@ namespace Wlniao.XCenter
         /// <param name="func"></param>
         /// <param name="fail"></param>
         /// <param name="ticket"></param>
+        /// <param name="addHeader"></param>
         /// <returns></returns>
         [NonAction]
         public IActionResult CheckSession(Func<XSession, Context, IActionResult> func, Func<IActionResult> fail = null, String ticket = null, Boolean addHeader = true)
