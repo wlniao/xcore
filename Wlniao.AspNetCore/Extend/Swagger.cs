@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Runtime.Serialization;
 
 namespace Wlniao.Swagger
 {
@@ -163,6 +164,7 @@ namespace Wlniao.Swagger
         /// <param name="operation"></param>
         /// <param name="context"></param>
         /// <exception cref="NotImplementedException"></exception>
+        [Obsolete(DiagnosticId = "SYSLIB0051")]
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
             if (operation.Parameters == null)
@@ -252,6 +254,7 @@ namespace Wlniao.Swagger
         /// 获取动态类型对象
         /// </summary>
         /// <returns></returns>
+        [Obsolete(DiagnosticId = "SYSLIB0051")]
         public static Type DynamicClass(Dictionary<string, Type> keyValues)
         {
             //程序集名

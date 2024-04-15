@@ -206,7 +206,7 @@ namespace Wlniao.XCenter
             {
                 return new Context { message = "当前域名无效，请重新指定" };
             }
-            else if (string.IsNullOrEmpty(XCenterApp) || string.IsNullOrEmpty(XCenterOwner) || string.IsNullOrEmpty(XCenterAppToken) || XCenterOwner.Length != 9)
+            else if (string.IsNullOrEmpty(XCenterApp) || string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9 || (string.IsNullOrEmpty(XCenterToken) && string.IsNullOrEmpty(XCenterAppToken)))
             {
                 //需要使用公钥从服务器上加载应用信息
                 var ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };

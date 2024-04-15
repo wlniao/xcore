@@ -18,6 +18,7 @@ using System.Text.Unicode;
 using Newtonsoft.Json.Linq;
 using Wlniao.Serialization;
 using System.Text.Json.Serialization;
+using Microsoft.OpenApi.Extensions;
 
 namespace Wlniao.XCenter
 {
@@ -499,6 +500,45 @@ namespace Wlniao.XCenter
             return val;
         }
         /// <summary>
+        /// 获取一个账号信息
+        /// </summary>
+        /// <param name="eid"></param>
+        /// <param name="mobile"></param>
+        /// <returns></returns>
+        public Models.Account GetAccount(String eid, string mobile = "")
+        {
+            var item = new Models.Account();
+            if (!string.IsNullOrEmpty(eid))
+            {
+                var data = Wlniao.Cache.Get<Dictionary<string, object>>("emi_" + this.owner + "_account_" + eid);
+                if (data == null || data.Count == 0)
+                {
+                    var rlt = EmiGet<Dictionary<string, object>>("app", "getaccount", new KeyValuePair<string, string>("sid", eid));
+                    if (rlt.success && rlt.data != null && rlt.data.ContainsKey("sid"))
+                    {
+                        data = rlt.data;
+                        Wlniao.Cache.Set("emi_" + this.owner + "_account_" + eid, data, 3600);
+                    }
+                }
+                if (data != null && data.Count > 0)
+                {
+                    item.sid = data.GetString("sid");
+                    item.name = data.GetString("name");
+                    item.account = data.GetString("account");
+                    item.position = data.GetString("position");
+                    item.telphone = data.GetString("telphone");
+                    item.jobnumber = data.GetString("jobnumber");
+                    item.wxopenid = data.GetString("wxopenid");
+                    item.wxuserid = data.GetString("wxuserid");
+                    item.dinguserid = data.GetString("dinguserid");
+                    item.department = data.GetString("department");
+                    item.avatar = data.GetString("avatar");
+                }
+            }
+            return item;
+        }
+
+        /// <summary>
         /// 获取一个账号姓名昵称
         /// </summary>
         /// <param name="eid"></param>
@@ -506,29 +546,9 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public String GetAccountName(String eid, string mobile = "")
         {
-            if (string.IsNullOrEmpty(eid))
-            {
-                return "";
-            }
-            var val = Wlniao.Cache.Get("emi_" + this.owner + "_accountname_" + eid);
-            if (string.IsNullOrEmpty(val))
-            {
-                var rlt = EmiGet<Dictionary<string, object>>("app", "getaccount", new KeyValuePair<string, string>("sid", eid));
-                if (rlt.success && rlt.data != null && rlt.data.ContainsKey("name"))
-                {
-                    val = rlt.data.GetString("name");
-                }
-                if (string.IsNullOrEmpty(val))
-                {
-                    val = mobile;
-                }
-                if (!string.IsNullOrEmpty(val))
-                {
-                    Wlniao.Cache.Set("emi_" + this.owner + "_accountname_" + eid, val, 3600);
-                }
-            }
-            return val;
+            return GetAccount(eid, mobile).name;
         }
+
         /// <summary>
         /// 检查用户权限
         /// </summary>

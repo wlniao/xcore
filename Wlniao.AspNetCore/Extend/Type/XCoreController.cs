@@ -395,7 +395,11 @@ namespace Wlniao
                 }
                 catch
                 {
-                    var buffer = new byte[(int)Request.ContentLength];
+                    var buffer = new byte[0];
+                    if (Request != null && Request.ContentLength > 0)
+                    {
+                        buffer = new byte[(int)Request.ContentLength];
+                    }
                     Request.Body.Read(buffer, 0, buffer.Length);
                     strPost = System.Text.Encoding.UTF8.GetString(buffer);
                 }

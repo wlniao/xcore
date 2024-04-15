@@ -46,6 +46,10 @@ namespace Wlniao.XCenter.Models
         /// </summary>
         public string wxopenid { get; set; }
         /// <summary>
+        /// 企业微信Id
+        /// </summary>
+        public string wxuserid { get; set; }
+        /// <summary>
         /// 钉钉绑定Id
         /// </summary>
         public string dinguserid { get; set; }
