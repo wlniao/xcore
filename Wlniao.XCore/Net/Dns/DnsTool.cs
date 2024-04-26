@@ -81,12 +81,13 @@ namespace Wlniao.Net.Dns
         /// 
         /// </summary>
         /// <param name="qname"></param>
+        /// <param name="type"></param>
         /// <returns></returns>
-        public IPAddress GetIPAddress(String qname)
+        public IPAddress GetIPAddress(String qname, DnsRecordType type = DnsRecordType.A)
         {
             if (qname.IndexOf('.') > 0)
             {
-                var res = GetResponse(qname, DnsRecordType.A);
+                var res = GetResponse(qname, type);
                 if (res != null)
                 {
                     var record = res.GetARecords();
@@ -114,6 +115,7 @@ namespace Wlniao.Net.Dns
             }
             return null;
         }
+
         /// <summary>
         /// 
         /// </summary>
