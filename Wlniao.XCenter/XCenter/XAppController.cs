@@ -155,7 +155,7 @@ namespace Wlniao.XCenter
                 }
                 ctx = Context.Load(host);
             }
-            if (ctx == null || string.IsNullOrEmpty(ctx.owner) || string.IsNullOrEmpty(ctx.token) || !string.IsNullOrEmpty(ctx.message) || (string.IsNullOrEmpty(ctx.app) && string.IsNullOrEmpty(ctx.domain)))
+            if (ctx == null || string.IsNullOrEmpty(ctx.owner) || !string.IsNullOrEmpty(ctx.message) || (string.IsNullOrEmpty(ctx.app) && string.IsNullOrEmpty(ctx.domain)))
             {
                 return new XSession(ctx);
             }

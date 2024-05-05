@@ -22,6 +22,10 @@ namespace Wlniao.XCenter
         /// </summary>
         public string wkey = "";
         /// <summary>
+        /// 
+        /// </summary>
+        private string apptoken = "";
+        /// <summary>
         /// 过期时间
         /// </summary>
         public long ExpireTime { get; set; }
@@ -71,6 +75,10 @@ namespace Wlniao.XCenter
         /// 所在部门列表
         /// </summary>
         public string DepartmentIds { get; set; }
+        /// <summary>
+        /// 应用密钥
+        /// </summary>
+        public string AppToken { get { return apptoken; } }
 
         /// <summary>
         /// 通过Token生成Session
@@ -78,11 +86,16 @@ namespace Wlniao.XCenter
         /// <param name="ctx"></param>
         public XSession(Context? ctx)
         {
+            apptoken = Context.XCenterAppToken + "";
             if (ctx != null)
             {
                 this.ctx = ctx;
                 this.AppCode = ctx.app;
                 this.OwnerId = ctx.owner;
+                if (string.IsNullOrEmpty(apptoken))
+                {
+                    apptoken = Encryptor.Md5Encryptor16(ctx.app + ":" + ctx.token).ToLower();
+                }
             }
             this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         }
@@ -100,7 +113,7 @@ namespace Wlniao.XCenter
                 try
                 {
                     var emi = ctx as EmiContext;
-                    var apptoken = Context.XCenterAppToken + "";
+                    apptoken = Context.XCenterAppToken + "";
                     if (emi != null && !string.IsNullOrEmpty(emi.apptoken))
                     {
                         apptoken = emi.apptoken;

@@ -2008,7 +2008,54 @@ namespace Wlniao.Text
             return result;
         }
 
-        private static string [] beReplacedStrs = new[] { ".com.cn", ".edu.cn", ".net.cn", ".org.cn", ".co.jp", ".gov.cn", ".co.uk", ".ac.cn", ".edu", ".tv", ".info", ".com", ".net", ".ac", ".ag", ".am", ".at", ".be", ".biz", ".ltd", ".cn", ".com", ".de", ".es", ".eu", ".fm", ".gs", ".hk", ".in", ".info", ".vip", ".xyz", ".cloud", ".name", ".bz", ".cc", ".io", ".it", ".jp", ".la", ".md", ".ms", ".name", ".shop", ".nl", ".nu", ".org", ".pl", ".ru", ".sc", ".se", ".sg", ".sh", ".tc", ".tk", ".tv", ".tw", ".us", ".co", ".uk", ".vc", ".vg", ".ws", ".il", ".li", ".nz" };
+        /// <summary>
+        /// 用星号遮掩姓名
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static String CoverName(String name)
+        {
+            if (string.IsNullOrEmpty(name) || name.Length < 2)
+            {
+                return name;
+            }
+            else if (name.Length == 2)
+            {
+                return '＊' + name.Substring(1, 1);
+            }
+            else
+            {
+                return name.Substring(0, 1).PadRight(name.Length - 1, '＊') + name.Substring(name.Length - 1, 1);
+            }
+        }
+        /// <summary>
+        /// 用星号遮掩手机号
+        /// </summary>
+        /// <param name="mobile"></param>
+        /// <returns></returns>
+        public static String CoverMobile(String mobile)
+        {
+            if (!string.IsNullOrEmpty(mobile) && mobile.Length >= 11)
+            {
+                return mobile.Substring(0, 3).PadRight(mobile.Length - 2, '*') + mobile.Substring(mobile.Length - 2, 2);
+            }
+            return mobile;
+        }
+        /// <summary>
+        /// 用星号遮掩证件号
+        /// </summary>
+        /// <param name="certificate"></param>
+        /// <returns></returns>
+        public static String CoverCertificate(String certificate)
+        {
+            if (!string.IsNullOrEmpty(certificate) && certificate.Length >= 15)
+            {
+                return certificate.Substring(0, 6).PadRight(certificate.Length - 4, '*') + certificate.Substring(certificate.Length - 4);
+            }
+            return certificate;
+        }
+
+        private static string [] beReplacedStrs = new[] { ".com.cn", ".edu.cn", ".net.cn", ".org.cn", ".gov.cn", ".co.jp", ".co.uk", ".ac.cn", ".edu", ".tv", ".info", ".com", ".net", ".ac", ".ag", ".am", ".at", ".be", ".biz", ".ltd", ".cn", ".com", ".de", ".es", ".eu", ".fm", ".gs", ".hk", ".in", ".info", ".vip", ".xyz", ".cloud", ".name", ".bz", ".cc", ".io", ".it", ".jp", ".la", ".md", ".ms", ".name", ".shop", ".nl", ".nu", ".org", ".pl", ".ru", ".sc", ".se", ".sg", ".sh", ".tc", ".tk", ".tv", ".tw", ".us", ".co", ".uk", ".vc", ".vg", ".ws", ".il", ".li", ".nz" };
 
 
         /// <summary>
