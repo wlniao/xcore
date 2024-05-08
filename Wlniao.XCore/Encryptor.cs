@@ -24,9 +24,10 @@ using Org.BouncyCastle.Security;
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using Wlniao.Text;
 using Wlniao.Crypto;
-using System.Text.RegularExpressions;
 using Org.BouncyCastle.Crypto.Macs;
 namespace Wlniao
 {
@@ -58,7 +59,7 @@ namespace Wlniao
         public static string Md5Encryptor32(string str)
         {
             var password = "";
-            var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str ?? ""));
+            var s = MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(str ?? ""));
             foreach (byte b in s)
             {
                 password += b.ToString("X2");
@@ -72,10 +73,146 @@ namespace Wlniao
         /// <returns>加密后的字符串</returns>
         public static string Md5Encryptor16(string str)
         {
-            var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str ?? ""));
+            var s = MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(str ?? ""));
             return BitConverter.ToString(s, 4, 8).Replace("-", "");
         }
 
+        /// <summary>
+        /// 使用RSA私钥解密
+        /// </summary>
+        /// <param name="data">要解密的数据（Base64格式）</param>
+        /// <param name="private_key">RSA私钥，查看方式：openssl pkcs12 -in cert.pfx -nocerts -nodes</param>
+        /// <param name="encoding">字符编码，默认为UTF8</param>
+        /// <returns></returns>
+        public static string RsaDecryptWithPrivate(String data, String private_key, System.Text.Encoding encoding = null)
+        {
+            var sData = System.Convert.FromBase64String(data);
+            if (encoding == null)
+            {
+                encoding = System.Text.Encoding.UTF8;
+            }
+            if (private_key.Contains("BEGIN RSA PRIVATE KEY") && !private_key.Contains("BEGIN PRIVATE KEY"))
+            {
+                //RSA 格式私钥处理
+                if (!private_key.Contains("----"))
+                {
+                    private_key = "-----BEGIN RSA PRIVATE KEY-----" + private_key + "-----END RSA PRIVATE KEY-----";
+                }
+                var pemReader = new Org.BouncyCastle.OpenSsl.PemReader(new System.IO.StringReader(private_key));
+                var keyParameter = ((Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair)pemReader.ReadObject()).Private;
+
+                var cipher = Org.BouncyCastle.Security.CipherUtilities.GetCipher("SHA1withRSA");
+                cipher.Init(false, keyParameter);
+                return encoding.GetString(cipher.DoFinal(sData));
+            }
+            else
+            {
+                private_key = private_key.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "").Replace("\n", "").Replace("\r", "").Trim();
+                var privateBytes = System.Convert.FromBase64String(private_key);
+                var keyParameter = Org.BouncyCastle.Security.PrivateKeyFactory.CreateKey(privateBytes);
+
+                var cipher = Org.BouncyCastle.Security.CipherUtilities.GetCipher("RSA/ECB/NoPadding");
+                cipher.Init(false, keyParameter);
+                return encoding.GetString(cipher.DoFinal(sData));
+            }
+        }
+
+        /// <summary>
+        /// 使用RSA公钥加密
+        /// </summary>
+        /// <param name="data">加密的数据</param>
+        /// <param name="public_key">RSA公钥，查看方式：openssl x509 -in send.crt -pubkey</param>
+        /// <param name="encoding">字符编码，默认为UTF8</param>
+        /// <returns></returns>
+        public static string RsaEncryptWithPublic(String data, String public_key, System.Text.Encoding encoding = null)
+        {
+            if (encoding == null)
+            {
+                encoding = System.Text.Encoding.UTF8;
+            }
+            if (public_key.Contains("BEGIN CERTIFICATE"))
+            {
+                public_key = public_key.Replace("-----BEGIN CERTIFICATE-----", "").Replace("-----END CERTIFICATE-----", "").Replace("\n", "").Replace("\r", "").Trim();
+            }
+            var certBytes = System.Convert.FromBase64String(public_key);
+            var pubKey = Org.BouncyCastle.Security.PublicKeyFactory.CreateKey(certBytes);
+            var cipher = Org.BouncyCastle.Security.CipherUtilities.GetCipher("RSA/ECB/NoPadding");
+            cipher.Init(true, pubKey);
+            var sData = encoding.GetBytes(data);
+            return System.Convert.ToBase64String(cipher.DoFinal(sData));
+        }
+
+        /// <summary>
+        /// 使用RSA公钥签名
+        /// </summary>
+        /// <param name="data">要签名的数据</param>
+        /// <param name="private_key">RSA私钥，查看方式：openssl pkcs12 -in cert.pfx -nocerts -nodes</param>
+        /// <param name="encoding">字符编码，默认为UTF8</param>
+        /// <returns></returns>
+        public static string RsaSignWithPrivate(String data, String private_key, System.Text.Encoding encoding = null)
+        {
+            if (encoding == null)
+            {
+                encoding = System.Text.Encoding.UTF8;
+            }
+            var sData = encoding.GetBytes(data);
+            if (private_key.Contains("BEGIN RSA PRIVATE KEY") && !private_key.Contains("BEGIN PRIVATE KEY"))
+            {
+                //RSA 格式私钥处理
+                if (!private_key.Contains("----"))
+                {
+                    private_key = "-----BEGIN RSA PRIVATE KEY-----" + private_key + "-----END RSA PRIVATE KEY-----";
+                }
+                var pemReader = new Org.BouncyCastle.OpenSsl.PemReader(new System.IO.StringReader(private_key));
+                var keyParameter = ((Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair)pemReader.ReadObject()).Private;
+
+                var signer = Org.BouncyCastle.Security.SignerUtilities.GetSigner("SHA1withRSA");
+                signer.Init(true, keyParameter);
+                signer.BlockUpdate(sData, 0, sData.Length);
+                sData = signer.GenerateSignature();
+                return System.Convert.ToBase64String(sData);
+            }
+            else
+            {
+                private_key = private_key.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "").Replace("\n", "").Replace("\r", "").Trim();
+                var privateBytes = System.Convert.FromBase64String(private_key);
+                var keyParameter = Org.BouncyCastle.Security.PrivateKeyFactory.CreateKey(privateBytes);
+
+                var signer = Org.BouncyCastle.Security.SignerUtilities.GetSigner("SHA1withRSA");
+                signer.Init(true, keyParameter);
+                signer.BlockUpdate(sData, 0, sData.Length);
+                sData = signer.GenerateSignature();
+                return System.Convert.ToBase64String(sData);
+            }
+        }
+
+        /// <summary>
+        /// 使用RSA公钥验签
+        /// </summary>
+        /// <param name="data">要验签的数据</param>
+        /// <param name="sign">要验证的签名</param>
+        /// <param name="public_key">RSA公钥，查看方式：openssl x509 -in send.crt -pubkey</param>
+        /// <param name="encoding">字符编码，默认为UTF8</param>
+        /// <returns></returns>
+        public static bool RsaVerifyWithPublic(String data, String sign, String public_key, System.Text.Encoding encoding = null)
+        {
+            var sData = encoding.GetBytes(data);
+            if (encoding == null)
+            {
+                encoding = System.Text.Encoding.UTF8;
+            }
+            if (public_key.Contains("BEGIN CERTIFICATE"))
+            {
+                public_key = public_key.Replace("-----BEGIN CERTIFICATE-----", "").Replace("-----END CERTIFICATE-----", "").Replace("\n", "").Replace("\r", "").Trim();
+            }
+            var certBytes = System.Convert.FromBase64String(public_key);
+            var pubKey = Org.BouncyCastle.Security.PublicKeyFactory.CreateKey(certBytes);
+            var signer = Org.BouncyCastle.Security.SignerUtilities.GetSigner("SHA1withRSA");
+            signer.Init(false, pubKey);
+            signer.BlockUpdate(sData, 0, sData.Length);
+            var expectedSig = System.Convert.FromBase64String(sign);
+            return signer.VerifySignature(expectedSig);
+        }
 
         /// <summary>
         /// 获取SHA1值
@@ -88,7 +225,7 @@ namespace Wlniao
             {
                 return "";
             }
-            var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
+            var dataToHash = System.Text.Encoding.ASCII.GetBytes(str); //将str转换成byte[]
             var dataHashed = SHA1.Create().ComputeHash(dataToHash);//Hash运算
             return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
         }
@@ -118,8 +255,8 @@ namespace Wlniao
             var enText = "";
             if (!string.IsNullOrEmpty(str))
             {
-                var keyBytes = Encoding.UTF8.GetBytes(key);
-                var dataBytes = Encoding.UTF8.GetBytes(str);
+                var keyBytes = System.Text.Encoding.UTF8.GetBytes(key);
+                var dataBytes = System.Text.Encoding.UTF8.GetBytes(str);
                 foreach (byte b in HmacSHA1(dataBytes, keyBytes))
                 {
                     enText += b.ToString("x2");
@@ -148,8 +285,8 @@ namespace Wlniao
         /// <returns></returns>
         public static string HmacSHA256(string str, string key)
         {
-            var hashAlgorithm = new HMACSHA256(Encoding.UTF8.GetBytes(key));
-            var bytes = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(str));
+            var hashAlgorithm = new HMACSHA256(System.Text.Encoding.UTF8.GetBytes(key));
+            var bytes = hashAlgorithm.ComputeHash(System.Text.Encoding.UTF8.GetBytes(str));
             return IO.Base64Encoder.Encoder.GetEncoded(bytes);
         }
 
@@ -160,7 +297,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string Base64Encrypt(string str)
         {
-            return IO.Base64Encoder.Encoder.GetEncoded(Encoding.UTF8.GetBytes(str ?? ""));
+            return IO.Base64Encoder.Encoder.GetEncoded(System.Text.Encoding.UTF8.GetBytes(str ?? ""));
         }
         /// <summary>
         /// Base64解码
@@ -169,7 +306,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string Base64Decrypt(string str)
         {
-            return Encoding.UTF8.GetString(IO.Base64Decoder.Decoder.GetDecoded(str ?? ""));
+            return System.Text.Encoding.UTF8.GetString(IO.Base64Decoder.Decoder.GetDecoded(str ?? ""));
         }
         /// <summary>
         /// 逐字编码查询条件
@@ -196,7 +333,7 @@ namespace Wlniao
         {
             if (!string.IsNullOrEmpty(txt))
             {
-                var buffer = Encoding.UTF8.GetBytes(txt);
+                var buffer = System.Text.Encoding.UTF8.GetBytes(txt);
                 for (var i = 0; i < buffer.Length; i++)
                 {
                     buffer[i] = (byte)((uint)buffer[i] + crypt);
@@ -220,7 +357,7 @@ namespace Wlniao
                 {
                     buffer[i] = (byte)((uint)buffer[i] - crypt);
                 }
-                return Encoding.UTF8.GetString(buffer);
+                return System.Text.Encoding.UTF8.GetString(buffer);
             }
             return txt;
         }
@@ -243,15 +380,15 @@ namespace Wlniao
                     {
                         key[i] = sKey[i];
                     }
-                    aes.Key = Encoding.ASCII.GetBytes(key);
+                    aes.Key = System.Text.Encoding.ASCII.GetBytes(key);
                     var iv = new char[16];
                     for (var i = 0; i < iv.Length && i < sIV.Length; i++)
                     {
                         iv[i] = sIV[i];
                     }
-                    aes.IV = Encoding.ASCII.GetBytes(iv);
+                    aes.IV = System.Text.Encoding.ASCII.GetBytes(iv);
                     aes.Padding = PaddingMode.PKCS7;
-                    var inputByteArray = Encoding.UTF8.GetBytes(pToEncrypt);
+                    var inputByteArray = System.Text.Encoding.UTF8.GetBytes(pToEncrypt);
                     using (var ms = new MemoryStream())
                     {
                         using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
@@ -285,13 +422,13 @@ namespace Wlniao
                     {
                         key[i] = sKey[i];
                     }
-                    aes.Key = Encoding.ASCII.GetBytes(key);
+                    aes.Key = System.Text.Encoding.ASCII.GetBytes(key);
                     var iv = new char[16];
                     for (var i = 0; i < iv.Length && i < sIV.Length; i++)
                     {
                         iv[i] = sIV[i];
                     }
-                    aes.IV = Encoding.ASCII.GetBytes(iv);
+                    aes.IV = System.Text.Encoding.ASCII.GetBytes(iv);
                     aes.Padding = PaddingMode.PKCS7;
                     var inputByteArray = System.Convert.FromBase64String(pToDecrypt);
                     using (var ms = new MemoryStream())
@@ -300,7 +437,7 @@ namespace Wlniao
                         {
                             cs.Write(inputByteArray, 0, inputByteArray.Length);
                             cs.FlushFinalBlock();
-                            return Encoding.UTF8.GetString(ms.ToArray());
+                            return System.Text.Encoding.UTF8.GetString(ms.ToArray());
                         }
                     }
                 }
@@ -581,5 +718,7 @@ namespace Wlniao
             buffer = sm3.DoFinal();
             return cvt.BytesToHexString(buffer);
         }
+
+
     }
 }
