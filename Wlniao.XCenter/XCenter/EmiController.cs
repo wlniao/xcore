@@ -58,6 +58,43 @@ namespace Wlniao.XCenter
         }
 
         /// <summary>
+        /// Authx认证服务
+        /// </summary>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult AuthX()
+        {
+            var xsession = GetRequest("xsession");
+            if (string.IsNullOrEmpty(xsession))
+            {
+                return CheckAuth((ctx) =>
+                {
+                    Console.WriteLine(Request.Host);
+                    var host = UrlReferer;
+                    if (string.IsNullOrEmpty(host))
+                    {
+                        host = UrlHost;
+                    }
+                    return Content("<html><head><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\"><script>location.href='" + ctx.EmiHost + "/app/" + ctx.app + "?back=' + location.origin + '" + Request.Path.Value + "'</script></head></html>", "text/html");
+                });
+            }
+            else
+            {
+                return CheckSession((xsession, ctx) =>
+                {
+                    var path = "/" + (Request == null || Request.Path == null || string.IsNullOrEmpty(Request.Path.Value) ? "" : string.Join('/', Request.Path.Value.Split('/', StringSplitOptions.RemoveEmptyEntries).Skip(1)));
+                    var html = "<!DOCTYPE html><html lang=zh-CN><head><meta charset=utf-8><script>var to = location.pathname.substr(1); var ticket = 'authx'; if (ticket) { localStorage.setItem('ticket', ticket) } history.replaceState(null, null, to); setTimeout(() => { location.reload() }, 100)</script></html>";
+                    html = html.Replace("'authx'", "'" + xsession.BuildTicket() + "'");
+                    if (!string.IsNullOrEmpty(path) && path.IndexOf('\'') < 0)
+                    {
+                        html = html.Replace("location.pathname.substr(1)", "'" + path + "'");
+                    }
+                    return Content(html, "text/html", System.Text.Encoding.UTF8);
+                });
+            }
+        }
+
+        /// <summary>
         /// 构造认证令牌
         /// </summary>
         /// <returns></returns>
