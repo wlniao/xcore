@@ -28,22 +28,18 @@
     <NoWarn>CS8600,CS8601,CS8603,CS8618,CS8625</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="XCenter\XAppController2.cs" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.16" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="..\wlniao.png">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Wlniao.AspNetCore" Version="8.0.16" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\wlniao.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+	</ItemGroup>
 </Project>

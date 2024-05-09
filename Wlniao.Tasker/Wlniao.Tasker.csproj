@@ -1,22 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <Version>0.8.0</Version>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <PackageOutputPath>C:\Users\Administrator\OneDrive\Path\packages</PackageOutputPath>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <NoWarn>CS8603;CS8618;CS8625</NoWarn>
-  </PropertyGroup>
+	<PropertyGroup>
+		<Version>0.8.0</Version>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PackageOutputPath>C:\Users\Administrator\OneDrive\Path\packages</PackageOutputPath>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<NoWarn>CS8603;CS8618;CS8625</NoWarn>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Tasker.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="MQTTnet" Version="3.1.2" />
-    <PackageReference Include="StackExchange.Redis" Version="2.7.20" />
-    <PackageReference Include="Wlniao.XCore" Version="8.0.12" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="MQTTnet" Version="3.1.2" />
+		<PackageReference Include="StackExchange.Redis" Version="2.7.20" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.12" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\wlniao.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+	</ItemGroup>
 
 </Project>
