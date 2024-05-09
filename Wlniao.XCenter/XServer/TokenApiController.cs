@@ -108,6 +108,18 @@ namespace Wlniao.XServer
         /// 输出数据并标记为成功
         /// </summary>
         /// <param name="obj"></param>
+        /// <param name="tips"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult OutSuccess(Object obj, Boolean tips)
+        {
+            result.tips = tips;
+            return OutSuccess(obj);
+        }
+        /// <summary>
+        /// 输出数据并标记为成功
+        /// </summary>
+        /// <param name="obj"></param>
         /// <returns></returns>
         [NonAction]
         public IActionResult OutSuccess(Object obj)
@@ -193,5 +205,16 @@ namespace Wlniao.XServer
             return Json(dic);
         }
 
+        /// <summary>
+        /// 输出默认result对象
+        /// </summary>
+        /// <param name="tips"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult OutDefault(Boolean tips)
+        {
+            result.tips = tips;
+            return OutDefault();
+        }
     }
 }

@@ -326,6 +326,10 @@ namespace Wlniao.XCenter
                 }
                 output = JsonSerializer.Serialize<ApiResult<String>>(tmp, option);
             }
+            if (result != null && !string.IsNullOrEmpty(result.debuger))
+            {
+                DebugMessage(result.debuger);
+            }
             return JsonStr(output);
         }
 

@@ -100,8 +100,8 @@ namespace Wlniao.Runtime
                                 langSetting[defaultLang].TryAdd("minuteAgo", "分钟前");
                                 langSetting[defaultLang].TryAdd("secondAgo", "秒前");
                                 langSetting[defaultLang].TryAdd("justNow", "刚刚");
-                                langSetting[defaultLang].TryAdd("findtotal", "共找到{0}条记录");
-                                langSetting[defaultLang].TryAdd("empty", "加载完成 暂无数据");
+                                langSetting[defaultLang].TryAdd("findtotal", "查询完成，已返回{0}条数据");
+                                langSetting[defaultLang].TryAdd("empty", "查询完成，暂无数据");
                             }
                         }
                     }

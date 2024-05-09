@@ -46,16 +46,16 @@ namespace Wlniao
         /// <summary>
         /// 消息输出
         /// </summary>
-        [DefaultValue("查询完成，结果已输出")]
+        [DefaultValue("查询完成，暂无数据")]
         public string message
         {
             get
             {
                 if (string.IsNullOrEmpty(_message))
                 {
-                    if (total > 0)
+                    if (rows != null && rows.Count > 0)
                     {
-                        return string.Format(Runtime.Lang.Get("", "findtotal", "{0} records found"), total);
+                        return string.Format(Runtime.Lang.Get("", "findtotal", "{0} records found"), rows.Count);
                     }
                     else
                     {
