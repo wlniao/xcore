@@ -107,6 +107,7 @@ namespace Wlniao.XCenter
         /// <param name="ticket"></param>
         public XSession(Context ctx, String ticket)
         {
+            this.ctx = ctx;
             this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             if (ctx != null && !string.IsNullOrEmpty(ticket))
             {
@@ -227,9 +228,12 @@ namespace Wlniao.XCenter
                 var ext = System.Text.Json.JsonSerializer.Serialize(obj, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
                 plain += "," + UserSid + "," + strUtil.UTF8ToHexString(ext);
             }
-            var apptoken = string.IsNullOrEmpty(ctx.app) || string.IsNullOrEmpty(ctx.token)
-                ? Context.XCenterAppToken + ""
-                : Encryptor.Md5Encryptor16(ctx.app + ":" + ctx.token).ToLower();
+            if (string.IsNullOrEmpty(apptoken))
+            {
+                apptoken = ctx == null || string.IsNullOrEmpty(ctx.app) || string.IsNullOrEmpty(ctx.token)
+                   ? Context.XCenterAppToken + ""
+                   : Encryptor.Md5Encryptor16(ctx.app + ":" + ctx.token).ToLower();
+            }
             return Encryptor.SM4EncryptECBToHex(plain, apptoken);
         }
     }

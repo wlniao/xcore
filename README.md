@@ -9,6 +9,4 @@ Wlniao.XCore for .NET CORE
 ## Add Package
 ```
 dotnet add package Wlniao.XCore
-dotnet add package Wlniao.XCenter
-dotnet add package Wlniao.AspNetCore
 ```

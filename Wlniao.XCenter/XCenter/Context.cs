@@ -208,52 +208,56 @@ namespace Wlniao.XCenter
             }
             else if (string.IsNullOrEmpty(XCenterApp) || string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9 || (string.IsNullOrEmpty(XCenterToken) && string.IsNullOrEmpty(XCenterAppToken)))
             {
-                //需要使用公钥从服务器上加载应用信息
-                var ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };
-                try
+                var ctx = Wlniao.Cache.Get<Context>("ctx_" + domain);
+                if (ctx == null || string.IsNullOrEmpty(ctx.app))
                 {
-                    if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPublicKey == null || XCenterPublicKey.Length < 20)
+                    //未缓存时，需要使用公钥从服务器上加载应用信息
+                    ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };
+                    try
                     {
-                        ctx.message = "程序配置错误，请检查XCenter相关配置";
-                        log.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterPublicKey 至少需要配置一项");
-                    }
-                    else
-                    {
-                        var res = AppData<Dictionary<string, object>>("/app/getapp_bydomain", new { domain = ctx.domain, app = XCenterApp });
-                        if (res.success)
+                        if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPublicKey == null || XCenterPublicKey.Length < 20)
                         {
-                            ctx.app = res.data.GetString("app");
-                            ctx.name = res.data.GetString("name");
-                            ctx.brand = res.data.GetString("brand");
-                            ctx.owner = res.data.GetString("owner");
-                            if (string.IsNullOrEmpty(ctx.app))
-                            {
-                                ctx.app = XCenterApp;
-                            }
-                            try
-                            {
-                                if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
-                                {
-                                    //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
-                                    var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
-                                    if (!string.IsNullOrEmpty(sm2token))
-                                    {
-                                        ctx.token = sm2token;
-                                    }
-                                    Wlniao.Cache.Set("ctx_" + ctx.domain, ctx, 300);
-                                }
-                            }
-                            catch { }
+                            ctx.message = "程序配置错误，请检查XCenter相关配置";
+                            log.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterPublicKey 至少需要配置一项");
                         }
                         else
                         {
-                            ctx.message = res.message;
+                            var res = AppData<Dictionary<string, object>>("/app/getapp_bydomain", new { domain = ctx.domain, app = XCenterApp });
+                            if (res.success)
+                            {
+                                ctx.app = res.data.GetString("app");
+                                ctx.name = res.data.GetString("name");
+                                ctx.brand = res.data.GetString("brand");
+                                ctx.owner = res.data.GetString("owner");
+                                if (string.IsNullOrEmpty(ctx.app))
+                                {
+                                    ctx.app = XCenterApp;
+                                }
+                                try
+                                {
+                                    if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
+                                    {
+                                        //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
+                                        var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
+                                        if (!string.IsNullOrEmpty(sm2token))
+                                        {
+                                            ctx.token = sm2token;
+                                        }
+                                        Wlniao.Cache.Set("ctx_" + ctx.domain, ctx, 300);
+                                    }
+                                }
+                                catch { }
+                            }
+                            else
+                            {
+                                ctx.message = res.message;
+                            }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    ctx.message = "XApp初始化异常:" + ex.Message;
+                    catch (Exception ex)
+                    {
+                        ctx.message = "XApp初始化异常:" + ex.Message;
+                    }
                 }
                 return ctx;
             }
