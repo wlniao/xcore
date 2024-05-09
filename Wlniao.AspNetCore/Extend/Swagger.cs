@@ -12,9 +12,61 @@ using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Runtime.Serialization;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.CodeAnalysis;
 
 namespace Wlniao.Swagger
 {
+    /// <summary>
+    /// API分组信息
+    /// </summary>
+    public class ApiGroupInfo
+    {
+        /// <summary>
+        /// 当前注册的分组列表
+        /// </summary>
+        public static List<ApiGroupInfo> GroupInfos = new List<ApiGroupInfo>();
+        /// <summary>
+        /// 分组名称
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// 接口文档标题
+        /// </summary>
+        public string Title { get; set; }
+        /// <summary>
+        /// 接口文档版本
+        /// </summary>
+        public string Version { get; set; }
+        /// <summary>
+        /// 接口文档链接
+        /// </summary>
+        public string ApiUrl
+        {
+            get
+            {
+                return "/" + Name + "/swagger.json";
+            }
+        }
+    }
+    /// <summary>
+    /// API分组信息特性
+    /// </summary>
+    public class ApiGroupAttribute : Attribute, IApiDescriptionGroupNameProvider
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name">分组名称</param>
+        public ApiGroupAttribute(String name)
+        {
+            GroupName = name;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string GroupName { get; set; }
+    }
     /// <summary>
     /// 认证授权域名
     /// </summary>
@@ -120,26 +172,44 @@ namespace Wlniao.Swagger
         /// 
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="info"></param>
-        /// <param name="name"></param>
+        /// <param name="groups"></param>
         /// <returns></returns>
-        public static IServiceCollection AddSwaggerExtend(
-            this IServiceCollection services, OpenApiInfo info = null, String name = "v1")
+        public static IServiceCollection AddSwaggerExtend(this IServiceCollection services, List<ApiGroupInfo> groups = null)
         {
+            if (groups != null)
+            {
+                ApiGroupInfo.GroupInfos = groups;
+            }
+            if (!ApiGroupInfo.GroupInfos.Where(o => o.Name == "default").Any())
+            {
+                ApiGroupInfo.GroupInfos.Add(new ApiGroupInfo { Name = "default", Title = ApiGroupInfo.GroupInfos.Count == 0 ? "接口文档" : "未分组接口" });
+            }
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen(o =>
             {
-                if (name == null)
-                {
-                    info = new OpenApiInfo
-                    {
-                        Title = XCore.WebNode,
-                        Extensions = new Dictionary<string, IOpenApiExtension> { }
-                    };
-                }
                 o.OperationFilter<Filter>();
-                o.SwaggerDoc(name, info);
-                o.AddServer(new OpenApiServer { Url = XCore.WebHost, Description = XCore.WebNode });
+                foreach (var group in ApiGroupInfo.GroupInfos)
+                {
+                    o.SwaggerDoc(group.Name, new OpenApiInfo
+                    {
+                        Title = string.IsNullOrEmpty(group.Title) ? group.Name : group.Title,
+                        Version = string.IsNullOrEmpty(group.Version) ? XCore.ProgramVersion : group.Version,
+                        Extensions = new Dictionary<string, IOpenApiExtension> { }
+                    });
+                }
+                o.DocInclusionPredicate((groupName, apiDescription) =>
+                {
+                    if (groupName == "default")
+                    {
+                        //没加分组属性的接口都为默认分组
+                        return string.IsNullOrEmpty(apiDescription.GroupName) || !ApiGroupInfo.GroupInfos.Where(o => o.Name == apiDescription.GroupName).Any();
+                    }
+                    else
+                    {
+                        return apiDescription.GroupName == groupName;
+                    }
+                });
+                o.AddServer(new OpenApiServer { Url = XCore.WebHost });
                 if (System.IO.File.Exists(Path.Combine(AppContext.BaseDirectory, $"Wlniao.XCore.xml")))
                 {
                     o.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"Wlniao.XCore.xml"), true);
