@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Authors>XieChaoyi</Authors>
     <Nullable>enable</Nullable>
-    <Version>8.0.17-beta2</Version>
+    <Version>8.0.18-beta1</Version>
     <TargetFramework>net8.0</TargetFramework>
     <PackageId>Wlniao.AspNetCore</PackageId>
     <PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>

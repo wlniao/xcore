@@ -52,12 +52,12 @@ namespace Wlniao.XCenter
         /// 
         /// </summary>
         public static string XCenterApp = Wlniao.Config.GetSetting("XCenterApp", XCore.WebNode);
-        internal static string XCenterAppToken = Wlniao.Config.GetConfigs("XCenterAppToken");
+        internal static string XCenterToken = Wlniao.Config.GetConfigs("XCenterToken");
+        internal static string XCenterAppToken = Wlniao.Config.GetSetting("XCenterAppToken");
+        internal static string XCenterOwner = string.IsNullOrEmpty(XCenterToken) && string.IsNullOrEmpty(XCenterAppToken) ? Wlniao.Config.GetConfigs("XCenterOwner") : Wlniao.Config.GetSetting("XCenterOwner");
         internal static string XCenterName = Wlniao.Config.GetConfigs("XCenterName");
-        internal static string XCenterOwner = Wlniao.Config.GetSetting("XCenterOwner");
-        internal static string XCenterToken = Wlniao.Config.GetSetting("XCenterToken");
         internal static string XCenterBrand = Wlniao.Config.GetConfigs("XCenterBrand");
-        internal static string XCenterDomain = Wlniao.Config.GetSetting("XCenterDomain").ToLower().Replace("https://", "").Replace("http://", "").Trim('/');
+        internal static string XCenterDomain = Wlniao.Config.GetConfigs("XCenterDomain").ToLower().Replace("https://", "").Replace("http://", "").Trim('/');
         private static string _AuthifyHost = null;
         private static string _XCenterSm4Key = null;
         private static string _XCenterCertSn = null;
