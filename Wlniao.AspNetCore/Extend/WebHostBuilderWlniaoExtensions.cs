@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using System.IO;
+using Microsoft.AspNetCore.Http;
 
 namespace Wlniao
 {
@@ -19,38 +20,75 @@ namespace Wlniao
         /// 
         /// </summary>
         /// <param name="builder"></param>
+        /// <param name="options"></param>
         /// <returns></returns>
-        public static IWebHostBuilder UseWlniao(this IWebHostBuilder builder)
+        public static IWebHostBuilder UseWlniao(this IWebHostBuilder builder, Action<KestrelServerOptions> options = null)
         {
-            // 配置日志输出级别，隐藏默认日志
-            builder = builder.ConfigureLogging(c => { c.AddFilter(level => level >= LogLevel.Error); });
+            try
+            {
+                // 配置日志输出级别，隐藏默认日志
+                builder = builder.ConfigureLogging(c => { c.AddFilter(level => level >= LogLevel.Error); });
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.Message);
+            }
 
-            // 配置网站内容根目录
-            builder = builder.UseContentRoot(Directory.GetCurrentDirectory());
+            try
+            {
+                // 配置网站内容根目录
+                builder = builder.UseContentRoot(Directory.GetCurrentDirectory());
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.Message);
+            }
 
-            // 配置Kestrel监听地址及端口号
-            builder = builder.UseKestrel(o => { o.ListenAnyIP(XCore.ListenPort); });
+            try
+            {
+
+                // 配置Kestrel监听地址及端口号
+                builder = builder.UseKestrel(o =>
+                {
+                    o.ListenAnyIP(XCore.ListenPort);
+                    if (options != null)
+                    {
+                        options(o);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.Message);
+            }
 
             // 输出监听日志
-            var endpoints = new List<string> { "http://localhost:" + XCore.ListenPort };
-            if (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+            try
             {
-                foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList.OrderBy(o => o.ToString()).OrderBy(o => o.AddressFamily == AddressFamily.InterNetworkV6))
+                var endpoints = new List<string> { "http://localhost:" + XCore.ListenPort };
+                if (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
                 {
-                    var ip = address.ToString();
-                    if (address.AddressFamily == AddressFamily.InterNetwork && (ip.StartsWith("10.") || ip.StartsWith("172.") || ip.StartsWith("192.")))
+                    foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList.OrderBy(o => o.ToString()).OrderBy(o => o.AddressFamily == AddressFamily.InterNetworkV6))
                     {
-                        endpoints.Add("http://" + ip + ":" + XCore.ListenPort);
-                    }
-                    else if (address.AddressFamily == AddressFamily.InterNetworkV6 && !address.IsIPv6LinkLocal && !ip.StartsWith("fe80") && !ip.Contains("%"))
-                    {
-                        endpoints.Add("http://[" + ip + "]:" + XCore.ListenPort);
+                        var ip = address.ToString();
+                        if (address.AddressFamily == AddressFamily.InterNetwork && (ip.StartsWith("10.") || ip.StartsWith("172.") || ip.StartsWith("192.")))
+                        {
+                            endpoints.Add("http://" + ip + ":" + XCore.ListenPort);
+                        }
+                        else if (address.AddressFamily == AddressFamily.InterNetworkV6 && !address.IsIPv6LinkLocal && !ip.StartsWith("fe80") && !ip.Contains("%"))
+                        {
+                            endpoints.Add("http://[" + ip + "]:" + XCore.ListenPort);
+                        }
                     }
                 }
+                foreach (var endpoint in endpoints)
+                {
+                    Wlniao.Log.Loger.Console("Now listening on: " + endpoint, ConsoleColor.DarkGreen);
+                }
             }
-            foreach (var endpoint in endpoints)
+            catch
             {
-                Wlniao.Log.Loger.Console("Now listening on: " + endpoint, ConsoleColor.DarkGreen);
+                Wlniao.Log.Loger.Console("Now listening on: http://0.0.0.0:" + XCore.ListenPort, ConsoleColor.DarkGreen);
             }
             return builder;
         }

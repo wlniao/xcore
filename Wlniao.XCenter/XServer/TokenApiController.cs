@@ -127,7 +127,6 @@ namespace Wlniao.XServer
             result.code = "0";
             result.data = obj;
             result.success = true;
-            result.message = "success";
             var txt = string.Empty;
             if (obj == null)
             {
@@ -160,7 +159,6 @@ namespace Wlniao.XServer
         {
             result.code = "0";
             result.success = true;
-            result.message = "success";
             var dic = new Dictionary<string, object>();
             dic.Add("node", result.node);
             dic.Add("code", result.code);
