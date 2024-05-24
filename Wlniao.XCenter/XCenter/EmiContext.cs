@@ -130,6 +130,7 @@ namespace Wlniao.XCenter
                     name = ctx.name,
                     brand = ctx.brand,
                     owner = ctx.owner,
+                    token = string.IsNullOrEmpty(ctx.token) ? Context.XCenterToken : ctx.token,
                     domain = ctx.domain,
                     message = ctx.message,
                     register = DateTime.MinValue,

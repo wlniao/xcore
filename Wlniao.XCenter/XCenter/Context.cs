@@ -562,22 +562,21 @@ namespace Wlniao.XCenter
             return "";
         }
         /// <summary>
-        /// 获取网点在机构内部编码
+        /// 获取租户名称
         /// </summary>
-        /// <param name="point"></param>
-        /// <param name="message"></param>
+        /// <param name="owner"></param>
         /// <returns></returns>
-        public String ApiOrganCode(String point, ref String message)
+        public String ApiOwnerName(String owner = null)
         {
             var val = "";
-            if (!string.IsNullOrEmpty(point))
+            if (!string.IsNullOrEmpty(owner))
             {
-                val = Wlniao.Caching.InMemory.Get("pointcode_" + point);
-                var res = ApiData<String>("/api/get_pointcode", new { id = point, app = app });
+                val = Wlniao.Caching.InMemory.Get("ownername_" + owner);
+                var res = ApiData<String>("/api/get_ownername", new { owner = owner });
                 if (res.success)
                 {
                     val = res.data;
-                    Wlniao.Caching.InMemory.Set("pointcode_" + point, res.data, 600);
+                    Wlniao.Caching.InMemory.Set("ownername_" + owner, res.data, 600);
                 }
                 else if (res.code == "999")
                 {
@@ -586,6 +585,7 @@ namespace Wlniao.XCenter
             }
             return val;
         }
+
         /// <summary>
         /// 获取网点名称
         /// </summary>
@@ -610,6 +610,33 @@ namespace Wlniao.XCenter
             }
             return val;
         }
+
+        /// <summary>
+        /// 获取网点在机构内部编码
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public String ApiOrganCode(String point, ref String message)
+        {
+            var val = "";
+            if (!string.IsNullOrEmpty(point))
+            {
+                val = Wlniao.Caching.InMemory.Get("pointcode_" + point);
+                var res = ApiData<String>("/api/get_pointcode", new { id = point, app = app });
+                if (res.success)
+                {
+                    val = res.data;
+                    Wlniao.Caching.InMemory.Set("pointcode_" + point, res.data, 600);
+                }
+                else if (res.code == "999")
+                {
+                    message = res.message;
+                }
+            }
+            return val;
+        }
+
         /// <summary>
         /// 获取应用参数配置
         /// </summary>
