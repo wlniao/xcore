@@ -51,13 +51,13 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 
         /// </summary>
-        public static string XCenterApp = Wlniao.Config.GetSetting("XCenterApp", XCore.WebNode);
-        internal static string XCenterToken = Wlniao.Config.GetConfigs("XCenterToken");
+        public static string XCenterApp = Wlniao.Config.GetSetting("XCenterApp");
+        internal static string XCenterToken = Wlniao.Config.GetSetting("XCenterToken");
         internal static string XCenterAppToken = Wlniao.Config.GetSetting("XCenterAppToken");
         internal static string XCenterOwner = string.IsNullOrEmpty(XCenterToken) && string.IsNullOrEmpty(XCenterAppToken) ? Wlniao.Config.GetConfigs("XCenterOwner") : Wlniao.Config.GetSetting("XCenterOwner");
-        internal static string XCenterName = Wlniao.Config.GetConfigs("XCenterName");
-        internal static string XCenterBrand = Wlniao.Config.GetConfigs("XCenterBrand");
-        internal static string XCenterDomain = Wlniao.Config.GetConfigs("XCenterDomain").ToLower().Replace("https://", "").Replace("http://", "").Trim('/');
+        internal static string XCenterName = Wlniao.Config.GetSetting("XCenterName");
+        internal static string XCenterBrand = Wlniao.Config.GetSetting("XCenterBrand");
+        internal static string XCenterDomain = Wlniao.Config.GetSetting("XCenterDomain").ToLower().Replace("https://", "").Replace("http://", "").Trim('/');
         private static string _AuthifyHost = null;
         private static string _XCenterSm4Key = null;
         private static string _XCenterCertSn = null;
@@ -72,7 +72,7 @@ namespace Wlniao.XCenter
             {
                 if (_AuthifyHost == null)
                 {
-                    _AuthifyHost = Wlniao.Config.GetConfigs("AuthifyHost", "https://authify.cn");
+                    _AuthifyHost = Wlniao.Config.GetSetting("AuthifyHost", "https://authify.cn");
                 }
                 return _AuthifyHost;
             }
@@ -86,7 +86,7 @@ namespace Wlniao.XCenter
             {
                 if (_XCenterSm4Key == null)
                 {
-                    _XCenterSm4Key = Wlniao.Config.GetConfigs("XCenterSm4Key");
+                    _XCenterSm4Key = Wlniao.Config.GetSetting("XCenterSm4Key");
                 }
                 return _XCenterSm4Key;
             }
@@ -159,7 +159,7 @@ namespace Wlniao.XCenter
             var ctx = new Context { owner = ownerId.ToString(), token = XCenterToken, app = XCenterApp };
             try
             {
-                var res = AppData<Dictionary<string, object>>("/app/getapp_byowner", new { owner = ctx.owner, app = XCenterApp });
+                var res = AppData<Dictionary<string, object>>("/app/getapp_byowner", new { owner = ctx.owner, app = ctx.app });
                 if (res.success)
                 {
                     ctx.app = res.data.GetString("app");
@@ -206,7 +206,7 @@ namespace Wlniao.XCenter
             {
                 return new Context { message = "当前域名无效，请重新指定" };
             }
-            else if (string.IsNullOrEmpty(XCenterApp) || string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9 || (string.IsNullOrEmpty(XCenterToken) && string.IsNullOrEmpty(XCenterAppToken)))
+            else if (string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9 || (string.IsNullOrEmpty(XCenterToken) && string.IsNullOrEmpty(XCenterAppToken)) || (string.IsNullOrEmpty(XCenterApp) && string.IsNullOrEmpty(XCenterCertSn)))
             {
                 var ctx = Wlniao.Cache.Get<Context>("ctx_" + domain);
                 if (ctx == null || string.IsNullOrEmpty(ctx.app))
@@ -222,31 +222,31 @@ namespace Wlniao.XCenter
                         }
                         else
                         {
-                            var res = AppData<Dictionary<string, object>>("/app/getapp_bydomain", new { domain = ctx.domain, app = XCenterApp });
+                            var res = AppData<Dictionary<string, object>>("/app/getapp_bydomain", new { domain = ctx.domain, app = ctx.app });
                             if (res.success)
                             {
-                                ctx.app = res.data.GetString("app");
+                                ctx.app = res.data.GetString("app", ctx.app);
                                 ctx.name = res.data.GetString("name");
                                 ctx.brand = res.data.GetString("brand");
                                 ctx.owner = res.data.GetString("owner");
-                                if (string.IsNullOrEmpty(ctx.app))
-                                {
-                                    ctx.app = XCenterApp;
-                                }
                                 try
                                 {
                                     if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
                                     {
                                         //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
-                                        var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
+                                        var tokentmp = res.data.GetString("sm2token");
+                                        var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(tokentmp), XCenterPrivkey);
                                         if (!string.IsNullOrEmpty(sm2token))
                                         {
                                             ctx.token = sm2token;
                                         }
-                                        Wlniao.Cache.Set("ctx_" + ctx.domain, ctx, 300);
                                     }
                                 }
-                                catch { }
+                                catch
+                                {
+                                    ctx.message = "请检查“XCenterPrivkey”是否正确";
+                                }
+                                Wlniao.Cache.Set("ctx_" + ctx.domain, ctx, 300);
                             }
                             else
                             {
@@ -265,7 +265,7 @@ namespace Wlniao.XCenter
             {
                 return new Context
                 {
-                    app = XCenterApp,
+                    app = string.IsNullOrEmpty(XCenterApp) ? XCore.WebNode : XCenterApp,
                     name = XCenterName,
                     brand = XCenterBrand,
                     owner = XCenterOwner,

@@ -196,23 +196,17 @@ namespace Wlniao
             {
                 return _config[key.ToUpper()];
             }
-            else if (defaultValue != null)
-            {
-                lock (XCore.Lock)
-                {
-                    _config.Add(key, defaultValue);
-                    try { Write(_config, FileName); } catch { }
-                }
-                return defaultValue;
-            }
             else
             {
-                lock (XCore.Lock)
+                if (!string.IsNullOrEmpty(defaultValue))
                 {
-                    _config.Add(key, "");
-                    try { Write(_config, FileName); } catch { }
+                    lock (XCore.Lock)
+                    {
+                        _config.Add(key, defaultValue);
+                        try { Write(_config, FileName); } catch { }
+                    }
                 }
-                return "";
+                return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
             }
         }
         /// <summary>

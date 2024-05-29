@@ -494,7 +494,8 @@ namespace Wlniao
             {
                 encryText = "04" + encryText;
             }
-            var sm2 = new SM2(null, Helper.Decode(privateKey), SM2Mode.C1C3C2);
+            var pks = Helper.Decode(privateKey);
+            var sm2 = new SM2(null, pks, SM2Mode.C1C3C2);
             var encryBytes = Helper.Decode(encryText);
             var plainBytes = sm2.Decrypt(encryBytes);
             return System.Text.Encoding.UTF8.GetString(plainBytes);

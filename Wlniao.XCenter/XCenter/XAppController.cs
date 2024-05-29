@@ -229,6 +229,7 @@ namespace Wlniao.XCenter
                 input = Wlniao.Encryptor.SM4DecryptECBFromHex(input, this.sm4key, true);
                 if (string.IsNullOrEmpty(input))
                 {
+                    DebugMessage("Request message decrypt faild!!");
                     throw new Exception("请求内容解密失败");
                 }
             }
@@ -280,6 +281,7 @@ namespace Wlniao.XCenter
                 input = Wlniao.Encryptor.SM4DecryptECBFromHex(input, this.sm4key, true);
                 if (string.IsNullOrEmpty(input))
                 {
+                    DebugMessage("Request message decrypt faild!!");
                     throw new Exception("请求内容解密失败");
                 }
             }
