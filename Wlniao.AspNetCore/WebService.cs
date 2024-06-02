@@ -21,9 +21,12 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.Net.Sockets;
+using System.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using System.Linq;
 namespace Wlniao
 {
     /// <summary>
@@ -31,6 +34,40 @@ namespace Wlniao
     /// </summary>
     public partial class WebService
     {
+        /// <summary>
+        /// 输出监听日志
+        /// </summary>
+        public static void ListenLogs()
+        {
+            try
+            {
+                var endpoints = new List<string> { "http://localhost:" + XCore.ListenPort };
+                if (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+                {
+                    foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList.OrderBy(o => o.ToString()).OrderBy(o => o.AddressFamily == AddressFamily.InterNetworkV6))
+                    {
+                        var ip = address.ToString();
+                        if (address.AddressFamily == AddressFamily.InterNetwork && (ip.StartsWith("10.") || ip.StartsWith("172.") || ip.StartsWith("192.")))
+                        {
+                            endpoints.Add("http://" + ip + ":" + XCore.ListenPort);
+                        }
+                        else if (address.AddressFamily == AddressFamily.InterNetworkV6 && !address.IsIPv6LinkLocal && !ip.StartsWith("fe80") && !ip.Contains("%"))
+                        {
+                            endpoints.Add("http://[" + ip + "]:" + XCore.ListenPort);
+                        }
+                    }
+                }
+                foreach (var endpoint in endpoints)
+                {
+                    Wlniao.Log.Loger.Console("Now listening on: " + endpoint, ConsoleColor.DarkGreen);
+                }
+            }
+            catch
+            {
+                Wlniao.Log.Loger.Console("Now listening on: http://0.0.0.0:" + XCore.ListenPort, ConsoleColor.DarkGreen);
+            }
+        }
+
         /// <summary>
         /// 服务停用及停用消息
         /// </summary>
