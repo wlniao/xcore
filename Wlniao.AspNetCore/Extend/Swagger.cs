@@ -294,7 +294,7 @@ namespace Wlniao.Swagger
             {
                 operation.Parameters.Add(new OpenApiParameter
                 {
-                    In = ParameterLocation.Query,
+                    In = item.In,
                     Name = item.Name,
                     Required = item.Required,
                     Description = item.Description

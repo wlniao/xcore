@@ -61,35 +61,8 @@ namespace Wlniao
             {
                 log.Error(ex.Message);
             }
-
-            // 输出监听日志
-            try
-            {
-                var endpoints = new List<string> { "http://localhost:" + XCore.ListenPort };
-                if (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
-                {
-                    foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList.OrderBy(o => o.ToString()).OrderBy(o => o.AddressFamily == AddressFamily.InterNetworkV6))
-                    {
-                        var ip = address.ToString();
-                        if (address.AddressFamily == AddressFamily.InterNetwork && (ip.StartsWith("10.") || ip.StartsWith("172.") || ip.StartsWith("192.")))
-                        {
-                            endpoints.Add("http://" + ip + ":" + XCore.ListenPort);
-                        }
-                        else if (address.AddressFamily == AddressFamily.InterNetworkV6 && !address.IsIPv6LinkLocal && !ip.StartsWith("fe80") && !ip.Contains("%"))
-                        {
-                            endpoints.Add("http://[" + ip + "]:" + XCore.ListenPort);
-                        }
-                    }
-                }
-                foreach (var endpoint in endpoints)
-                {
-                    Wlniao.Log.Loger.Console("Now listening on: " + endpoint, ConsoleColor.DarkGreen);
-                }
-            }
-            catch
-            {
-                Wlniao.Log.Loger.Console("Now listening on: http://0.0.0.0:" + XCore.ListenPort, ConsoleColor.DarkGreen);
-            }
+            //输出监听终结点信息
+            WebService.ListenLogs();
             return builder;
         }
     }
