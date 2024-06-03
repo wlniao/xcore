@@ -90,6 +90,25 @@ namespace Wlniao.Swagger
         public string HeaderName { get; set; } = "Authorization";
     }
     /// <summary>
+    /// 输出参数自定义属性
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    public class WlniaoApiResponseAttribute : Attribute
+    {
+        /// <summary>
+        /// 参数名称
+        /// </summary>
+        public String Name { get; set; }
+        /// <summary>
+        /// 参数是否必须
+        /// </summary>
+        public bool Required { get; set; } = false;
+        /// <summary>
+        /// 参数说明
+        /// </summary>
+        public string Description { get; set; }
+    }
+    /// <summary>
     /// Body参数自定义属性
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
@@ -316,6 +335,17 @@ namespace Wlniao.Swagger
                             ["application/json"] = new OpenApiMediaType{ Schema = schema }
                         }
                     };
+                }
+            }
+            var responses = context.ApiDescription.ActionDescriptor.EndpointMetadata.Where(o => o is WlniaoApiResponseAttribute);
+            if (operation.Responses == null && responses.Count() > 0)
+            {
+                operation.Responses = new OpenApiResponses();
+                foreach (WlniaoApiResponseAttribute item in context.ApiDescription.ActionDescriptor.EndpointMetadata.Where(o => o is WlniaoApiResponseAttribute))
+                {
+                    operation.Responses.Add(item.Name, new OpenApiResponse
+                    {
+                    });
                 }
             }
         }
