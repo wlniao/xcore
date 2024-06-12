@@ -39,10 +39,34 @@ namespace Wlniao.Log
         /// 文件日志输出工具
         /// </summary>
 		private static ILogProvider fileProvider = new FileLoger(LogLevel);
-		/// <summary>
-		/// 当前日志输出等级
-		/// </summary>
-		public static LogLevel LogLevel
+
+        /// <summary>
+        /// 是否输出原始日志
+        /// </summary>
+        public static string apiOrigin = null;
+        /// <summary>
+        /// 是否记录原始日志（API请求用）
+        /// </summary>
+        internal static bool ApiOrigin
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(apiOrigin))
+                {
+                    apiOrigin = Config.GetConfigs("WLN_LOG_ORIGIN").ToLower();
+                    if (string.IsNullOrEmpty(apiOrigin))
+                    {
+                        apiOrigin = "true";
+                    }
+                }
+                return apiOrigin != "false";
+            }
+        }
+
+        /// <summary>
+        /// 当前日志输出等级
+        /// </summary>
+        public static LogLevel LogLevel
         {
             get
             {
@@ -105,33 +129,33 @@ namespace Wlniao.Log
         public static void SetLogger(ILogProvider provider)
         {
             logProvider = provider;
-		}
-		/// <summary>
-		/// 直接在控制台打印内容
-		/// </summary>
-		/// <param name="message"></param>
-		/// <param name="color"></param>
-		public static void Console(String message, ConsoleColor color = ConsoleColor.White)
-		{
-			System.Console.ForegroundColor = color;
-			System.Console.WriteLine(message);
-			System.Console.ForegroundColor = ConsoleColor.White;
-		}
-		/// <summary>
-		/// 直接在文件及控制台中输出日志
-		/// </summary>
-		/// <param name="topic"></param>
-		/// <param name="message"></param>
-		/// <param name="color"></param>
-		public static void File(String topic, String message, ConsoleColor color = ConsoleColor.White)
+        }
+        /// <summary>
+        /// 直接在控制台打印内容
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="color"></param>
+        public static void Console(String message, ConsoleColor color = ConsoleColor.White)
+        {
+            System.Console.ForegroundColor = color;
+            System.Console.WriteLine(message);
+            System.Console.ForegroundColor = ConsoleColor.White;
+        }
+        /// <summary>
+        /// 直接在文件及控制台中输出日志
+        /// </summary>
+        /// <param name="topic"></param>
+        /// <param name="message"></param>
+        /// <param name="color"></param>
+        public static void File(String topic, String message, ConsoleColor color = ConsoleColor.White)
         {
             fileProvider.Topic(topic, message);
         }
-		/// <summary>
-		/// 输出Debug级别的日志
-		/// </summary>
-		/// <param name="message"></param>
-		public static void Debug(String message)
+        /// <summary>
+        /// 输出Debug级别的日志
+        /// </summary>
+        /// <param name="message"></param>
+        public static void Debug(String message)
         {
             LogProvider.Debug(message);
         }
@@ -160,12 +184,13 @@ namespace Wlniao.Log
             LogProvider.Error(message);
         }
         /// <summary>
-        /// 输出Fatal级别的日志
+        /// 记录接口原始日志
         /// </summary>
+        /// <param name="topic"></param>
         /// <param name="message"></param>
-        public static void Fatal(String message)
+        public static void Origin(String topic, String message)
         {
-            LogProvider.Fatal(message);
+            LogProvider.Topic(topic, message);
         }
         /// <summary>
         /// 输出自定义主题的日志

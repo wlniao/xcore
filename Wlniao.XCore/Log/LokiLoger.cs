@@ -60,10 +60,30 @@ namespace Wlniao.Log
         /// 落盘时间间隔
         /// </summary>
         public int Interval = 10;
+
         /// <summary>
         /// 本地日志输出方式
         /// </summary>
-        public string LogLocal = Config.GetConfigs("WLN_LOG_LOCAL", "Console").ToLower();
+        private string logLocal = null;
+
+        /// <summary>
+        /// 本地日志输出方式
+        /// </summary>
+        public string LogLocal
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(logLocal))
+                {
+                    logLocal = Config.GetConfigs("WLN_LOG_LOCAL").ToLower();
+                    if (string.IsNullOrEmpty(logLocal))
+                    {
+                        logLocal = "console";
+                    }
+                }
+                return logLocal;
+            }
+        }
 
         private FileLoger flog = null;
         /// <summary>
@@ -175,7 +195,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Debug)
             {
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(DateTime.UtcNow), message), ConsoleColor.White);
+                Loger.Console(string.Format("{0} => {1}", DateTools.Format(DateTime.UtcNow), message), ConsoleColor.DarkBlue);
             }
         }
         /// <summary>
@@ -189,7 +209,7 @@ namespace Wlniao.Log
                 var entrie = new Entrie { line = message, time = DateTime.UtcNow };
                 if (LogLocal == "console")
                 {
-                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.DarkGray);
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.White);
                 }
                 else if (LogLocal == "file")
                 {
@@ -263,7 +283,7 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// 输出日志
+        /// 输出自定义主题的日志
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
@@ -279,6 +299,28 @@ namespace Wlniao.Log
                 flog.Write(topic, message);
             }
             Write(topic, entrie);
+        }
+
+        /// <summary>
+        /// 记录接口原始日志
+        /// </summary>
+        /// <param name="topic"></param>
+        /// <param name="message"></param>
+        public void Origin(String topic, String message)
+        {
+            if (Loger.ApiOrigin)
+            {
+                var entrie = new Entrie { line = message, time = DateTime.UtcNow };
+                if (LogLocal == "console")
+                {
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.DarkGray);
+                }
+                else if (LogLocal == "file")
+                {
+                    flog.Write(topic, message);
+                }
+                Write(topic, entrie);
+            }
         }
 
         /// <summary>

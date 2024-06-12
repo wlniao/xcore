@@ -203,7 +203,7 @@ namespace Wlniao.Tasker
             if (!Connecting)
             {
                 Connecting = true;
-                log.Info("MQ服务端已连接!!!");
+                log.Debug("MQ服务端已连接!!!");
             }
         }
         private void OnMqttClientDisconnected(MqttClientDisconnectedEventArgs e)
@@ -211,7 +211,7 @@ namespace Wlniao.Tasker
             if (Connecting)
             {
                 Connecting = false;
-                log.Info("MQ服务端已断开!!!");
+                log.Debug("MQ服务端已断开!!!");
             }
         }
         private void OnMqttClientApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)

@@ -62,5 +62,12 @@ namespace Wlniao.Log
         /// <param name="topic"></param>
         /// <param name="message"></param>
         public void Topic(String topic, String message);
+
+        /// <summary>
+        /// 记录接口原始日志
+        /// </summary>
+        /// <param name="topic"></param>
+        /// <param name="message"></param>
+        public void Origin(String topic, String message);
     }
 }

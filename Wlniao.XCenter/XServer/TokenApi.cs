@@ -71,17 +71,14 @@ namespace Wlniao.XServer
                     var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                     using (var client = new HttpClient(handler))
                     {
-                        if (log.LogLevel <= Log.LogLevel.Information)
-                        {
-                            log.Topic(apinode, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr);
-                        }
-                        var reqest = new HttpRequestMessage(HttpMethod.Post, uri);
-                        reqest.Headers.Date = DateTime.Now;
-                        reqest.Content = new StreamContent(stream);
-                        reqest.Content.Headers.Add("Content-Type", "application/json");
+                        log.Origin(apinode, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr);
+                        var request = new HttpRequestMessage(HttpMethod.Post, uri);
+                        request.Headers.Date = DateTime.Now;
+                        request.Content = new StreamContent(stream);
+                        request.Content.Headers.Add("Content-Type", "application/json");
                         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
                         client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
-                        var respose = client.Send(reqest);
+                        var respose = client.Send(request);
                         resStr = respose.Content.ReadAsStringAsync().Result;
                         if (respose.Headers.Contains("X-Wlniao-Trace"))
                         {
@@ -91,10 +88,7 @@ namespace Wlniao.XServer
                         {
                             utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                         }
-                        if (log.LogLevel <= Log.LogLevel.Information)
-                        {
-                            log.Topic(apinode, "msgid:" + traceid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + resStr);
-                        }
+                        log.Origin(apinode, "msgid:" + traceid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + resStr);
                     }
                 }
                 catch { }
@@ -110,10 +104,7 @@ namespace Wlniao.XServer
                     rlt.debuger = url + "[Error]";
                     rlt.message = "通讯异常，网络异常或请求错误";
                     logs += "\n <<< " + rlt.message;
-                    if (log.LogLevel <= Log.LogLevel.Information)
-                    {
-                        log.Topic(apinode, "msgid:" + traceid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + rlt.message);
-                    }
+                    log.Origin(apinode, "msgid:" + traceid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + rlt.message);
                 }
                 else
                 {
@@ -128,10 +119,7 @@ namespace Wlniao.XServer
                         rlt.code = "104";
                         rlt.message = "远端输出格式不满足本地要求";
                         logs += "\n <<< " + rlt.message;
-                        if (log.LogLevel <= Log.LogLevel.Information)
-                        {
-                            log.Topic(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
-                        }
+                        log.Origin(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
                     }
                     else
                     {
@@ -180,7 +168,7 @@ namespace Wlniao.XServer
                         logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + (string.IsNullOrEmpty(plaintext) ? "\"\"" : plaintext) + "}";
                     }
                 }
-                log.Debug(logs);
+                log.Info(logs);
             }
             return rlt;
         }
