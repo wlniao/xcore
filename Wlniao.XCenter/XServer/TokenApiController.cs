@@ -21,7 +21,7 @@ namespace Wlniao.XServer
         /// <summary>
         /// 默认返回对象
         /// </summary>
-        protected ApiResult<Object> result = new() { node = XCore.WebNode, message = "未知错误" };
+        protected ApiResult<Object> result = new() { node = XCore.WebNode, message = "" };
         /// <summary>
         /// 执行请求校验
         /// </summary>
@@ -146,7 +146,7 @@ namespace Wlniao.XServer
             dic.Add("tips", result.tips);
             dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
             dic.Add("success", result.success);
-            dic.Add("message", result.message);
+            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
             return Json(dic);
         }
         /// <summary>
@@ -165,7 +165,7 @@ namespace Wlniao.XServer
             dic.Add("tips", result.tips);
             dic.Add("data", Encryptor.SM4EncryptECBToHex(str, token));
             dic.Add("success", result.success);
-            dic.Add("message", result.message);
+            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
             return Json(dic);
         }
 
@@ -199,7 +199,7 @@ namespace Wlniao.XServer
             dic.Add("tips", result.tips);
             dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
             dic.Add("success", result.success);
-            dic.Add("message", result.message);
+            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
             return Json(dic);
         }
 
