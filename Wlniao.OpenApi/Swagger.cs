@@ -14,9 +14,36 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.CodeAnalysis;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace Wlniao.Swagger
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    public class NoSwaggerRouteConstraint : IRouteConstraint
+    {
+        /// <summary>
+        /// Usage: builder.Services.AddRouting(o => { o.ConstraintMap.Add("NoSwagger", typeof(Wlniao.Swagger.NoSwaggerRouteConstraint)); });
+        /// </summary>
+        /// <param name="httpContext"></param>
+        /// <param name="route"></param>
+        /// <param name="routeKey"></param>
+        /// <param name="values"></param>
+        /// <param name="routeDirection"></param>
+        /// <returns></returns>
+        public bool Match(HttpContext? httpContext, IRouter? route, string routeKey, RouteValueDictionary values, RouteDirection routeDirection)
+        {
+            var value = values[routeKey].ToString();
+            if (value == "swagger")
+            {
+                return false;
+            }
+            return true;
+        }
+    }
+
     /// <summary>
     /// API分组信息
     /// </summary>
@@ -337,7 +364,7 @@ namespace Wlniao.Swagger
                     };
                 }
             }
-            var responses = context.ApiDescription.ActionDescriptor.EndpointMetadata.Where(o => o is WlniaoApiResponseAttribute);
+            var responses = context.ApiDescription.ActionDescriptor.EndpointMetadata.Where(o => o is WlniaoApiResponseAttribute).ToList();
             if (operation.Responses == null && responses.Count() > 0)
             {
                 operation.Responses = new OpenApiResponses();
@@ -392,4 +419,5 @@ namespace Wlniao.Swagger
             return dyClass.CreateTypeInfo();
         }
     }
+
 }

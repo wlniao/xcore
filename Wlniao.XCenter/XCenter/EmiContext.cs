@@ -18,7 +18,6 @@ using System.Text.Unicode;
 using Newtonsoft.Json.Linq;
 using Wlniao.Serialization;
 using System.Text.Json.Serialization;
-using Microsoft.OpenApi.Extensions;
 
 namespace Wlniao.XCenter
 {

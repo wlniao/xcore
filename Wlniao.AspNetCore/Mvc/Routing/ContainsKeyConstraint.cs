@@ -19,12 +19,11 @@
     limitations under the License.
 
 ===============================================================================*/
-#if DNXCORE
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.AspNet.Http;
-using Microsoft.AspNet.Routing;
 namespace Wlniao.Mvc.Routing
 {
     /// <summary>
@@ -33,6 +32,10 @@ namespace Wlniao.Mvc.Routing
     public class ContainsKeyConstraint : IRouteConstraint
     {
         private static string[] _keys = null;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="keys"></param>
         public ContainsKeyConstraint(params string[] keys)
         {
             _keys = keys;
@@ -41,8 +44,16 @@ namespace Wlniao.Mvc.Routing
                 _keys[i] = _keys[i].ToLower();
             }
         }
-
-        public bool Match(HttpContext httpContext, IRouter route, string routeKey, IDictionary<string, object> values, RouteDirection routeDirection)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="httpContext"></param>
+        /// <param name="route"></param>
+        /// <param name="routeKey"></param>
+        /// <param name="values"></param>
+        /// <param name="routeDirection"></param>
+        /// <returns></returns>
+        public bool Match(HttpContext? httpContext, IRouter? route, string routeKey, RouteValueDictionary values, RouteDirection routeDirection)
         {
             if (_keys != null && _keys.Length > 0 && values.ContainsKey(routeKey))
             {
@@ -55,5 +66,28 @@ namespace Wlniao.Mvc.Routing
             return false;
         }
     }
+    /// <summary>
+    /// 
+    /// </summary>
+    public class LocalhostConstraint : IRouteConstraint
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="httpContext"></param>
+        /// <param name="route"></param>
+        /// <param name="routeKey"></param>
+        /// <param name="values"></param>
+        /// <param name="routeDirection"></param>
+        /// <returns></returns>
+        public bool Match(HttpContext? httpContext, IRouter? route, string routeKey, RouteValueDictionary values, RouteDirection routeDirection)
+        {
+            var value = values[routeKey].ToString();
+            if (value == "swagger")
+            {
+                return false;
+            }
+            return true;
+        }
+    }
 }
-#endif

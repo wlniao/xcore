@@ -3,12 +3,12 @@
   <PropertyGroup>
     <Authors>XieChaoyi</Authors>
     <Nullable>enable</Nullable>
-    <Version>8.0.22-beta1</Version>
+    <Version>8.0.23-beta1</Version>
     <TargetFramework>net8.0</TargetFramework>
     <PackageId>Wlniao.AspNetCore</PackageId>
     <PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
     <Description>Wlniao XCore.AspNetCore for CoreCLR Framework</Description>
-    <AssemblyName>Wlniao.XCore.AspNetCore</AssemblyName>
+    <AssemblyName>Wlniao.AspNetCore</AssemblyName>
     <Copyright>Copyright 2022 XieChaoyi</Copyright>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -30,11 +30,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.4" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.4" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.OpenApi" Version="1.6.14" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.5.0" />
     <PackageReference Include="Wlniao.XCore" Version="8.0.17" />
   </ItemGroup>
 

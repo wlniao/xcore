@@ -21,6 +21,7 @@ namespace Wlniao.XCenter
         //[Route("{p1?}/{p2?}/{p3?}/{p4?}")]
         //[Route("website/{p1?}/{p2?}/{p3?}/{p4?}")]
         //[Route("console/{p1?}/{p2?}/{p3?}/{p4?}")]
+        //[Route("{p1:NoSwagger}/{p2?}/{p3?}/{p4?}")]
         public IActionResult appx(string? p1, string? p2, string? p3, string? p4)
         {
             return CheckSession((xsession, ctx) =>
@@ -28,6 +29,7 @@ namespace Wlniao.XCenter
                 return ErrorMsg("App Pages");
             });
         }
+
         /// <summary>
         /// 授权命令
         /// </summary>
@@ -37,6 +39,7 @@ namespace Wlniao.XCenter
         {
             return BuildTicket();
         }
+
         /// <summary>
         /// 授权页面
         /// </summary>
