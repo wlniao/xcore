@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using System.IO;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Wlniao
 {
@@ -50,19 +52,31 @@ namespace Wlniao
                 // 配置Kestrel监听地址及端口号
                 builder = builder.UseKestrel(o =>
                 {
-                    o.ListenAnyIP(XCore.ListenPort);
+                    if (System.IO.File.Exists(WebService.TlsCrt) && System.IO.File.Exists(WebService.TlsKey))
+                    {
+                        o.ListenAnyIP(XCore.ListenPort, lo =>
+                        {
+                            WebService.UseHttps = true;
+                            lo.Protocols = HttpProtocols.Http1AndHttp2AndHttp3;
+                            lo.UseHttps(Wlniao.Crypto.Cert.CrtToPfx(WebService.TlsCrt, WebService.TlsKey));
+                        });
+                    }
+                    else
+                    {
+                        o.ListenAnyIP(XCore.ListenPort);
+                    }
                     if (options != null)
                     {
                         options(o);
                     }
+                    //输出监听终结点信息
+                    WebService.ListenLogs();
                 });
             }
             catch (Exception ex)
             {
                 log.Error(ex.Message);
             }
-            //输出监听终结点信息
-            WebService.ListenLogs();
             return builder;
         }
     }

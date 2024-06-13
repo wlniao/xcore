@@ -34,14 +34,70 @@ namespace Wlniao
     /// </summary>
     public partial class WebService
     {
+        private static string tlsCrt = null;
+        private static string tlsKey = null;
+
+        /// <summary>
+        /// 是否启用HTTPS服务
+        /// </summary>
+        internal static bool UseHttps = false;
+
+        /// <summary>
+        /// TLS服务证书
+        /// </summary>
+        internal static string TlsCrt
+        {
+            get
+            {
+                if (tlsCrt == null)
+                {
+                    try
+                    {
+                        tlsCrt = Config.GetConfigs("WLN_TLS_CRT");
+                    }
+                    catch { }
+                    if (string.IsNullOrEmpty(tlsCrt))
+                    {
+                        tlsCrt = IO.PathTool.Map("server.crt");
+                    }
+                }
+                return tlsCrt;
+            }
+        }
+
+        /// <summary>
+        /// TLS服务私钥
+        /// </summary>
+        internal static string TlsKey
+        {
+            get
+            {
+                if (tlsKey == null)
+                {
+                    try
+                    {
+                        tlsKey = Config.GetConfigs("WLN_TLS_KEY");
+                    }
+                    catch { }
+                    if (string.IsNullOrEmpty(tlsKey))
+                    {
+                        tlsKey = IO.PathTool.Map("server.key");
+                    }
+                }
+                return tlsKey;
+            }
+        }
+
+
         /// <summary>
         /// 输出监听日志
         /// </summary>
         public static void ListenLogs()
         {
+            var scheme = UseHttps ? "https://" : "http://";
             try
             {
-                var endpoints = new List<string> { "http://localhost:" + XCore.ListenPort };
+                var endpoints = new List<string> { scheme + "localhost:" + XCore.ListenPort };
                 if (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
                 {
                     foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList.OrderBy(o => o.ToString()).OrderBy(o => o.AddressFamily == AddressFamily.InterNetworkV6))
@@ -49,11 +105,11 @@ namespace Wlniao
                         var ip = address.ToString();
                         if (address.AddressFamily == AddressFamily.InterNetwork && (ip.StartsWith("10.") || ip.StartsWith("172.") || ip.StartsWith("192.")))
                         {
-                            endpoints.Add("http://" + ip + ":" + XCore.ListenPort);
+                            endpoints.Add(scheme + ip + ":" + XCore.ListenPort);
                         }
                         else if (address.AddressFamily == AddressFamily.InterNetworkV6 && !address.IsIPv6LinkLocal && !ip.StartsWith("fe80") && !ip.Contains("%"))
                         {
-                            endpoints.Add("http://[" + ip + "]:" + XCore.ListenPort);
+                            endpoints.Add(scheme + "[" + ip + "]:" + XCore.ListenPort);
                         }
                     }
                 }
@@ -64,7 +120,7 @@ namespace Wlniao
             }
             catch
             {
-                Wlniao.Log.Loger.Console("Now listening on: http://0.0.0.0:" + XCore.ListenPort, ConsoleColor.DarkGreen);
+                Wlniao.Log.Loger.Console("Now listening on: " + scheme + "0.0.0.0:" + XCore.ListenPort, ConsoleColor.DarkGreen);
             }
         }
 
