@@ -54,7 +54,11 @@ namespace Wlniao
                 {
                     if (System.IO.File.Exists(WebService.TlsCrt) && System.IO.File.Exists(WebService.TlsKey))
                     {
-                        o.ListenAnyIP(XCore.ListenPort, lo =>
+                        if (WebService.TlsPort != XCore.ListenPort)
+                        {
+                            o.ListenAnyIP(XCore.ListenPort);
+                        }
+                        o.ListenAnyIP(WebService.TlsPort, lo =>
                         {
                             WebService.UseHttps = true;
                             lo.Protocols = HttpProtocols.Http1AndHttp2AndHttp3;

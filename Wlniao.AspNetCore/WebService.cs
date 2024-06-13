@@ -34,6 +34,7 @@ namespace Wlniao
     /// </summary>
     public partial class WebService
     {
+        private static int tlsPort = 0;
         private static string tlsCrt = null;
         private static string tlsKey = null;
 
@@ -41,6 +42,29 @@ namespace Wlniao
         /// 是否启用HTTPS服务
         /// </summary>
         internal static bool UseHttps = false;
+
+        /// <summary>
+        /// TLS服务端口号
+        /// </summary>
+        public static int TlsPort
+        {
+            get
+            {
+                if (tlsPort == 0)
+                {
+                    try
+                    {
+                        tlsPort = System.Convert.ToInt32(System.Environment.GetEnvironmentVariable("WLN_TLS_PORT"));
+                    }
+                    catch { }
+                    if (tlsPort == 0)
+                    {
+                        tlsPort = XCore.ListenPort;
+                    }
+                }
+                return tlsPort;
+            }
+        }
 
         /// <summary>
         /// TLS服务证书
@@ -95,9 +119,14 @@ namespace Wlniao
         public static void ListenLogs()
         {
             var scheme = UseHttps ? "https://" : "http://";
+            var port = UseHttps && TlsPort > 0 ? TlsPort : XCore.ListenPort;
+            var endpoints = new List<string> { scheme + "localhost:" + port };
+            if (UseHttps&& TlsPort != XCore.ListenPort)
+            {
+                endpoints.Insert(0, "http://localhost:" + XCore.ListenPort);
+            }
             try
             {
-                var endpoints = new List<string> { scheme + "localhost:" + XCore.ListenPort };
                 if (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
                 {
                     foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList.OrderBy(o => o.ToString()).OrderBy(o => o.AddressFamily == AddressFamily.InterNetworkV6))
@@ -105,11 +134,11 @@ namespace Wlniao
                         var ip = address.ToString();
                         if (address.AddressFamily == AddressFamily.InterNetwork && (ip.StartsWith("10.") || ip.StartsWith("172.") || ip.StartsWith("192.")))
                         {
-                            endpoints.Add(scheme + ip + ":" + XCore.ListenPort);
+                            endpoints.Add(scheme + ip + ":" + port);
                         }
                         else if (address.AddressFamily == AddressFamily.InterNetworkV6 && !address.IsIPv6LinkLocal && !ip.StartsWith("fe80") && !ip.Contains("%"))
                         {
-                            endpoints.Add(scheme + "[" + ip + "]:" + XCore.ListenPort);
+                            endpoints.Add(scheme + "[" + ip + "]:" + port);
                         }
                     }
                 }
@@ -120,7 +149,7 @@ namespace Wlniao
             }
             catch
             {
-                Wlniao.Log.Loger.Console("Now listening on: " + scheme + "0.0.0.0:" + XCore.ListenPort, ConsoleColor.DarkGreen);
+                Wlniao.Log.Loger.Console("Now listening on: " + scheme + "0.0.0.0:" + port, ConsoleColor.DarkGreen);
             }
         }
 
