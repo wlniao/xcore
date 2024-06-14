@@ -139,7 +139,7 @@ namespace Wlniao
         /// <summary>
         /// 托管的SSL证书检查服务
         /// </summary>
-        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback = ServerCertificateCustomValidation;
+        public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback = ServerCertificateCustomValidation;
         /// <summary>
         /// 内置SSL证书检查服务（放通内部自签CA）
         /// </summary>

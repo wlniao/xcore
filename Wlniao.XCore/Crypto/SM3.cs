@@ -373,9 +373,7 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public byte[] Hmac(byte[] dataBytes, byte[] keyBytes)
         {
-            //1.填充0至key,或者hashkey,使其长度为sm3分组长度
-            /** ByteLength SM3分组长度,64个字节,512位*/
-            byte[] sm3_key;
+            //1.填充0至key,或者hashkey,使其长度为sm3分组长度ByteLength，64个字节,512位
             byte[] structured_key = new byte[ByteLength];
             byte[] IPAD = new byte[ByteLength];
             byte[] OPAD = new byte[ByteLength];
