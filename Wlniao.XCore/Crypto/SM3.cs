@@ -1,7 +1,5 @@
-﻿using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Digests;
-using Org.BouncyCastle.Crypto.Parameters;
-using System;
+﻿using System;
+using Org.BouncyCastle.Crypto;
 namespace Wlniao.Crypto
 {
     /// <summary>
@@ -114,6 +112,16 @@ namespace Wlniao.Crypto
                 inOff++;
                 length--;
             }
+        }
+        /// <summary>
+        /// 用字节块更新消息摘要
+        /// </summary>
+        /// <param name="input"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void BlockUpdate(ReadOnlySpan<byte> input)
+        {
+            var buffer = input.ToArray();
+            BlockUpdate(buffer, 0, buffer.Length);
         }
         /// <summary>
         /// 用一个字节更新消息摘要。
@@ -332,6 +340,23 @@ namespace Wlniao.Crypto
         /// <summary>
         /// 关闭摘要，产生最终的摘要值。doFinal调用使摘要复位。
         /// </summary>
+        /// <param name="output"></param>
+        /// <returns></returns>
+        public int DoFinal(Span<byte> output)
+        {
+            Finish();
+            var buffer = new byte[output.Length];
+            for (int i = 0; i < 8; i++)
+            {
+                IntToBigEndian(v[i], buffer, i * 4);
+            }
+            Reset();
+            output = new Span<byte>(buffer);
+            return DigestLength;
+        }
+        /// <summary>
+        /// 关闭摘要，产生最终的摘要值。doFinal调用使摘要复位。
+        /// </summary>
         /// <returns></returns>
         public byte[] DoFinal()
         {
@@ -339,7 +364,6 @@ namespace Wlniao.Crypto
             DoFinal(buffer, 0);
             return buffer;
         }
-
 
         /// <summary>
         /// 基于SM3的Hmac算法
@@ -349,16 +373,46 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public byte[] Hmac(byte[] dataBytes, byte[] keyBytes)
         {
-            var mac = new Org.BouncyCastle.Crypto.Macs.HMac(this);//带密钥的杂凑算法
-            var keyParameter = new KeyParameter(keyBytes);
-            mac.Init(keyParameter);
-            mac.BlockUpdate(dataBytes, 0, dataBytes.Length);
-            byte[] result = new byte[mac.GetMacSize()];
-            mac.DoFinal(result, 0);
-            return result;
+            //1.填充0至key,或者hashkey,使其长度为sm3分组长度
+            /** ByteLength SM3分组长度,64个字节,512位*/
+            byte[] sm3_key;
+            byte[] structured_key = new byte[ByteLength];
+            byte[] IPAD = new byte[ByteLength];
+            byte[] OPAD = new byte[ByteLength];
+            if (keyBytes.Length > ByteLength)
+            {
+                BlockUpdate(keyBytes, 0, keyBytes.Length);
+                var keyHash = DoFinal();
+                Array.Copy(keyHash, 0, structured_key, 0, keyHash.Length);
+            }
+            else
+            {
+                Array.Copy(keyBytes, 0, structured_key, 0, keyBytes.Length);
+            }
+            //2.让处理之后的key 与ipad (分组长度的0x36)做异或运算
+            for (int i = 0; i < ByteLength; i++)
+            {
+                IPAD[i] = 0x36;
+                OPAD[i] = 0x5c;
+            }
+            byte[] ipadkey = ByteArray.Xor(structured_key, IPAD);
+            //3.将2的结果与text拼接
+            byte[] t3 = new byte[ByteLength + dataBytes.Length];
+            Array.Copy(ipadkey, 0, t3, 0, ipadkey.Length);
+            Array.Copy(dataBytes, 0, t3, ipadkey.Length, dataBytes.Length);
+            //4.将3的结果sm3 哈希
+            BlockUpdate(t3, 0, t3.Length);
+            var t4 = DoFinal();
+            //5.让处理之后的key 与opad(分组长度的0x5c)做异或运算
+            byte[] opadkey = ByteArray.Xor(structured_key, OPAD);
+            //6.4的结果拼接在5之后
+            byte[] t6 = new byte[ByteLength + t4.Length];
+            Array.Copy(opadkey, 0, t6, 0, opadkey.Length);
+            Array.Copy(t4, 0, t6, opadkey.Length, t4.Length);
+            //7.对6做hash
+            BlockUpdate(t6, 0, t6.Length);
+            return DoFinal();
         }
-
-
 
         /// <summary>
         /// x循环左移n比特运算

@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 using System.Text;
 
 namespace Wlniao.XCore.Test
@@ -86,40 +87,40 @@ namespace Wlniao.XCore.Test
         public void SM3Encryptor()
         {
             var value = Wlniao.Encryptor.SM3Encrypt("wlniao studio");
-            Assert.GreaterOrEqual(value, "dce717c7430e26a0f41d33840bbe6baa64e3d915d4d54d1bf8f7a07b093dfec0");
+            Assert.IsTrue(value == "dce717c7430e26a0f41d33840bbe6baa64e3d915d4d54d1bf8f7a07b093dfec0");
         }
         [Test]
         public void SM3Hmac()
         {
             var value = Wlniao.Encryptor.HmacSM3("1688731164967428096abcdefghijk", "39611fdb0f615f936d877c068127e8e6");
-            Assert.GreaterOrEqual(value, "07fdcb2b59245113d0c59fa159831dc6a9d172ca0b9c880d7262533e7b99f0e1");
+            Assert.IsTrue(value == "07fdcb2b59245113d0c59fa159831dc6a9d172ca0b9c880d7262533e7b99f0e1");
         }
 
 		[Test]
         public void SM4EncryptECBToHex()
         {
             var value = Wlniao.Encryptor.SM4EncryptECBToHex("wlniao studio", "a8c9d69e29080f1d");
-            Assert.GreaterOrEqual(value, "b01a5eed2708c24a941053f82af23882");
+            Assert.IsTrue(value == "b01a5eed2708c24a941053f82af23882");
         }
 
         [Test]
         public void SM4EncryptCBCToBase64()
         {
             var value = Wlniao.Encryptor.SM4EncryptCBCToBase64("wlniao studio", "a8c9d69e29080f1d", "39ad0d2989a25606");
-            Assert.GreaterOrEqual(value, "3gS+A9JgJpyXghus0UapmQ==");
+            Assert.IsTrue(value == "3gS+A9JgJpyXghus0UapmQ==");
         }
         [Test]
         public void SM4DecryptECBFromBase64()
         {
             var value = Wlniao.Encryptor.SM4DecryptECBFromBase64("sBpe7ScIwkqUEFP4KvI4gg==", "a8c9d69e29080f1d");
-            Assert.GreaterOrEqual(value, "wlniao studio");
+            Assert.IsTrue(value == "wlniao studio");
         }
 
         [Test]
         public void SM4DecryptCBCFromHex()
         {
             var value = Wlniao.Encryptor.SM4DecryptCBCFromHex("de04be03d260269c97821bacd146a999", "a8c9d69e29080f1d", "39ad0d2989a25606");
-            Assert.GreaterOrEqual(value, "wlniao studio");
+            Assert.IsTrue(value == "wlniao studio");
         }
     }
 }
