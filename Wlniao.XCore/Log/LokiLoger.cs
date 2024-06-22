@@ -19,12 +19,17 @@
     limitations under the License.
 
 ===============================================================================*/
+using Org.BouncyCastle.Asn1.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Wlniao.Caching;
+using Wlniao.Handler;
+using Wlniao.OpenApi;
+using Wlniao.Serialization;
 using static Wlniao.Log.LokiLoger;
 
 namespace Wlniao.Log
@@ -34,16 +39,21 @@ namespace Wlniao.Log
     /// </summary>
     public class LokiLoger : ILogProvider
     {
+        private static readonly string[] levels = new string[] { "info", "warn", "debug", "error", "fatal" };
+        /// <summary>
+        /// 多租户标识
+        /// </summary>
+        private string orgId = null;
         /// <summary>
         /// 服务器地址
         /// </summary>
         private string serverHost = null;
         /// <summary>
-        /// 
+        /// 待写入数据流
         /// </summary>
-        private static Queue<KeyValuePair<string, Entrie>> queue = new Queue<KeyValuePair<string, Entrie>>();
+        private static Queue<LokiStream> queue = new Queue<LokiStream>();
         /// <summary>
-        /// 
+        /// 日志输出级别
         /// </summary>
         private LogLevel level = Loger.LogLevel;
         /// <summary>
@@ -59,7 +69,7 @@ namespace Wlniao.Log
         /// <summary>
         /// 落盘时间间隔
         /// </summary>
-        public int Interval = 10;
+        public int Interval = 0;
 
         /// <summary>
         /// 本地日志输出方式
@@ -92,101 +102,182 @@ namespace Wlniao.Log
         /// <param name="level">日志输出级别</param>
         /// <param name="server">服务器地址</param>
         /// <param name="interval">落盘时间间隔（秒）</param>
-        public LokiLoger(LogLevel level = LogLevel.Information, string server = null, int interval = 0)
-		{
-			this.level = level;
-			this.Interval = interval > 0 ? interval : cvt.ToInt(Config.GetConfigs("WLN_LOG_INTERVAL", "3"));
+        /// <param name="org_id">多租户租户ID，默认为0</param>
+        public LokiLoger(LogLevel level = LogLevel.Information, string server = null, int interval = 0, string org_id = null)
+        {
             flog = new FileLoger(level);
-			if (string.IsNullOrEmpty(server))
-			{
-				serverHost = Config.GetConfigs("WLN_LOG_SERVER").TrimEnd('/');
-				if (string.IsNullOrEmpty(serverHost))
-				{
-					Loger.Console(string.Format("{0} => {1}", DateTools.Format(), "WLN_LOG_SERVER not configured, please set loki server."), ConsoleColor.Red);
-				}
-			}
-			else
-			{
-				serverHost = server.TrimEnd('/');
-			}
-			if (!string.IsNullOrEmpty(serverHost))
-			{
+            this.level = level;
+            this.Interval = this.Interval > 0 ? this.Interval : cvt.ToInt(Config.GetConfigs("WLN_LOG_INTERVAL", "3"));
+            if (string.IsNullOrEmpty(server))
+            {
+                if (serverHost == null)
+                {
+                    serverHost = Config.GetConfigs("WLN_LOG_SERVER").TrimEnd('/');
+                }
+                if (string.IsNullOrEmpty(serverHost))
+                {
+                    serverHost = "";
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(), "WLN_LOG_SERVER not configured, please set loki server."), ConsoleColor.Red);
+                }
+            }
+            else
+            {
+                serverHost = server.TrimEnd('/');
+            }
+            if (string.IsNullOrEmpty(org_id))
+            {
+                if (orgId == null)
+                {
+                    orgId = Config.GetConfigs("WLN_LOG_ORGID").TrimEnd('/');
+                }
+                if (string.IsNullOrEmpty(orgId))
+                {
+                    orgId = "";
+                }
+            }
+            else
+            {
+                orgId = org_id.Trim();
+            }
+            if (this.Interval > 0 && !string.IsNullOrEmpty(serverHost))
+            {
                 Task.Run(() =>
                 {
                     while (true)
                     {
+                        Write("", null, true);
+                        Task.Delay(Interval * 1000).Wait();
+                    }
+                });
+            }
+        }
+
+        /// <summary>
+        /// 输出日志
+        /// </summary>
+        /// <param name="topic"></param>
+        /// <param name="entrie"></param>
+        /// <param name="push">是否立即回写</param>
+        private void Write(String topic, LokiEntrie entrie, Boolean push = false)
+        {
+            try
+            {
+                LokiStream item = null;
+                if (entrie != null && !string.IsNullOrEmpty(topic))
+                {
+                    item = new LokiStream
+                    {
+                        stream = new Dictionary<string, string> { { "service_name", XCore.WebNode } },
+                        values = new List<string[]> { new string[] { entrie.ts, entrie.line } }
+                    };
+                    if (levels.Contains(topic))
+                    {
+                        item.stream.Add("level", topic);
+                    }
+                    else
+                    {
+                        item.stream.Add("topic", topic);
+                        item.stream.Add("level", "topic");
+                    }
+                }
+                if (push || this.Interval <= 0)
+                {
+                    var dto = new LokiDto { streams = new List<LokiStream>() };
+                    if (item != null)
+                    {
+                        // 实时推送时，写入当前日志流
+                        dto.streams.Add(item);
+                    }
+                    lock (levels)
+                    {
+                        for (var i = 0; i < 20 && queue.Count > 0; i++)
+                        {
+                            // 同时写入队列中之前失败的日志流
+                            dto.streams.Add(queue.Dequeue());
+                        }
+                    }
+                    if (dto.streams.Count > 0)
+                    {
+                        // 存在要推送的数据时，调用接口推送
+                        var err = false;
                         try
                         {
-                            for (var c = 0; c < 100 && queue.Count > 0; c++)
+                            var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                            using (var client = new HttpClient(handler))
                             {
-                                var cache = new Dictionary<String, List<Entrie>>();
-                                for (var i = 0; i < 100 && queue.Count > 0; i++)
+                                var request = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
+                                //var json = System.Text.Json.JsonSerializer.Serialize<LokiDto>(dto);
+                                //request.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
+                                //request.Content.Headers.TryAddWithoutValidation("Content-Type", "application/json; charset=UTF-8");
+                                //request.Headers.TryAddWithoutValidation("Connection", "close");
+                                request.Headers.TryAddWithoutValidation("X-Scope-OrgID", orgId);
+                                request.Content = new StringContent(JsonSerializer.Serialize(dto), System.Text.Encoding.UTF8, "application/json");
+                                var response = client.Send(request);
+                                var errmsg = response.Content.ReadAsStringAsync().Result;
+                                if (response.StatusCode != System.Net.HttpStatusCode.NoContent && response.StatusCode != System.Net.HttpStatusCode.OK)
                                 {
-                                    var item = queue.Dequeue();
-                                    if (item.Key != null && item.Value != null)
+                                    err = true;
+                                    if (!string.IsNullOrEmpty(errmsg))
                                     {
-                                        if (!cache.ContainsKey(item.Key))
+                                        LokiErrorLog("Push Result:" + errmsg);
+                                        if (errmsg.Contains("loghttp.LogProtoStream"))
                                         {
-                                            cache.TryAdd(item.Key, new List<Entrie>());
-                                        }
-                                        cache[item.Key].Add(item.Value);
-                                    }
-                                }
-                                if (cache.Count > 0)
-                                {
-                                    var err = false;
-                                    var list = new List<object>();
-                                    foreach (var item in cache)
-                                    {
-                                        list.Add(new
-                                        {
-                                            stream = new { topic = item.Key, node = XCore.WebNode },
-                                            values = item.Value.Select(o => new[] { o.ts, o.line }).ToArray()
-                                        });
-                                    }
-                                    try
-                                    {
-                                        var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                                        using (var client = new HttpClient(handler))
-                                        {
-                                            var start = DateTime.Now;
-                                            var json = Json.ToString(new { streams = list.ToArray() });
-                                            var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
-                                            reqest.Headers.Date = DateTime.Now;
-                                            reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
-                                            reqest.Content.Headers.Add("Content-Type", "application/json");
-                                            client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                                            var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
-                                            if (!string.IsNullOrEmpty(result))
-                                            {
-                                                err = true;
-                                                LokiErrorLog("Push Result:" + result);
-                                            }
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        LokiErrorLog("Exception:" + ex.Message);
-                                    }
-                                    if (err)
-                                    {
-                                        foreach (var kv in cache)
-                                        {
-                                            foreach (var item in kv.Value)
-                                            {
-                                                queue.Enqueue(new KeyValuePair<string, Entrie>(kv.Key, item));
-                                            }
+                                            client.GetAsync(serverHost + "/ready");
                                         }
                                     }
                                 }
                             }
                         }
-                        catch { }
-                        Task.Delay(Interval * 1000).Wait();
+                        catch (Exception ex)
+                        {
+                            err = true;
+                            LokiErrorLog("Exception:" + ex.Message);
+                        }
+                        if (err)
+                        {
+                            lock (levels)
+                            {
+                                foreach (var stream in dto.streams)
+                                {
+                                    queue.Enqueue(stream); //失败时把待写入数据全部放入队列
+                                }
+                            }
+                        }
+                        else if (queue.Count > 20)
+                        {
+                            Task.Run(() =>
+                            {
+                                Write("", null, true);
+                            }).Start();
+                        }
                     }
-                });
-			}
-		}
+                }
+                else
+                {
+                    //定时落盘时把待写入数据放入日志流队列
+                    queue.Enqueue(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                LokiErrorLog("Exception:" + ex.Message);
+            }
+        }
+
+        private string tmpmsg = null;
+        /// <summary>
+        /// Loki异常时输出日志
+        /// </summary>
+        /// <param name="message"></param>
+        private void LokiErrorLog(string message)
+        {
+            if (message != tmpmsg)
+            {
+                tmpmsg = message;
+                Loger.File("Loki", message, ConsoleColor.Red);
+            }
+        }
+
         /// <summary>
         /// 输出Debug级别的日志
         /// </summary>
@@ -206,7 +297,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Information)
             {
-                var entrie = new Entrie { line = message, time = DateTime.UtcNow };
+                var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
                 if (LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.White);
@@ -227,7 +318,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Warning)
             {
-                var entrie = new Entrie { line = message, time = DateTime.UtcNow };
+                var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
                 if (LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.DarkYellow);
@@ -248,7 +339,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Error)
             {
-                var entrie = new Entrie { line = message, time = DateTime.Now };
+                var entrie = new LokiEntrie { line = message, time = DateTime.Now };
                 if (LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.Red);
@@ -269,7 +360,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Critical)
             {
-                var entrie = new Entrie { line = message, time = DateTime.UtcNow };
+                var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
                 if (LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.Magenta);
@@ -289,7 +380,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public void Topic(String topic, String message)
         {
-            var entrie = new Entrie { line = message, time = DateTime.UtcNow };
+            var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
             if (LogLocal == "console")
             {
                 Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.DarkGray);
@@ -310,7 +401,7 @@ namespace Wlniao.Log
         {
             if (Loger.ApiOrigin)
             {
-                var entrie = new Entrie { line = message, time = DateTime.UtcNow };
+                var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
                 if (LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.DarkGray);
@@ -324,13 +415,25 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// 日志主体
+        /// 传输对象
         /// </summary>
-        public class Entrie
+        public class LokiDto
+        {
+            /// <summary>
+            /// 写入日志流集合
+            /// </summary>
+            public List<LokiStream> streams { get; set; }
+        }
+
+        /// <summary>
+        /// 日志实体
+        /// </summary>
+        public class LokiEntrie
         {
             /// <summary>
             /// 日志时间
             /// </summary>
+            [Serialization.NotSerialize]
             internal DateTime time { get; set; }
             /// <summary>
             /// 日志行
@@ -347,64 +450,20 @@ namespace Wlniao.Log
                 }
             }
         }
-        /// <summary>
-        /// 输出日志
-        /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="entrie"></param>
-        /// <param name="push">是否立即回写</param>
-        private void Write(String topic, Entrie entrie, Boolean push = false)
-        {
-            try
-            {
-                if (push)
-                {
-                    // 实时推送日志
-                    var json = Wlniao.Json.ToString(new
-                    {
-                        streams = new[] {
-                            new {
-                                stream = new { topic = topic, node = XCore.WebNode },
-                                values = new[] { entrie }
-                            }
-                        }
-                    });
-                    var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                    using (var client = new HttpClient(handler))
-                    {
-                        var start = DateTime.Now;
-                        var reqest = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
-                        reqest.Headers.Date = DateTime.Now;
-                        reqest.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
-                        reqest.Content.Headers.Add("Content-Type", "application/json");
-                        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                        var result = client.Send(reqest).Content.ReadAsStringAsync().Result;
-                        if (!string.IsNullOrEmpty(result))
-                        {
-                            queue.Enqueue(new KeyValuePair<string, Entrie>(topic, entrie));
-                            LokiErrorLog("Push Result:" + result);
-                        }
-                    }
-                }
-                else
-                {
-                    queue.Enqueue(new KeyValuePair<string, Entrie>(topic, entrie));
-                }
-			}
-			catch (Exception ex)
-            {
-                LokiErrorLog("Exception:" + ex.Message);
-            }
-		}
 
-        private string tmpmsg = null;
-        private void LokiErrorLog(string message)
+        /// <summary>
+        /// 日志流对象
+        /// </summary>
+        public class LokiStream
         {
-            if (message != tmpmsg)
-            {
-                tmpmsg = message;
-                Loger.File("Loki", message, ConsoleColor.Red);
-            }
+            /// <summary>
+            /// 日志标记
+            /// </summary>
+            public Dictionary<string, string> stream { get; set; }
+            /// <summary>
+            /// 日志内容
+            /// </summary>
+            public List<string[]> values { get; set; }
         }
     }
 }

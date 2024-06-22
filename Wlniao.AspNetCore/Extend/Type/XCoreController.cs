@@ -627,20 +627,24 @@ namespace Wlniao
                 if (Request.Headers.TryGetValue("x-forwarded-for", out forwardedIP))
                 {
                     // 通过代理网关部署时，获取"x-forwarded-for"传递的真实IP
-                    var ips = forwardedIP.ToString().Split(',', ':');
-                    if (ips.Length > 0)
+                    var ips = forwardedIP.ToString().Split(',');
+                    ip = ips[0];
+                    foreach (var item in ips)
                     {
-                        //通常多个IP中，第一个为访客IP，最后一个为代理服务器IP
-                        ip = ips[0];
+                        if (item != "127.0.0.1" && strUtil.IsIP(item))
+                        {
+                            ip = item;
+                            break;
+                        }
                     }
+                }
+                else if (Request.HttpContext.Connection.RemoteIpAddress.IsIPv4MappedToIPv6)
+                {
+                    ip = Request.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
                 }
                 else
                 {
                     ip = Request.HttpContext.Connection.RemoteIpAddress.ToString();
-                    if (ip[0] == ':')
-                    {
-                        ip = "127.0.0.1";
-                    }
                 }
                 return ip;
             }

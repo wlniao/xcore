@@ -184,6 +184,14 @@ namespace Wlniao.Log
             LogProvider.Error(message);
         }
         /// <summary>
+        /// 输出Fatal级别的日志
+        /// </summary>
+        /// <param name="message"></param>
+        public static void Fatal(String message)
+        {
+            LogProvider.Fatal(message);
+        }
+        /// <summary>
         /// 记录接口原始日志
         /// </summary>
         /// <param name="topic"></param>

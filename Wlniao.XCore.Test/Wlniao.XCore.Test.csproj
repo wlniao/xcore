@@ -20,4 +20,8 @@
     <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="xcore\logs\2024-06-22\" />
+  </ItemGroup>
+
 </Project>
