@@ -147,6 +147,10 @@ namespace Wlniao.XServer
             dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
             dic.Add("success", result.success);
             dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            if (!string.IsNullOrEmpty(result.debuger))
+            {
+                dic.Add("debuger", result.debuger);
+            }
             return Json(dic);
         }
         /// <summary>
@@ -166,6 +170,10 @@ namespace Wlniao.XServer
             dic.Add("data", Encryptor.SM4EncryptECBToHex(str, token));
             dic.Add("success", result.success);
             dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            if (!string.IsNullOrEmpty(result.debuger))
+            {
+                dic.Add("debuger", result.debuger);
+            }
             return Json(dic);
         }
 
@@ -200,6 +208,10 @@ namespace Wlniao.XServer
             dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
             dic.Add("success", result.success);
             dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            if (!string.IsNullOrEmpty(result.debuger))
+            {
+                dic.Add("debuger", result.debuger);
+            }
             return Json(dic);
         }
 
