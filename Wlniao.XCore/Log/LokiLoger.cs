@@ -248,7 +248,7 @@ namespace Wlniao.Log
                             Task.Run(() =>
                             {
                                 Write("", null, true);
-                            }).Start();
+                            });
                         }
                     }
                 }
