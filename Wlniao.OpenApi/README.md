@@ -12,14 +12,14 @@ dotnet add package Wlniao.OpenApi
 ```
 
 ### Usage
-×¢²áSwagger·şÎñ
+æ³¨å†ŒSwaggeræœåŠ¡
 ```
 builder.Services.AddSwaggerExtend(new System.Collections.Generic.List<ApiGroupInfo> {
-    new ApiGroupInfo { Name = "Service", Title = "¶ÔÍâ¿ª·Å·şÎñ½Ó¿Ú" },
-    new ApiGroupInfo { Name = "Control", Title = "ÄÚ²¿¹ÜÀí·şÎñ½Ó¿Ú" }
+    new ApiGroupInfo { Name = "Service", Title = "å¯¹å¤–å¼€æ”¾æœåŠ¡æ¥å£" },
+    new ApiGroupInfo { Name = "Control", Title = "å†…éƒ¨ç®¡ç†æœåŠ¡æ¥å£" }
 });
 ```
-ÅäÖÃÇ°¶ËÖÕ½áµã
+é…ç½®å‰ç«¯ç»ˆç»“ç‚¹
 ```
 app.UseKnife4UI(o =>
 {

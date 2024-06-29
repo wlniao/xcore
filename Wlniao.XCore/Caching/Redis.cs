@@ -85,7 +85,7 @@ namespace Wlniao.Caching
                         {
                             var host = Config.GetConfigs("WLN_REDIS_HOST");
                             var pass = Config.GetEncrypt("WLN_REDIS_PASS", Config.Secret);
-                            var user = Config.GetSetting("WLN_REDIS_USER", Config.Secret);
+                            var user = Config.GetEncrypt("WLN_REDIS_USER", Config.Secret);
                             var port = cvt.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
                             if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
                             {

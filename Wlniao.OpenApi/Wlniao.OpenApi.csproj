@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<Authors>XieChaoyi</Authors>
 		<Nullable>enable</Nullable>
-		<Version>1.0.3-beta1</Version>
+		<Version>1.0.4</Version>
 		<TargetFramework>net8.0</TargetFramework>
 		<PackageId>Wlniao.OpenApi</PackageId>
 		<PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
@@ -32,8 +32,8 @@
 		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.6.2" />
 		<PackageReference Include="IGeekFan.AspNetCore.Knife4jUI" Version="0.0.16" />
 		<PackageReference Include="Microsoft.OpenApi" Version="1.6.14" />
-		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.24" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.20" />
+		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.27" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.23" />
 	</ItemGroup>
 
 	<ItemGroup>
