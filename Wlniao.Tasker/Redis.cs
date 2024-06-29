@@ -20,44 +20,6 @@ namespace Wlniao.Tasker
         /// 订阅任务监视缓存
         /// </summary>
         private static Dictionary<String, DateTime> watcher = new Dictionary<String, DateTime>();
-
-        private static string connstr = "";
-        /// <summary>
-        /// 数据库链接字符串
-        /// </summary>
-        public static string ConnStr
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(connstr))
-                {
-                    lock (connstr)
-                    {
-                        var _connstr = Config.GetConfigs("WLN_REDIS");
-                        if (string.IsNullOrEmpty(_connstr))
-                        {
-                            var host = Config.GetConfigs("WLN_REDIS_HOST");
-                            var pass = Config.GetConfigs("WLN_REDIS_PASS");
-                            var port = cvt.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
-                            if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
-                            {
-                                _connstr = host + ":" + port;
-                                if (!string.IsNullOrEmpty(pass))
-                                {
-                                    _connstr += ",password=" + pass;
-                                }
-                            }
-                        }
-                        connstr = _connstr;
-                    }
-                }
-                return connstr;
-            }
-            set
-            {
-                connstr = value;
-            }
-        }
         /// <summary>
         /// Delays内部字段
         /// </summary>
@@ -105,7 +67,7 @@ namespace Wlniao.Tasker
                     if (instance == null && nextconnect < DateTime.Now)
                     {
                         nextconnect = DateTime.Now.AddSeconds(1);
-                        instance = ConnectionMultiplexer.Connect(ConnStr);
+                        instance = ConnectionMultiplexer.Connect(Wlniao.Caching.Redis.ConnStr);
                     }
                 }
                 catch

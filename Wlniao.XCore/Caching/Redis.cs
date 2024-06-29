@@ -42,6 +42,7 @@ namespace Wlniao.Caching
     {
         private static int _canuse = 0;
         private static object _lock = new { };
+        private static string _connstr = null;
         private static RedisClient _instance = null;
         /// <summary>
         /// 使用的数据库序号
@@ -68,7 +69,43 @@ namespace Wlniao.Caching
         /// 下次尝试链接时间
         /// </summary>
         private static DateTime nextconnect = DateTime.MinValue;
-
+        /// <summary>
+        /// Redis链接字符串
+        /// </summary>
+        public static String ConnStr
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    if (_connstr == null)
+                    {
+                        var connstr = Config.GetConfigs("WLN_REDIS");
+                        if (string.IsNullOrEmpty(connstr))
+                        {
+                            var host = Config.GetConfigs("WLN_REDIS_HOST");
+                            var pass = Config.GetEncrypt("WLN_REDIS_PASS", Config.Secret);
+                            var user = Config.GetSetting("WLN_REDIS_USER", Config.Secret);
+                            var port = cvt.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
+                            if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
+                            {
+                                connstr = host + ":" + port;
+                                if (!string.IsNullOrEmpty(pass))
+                                {
+                                    connstr += ",password=" + pass;
+                                }
+                                if (!string.IsNullOrEmpty(user))
+                                {
+                                    connstr += ",username=" + user;
+                                }
+                            }
+                        }
+                        _connstr = connstr ?? "";
+                    }
+                }
+                return _connstr;
+            }
+        }
         /// <summary>
         /// 数据库链接字符串
         /// </summary>
@@ -82,24 +119,7 @@ namespace Wlniao.Caching
                     {
                         try
                         {
-                            _canuse = -1;
-                            var connstr = Config.GetConfigs("WLN_REDIS");
-                            if (string.IsNullOrEmpty(connstr))
-                            {
-                                var host = Config.GetConfigs("WLN_REDIS_HOST");
-                                var pass = Config.GetConfigs("WLN_REDIS_PASS");
-                                var port = cvt.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
-                                if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
-                                {
-                                    _canuse = 1;
-                                    _instance = new RedisClient(new DnsEndPoint(host, port), pass);
-                                    _instance.SelectDB = Select;
-                                }
-                            }
-                            else
-                            {
-                                UseConnStr(connstr);
-                            }
+                            return UseConnStr(ConnStr);
                         }
                         catch (Exception ex)
                         {
@@ -119,9 +139,9 @@ namespace Wlniao.Caching
         /// 应用连接字符串
         /// </summary>
         /// <param name="connstr"></param>
-        internal static void UseConnStr(string connstr)
+        internal static RedisClient UseConnStr(string connstr)
         {
-            var args = connstr.SplitBy(",");
+            var args = connstr.Split(',', StringSplitOptions.RemoveEmptyEntries);
             foreach (var item in args)
             {
                 if (_instance == null)
@@ -132,19 +152,27 @@ namespace Wlniao.Caching
                 var arg = item.Trim();
                 if (arg.StartsWith("password="))
                 {
-                    _instance.Password = arg.Substring(arg.IndexOf('=') + 1);
+                    _instance.Password = arg.Substring(9);
                 }
                 else if (arg.StartsWith("username="))
                 {
-                    _instance.Username = arg.Substring(arg.IndexOf('=') + 1);
+                    _instance.Username = arg.Substring(9);
                 }
                 else
                 {
-                    var ips = arg.SplitBy(":");
                     _canuse = 1;
-                    _instance.AddEndPoint(new DnsEndPoint(ips[0], ips.Length == 2 ? int.Parse(ips[1]) : 6379));
+                    var ips = arg.Split(':', StringSplitOptions.RemoveEmptyEntries);
+                    if (ips.Length == 2 && int.TryParse(ips[1], out int port))
+                    {
+                        _instance.AddEndPoint(new DnsEndPoint(ips[0], port));
+                    }
+                    else
+                    {
+                        _instance.AddEndPoint(new DnsEndPoint(ips[0], 6379));
+                    }
                 }
             }
+            return _instance;
         }
         /// <summary>
         /// 

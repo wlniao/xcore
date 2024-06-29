@@ -17,11 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
+    <ProjectReference Include="..\Wlniao.Tasker\Wlniao.Tasker.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="xcore\logs\2024-06-22\" />
-  </ItemGroup>
 
 </Project>
