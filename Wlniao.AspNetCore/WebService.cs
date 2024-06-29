@@ -127,7 +127,7 @@ namespace Wlniao
             }
             try
             {
-                if (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+                if (Environment.GetEnvironmentVariable("MicroservicesNode") != "true" && System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
                 {
                     foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList.OrderBy(o => o.ToString()).OrderBy(o => o.AddressFamily == AddressFamily.InterNetworkV6))
                     {

@@ -176,6 +176,7 @@ namespace Wlniao
 
         #region 系统信息
         private static Int64 nowUnix = 0;
+        private static Int16 microNode = 0;
         private static String startupTime = null;
         private static String startupRoot = null;
         private static String sessionEncryptKey = null;
@@ -314,6 +315,29 @@ namespace Wlniao
                 return Config.GetConfigs("WLN_DEVTEST").ToLower() == "true";
             }
         }
+
+        /// <summary>
+        /// 是否微服务允许节点
+        /// </summary>
+        public static Boolean IsMicroservicesNode
+        {
+            get
+            {
+                if (microNode == 0)
+                {
+                    if (Environment.GetEnvironmentVariable("MicroservicesNode") == "true")
+                    {
+                        microNode = 1;
+                    }
+                    else
+                    {
+                        microNode = -1;
+                    }
+                }
+                return microNode > 0;
+            }
+        }
+
         /// <summary>
         /// 服务器Id
         /// </summary>

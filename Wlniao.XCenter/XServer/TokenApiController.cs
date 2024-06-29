@@ -178,6 +178,24 @@ namespace Wlniao.XServer
         }
 
         /// <summary>
+        /// 直接输出提示消息
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult OutMessage(String message, String code = null)
+        {
+            result.success = true;
+            result.message = message;
+            if (!string.IsNullOrEmpty(code))
+            {
+                result.code = code;
+            }
+            return OutDefault();
+        }
+
+        /// <summary>
         /// 输出默认result对象
         /// </summary>
         /// <returns></returns>

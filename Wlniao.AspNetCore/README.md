@@ -11,8 +11,8 @@ Wlniao.AspNetCore for .NET CORE
 dotnet add package Wlniao.AspNetCore
 ```
 
-## ENV ����ѡ��
-- `WLN_TLS_CRT` TLS����֤�飨Ĭ��Ϊ�����Ŀ¼��server.crt��
-- `WLN_TLS_KEY` TLS����˽Կ��Ĭ��Ϊ�����Ŀ¼��server.key��
-- `WLN_TLS_PORT` ��������˿ڣ�Ĭ�ϣ�5000������`WLN_TLS_CRT`��`WLN_TLS_KEY`������ʱ�����ڱ��˿ڿ���TLS��������`WLN_LISTEN_PORT`��ͬʱ��ͬʱ������ͨ������TLS����
+## ENV 配置选项
+- `WLN_TLS_CRT` TLS服务证书（默认为程序根目录：server.crt）
+- `WLN_TLS_KEY` TLS服务私钥（默认为程序根目录：server.key）
+- `WLN_TLS_PORT` 服务监听端口（默认：5000），当`WLN_TLS_CRT`与`WLN_TLS_KEY`均存在时，将在本端口开启TLS监听，与`WLN_LISTEN_PORT`不同时将同时开启普通监听及TLS服务
 
