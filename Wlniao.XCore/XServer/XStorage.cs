@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Net.Http;
+using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace Wlniao.XServer
 {
@@ -16,6 +18,7 @@ namespace Wlniao.XServer
         private static string Suffix = "!w";
         private static string _UploadPath = null;
         private static string _XStorageUrl = null;
+        private static string _XStorageType = null;
         private static string[] _XStorageUrls = null;
 
         /// <summary>
@@ -41,6 +44,25 @@ namespace Wlniao.XServer
             }
         }
         /// <summary>
+        /// XStorage存储类型 local/aliyun/qcloud/upyun
+        /// </summary>
+        public static string XStorageType
+        {
+            get
+            {
+                if (_XStorageType == null)
+                {
+                    _XStorageType = Config.GetSetting("XStorageType", "local").ToLower();
+                    if (_XStorageType != "local" && string.IsNullOrEmpty(XStorageUrl))
+                    {
+                        log.Error("请先设置XStorageUrl参数");
+                    }
+                }
+                return _XStorageType;
+            }
+        }
+
+        /// <summary>
         /// XStorage访问地址
         /// </summary>
         public static string XStorageUrl
@@ -52,10 +74,6 @@ namespace Wlniao.XServer
                     var temp = Config.GetSetting("XStorageUrl");
                     if (string.IsNullOrEmpty(temp))
                     {
-                        if (Upyun.Using)
-                        {
-                            log.Error("请先设置XStorageUrl参数");
-                        }
                         _XStorageUrl = "";
                     }
                     else if (temp.IndexOf("//") >= 0)
@@ -308,11 +326,7 @@ namespace Wlniao.XServer
                     }).Wait();
                     if (data != null)
                     {
-                        if (Upyun.Using)
-                        {
-                            return Upyun.WriteFile(UploadPath + FileName, data);
-                        }
-                        else
+                        if (XStorageType == "local")
                         {
                             string toFileName = IO.PathTool.Map(UploadPath, FileName);
                             string toFilePath = System.IO.Path.GetDirectoryName(toFileName);
@@ -330,6 +344,10 @@ namespace Wlniao.XServer
                                 fs.Write(data, 0, data.Length);
                                 return true;
                             }
+                        }
+                        else
+                        {
+                            return Upload(UploadPath + FileName, data);
                         }
                     }
                 }
@@ -362,22 +380,7 @@ namespace Wlniao.XServer
         {
             try
             {
-                if (Local.Using)
-                {
-                    var toFileName = IO.PathTool.Map(UploadPath, FileName);
-                    var toFilePath = System.IO.Path.GetDirectoryName(toFileName);
-                    var toFileExt = System.IO.Path.GetExtension(toFileName);
-                    if (!Directory.Exists(toFilePath))
-                    {
-                        Directory.CreateDirectory(toFilePath);
-                    }
-                    using (var fs = new System.IO.FileStream(toFileName, FileMode.CreateNew))
-                    {
-                        fs.Write(data, 0, data.Length);
-                        return true;
-                    }
-                }
-                else if (Aliyun.Using)
+                if (XStorageType == "aliyun")
                 {
                     if (FileName[0] == '/')
                     {
@@ -399,7 +402,7 @@ namespace Wlniao.XServer
                         return Aliyun.WriteFile(UploadPath + "/" + FileName, data);
                     }
                 }
-                else if (QCloud.Using)
+                else if (XStorageType == "qcloud")
                 {
                     if (FileName[0] == '/')
                     {
@@ -421,9 +424,28 @@ namespace Wlniao.XServer
                         return QCloud.WriteFile(UploadPath + "/" + FileName, data);
                     }
                 }
-                else if (Upyun.Using)
+                else if (XStorageType == "upyun")
                 {
                     return Upyun.WriteFile(UploadPath + FileName, data);
+                }
+                else if (XStorageType == "local")
+                {
+                    var toFileName = IO.PathTool.Map(UploadPath, FileName);
+                    var toFilePath = System.IO.Path.GetDirectoryName(toFileName);
+                    var toFileExt = System.IO.Path.GetExtension(toFileName);
+                    if (!Directory.Exists(toFilePath))
+                    {
+                        Directory.CreateDirectory(toFilePath);
+                    }
+                    using (var fs = new System.IO.FileStream(toFileName, FileMode.CreateNew))
+                    {
+                        fs.Write(data, 0, data.Length);
+                        return true;
+                    }
+                }
+                else
+                {
+                    log.Warn("参数“XStorageType”配置无效，请重新配置");
                 }
             }
             catch (Exception ex)
@@ -432,6 +454,7 @@ namespace Wlniao.XServer
             }
             return false;
         }
+
         /// <summary>
         /// 上传文件至本地目录
         /// </summary>
@@ -485,7 +508,7 @@ namespace Wlniao.XServer
                     }
                 }
             }
-            if (buffur == null && Upyun.Using)
+            if (buffur == null && XStorageType == "upyun")
             {
                 buffur = cvt.ToBytes(Upyun.ReadFile(FileName));
             }
@@ -496,20 +519,6 @@ namespace Wlniao.XServer
         /// </summary>
         public static class Local
         {
-            /// <summary>
-            /// 是否启用
-            /// </summary>
-            public static Boolean Using
-            {
-                get
-                {
-                    if (string.IsNullOrEmpty(UploadPath))
-                    {
-                        return false;
-                    }
-                    return true;
-                }
-            }
             /// <summary>
             /// 本地存储的路径
             /// </summary>
@@ -554,7 +563,7 @@ namespace Wlniao.XServer
             /// <summary>
             /// 是否启用
             /// </summary>
-            public static Boolean Using
+            private static Boolean canUsing
             {
                 get
                 {
@@ -974,6 +983,7 @@ namespace Wlniao.XServer
         {
             private static Aliyun instance = new Aliyun();
             private String bucket = null;
+            private String ossregion = null;
             private String ossdomain = null;
             private String ossaccesskeyid = null;
             private String ossaccesskeySecret = null;
@@ -982,10 +992,12 @@ namespace Wlniao.XServer
             /// </summary>
             public Aliyun()
             {
-                bucket = Config.GetSetting("OssBucket");
-                ossdomain = Config.GetSetting("OssDomain");
-                ossaccesskeyid = Config.GetSetting("OssAccessKeyId");
-                ossaccesskeySecret = Config.GetSetting("OssAccessKeySecret");
+                bucket = Config.GetSetting("XStorageBucket");
+                ossregion = Config.GetSetting("XStorageRegion");
+                ossdomain = Config.GetSetting("XStorageEndPoint", "");
+                ossaccesskeyid = Config.GetSetting("XStorageAccessKeyId", "");
+                ossaccesskeySecret = Config.GetSetting("XStorageAccessKeySecret", "");
+                ConfigInit();
             }
             /// <summary>
             /// 
@@ -996,16 +1008,45 @@ namespace Wlniao.XServer
                 ossdomain = domain;
                 ossaccesskeyid = accesskeyid;
                 ossaccesskeySecret = accesskeySecret;
+                ConfigInit();
+            }
+            private void ConfigInit()
+            {
+                if (!string.IsNullOrEmpty(ossdomain))
+                {
+                    ossdomain = ossdomain.Trim().Trim('/');
+                    if (ossdomain.IndexOf("://") > 0)
+                    {
+                        ossdomain = ossdomain.Substring(ossdomain.IndexOf("://") + 3);
+                    }
+                    var tos = ossdomain.Split('.');
+                    var region = tos.Where(o => o.StartsWith("oss-")).FirstOrDefault();
+                    if (!string.IsNullOrEmpty(region))
+                    {
+                        if (string.IsNullOrEmpty(bucket) && tos[1] == region)
+                        {
+                            bucket = tos[0];
+                        }
+                        else if (!string.IsNullOrEmpty(bucket) && tos[0] == region)
+                        {
+                            ossdomain = bucket + "." + ossdomain;
+                        }
+                        if (string.IsNullOrEmpty(ossregion))
+                        {
+                            ossregion = region.Substring(4);
+                        }
+                    }
+                }
             }
 
             /// <summary>
-            /// 是否启用
+            /// 是否可用
             /// </summary>
-            public Boolean isUsing
+            private Boolean canUsing
             {
                 get
                 {
-                    if (string.IsNullOrEmpty(bucket) || string.IsNullOrEmpty(ossdomain) || string.IsNullOrEmpty(ossaccesskeyid) || string.IsNullOrEmpty(ossaccesskeySecret))
+                    if (string.IsNullOrEmpty(bucket) || string.IsNullOrEmpty(ossregion) || string.IsNullOrEmpty(ossdomain) || string.IsNullOrEmpty(ossaccesskeyid) || string.IsNullOrEmpty(ossaccesskeySecret))
                     {
                         return false;
                     }
@@ -1015,6 +1056,7 @@ namespace Wlniao.XServer
                     }
                 }
             }
+
             /// <summary>
             /// 执行一个新任务
             /// </summary>
@@ -1028,34 +1070,57 @@ namespace Wlniao.XServer
             {
                 using (var client = new HttpClient())
                 {
-                    var host = ossdomain.IndexOf("://") < 0 ? "https://" + ossdomain : ossdomain;
-                    var request = new HttpRequestMessage(new HttpMethod(method), host + path);
+                    var request = new HttpRequestMessage(new HttpMethod(method), "https://" + ossdomain + path);
                     if (postData != null)
                     {
                         request.Content = new StreamContent(new MemoryStream(postData));
                     }
-                    if (headers == null)
-                    {
-                        headers = new Hashtable();
-                    }
-                    var date = DateTools.ConvertToGMT();
+                    var time = DateTime.UtcNow;
+                    //var time = DateTools.ConvertToUtc(1720574407);
+                    var days = time.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
+                    var date = time.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
+                    var scope = string.Format("{0}/{1}/{2}/aliyun_v4_request", days, ossregion, "oss");
+                    var payload = "UNSIGNED-PAYLOAD";
                     var contentType = Wlniao.MimeMapping.GetMimeMapping(path);
-                    headers.Add("Date", date);
-                    headers.Add("Host", ossdomain);
                     request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(postData);
                     request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
                     request.Content.Headers.ContentLength = postData.Length;
+                    // 步骤1：构造CanonicalRequest
+                    var canonicalRequest = method + "\n" + "/" + bucket + path + "\n" + "\n" +
+                         "content-md5:" + System.Convert.ToBase64String(request.Content.Headers.ContentMD5) + "\n" +
+                         "content-type:" + contentType + "\n" +
+                         "host:" + ossdomain + "\n" +
+                         "x-oss-content-sha256:" + payload + "\n" +
+                         "x-oss-credential:" + ossaccesskeyid + "/" + scope + "\n" +
+                         "x-oss-date:" + date + "\n" +
+                         "\n" + "host" + "\n" + payload;
 
-                    var contentMd5 = System.Convert.ToBase64String(request.Content.Headers.ContentMD5);
-                    var policy = method + '\n' + contentMd5 + '\n' + contentType + '\n' + date + "\n/" + bucket + path;
-                    var bytesPolicy = Wlniao.Text.Encoding.UTF8.GetBytes(policy);
-                    var bytesSecret = Wlniao.Text.Encoding.UTF8.GetBytes(ossaccesskeySecret);
-                    var signature = System.Convert.ToBase64String(Encryptor.HmacSHA1(bytesPolicy, bytesSecret));
+                    // 步骤2：构造待签名字符串（StringToSign）
+                    var stringToSign = string.Format("OSS4-HMAC-SHA256\n{0}\n{1}\n{2}", date, scope, Encryptor.Sha256(canonicalRequest).ToLower());
 
-                    headers.Add("Authorization", "OSS " + ossaccesskeyid + ':' + signature);
-                    foreach (DictionaryEntry kv in headers)
+                    // 步骤3：计算Signature
+                    var SigningKey = Encryptor.HmacSHA256(System.Text.Encoding.UTF8.GetBytes("aliyun_v4_request"), Encryptor.HmacSHA256(System.Text.Encoding.UTF8.GetBytes("oss"), Encryptor.HmacSHA256(System.Text.Encoding.UTF8.GetBytes(ossregion), Encryptor.HmacSHA256(System.Text.Encoding.UTF8.GetBytes(days), System.Text.Encoding.UTF8.GetBytes("aliyun_v4" + ossaccesskeySecret)))));
+                    var Signature = System.Convert.ToHexString(Encryptor.HmacSHA256(System.Text.Encoding.UTF8.GetBytes(stringToSign), SigningKey)).ToLower();
+
+                    // 步骤4：拼接Authorization
+                    var Authorization = "OSS4-HMAC-SHA256 Credential=" + ossaccesskeyid + "/" + scope + ",AdditionalHeaders=host,Signature=" + Signature;
+
+                    request.Headers.TryAddWithoutValidation("Host", ossdomain);
+                    request.Headers.TryAddWithoutValidation("Date", time.ToString("r"));
+                    request.Headers.TryAddWithoutValidation("Authorization", Authorization);
+                    request.Headers.TryAddWithoutValidation("x-oss-content-sha256", payload);
+                    request.Headers.TryAddWithoutValidation("x-oss-date", date);
+                    request.Headers.TryAddWithoutValidation("x-oss-credential", ossaccesskeyid + "/" + scope);
+
+                    if (headers != null)
                     {
-                        request.Headers.TryAddWithoutValidation(kv.Key.ToString(), kv.Value.ToString());
+                        foreach (DictionaryEntry kv in headers)
+                        {
+                            if (!request.Headers.TryAddWithoutValidation(kv.Key.ToString(), kv.Value.ToString()))
+                            {
+                                request.Content.Headers.TryAddWithoutValidation(kv.Key.ToString(), kv.Value.ToString());
+                            }
+                        }
                     }
                     var msg = "";
                     var res = new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.InternalServerError };
@@ -1099,7 +1164,7 @@ namespace Wlniao.XServer
             /// <returns></returns>
             public String formApi(string dir, int expire = 5400, int max = 200)
             {
-                if (isUsing)
+                if (canUsing)
                 {
                     max = max * 1024 * 1024;
                     if (string.IsNullOrEmpty(dir))
@@ -1137,9 +1202,9 @@ namespace Wlniao.XServer
             public Boolean writeFile(string path, byte[] data, out string message)
             {
                 message = "";
-                try
+                if (canUsing)
                 {
-                    if (isUsing)
+                    try
                     {
                         var resp = newWorker("PUT", path, data, null, out message);
                         if (resp.StatusCode == System.Net.HttpStatusCode.OK)
@@ -1147,8 +1212,12 @@ namespace Wlniao.XServer
                             return true;
                         }
                     }
+                    catch (Exception ex) { message = "上传异常：" + ex.Message; }
                 }
-                catch (Exception ex) { message = "上传异常：" + ex.Message; }
+                else
+                {
+                    message = "XStorage上传配置无效";
+                }
                 return false;
             }
 
@@ -1184,16 +1253,6 @@ namespace Wlniao.XServer
             {
                 return instance.writeFile(path, data, out _);
             }
-            /// <summary>
-            /// 是否启用
-            /// </summary>
-            public static Boolean Using
-            {
-                get
-                {
-                    return instance.isUsing;
-                }
-            }
         }
         /// <summary>
         /// QCloud设置
@@ -1227,9 +1286,9 @@ namespace Wlniao.XServer
             }
 
             /// <summary>
-            /// 是否启用
+            /// 是否可用
             /// </summary>
-            public Boolean isUsing
+            public Boolean canUsing
             {
                 get
                 {
@@ -1394,7 +1453,7 @@ namespace Wlniao.XServer
             /// <returns></returns>
             public String formApi(string dir, int expire = 5400, int max = 200)
             {
-                if (isUsing)
+                if (canUsing)
                 {
                     max = max * 1024 * 1024;
                     if (string.IsNullOrEmpty(dir))
@@ -1435,9 +1494,9 @@ namespace Wlniao.XServer
             public Boolean writeFile(string path, byte[] data, out string message)
             {
                 message = "";
-                try
+                if (canUsing)
                 {
-                    if (isUsing)
+                    try
                     {
                         var resp = newWorker("PUT", path, data, null, out message);
                         if (resp.StatusCode == System.Net.HttpStatusCode.OK)
@@ -1445,22 +1504,15 @@ namespace Wlniao.XServer
                             return true;
                         }
                     }
+                    catch (Exception ex) { message = "上传异常：" + ex.Message; }
                 }
-                catch (Exception ex) { message = "上传异常：" + ex.Message; }
+                else
+                {
+                    message = "XStorage上传配置无效";
+                }
                 return false;
             }
 
-
-            /// <summary>
-            /// 是否启用
-            /// </summary>
-            public static Boolean Using
-            {
-                get
-                {
-                    return instance.isUsing;
-                }
-            }
             /// <summary>
             /// FormAPI参数
             /// </summary>

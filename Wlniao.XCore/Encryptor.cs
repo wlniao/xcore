@@ -229,6 +229,36 @@ namespace Wlniao
             var dataHashed = SHA1.Create().ComputeHash(dataToHash);//Hash运算
             return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
         }
+        /// <summary>
+        /// 获取SHA256值
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string Sha256(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return "";
+            }
+            var dataToHash = System.Text.Encoding.ASCII.GetBytes(str); //将str转换成byte[]
+            var dataHashed = SHA256.Create().ComputeHash(dataToHash);
+            return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
+        }
+        /// <summary>
+        /// 获取SHA512值
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string Sha512(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return "";
+            }
+            var dataToHash = System.Text.Encoding.ASCII.GetBytes(str); //将str转换成byte[]
+            var dataHashed = SHA512.Create().ComputeHash(dataToHash);
+            return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
+        }
 
         /// <summary>
         /// Hmac SM3算法加密
@@ -280,14 +310,26 @@ namespace Wlniao
         /// <summary>
         /// Hmac SHA256算法加密
         /// </summary>
+        /// <param name="data"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static byte[] HmacSHA256(byte[] data, byte[] key)
+        {
+            var hashAlgorithm = new HMACSHA256(key);
+            var bytes = hashAlgorithm.ComputeHash(data);
+            return bytes;
+        }
+        /// <summary>
+        /// Hmac SHA256算法加密
+        /// </summary>
         /// <param name="str"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static string HmacSHA256(string str, string key)
+        public static string HmacSHA256Hex(string str, string key)
         {
             var hashAlgorithm = new HMACSHA256(System.Text.Encoding.UTF8.GetBytes(key));
             var bytes = hashAlgorithm.ComputeHash(System.Text.Encoding.UTF8.GetBytes(str));
-            return IO.Base64Encoder.Encoder.GetEncoded(bytes);
+            return System.Convert.ToHexString(bytes).ToLower();
         }
 
         /// <summary>
