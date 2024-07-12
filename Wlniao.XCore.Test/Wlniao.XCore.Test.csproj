@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Wlniao.Tasker\Wlniao.Tasker.csproj" />
+    <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
   </ItemGroup>
 
 

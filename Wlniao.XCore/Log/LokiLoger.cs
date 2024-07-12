@@ -399,7 +399,7 @@ namespace Wlniao.Log
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="log_level"></param>
-        public void Topic(String topic, String message, LogLevel log_level = LogLevel.Information)
+        public void Topic(String topic, String message, LogLevel log_level)
         {
             var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
             if (LogLocal == "console")

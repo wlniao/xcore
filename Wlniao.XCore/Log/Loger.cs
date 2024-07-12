@@ -19,6 +19,7 @@
     limitations under the License.
 
 ===============================================================================*/
+using Microsoft.VisualBasic;
 using System;
 namespace Wlniao.Log
 {
@@ -149,7 +150,7 @@ namespace Wlniao.Log
         /// <param name="color"></param>
         public static void File(String topic, String message, ConsoleColor color = ConsoleColor.White)
         {
-            fileProvider.Topic(topic, message);
+            fileProvider.Topic(topic, message, LogLevel.Information);
         }
         /// <summary>
         /// 输出Debug级别的日志
@@ -197,9 +198,9 @@ namespace Wlniao.Log
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
-        public static void Topic(String topic, String message, LogLevel logLevel = LogLevel.Information)
+        public static void Topic(String topic, String message, LogLevel logLevel = LogLevel.None)
         {
-            LogProvider.Topic(topic, message);
+            LogProvider.Topic(topic, message, logLevel);
         }
         /// <summary>
         /// 记录接口原始日志，WLN_LOG_ORIGIN 参数控制是否输出
