@@ -20,6 +20,7 @@
 
 ===============================================================================*/
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -74,6 +75,11 @@ namespace Wlniao
         /// 链路追踪ID
         /// </summary>
         public string traceid { get; set; }
+        /// <summary>
+        /// 扩展数据
+        /// </summary>
+        [JsonIgnore]
+        public Dictionary<string, object> ExtendData = new Dictionary<string, object>();
 
         /// <summary>
         /// 业务返回数据

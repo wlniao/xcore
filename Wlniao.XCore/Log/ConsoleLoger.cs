@@ -110,20 +110,32 @@ namespace Wlniao.Log
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
-        public void Topic(String topic, String message)
+        /// <param name="log_level"></param>
+        public void Topic(String topic, String message, LogLevel log_level = LogLevel.Information)
         {
-            Loger.Console(string.Format("{0} => {2} => {1}", DateTools.Format(), message, topic), ConsoleColor.White);
-        }
+            var color = ConsoleColor.DarkGray;
+            if (log_level == LogLevel.Information)
+            {
+                color = ConsoleColor.White;
+            }
+            else if (log_level == LogLevel.Debug)
+            {
+                color = ConsoleColor.DarkBlue;
+            }
+            else if (log_level == LogLevel.Error)
+            {
+                color = ConsoleColor.Red;
+            }
+            else if (log_level == LogLevel.Warning)
+            {
+                color = ConsoleColor.DarkYellow;
+            }
+            else if (log_level == LogLevel.Critical)
+            {
+                color = ConsoleColor.Magenta;
+            }
+            Loger.Console(string.Format("{0} => {2} => {1}", DateTools.Format(), message, topic), color);
 
-        /// <summary>
-        /// 记录接口原始日志
-        /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="message"></param>
-        public void Origin(String topic, String message)
-        {
-            Loger.Console(string.Format("{0} => {2} => {1}", DateTools.Format(), message, topic), ConsoleColor.DarkGray);
         }
-
     }
 }

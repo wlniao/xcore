@@ -36,38 +36,38 @@ namespace Wlniao.Log
         /// </summary>
         /// <param name="message"></param>
         public void Debug(String message);
+
         /// <summary>
         /// 输出Info级别的日志
         /// </summary>
         /// <param name="message"></param>
         public void Info(String message);
+
         /// <summary>
         /// 输出Warn级别的日志
         /// </summary>
         /// <param name="message"></param>
         public void Warn(String message);
+
         /// <summary>
         /// 输出Error级别的日志
         /// </summary>
         /// <param name="message"></param>
         public void Error(String message);
+
         /// <summary>
         /// 输出Fatal级别的日志
         /// </summary>
         /// <param name="message"></param>
         public void Fatal(String message);
+
         /// <summary>
         /// 输出自定义主题的日志
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
-        public void Topic(String topic, String message);
+        /// <param name="log_level"></param>
+        public void Topic(String topic, String message, LogLevel log_level = LogLevel.Information);
 
-        /// <summary>
-        /// 记录接口原始日志
-        /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="message"></param>
-        public void Origin(String topic, String message);
     }
 }

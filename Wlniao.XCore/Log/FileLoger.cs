@@ -127,29 +127,17 @@ namespace Wlniao.Log
                 Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.Magenta);
             }
         }
+
         /// <summary>
         /// 输出自定义主题的日志
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
-        public void Topic(String topic, String message)
+        /// <param name="log_level"></param>
+        public void Topic(String topic, String message, LogLevel log_level = LogLevel.Information)
         {
             Write(topic, message);
             Loger.Console(string.Format("[{0}]{1} => {2}", topic, DateTools.Format(), message), ConsoleColor.DarkGray);
-        }
-
-        /// <summary>
-        /// 记录接口原始日志
-        /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="message"></param>
-        public void Origin(String topic, String message)
-        {
-            if (Loger.ApiOrigin)
-            {
-                Write(topic, message);
-                Loger.Console(string.Format("[{0}]{1} => {2}", topic, DateTools.Format(), message), ConsoleColor.DarkGray);
-            }
         }
 
         /// <summary>

@@ -192,22 +192,27 @@ namespace Wlniao.Log
             LogProvider.Fatal(message);
         }
         /// <summary>
-        /// 记录接口原始日志
+        /// 输出自定义主题的日志
+        /// </summary>
+        /// <param name="topic"></param>
+        /// <param name="message"></param>
+        /// <param name="logLevel"></param>
+        public static void Topic(String topic, String message, LogLevel logLevel = LogLevel.Information)
+        {
+            LogProvider.Topic(topic, message);
+        }
+        /// <summary>
+        /// 记录接口原始日志，WLN_LOG_ORIGIN 参数控制是否输出
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
         public static void Origin(String topic, String message)
         {
-            LogProvider.Topic(topic, message);
+            if (Loger.ApiOrigin)
+            {
+                LogProvider.Topic(topic, message, LogLevel.Debug);
+            }
         }
-        /// <summary>
-        /// 输出自定义主题的日志
-        /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="message"></param>
-        public static void Topic(String topic, String message)
-        {
-            LogProvider.Topic(topic, message);
-        }
+
     }
 }
