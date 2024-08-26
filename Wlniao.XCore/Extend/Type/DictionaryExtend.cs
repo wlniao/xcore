@@ -96,33 +96,65 @@ namespace Wlniao
 					dic.Add(key, value);
 				}
 			}
-		}
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="dic"></param>
-		/// <param name="key"></param>
-		/// <param name="Default"></param>
-		/// <returns></returns>
-		public static string GetString(this Dictionary<string, string> dic, string key, string Default = "")
-        {
-            if (dic != null && dic.ContainsKey(key))
-            {
-                return dic[key];
-            }
-            else
-            {
-                return Default;
-            }
         }
+        /// <summary>
+        /// 仅当值为空时才赋值
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public static void PutOnlyEmpty(this Dictionary<string, string> dic, string key, string value)
+        {
+            if (dic == null || dic.ContainsKey(key) || string.IsNullOrEmpty(dic[key]))
+            {
+                return;
+            }
+            dic.TryAdd(key, value);
+        }
+
+        /// <summary>
+        /// 仅当值为空时才赋值
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public static void PutOnlyEmpty(this Dictionary<string, object> dic, string key, object value)
+        {
+            if (dic == null || dic.ContainsKey(key) || dic[key] == null)
+            {
+                return;
+            }
+            dic.TryAdd(key, value);
+        }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="dic"></param>
         /// <param name="key"></param>
-        /// <param name="Default"></param>
+        /// <param name="defaultVal"></param>
+        /// <param name="allowEmpty"></param>
         /// <returns></returns>
-        public static object GetValue(this Dictionary<string, object> dic, string key, string Default = "")
+        public static string GetString(this Dictionary<string, string> dic, string key, string defaultVal = "", bool allowEmpty = true)
+        {
+            if (dic != null && dic.ContainsKey(key) && (allowEmpty || !string.IsNullOrEmpty(dic[key])))
+            {
+                return dic[key];
+            }
+            else
+            {
+                return defaultVal;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
+        /// <param name="defaultVal"></param>
+        /// <returns></returns>
+        public static object GetValue(this Dictionary<string, object> dic, string key, string defaultVal = "")
         {
             if (dic != null && dic.ContainsKey(key))
             {
@@ -130,9 +162,10 @@ namespace Wlniao
             }
             else
             {
-                return Default;
+                return defaultVal;
             }
         }
+
         /// <summary>
         /// 
         /// </summary>
