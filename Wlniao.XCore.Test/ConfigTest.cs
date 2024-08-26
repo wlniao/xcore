@@ -13,6 +13,29 @@ namespace Wlniao.XCore.Test
         }
 
         [Test]
+        public void ConfigPut()
+        {
+            var cfgs = new Dictionary<string, string>();
+            cfgs.PutValue("test1", "");
+            cfgs.PutValue("test2", null);
+            cfgs.PutValue("test3", "test3");
+            var v1 = cfgs.GetString("test1", "de1", false);
+            var v2 = cfgs.GetString("test2", "de2", false);
+            var v3 = cfgs.GetString("test3", "de3", false);
+            if (v1 == v2 && v2 == v3)
+            {
+
+            }
+            cfgs.PutOnlyEmpty("test0", "up0");
+            cfgs.PutOnlyEmpty("test1", "up1");
+            cfgs.PutOnlyEmpty("test2", "up2");
+            cfgs.PutOnlyEmpty("test3", "up3");
+
+
+            Assert.GreaterOrEqual(cfgs.Count, "false");
+        }
+
+        [Test]
         public void ConfigFile()
         {
             var isdev = Config.GetConfigs("ISDEV");

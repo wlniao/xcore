@@ -474,12 +474,23 @@ namespace Wlniao
                                 }
                                 if (!string.IsNullOrEmpty(strPost))
                                 {
-                                    var tmpPost = Wlniao.Json.ToObject<Dictionary<String, Object>>(strPost);
+                                    var tmpPost = System.Text.Json.JsonSerializer.Deserialize<Dictionary<String, Object>>(strPost);
                                     if (tmpPost != null)
                                     {
                                         foreach (var kv in tmpPost)
                                         {
-                                            ctxPost.TryAdd(kv.Key.ToLower(), tmpPost.GetString(kv.Key));
+                                            if (kv.Value == null)
+                                            {
+                                                continue;
+                                            }
+                                            else
+                                            {
+                                                var kvalue = kv.Value.ToString();
+                                                if (!string.IsNullOrEmpty(kvalue))
+                                                {
+                                                    ctxPost.TryAdd(kv.Key, kvalue);
+                                                }
+                                            }
                                         }
                                     }
                                 }

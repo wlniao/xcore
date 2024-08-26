@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 namespace Wlniao
 {
     /// <summary>
@@ -97,6 +98,7 @@ namespace Wlniao
 				}
 			}
         }
+
         /// <summary>
         /// 仅当值为空时才赋值
         /// </summary>
@@ -105,11 +107,18 @@ namespace Wlniao
         /// <param name="value"></param>
         public static void PutOnlyEmpty(this Dictionary<string, string> dic, string key, string value)
         {
-            if (dic == null || dic.ContainsKey(key) || string.IsNullOrEmpty(dic[key]))
+            if (dic == null)
             {
-                return;
+                dic = new Dictionary<string, string> { { key, value } };
             }
-            dic.TryAdd(key, value);
+            else if (!dic.ContainsKey(key))
+            {
+                dic.TryAdd(key, value);
+            }
+            else if (string.IsNullOrEmpty(dic[key]))
+            {
+                dic[key] = value;
+            }
         }
 
         /// <summary>
@@ -120,11 +129,18 @@ namespace Wlniao
         /// <param name="value"></param>
         public static void PutOnlyEmpty(this Dictionary<string, object> dic, string key, object value)
         {
-            if (dic == null || dic.ContainsKey(key) || dic[key] == null)
+            if (dic == null)
             {
-                return;
+                dic = new Dictionary<string, object> { { key, value } };
             }
-            dic.TryAdd(key, value);
+            else if (!dic.ContainsKey(key))
+            {
+                dic.TryAdd(key, value);
+            }
+            else if (dic[key] == null || (dic[key] is string && string.IsNullOrEmpty(dic[key] as string)))
+            {
+                dic[key] = value;
+            }
         }
 
         /// <summary>
@@ -146,6 +162,25 @@ namespace Wlniao
                 return defaultVal;
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
+        /// <param name="defaultVal"></param>
+        /// <param name="allowEmpty"></param>
+        /// <returns></returns>
+        public static string GetString(this Dictionary<string, object> dic, string key, string defaultVal = "", bool allowEmpty = true)
+        {
+            if (dic != null && dic.ContainsKey(key) && (allowEmpty || !string.IsNullOrEmpty(dic[key] as string)))
+            {
+                return dic[key] as string;
+            }
+            else
+            {
+                return defaultVal;
+            }
+        }
 
         /// <summary>
         /// 
@@ -153,10 +188,11 @@ namespace Wlniao
         /// <param name="dic"></param>
         /// <param name="key"></param>
         /// <param name="defaultVal"></param>
+        /// <param name="allowEmpty"></param>
         /// <returns></returns>
-        public static object GetValue(this Dictionary<string, object> dic, string key, string defaultVal = "")
+        public static object GetValue(this Dictionary<string, object> dic, string key, string defaultVal = "", bool allowEmpty = true)
         {
-            if (dic != null && dic.ContainsKey(key))
+            if (dic != null && dic.ContainsKey(key) && (allowEmpty || !string.IsNullOrEmpty(dic[key] as string)))
             {
                 return dic[key];
             }
@@ -196,29 +232,6 @@ namespace Wlniao
                 catch { }
             }
             return Default;
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="dic"></param>
-        /// <param name="key"></param>
-        /// <param name="defaultValue"></param>
-        /// <returns></returns>
-        public static string GetString(this Dictionary<string, object> dic, string key, string defaultValue = "")
-        {
-            if (dic != null && dic.ContainsKey(key))
-            {
-                object obj = dic[key];
-                if (obj == null)
-                {
-                    return "";
-                }
-                return dic[key].ToString();
-            }
-            else
-            {
-                return defaultValue;
-            }
         }
         /// <summary>
         /// 
