@@ -413,7 +413,7 @@ namespace Wlniao
         /// <summary>
         /// 
         /// </summary>
-        private Dictionary<string, string> ctxPost = null;
+        private Dictionary<string, object> ctxPost = null;
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
         /// </summary>
@@ -423,12 +423,11 @@ namespace Wlniao
         [NonAction]
         protected String PostRequest(String Key, String Default = "")
         {
-            var key = Key.ToLower();
             if (ctxPost == null)
             {
                 try
                 {
-                    ctxPost = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    ctxPost = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
                     if (Request.Method == "POST")
                     {
                         try
@@ -474,7 +473,7 @@ namespace Wlniao
                                 }
                                 if (!string.IsNullOrEmpty(strPost))
                                 {
-                                    var tmpPost = System.Text.Json.JsonSerializer.Deserialize<Dictionary<String, Object>>(strPost);
+                                    var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(strPost);
                                     if (tmpPost != null)
                                     {
                                         foreach (var kv in tmpPost)
@@ -485,11 +484,7 @@ namespace Wlniao
                                             }
                                             else
                                             {
-                                                var kvalue = kv.Value.ToString();
-                                                if (!string.IsNullOrEmpty(kvalue))
-                                                {
-                                                    ctxPost.TryAdd(kv.Key, kvalue);
-                                                }
+                                                ctxPost.TryAdd(kv.Key, kv.Value);
                                             }
                                         }
                                     }
@@ -503,17 +498,24 @@ namespace Wlniao
                     {
                         foreach (var item in Request.Query.Keys)
                         {
-                            ctxPost.TryAdd(item.ToLower(), strUtil.UrlDecode(Request.Query[item].ToString().Trim()));
+                            ctxPost.TryAdd(item, strUtil.UrlDecode(Request.Query[item].ToString().Trim()));
                         }
                     }
                 }
                 catch { }
             }
-            if (ctxPost != null && ctxPost.ContainsKey(key) && !string.IsNullOrEmpty(ctxPost[key]))
+            if (ctxPost != null)
             {
-                Default = ctxPost[key];
+                Default = ctxPost.GetString(Key);
             }
-            return Default.Trim();
+            if (Default == null)
+            {
+                return "";
+            }
+            else
+            {
+                return Default.Trim();
+            }
         }
 
         /// <summary>

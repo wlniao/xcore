@@ -123,7 +123,11 @@ namespace Wlniao.Serialization
         /// <returns></returns>
         public static T ToObject<T>(String jsonString)
         {
-            return System.Text.Json.JsonSerializer.Deserialize<T>(jsonString);
+            return System.Text.Json.JsonSerializer.Deserialize<T>(jsonString, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
+                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
+            });
             //Object result = ToObject(jsonString, typeof(T));
             //return (T)result;
         }
@@ -137,7 +141,8 @@ namespace Wlniao.Serialization
         {
             return JsonSerializer.Serialize<T>(obj, new JsonSerializerOptions
             {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
+                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
             });
         }
         /// <summary>

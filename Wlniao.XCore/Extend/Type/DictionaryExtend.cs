@@ -172,14 +172,20 @@ namespace Wlniao
         /// <returns></returns>
         public static string GetString(this Dictionary<string, object> dic, string key, string defaultVal = "", bool allowEmpty = true)
         {
-            if (dic != null && dic.ContainsKey(key) && (allowEmpty || !string.IsNullOrEmpty(dic[key] as string)))
+            if (dic != null && dic.ContainsKey(key))
             {
-                return dic[key] as string;
+                var svalue = "";
+                try
+                {
+                    svalue = dic[key].ToString();
+                }
+                catch { }
+                if (allowEmpty || !string.IsNullOrEmpty(svalue))
+                {
+                    return svalue;
+                }
             }
-            else
-            {
-                return defaultVal;
-            }
+            return defaultVal;
         }
 
         /// <summary>
@@ -192,7 +198,7 @@ namespace Wlniao
         /// <returns></returns>
         public static object GetValue(this Dictionary<string, object> dic, string key, string defaultVal = "", bool allowEmpty = true)
         {
-            if (dic != null && dic.ContainsKey(key) && (allowEmpty || !string.IsNullOrEmpty(dic[key] as string)))
+            if (dic != null && dic.ContainsKey(key) && (allowEmpty || dic[key] != null))
             {
                 return dic[key];
             }
