@@ -177,9 +177,9 @@ namespace Wlniao
                 var svalue = "";
                 try
                 {
-                    svalue = dic[key].ToString();
+                    svalue = dic[key] == null ? "" : dic[key].ToString();
                 }
-                catch { }
+                catch { svalue = ""; }
                 if (allowEmpty || !string.IsNullOrEmpty(svalue))
                 {
                     return svalue;
