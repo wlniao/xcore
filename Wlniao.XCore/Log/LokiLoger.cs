@@ -306,7 +306,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Debug)
             {
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(DateTime.UtcNow), message), ConsoleColor.DarkBlue);
+                Loger.Console(string.Format("{0} => {1}", DateTools.Format(DateTime.UtcNow), message), ConsoleColor.White);
             }
         }
         /// <summary>
@@ -320,7 +320,7 @@ namespace Wlniao.Log
                 var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
                 if (LogLocal == "console")
                 {
-                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.White);
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.Gray);
                 }
                 else if (LogLocal == "file")
                 {

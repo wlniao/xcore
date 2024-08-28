@@ -116,11 +116,11 @@ namespace Wlniao.Log
             var color = ConsoleColor.DarkGray;
             if (log_level == LogLevel.Information)
             {
-                color = ConsoleColor.White;
+                color = ConsoleColor.Gray;
             }
             else if (log_level == LogLevel.Debug)
             {
-                color = ConsoleColor.DarkBlue;
+                color = ConsoleColor.White;
             }
             else if (log_level == LogLevel.Error)
             {
