@@ -1,30 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Version>8.0.31</Version>
-		<PackageId>Wlniao.XCore</PackageId>
-		<PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
+		<Version>8.0.32</Version>
+		<Authors>XieChaoyi</Authors>
+		<Copyright>Copyright 2020 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
 		<AssemblyName>Wlniao.XCore</AssemblyName>
-		<Copyright>Copyright 2020 XieChaoyi</Copyright>
-		<Authors>XieChaoyi</Authors>
-		<TargetFramework>net8.0</TargetFramework>
+		<RootNamespace>Wlniao</RootNamespace>
+		<EnableNETAnalyzers>False</EnableNETAnalyzers>
+		<IncludeSymbols>False</IncludeSymbols>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
 		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<NoWarn>CS8632;IL2026;IL2057;IL2067;IL2070;IL2087;IL2090</NoWarn>
+		<PackageId>Wlniao.XCore</PackageId>
+		<PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
 		<PackageUrl>https://static.wlniao.com/wlniao/logo.png</PackageUrl>
-		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<RootNamespace>Wlniao</RootNamespace>
-		<RepositoryUrl>https://github.com/wlniao/xcore</RepositoryUrl>
+		<PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
 		<PackageIcon>wlniao.png</PackageIcon>
 		<PackageOutputPath>C:\Users\Administrator\OneDrive\Path\packages</PackageOutputPath>
 		<PackageProjectUrl>https://github.com/wlniao/xcore</PackageProjectUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<IncludeSymbols>False</IncludeSymbols>
-		<EnableNETAnalyzers>False</EnableNETAnalyzers>
-		<AnalysisLevel>6.0-all</AnalysisLevel>
-		<NoWarn>CS8632;IL2026;IL2057;IL2067;IL2070;IL2087;IL2090</NoWarn>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/wlniao/xcore</RepositoryUrl>
+		<TargetFrameworks>net8.0;net7.0;net6.0</TargetFrameworks>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 	  <Optimize>False</Optimize>
@@ -47,5 +47,12 @@
 
 	<ItemGroup>
 	  <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="license.txt">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
 	</ItemGroup>
 </Project>

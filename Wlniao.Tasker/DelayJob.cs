@@ -16,6 +16,6 @@
         /// <summary>
         /// 任务的执行时间点，如当前unixtime后的10秒/30秒/1分钟/3分钟/5分钟/10分钟/30分钟
         /// </summary>
-        public List<long>? times { get; set; }
+        public System.Collections.Generic.List<long>? times { get; set; }
     }
 }
