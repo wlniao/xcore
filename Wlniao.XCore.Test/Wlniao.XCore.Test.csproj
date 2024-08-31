@@ -11,14 +11,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NUnit" Version="3.12.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.16.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
+    <Content Remove="C:\Users\Administrator\.nuget\packages\microsoft.testplatform.testhost\16.5.0\build\netcoreapp2.1\x64\testhost.dll" />
+    <Content Remove="C:\Users\Administrator\.nuget\packages\microsoft.testplatform.testhost\16.5.0\build\netcoreapp2.1\x64\testhost.exe" />
+    <Content Remove="C:\Users\Administrator\.nuget\packages\nunit3testadapter\3.16.1\build\netcoreapp2.1\nunit.engine.api.dll" />
+    <Content Remove="C:\Users\Administrator\.nuget\packages\nunit3testadapter\3.16.1\build\netcoreapp2.1\nunit.engine.dll" />
+    <Content Remove="C:\Users\Administrator\.nuget\packages\nunit3testadapter\3.16.1\build\netcoreapp2.1\NUnit3.TestAdapter.dll" />
+    <Content Remove="C:\Users\Administrator\.nuget\packages\nunit3testadapter\3.16.1\build\netcoreapp2.1\NUnit3.TestAdapter.pdb" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Wlniao.Tasker\Wlniao.Tasker.csproj" />
-    <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
+    <PackageReference Include="NUnit" Version="4.2.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
   </ItemGroup>
 
 

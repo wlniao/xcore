@@ -29,8 +29,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.35" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.32" />
+		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.36" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.33" />
 	</ItemGroup>
 
 	<ItemGroup>

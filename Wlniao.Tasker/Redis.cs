@@ -151,7 +151,7 @@ namespace Wlniao.Tasker
                                     {
                                         if (s.Score > begin)
                                         {
-                                            db.PublishAsync(index, s.Element);
+                                            db.PublishAsync(new RedisChannel(index, RedisChannel.PatternMode.Auto), s.Element, CommandFlags.None);
                                         }
                                         var key = "tasker_tl" + topic + "_" + s.Element.ToString();
                                         if (db.KeyExists(key))

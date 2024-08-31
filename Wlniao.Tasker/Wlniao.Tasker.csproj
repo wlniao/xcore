@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>0.8.9</Version>
+		<Version>0.8.10</Version>
 		<Authors>XieChaoyi</Authors>
 		<Copyright>Copyright 2020 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -14,7 +14,7 @@
 		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<NoWarn>CS8603;CS8618;CS8625</NoWarn>
+		<NoWarn>CS8603;CS8618;CS8625;CS8632</NoWarn>
 		<PackageId>Wlniao.Tasker</PackageId>
 		<PackageTags>Wlniao;XCore;Tasker</PackageTags>
 		<PackageUrl>https://static.wlniao.com/wlniao/logo.png</PackageUrl>
@@ -31,7 +31,7 @@
 	<ItemGroup>
 		<PackageReference Include="MQTTnet" Version="3.1.2" />
 		<PackageReference Include="StackExchange.Redis" Version="2.8.0" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.32" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.33" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -16,13 +16,31 @@ using Wlniao.Crypto;
 
 namespace Wlniao.Tasker
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class MQTT
     {
         IMqttClient? client;
+        /// <summary>
+        /// 
+        /// </summary>
         public string Port = Config.GetConfigs("MQTT_SERVER_PORT", "1883");
+        /// <summary>
+        /// 
+        /// </summary>
         public string Server = Config.GetConfigs("MQTT_SERVER_HOST", "127.0.0.1");
+        /// <summary>
+        /// 
+        /// </summary>
         public string UserName = Config.GetConfigs("MQTT_KEY_UID");
+        /// <summary>
+        /// 
+        /// </summary>
         public string Password = Config.GetConfigs("MQTT_KEY_PWD");
+        /// <summary>
+        /// 
+        /// </summary>
         public bool Normal = Config.GetConfigs("MQTT_NORMAL", "false") == "true";
         private bool Connecting = false;
         /// <summary>
@@ -80,6 +98,7 @@ namespace Wlniao.Tasker
         /// <summary>
         /// 构造发送消息
         /// </summary>
+        /// <param name="topic"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         private MqttApplicationMessage BuildMessage(string topic, object data)
@@ -92,7 +111,9 @@ namespace Wlniao.Tasker
             .WithPayload(Hex.ToHexString(buffer));
             return builder.Build();
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public void Start()
         {
             Task.Run(() =>

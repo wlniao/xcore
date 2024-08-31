@@ -144,14 +144,14 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// 
+        /// 获取字典表中的值
         /// </summary>
-        /// <param name="dic"></param>
-        /// <param name="key"></param>
-        /// <param name="defaultVal"></param>
-        /// <param name="allowEmpty"></param>
+        /// <param name="dic">字典</param>
+        /// <param name="key">字段标识</param>
+        /// <param name="defaultVal">无字段或为空时的默认值</param>
+        /// <param name="allowEmpty">是否允许获取空值</param>
         /// <returns></returns>
-        public static string GetString(this Dictionary<string, string> dic, string key, string defaultVal = "", bool allowEmpty = true)
+        public static string GetString(this Dictionary<string, string> dic, string key, string defaultVal = "", bool allowEmpty = false)
         {
             if (dic != null && dic.ContainsKey(key) && (allowEmpty || !string.IsNullOrEmpty(dic[key])))
             {
@@ -163,14 +163,14 @@ namespace Wlniao
             }
         }
         /// <summary>
-        /// 
+        /// 获取字典表中的值
         /// </summary>
-        /// <param name="dic"></param>
-        /// <param name="key"></param>
-        /// <param name="defaultVal"></param>
-        /// <param name="allowEmpty"></param>
+        /// <param name="dic">字典</param>
+        /// <param name="key">字段标识</param>
+        /// <param name="defaultVal">无字段或为空时的默认值</param>
+        /// <param name="allowEmpty">是否允许获取空值</param>
         /// <returns></returns>
-        public static string GetString(this Dictionary<string, object> dic, string key, string defaultVal = "", bool allowEmpty = true)
+        public static string GetString(this Dictionary<string, object> dic, string key, string defaultVal = "", bool allowEmpty = false)
         {
             if (dic != null && dic.ContainsKey(key))
             {
@@ -189,14 +189,14 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// 
+        /// 获取字典表中的值
         /// </summary>
-        /// <param name="dic"></param>
-        /// <param name="key"></param>
-        /// <param name="defaultVal"></param>
-        /// <param name="allowEmpty"></param>
+        /// <param name="dic">字典</param>
+        /// <param name="key">字段标识</param>
+        /// <param name="defaultVal">无字段或为空时的默认值</param>
+        /// <param name="allowEmpty">是否允许获取空值</param>
         /// <returns></returns>
-        public static object GetValue(this Dictionary<string, object> dic, string key, string defaultVal = "", bool allowEmpty = true)
+        public static object GetValue(this Dictionary<string, object> dic, string key, string defaultVal = "", bool allowEmpty = false)
         {
             if (dic != null && dic.ContainsKey(key) && (allowEmpty || dic[key] != null))
             {
