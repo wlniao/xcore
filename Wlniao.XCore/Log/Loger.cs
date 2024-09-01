@@ -198,21 +198,10 @@ namespace Wlniao.Log
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
-        public static void Topic(String topic, String message, LogLevel logLevel = LogLevel.None)
+        /// <param name="localWrite"></param>
+        public static void Topic(String topic, String message, LogLevel logLevel = LogLevel.Information, Boolean localWrite = true)
         {
-            LogProvider.Topic(topic, message, logLevel);
-        }
-        /// <summary>
-        /// 记录接口原始日志，WLN_LOG_ORIGIN 参数控制是否输出
-        /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="message"></param>
-        public static void Origin(String topic, String message)
-        {
-            if (Loger.ApiOrigin)
-            {
-                LogProvider.Topic(topic, message, LogLevel.Debug);
-            }
+            LogProvider.Topic(topic, message, logLevel, localWrite);
         }
 
     }

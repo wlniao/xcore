@@ -66,8 +66,9 @@ namespace Wlniao.Log
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
-        /// <param name="log_level"></param>
-        public void Topic(String topic, String message, LogLevel log_level);
+        /// <param name="logLevel"></param>
+        /// <param name="localWrite"></param>
+        public void Topic(String topic, String message, LogLevel logLevel, Boolean localWrite = true);
 
     }
 }

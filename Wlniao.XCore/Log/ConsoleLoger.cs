@@ -110,32 +110,35 @@ namespace Wlniao.Log
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
-        /// <param name="log_level"></param>
-        public void Topic(String topic, String message, LogLevel log_level)
+        /// <param name="logLevel"></param>
+        /// <param name="localWrite"></param>
+        public void Topic(String topic, String message, LogLevel logLevel, Boolean localWrite = true)
         {
-            var color = ConsoleColor.DarkGray;
-            if (log_level == LogLevel.Information)
+            if (Level <= logLevel)
             {
-                color = ConsoleColor.Gray;
+                var color = ConsoleColor.DarkGray;
+                if (logLevel == LogLevel.Information)
+                {
+                    color = ConsoleColor.Gray;
+                }
+                else if (logLevel == LogLevel.Debug)
+                {
+                    color = ConsoleColor.White;
+                }
+                else if (logLevel == LogLevel.Error)
+                {
+                    color = ConsoleColor.Red;
+                }
+                else if (logLevel == LogLevel.Warning)
+                {
+                    color = ConsoleColor.DarkYellow;
+                }
+                else if (logLevel == LogLevel.Critical)
+                {
+                    color = ConsoleColor.Magenta;
+                }
+                Loger.Console(string.Format("{0} => {2} => {1}", DateTools.Format(), message, topic), color);
             }
-            else if (log_level == LogLevel.Debug)
-            {
-                color = ConsoleColor.White;
-            }
-            else if (log_level == LogLevel.Error)
-            {
-                color = ConsoleColor.Red;
-            }
-            else if (log_level == LogLevel.Warning)
-            {
-                color = ConsoleColor.DarkYellow;
-            }
-            else if (log_level == LogLevel.Critical)
-            {
-                color = ConsoleColor.Magenta;
-            }
-            Loger.Console(string.Format("{0} => {2} => {1}", DateTools.Format(), message, topic), color);
-
         }
     }
 }

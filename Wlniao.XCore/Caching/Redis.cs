@@ -25,6 +25,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
+using Wlniao.Log;
 using Wlniao.Net;
 using Wlniao.Runtime;
 
@@ -182,7 +183,7 @@ namespace Wlniao.Caching
             }
             catch (Exception ex)
             {
-                log.Topic("xcore", "Caching.Redis.Get => " + ex.Message);
+                Loger.Topic("xcore", "Caching.Redis.Get => " + ex.Message, Log.LogLevel.Error);
             }
             return "";
         }
@@ -219,11 +220,11 @@ namespace Wlniao.Caching
             }
             catch (XCoreException ex)
             {
-                log.Topic("xcore", ex.Message);
+                Loger.Topic("xcore", ex.Message, Log.LogLevel.Error);
             }
             catch (Exception ex)
             {
-                log.Topic("xcore", "Caching.Redis.Set => " + ex.Message);
+                Loger.Topic("xcore", "Caching.Redis.Set => " + ex.Message, Log.LogLevel.Error);
             }
             return false;
         }
@@ -265,11 +266,11 @@ namespace Wlniao.Caching
             }
             catch (XCoreException ex)
             {
-                log.Topic("xcore", ex.Message);
+                Loger.Topic("xcore", ex.Message, Log.LogLevel.Error);
             }
             catch (Exception ex)
             {
-                log.Topic("xcore", "Caching.Redis.KeyDelete => " + ex.Message);
+                Loger.Topic("xcore", "Caching.Redis.KeyDelete => " + ex.Message, Log.LogLevel.Error);
             }
             return false;
         }
@@ -286,11 +287,11 @@ namespace Wlniao.Caching
             }
             catch (XCoreException ex)
             {
-                log.Topic("xcore", ex.Message);
+                Loger.Topic("xcore", ex.Message, Log.LogLevel.Error);
             }
             catch (Exception ex)
             {
-                log.Topic("xcore", "Caching.Redis.KeyExists => " + ex.Message);
+                Loger.Topic("xcore", "Caching.Redis.KeyExists => " + ex.Message, Log.LogLevel.Error);
             }
             return false;
 

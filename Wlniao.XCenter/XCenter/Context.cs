@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
+using Wlniao.Log;
 using Wlniao.Serialization;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -296,7 +297,6 @@ namespace Wlniao.XCenter
             var now = XCore.NowUnix.ToString();
             var rlt = new Wlniao.ApiResult<T>();
             var utime = "";
-            var start = DateTime.Now;
             var msgid = strUtil.CreateLongId();
             var token = XCenterSm4Key.Length == 16 ? XCenterSm4Key : strUtil.CreateRndStrE(16);
             var plainData = Wlniao.Json.ToString(data);
@@ -305,7 +305,8 @@ namespace Wlniao.XCenter
             var sign = Wlniao.Encryptor.SM3Encrypt(encdata + now + token);
             var resStr = "";
             var reqStr = Wlniao.Json.ToString(new { sn = XCenterCertSn, token = sm2token, timestamp = now, data = encdata, sign });
-            log.Origin("authify", "msgid:" + msgid + ", " + AuthifyHost + path + "\n >>> " + reqStr);
+            log.Topic("authify", $"msgid:{msgid}, authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
+            var start = DateTime.Now;
             try
             {
                 var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
@@ -329,10 +330,18 @@ namespace Wlniao.XCenter
                         utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                     }
                 }
-                log.Origin("authify", "msgid:" + msgid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + resStr);
+                if (string.IsNullOrEmpty(utime))
+                {
+                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                }
+                log.Topic("authify", $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
             }
-            catch { }
-            var logs = "msgid:" + msgid + ", authify:/" + path + ", usetime:" + utime + "\n >>> " + plainData;
+            catch (Exception ex)
+            {
+                utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                log.Topic("authify", $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
+            }
+            var logs = $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} >>> {plainData}";
             try
             {
                 var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiResult<String>>(resStr);
@@ -414,9 +423,10 @@ namespace Wlniao.XCenter
             {
                 logs += "\n <<< Exception" + ex.Message;
             }
-            log.Info(logs);
+            log.Topic("authify", logs, Log.LogLevel.Debug, true);
             return rlt;
         }
+
         /// <summary>
         /// 获取应用API接口数据（租户调用获取业务数据）
         /// </summary>
@@ -445,7 +455,7 @@ namespace Wlniao.XCenter
                 var sign = Wlniao.Encryptor.SM3Encrypt(owner + app + encdata + now + apptoken);
                 var resStr = "";
                 var reqStr = Wlniao.Json.ToString(new { app, oid = owner, sign, data = encdata, timestamp = now });
-                log.Origin(app, "msgid:" + msgid + ", " + AuthifyHost + path + "\n >>> " + reqStr);
+                Loger.Topic(app, $"msgid:{msgid}, authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
                 try
                 {
                     var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
@@ -469,10 +479,18 @@ namespace Wlniao.XCenter
                             utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                         }
                     }
+                    if (string.IsNullOrEmpty(utime))
+                    {
+                        utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    }
+                    Loger.Topic(app, $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
                 }
-                catch { }
-                log.Origin(app, "msgid:" + msgid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + resStr);
-                var logDebug = "msgid:" + msgid + ", authify:/" + path + ", usetime:" + utime + "\n >>> " + plainData;
+                catch (Exception ex)
+                {
+                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    Loger.Topic(app, $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
+                }
+                var logs = $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} >>> {plainData}";
                 try
                 {
                     var resObj = Json.ToObject<Wlniao.ApiResult<String>>(resStr);
@@ -487,7 +505,7 @@ namespace Wlniao.XCenter
                             var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, apptoken);
                             if (string.IsNullOrEmpty(json))
                             {
-                                logDebug += "\n <<< RESPONSE EMPTY";
+                                logs += "\n <<< RESPONSE EMPTY";
                             }
                             else
                             {
@@ -501,17 +519,17 @@ namespace Wlniao.XCenter
                                     {
                                         rlt.data = Wlniao.Json.ToObject<T>(json);
                                     }
-                                    logDebug += "\n <<< " + Wlniao.Json.ToString(rlt);
+                                    logs += "\n <<< " + Wlniao.Json.ToString(rlt);
                                 }
                                 catch
                                 {
-                                    logDebug += "\n <<< " + json;
+                                    logs += "\n <<< " + json;
                                 }
                             }
                         }
                         else
                         {
-                            logDebug += "\n <<< " + rlt.message;
+                            logs += "\n <<< " + rlt.message;
                         }
                     }
                     else
@@ -521,13 +539,13 @@ namespace Wlniao.XCenter
                 }
                 catch (Exception ex)
                 {
-                    logDebug += "\n <<< Exception" + ex.Message;
+                    logs += "\n <<< Exception" + ex.Message;
                 }
-
-                log.Info(logDebug);
+                Loger.Topic(app, logs, Log.LogLevel.Debug, true);
             }
             return rlt;
         }
+
         /// <summary>
         /// 
         /// </summary>
@@ -549,6 +567,7 @@ namespace Wlniao.XCenter
             }
             return "";
         }
+
         /// <summary>
         /// 获取租户名称
         /// </summary>
@@ -690,5 +709,6 @@ namespace Wlniao.XCenter
             }
             return new Dictionary<String, Object>();
         }
+    
     }
 }

@@ -40,7 +40,7 @@ namespace Wlniao.Swagger
                     o.SwaggerDoc(group.Name, new OpenApiInfo
                     {
                         Title = string.IsNullOrEmpty(group.Title) ? group.Name : group.Title,
-                        Version = string.IsNullOrEmpty(group.Version) ? XCore.ProgramVersion : group.Version,
+                        Version = string.IsNullOrEmpty(group.Version) ? RuntimeInfo.ProgramVersion : group.Version,
                         Extensions = new Dictionary<string, IOpenApiExtension> { }
                     });
                 }
@@ -56,7 +56,7 @@ namespace Wlniao.Swagger
                         return apiDescription.GroupName == groupName;
                     }
                 });
-                o.AddServer(new OpenApiServer { Url = XCore.WebHost });
+                o.AddServer(new OpenApiServer { Url = RuntimeInfo.WebHost });
                 if (System.IO.File.Exists(Path.Combine(AppContext.BaseDirectory, $"Wlniao.XCore.xml")))
                 {
                     o.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"Wlniao.XCore.xml"), true);

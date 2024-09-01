@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>8.0.36</Version>
+		<Version>8.0.38</Version>
 		<Authors>XieChaoyi</Authors>
 		<Copyright>Copyright 2020 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -14,7 +14,7 @@
 		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<NoWarn>CS8602;CS8618;CS8625;IL2026</NoWarn>
+		<NoWarn>CS8602;CS8618;CS8625;CS8632;IL2026</NoWarn>
 		<PackageId>Wlniao.AspNetCore</PackageId>
 		<PackageTags>Wlniao;XCore;AspNetCore</PackageTags>
 		<PackageUrl>https://static.wlniao.com/wlniao/logo.png</PackageUrl>
@@ -30,7 +30,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.4" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.33" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.34" />
 	</ItemGroup>
 
 	<ItemGroup>

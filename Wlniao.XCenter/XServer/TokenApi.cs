@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using Wlniao.Log;
 using Wlniao.OpenApi;
 
 namespace Wlniao.XServer
@@ -71,7 +72,7 @@ namespace Wlniao.XServer
                     var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                     using (var client = new HttpClient(handler))
                     {
-                        log.Origin(apinode, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr);
+                        Loger.Topic(apinode, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr, Log.LogLevel.Information, false);
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         request.Headers.Date = DateTime.Now;
                         request.Content = new StreamContent(stream);
@@ -88,15 +89,23 @@ namespace Wlniao.XServer
                         {
                             utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                         }
-                        log.Origin(apinode, "msgid:" + traceid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + resStr);
+                        if (string.IsNullOrEmpty(utime))
+                        {
+                            utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                        }
+                        Loger.Topic(apinode, $"msgid:{traceid}, {url}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    Loger.Topic(apinode, $"msgid:{traceid}, {url}[{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
+                }
                 if (string.IsNullOrEmpty(utime))
                 {
                     utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 }
-                var logs = "msgid:" + traceid + ", " + apinode + ":/" + uri.AbsolutePath + ", usetime:" + utime + "\n >>> " + txt;
+                var logs = $"msgid:{traceid}, {uri.AbsolutePath}[{utime}]{Environment.NewLine} >>> {txt}";
                 if (string.IsNullOrEmpty(resStr))
                 {
                     rlt.tips = true;
@@ -104,7 +113,6 @@ namespace Wlniao.XServer
                     rlt.debuger = url + "[Error]";
                     rlt.message = "通讯异常，网络异常或请求错误";
                     logs += "\n <<< " + rlt.message;
-                    log.Origin(apinode, "msgid:" + traceid + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n <<< " + rlt.message);
                 }
                 else
                 {
@@ -119,7 +127,7 @@ namespace Wlniao.XServer
                         rlt.code = "104";
                         rlt.message = "远端输出格式不满足本地要求";
                         logs += "\n <<< " + rlt.message;
-                        log.Origin(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
+                        //log.Origin(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
                     }
                     else
                     {
@@ -168,7 +176,7 @@ namespace Wlniao.XServer
                         logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + (string.IsNullOrEmpty(plaintext) ? "\"\"" : plaintext) + "}";
                     }
                 }
-                log.Info(logs);
+                Loger.Topic(apinode, logs, Log.LogLevel.Debug, true);
             }
             return rlt;
         }

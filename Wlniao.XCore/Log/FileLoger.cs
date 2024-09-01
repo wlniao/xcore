@@ -133,11 +133,36 @@ namespace Wlniao.Log
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
-        /// <param name="log_level"></param>
-        public void Topic(String topic, String message, LogLevel log_level)
+        /// <param name="logLevel"></param>
+        /// <param name="localWrite"></param>
+        public void Topic(String topic, String message, LogLevel logLevel, Boolean localWrite = true)
         {
             Write(topic, message);
-            Loger.Console(string.Format("[{0}]{1} => {2}", topic, DateTools.Format(), message), ConsoleColor.DarkGray);
+            if (localWrite && Level <= logLevel)
+            {
+                var color = ConsoleColor.DarkGray;
+                if (logLevel == LogLevel.Information)
+                {
+                    color = ConsoleColor.Gray;
+                }
+                else if (logLevel == LogLevel.Debug)
+                {
+                    color = ConsoleColor.White;
+                }
+                else if (logLevel == LogLevel.Error)
+                {
+                    color = ConsoleColor.Red;
+                }
+                else if (logLevel == LogLevel.Warning)
+                {
+                    color = ConsoleColor.DarkYellow;
+                }
+                else if (logLevel == LogLevel.Critical)
+                {
+                    color = ConsoleColor.Magenta;
+                }
+                Loger.Console(string.Format("[{0}]{1} => {2}", topic, DateTools.Format(), message), color);
+            }
         }
 
         /// <summary>

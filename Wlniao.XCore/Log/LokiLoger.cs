@@ -398,19 +398,44 @@ namespace Wlniao.Log
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
-        /// <param name="log_level"></param>
-        public void Topic(String topic, String message, LogLevel log_level)
+        /// <param name="logLevel"></param>
+        /// <param name="localWrite"></param>
+        public void Topic(String topic, String message, LogLevel logLevel, Boolean localWrite = true)
         {
             var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
-            if (LogLocal == "console")
+            if (localWrite && Level <= logLevel)
             {
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.DarkGray);
+                if (LogLocal == "console")
+                {
+                    var color = ConsoleColor.DarkGray;
+                    if (logLevel == LogLevel.Information)
+                    {
+                        color = ConsoleColor.Gray;
+                    }
+                    else if (logLevel == LogLevel.Debug)
+                    {
+                        color = ConsoleColor.White;
+                    }
+                    else if (logLevel == LogLevel.Error)
+                    {
+                        color = ConsoleColor.Red;
+                    }
+                    else if (logLevel == LogLevel.Warning)
+                    {
+                        color = ConsoleColor.DarkYellow;
+                    }
+                    else if (logLevel == LogLevel.Critical)
+                    {
+                        color = ConsoleColor.Magenta;
+                    }
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), color);
+                }
+                else if (LogLocal == "file")
+                {
+                    flog.Write(topic, message);
+                }
             }
-            else if (LogLocal == "file")
-            {
-                flog.Write(topic, message);
-            }
-            Write(topic, entrie, log_level);
+            Write(topic, entrie, logLevel);
         }
 
         /// <summary>

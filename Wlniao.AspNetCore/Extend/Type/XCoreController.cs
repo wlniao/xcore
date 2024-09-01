@@ -466,6 +466,7 @@ namespace Wlniao
                                     }
                                     catch
                                     {
+                                        //strPost=Request.BodyReader.ReadAsync().Result.ToString();
                                         var buffer = new byte[(int)Request.ContentLength];
                                         Request.Body.Read(buffer, 0, buffer.Length);
                                         strPost = System.Text.Encoding.UTF8.GetString(buffer);
@@ -506,9 +507,9 @@ namespace Wlniao
             }
             if (ctxPost != null)
             {
-                Default = ctxPost.GetString(Key);
+                return ctxPost.GetString(Key, Default);
             }
-            if (Default == null)
+            else if (string.IsNullOrEmpty(Default))
             {
                 return "";
             }

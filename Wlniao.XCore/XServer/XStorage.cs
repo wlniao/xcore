@@ -1042,7 +1042,7 @@ namespace Wlniao.XServer
             /// <summary>
             /// 是否可用
             /// </summary>
-            private Boolean canUsing
+            public Boolean canUsing
             {
                 get
                 {

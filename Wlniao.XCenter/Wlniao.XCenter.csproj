@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>8.0.46</Version>
+		<Version>8.0.49-beta1</Version>
 		<Authors>XieChaoyi</Authors>
 		<Copyright>Copyright 2022 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -14,7 +14,7 @@
 		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<NoWarn>CS8600,CS8601,CS8603,CS8618,CS8625</NoWarn>
+		<NoWarn>CS8600,CS8601,CS8603,CS8618,CS8625,CS8632</NoWarn>
 		<PackageId>Wlniao.XCenter</PackageId>
 		<PackageTags>Wlniao;XCore;XCenter</PackageTags>
 		<PackageUrl>https://static.wlniao.com/wlniao/logo.png</PackageUrl>
@@ -29,8 +29,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.36" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.33" />
+		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.38" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.34" />
 	</ItemGroup>
 
 	<ItemGroup>
