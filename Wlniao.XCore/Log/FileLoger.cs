@@ -76,6 +76,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Debug)
             {
+                Write("debug", message);
                 Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.White);
             }
         }
@@ -134,11 +135,11 @@ namespace Wlniao.Log
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
-        /// <param name="localWrite"></param>
-        public void Topic(String topic, String message, LogLevel logLevel, Boolean localWrite = true)
+        /// <param name="consoleWrite"></param>
+        public void Topic(String topic, String message, LogLevel logLevel, Boolean consoleWrite = true)
         {
             Write(topic, message);
-            if (localWrite && Level <= logLevel)
+            if (consoleWrite && Level <= logLevel)
             {
                 var color = ConsoleColor.DarkGray;
                 if (logLevel == LogLevel.Information)

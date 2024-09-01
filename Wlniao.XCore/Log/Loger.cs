@@ -42,29 +42,6 @@ namespace Wlniao.Log
 		private static ILogProvider fileProvider = new FileLoger(LogLevel);
 
         /// <summary>
-        /// 是否输出原始日志
-        /// </summary>
-        public static string apiOrigin = null;
-        /// <summary>
-        /// 是否记录原始日志（API请求用）
-        /// </summary>
-        internal static bool ApiOrigin
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(apiOrigin))
-                {
-                    apiOrigin = Config.GetConfigs("WLN_LOG_ORIGIN").ToLower();
-                    if (string.IsNullOrEmpty(apiOrigin))
-                    {
-                        apiOrigin = "true";
-                    }
-                }
-                return apiOrigin != "false";
-            }
-        }
-
-        /// <summary>
         /// 当前日志输出等级
         /// </summary>
         public static LogLevel LogLevel

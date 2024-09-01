@@ -202,21 +202,21 @@ namespace Wlniao.Log
                 }
                 if (push || this.Interval <= 0)
                 {
-                    var dto = new LokiDto { streams = new List<LokiStream>() };
+                    var dto = new LokiDto { lines = new List<LokiStream>() };
                     if (item != null)
                     {
                         // 实时推送时，写入当前日志流
-                        dto.streams.Add(item);
+                        dto.lines.Add(item);
                     }
                     lock (levels)
                     {
                         for (var i = 0; i < 20 && queue.Count > 0; i++)
                         {
                             // 同时写入队列中之前失败的日志流
-                            dto.streams.Add(queue.Dequeue());
+                            dto.lines.Add(queue.Dequeue());
                         }
                     }
-                    if (dto.streams.Count > 0)
+                    if (dto.lines.Count > 0)
                     {
                         // 存在要推送的数据时，调用接口推送
                         var err = false;
@@ -257,9 +257,9 @@ namespace Wlniao.Log
                         {
                             lock (levels)
                             {
-                                foreach (var stream in dto.streams)
+                                foreach (var line in dto.lines)
                                 {
-                                    queue.Enqueue(stream); //失败时把待写入数据全部放入队列
+                                    queue.Enqueue(line); //失败时把待写入数据全部放入队列
                                 }
                             }
                         }
@@ -272,7 +272,7 @@ namespace Wlniao.Log
                         }
                     }
                 }
-                else
+                else if(item != null)
                 {
                     //定时落盘时把待写入数据放入日志流队列
                     queue.Enqueue(item);
@@ -306,7 +306,16 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Debug)
             {
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(DateTime.UtcNow), message), ConsoleColor.White);
+                var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
+                if (LogLocal == "console")
+                {
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.White);
+                }
+                else if (LogLocal == "file")
+                {
+                    flog.Write("debug", message);
+                }
+                Write("debug", entrie, LogLevel.None, false);
             }
         }
         /// <summary>
@@ -326,7 +335,7 @@ namespace Wlniao.Log
                 {
                     flog.Write("info", message);
                 }
-                Write("info", entrie, LogLevel.None);
+                Write("info", entrie, LogLevel.None, false);
             }
         }
 
@@ -347,7 +356,7 @@ namespace Wlniao.Log
                 {
                     flog.Write("warn", message);
                 }
-                Write("warn", entrie, LogLevel.None);
+                Write("warn", entrie, LogLevel.None, false);
             }
         }
 
@@ -359,7 +368,7 @@ namespace Wlniao.Log
         {
             if (Level <= LogLevel.Error)
             {
-                var entrie = new LokiEntrie { line = message, time = DateTime.Now };
+                var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
                 if (LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.Red);
@@ -399,11 +408,11 @@ namespace Wlniao.Log
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
-        /// <param name="localWrite"></param>
-        public void Topic(String topic, String message, LogLevel logLevel, Boolean localWrite = true)
+        /// <param name="consoleWrite"></param>
+        public void Topic(String topic, String message, LogLevel logLevel, Boolean consoleWrite = true)
         {
             var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
-            if (localWrite && Level <= logLevel)
+            if (consoleWrite && Level <= logLevel)
             {
                 if (LogLocal == "console")
                 {
@@ -446,7 +455,7 @@ namespace Wlniao.Log
             /// <summary>
             /// 写入日志流集合
             /// </summary>
-            public List<LokiStream> streams { get; set; }
+            public List<LokiStream> lines { get; set; }
         }
 
         /// <summary>
