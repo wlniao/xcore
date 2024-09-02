@@ -20,6 +20,7 @@
 
 ===============================================================================*/
 using System;
+using System.Collections.Generic;
 namespace Wlniao.Log
 {
     /// <summary>
@@ -28,13 +29,20 @@ namespace Wlniao.Log
     public class LogEntrie
     {
         /// <summary>
+        /// 日志标签
+        /// </summary>
+        public IDictionary<string, string> tags = new Dictionary<string, string>();
+
+        /// <summary>
         /// 日志时间
         /// </summary>
         public DateTime time { get; set; }
+
         /// <summary>
         /// 日志内容
         /// </summary>
         public string content { get; set; }
+
         /// <summary>
         /// RFC3339Nano格式时间
         /// </summary>
