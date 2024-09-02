@@ -219,7 +219,7 @@ namespace Wlniao.XCenter
                         if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPublicKey == null || XCenterPublicKey.Length < 20)
                         {
                             ctx.message = "程序配置错误，请检查XCenter相关配置";
-                            log.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterPublicKey 至少需要配置一项");
+                            Log.Loger.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterPublicKey 至少需要配置一项");
                         }
                         else
                         {
@@ -305,7 +305,7 @@ namespace Wlniao.XCenter
             var sign = Wlniao.Encryptor.SM3Encrypt(encdata + now + token);
             var resStr = "";
             var reqStr = Wlniao.Json.ToString(new { sn = XCenterCertSn, token = sm2token, timestamp = now, data = encdata, sign });
-            log.Topic("authify", $"msgid:{msgid}, authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
+            Log.Loger.Topic("authify", $"msgid:{msgid}, authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
             var start = DateTime.Now;
             try
             {
@@ -334,12 +334,12 @@ namespace Wlniao.XCenter
                 {
                     utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 }
-                log.Topic("authify", $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
+                Log.Loger.Topic("authify", $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
             }
             catch (Exception ex)
             {
                 utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
-                log.Topic("authify", $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
+                Log.Loger.Topic("authify", $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
             }
             var logs = $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} >>> {plainData}";
             try
@@ -423,7 +423,7 @@ namespace Wlniao.XCenter
             {
                 logs += "\n <<< Exception" + ex.Message;
             }
-            log.Topic("authify", logs, Log.LogLevel.Debug, true);
+            Log.Loger.Topic("authify", logs, Log.LogLevel.Debug, true);
             return rlt;
         }
 

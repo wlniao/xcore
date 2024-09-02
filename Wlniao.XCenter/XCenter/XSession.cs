@@ -136,7 +136,7 @@ namespace Wlniao.XCenter
                         if (string.IsNullOrEmpty(ctx.message) && !string.IsNullOrEmpty(Context.XCenterApp) && !string.IsNullOrEmpty(Context.XCenterToken) && !string.IsNullOrEmpty(Context.XCenterOwner))
                         {
                             ctx.message = "程序配置错误，请检查XCenterToken相关配置";
-                            log.Error("程序配置错误，建议检查XCenterApp与XCenterToken是否匹配");
+                            Log.Loger.Error("程序配置错误，建议检查XCenterApp与XCenterToken是否匹配");
                         }
                         else
                         {

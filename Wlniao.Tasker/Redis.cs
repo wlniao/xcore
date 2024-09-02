@@ -8,6 +8,7 @@ using Wlniao.Caching;
 using System.Security.Cryptography;
 using System.IO;
 using static System.Net.Mime.MediaTypeNames;
+using Wlniao.Log;
 
 namespace Wlniao.Tasker
 {
@@ -72,7 +73,7 @@ namespace Wlniao.Tasker
                 }
                 catch
                 {
-                    log.Warn("Tasker redis connect error");
+                    Loger.Warn("Tasker redis connect error");
                 }
                 return instance;
             }
@@ -190,8 +191,8 @@ namespace Wlniao.Tasker
 					}
 					catch (Exception ex)
 					{
-						log.Topic("Tasker", ex.Message);
-						log.Error("Tasker:" + ex.Message);
+						Loger.Topic("Tasker", ex.Message);
+                        Loger.Error("Tasker:" + ex.Message);
 					}
 					finally
 					{
@@ -231,7 +232,7 @@ namespace Wlniao.Tasker
                         {
                             if (subscriber != null)
                             {
-                                log.Topic("Tasker", "Tasker subscribe " + topic + " restart at " + DateTools.Format());
+                                Loger.Topic("Tasker", "Tasker subscribe " + topic + " restart at " + DateTools.Format(), Log.LogLevel.Debug, true);
                                 subscriber.Unsubscribe(channel);
                             }
                             subscriber = null;  //默认1分钟异常周期，超过时清除subscriber并在后续重新发起订阅
@@ -243,13 +244,13 @@ namespace Wlniao.Tasker
                             subscriber.Subscribe(channel, (rchannel, message) =>
                             {
                                 watcher[topic] = DateTime.Now;
-                                log.Topic("Tasker", "Tasker execute " + message + "[" + topic + "]");
+                                Loger.Topic("Tasker", "Tasker execute " + message + "[" + topic + "]", Log.LogLevel.Debug, true);
                                 func.Invoke(new Context { topic = topic, key = message });
                             });
                         }
                         else if (!subscriber.IsConnected(channel))
                         {
-                            log.Topic("Tasker", "Tasker subscribe " + topic + " link has been disconnected.");
+                            Loger.Topic("Tasker", "Tasker subscribe " + topic + " link has been disconnected.", Log.LogLevel.Debug, true);
                         }
                         else
                         {
@@ -259,7 +260,7 @@ namespace Wlniao.Tasker
                     catch
                     {
                         subscriber = null;
-                        log.Topic("Tasker", "Tasker subscribe " + topic + " error, please check if Redis connection is correct.");
+                        Loger.Topic("Tasker", "Tasker subscribe " + topic + " error, please check if Redis connection is correct.", Log.LogLevel.Debug, true);
                     }
                     Task.Delay(3000).Wait();
                 }
@@ -270,7 +271,7 @@ namespace Wlniao.Tasker
                         subscriber.Unsubscribe(channel);
                     }
                     subscriber = null;
-                    log.Topic("Tasker", "Tasker subscribe " + topic + " stop.");
+                    Loger.Topic("Tasker", "Tasker subscribe " + topic + " stop.", Log.LogLevel.Debug, true);
                 }
             });
         }
@@ -300,7 +301,7 @@ namespace Wlniao.Tasker
             }
             try
             {
-                log.Topic("Tasker", "Tasker removed " + jobId + "[" + topics + "]");
+                Loger.Topic("Tasker", "Tasker removed " + jobId + "[" + topics + "]", Log.LogLevel.Debug, true);
                 if (Instance != null && instance.IsConnected)
                 {
                     var db = Instance.GetDatabase(Caching.Redis.Select);
@@ -387,7 +388,7 @@ namespace Wlniao.Tasker
                     {
                         if (topic == "queue")
                         {
-                            log.Error("tasker error, topic cannot use:" + topic);
+                            Loger.Error("tasker error, topic cannot use:" + topic);
                             return false;
                         }
                         tran.SortedSetAddAsync("tasker_queue_" + topic, key, times[0]);

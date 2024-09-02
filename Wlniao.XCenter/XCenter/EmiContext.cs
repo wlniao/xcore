@@ -255,7 +255,7 @@ namespace Wlniao.XCenter
                 var start = DateTime.Now;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
                 var json = XServer.Common.GetResponseString(uri.ToString());
-                if (log.LogLevel <= Wlniao.Log.LogLevel.Debug)
+                if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
                     Wlniao.Log.Loger.Topic("emi", "msgid:" + strUtil.CreateLongId() + ", " + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n >>> " + uri.Query + "[Get]\n <<< " + json);
                 }
@@ -290,7 +290,7 @@ namespace Wlniao.XCenter
                 var start = DateTime.Now;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
                 var json = XServer.Common.GetResponseString(uri.ToString());
-                if (log.LogLevel <= Wlniao.Log.LogLevel.Debug)
+                if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
                     Wlniao.Log.Loger.Topic("emi", uri.Scheme + "://" + uri.Host + uri.AbsolutePath + ", msgid:" + strUtil.CreateLongId() + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n >>> " + uri.Query + "[Get]\n <<< " + json);
                 }
@@ -327,7 +327,7 @@ namespace Wlniao.XCenter
                 var start = DateTime.Now;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
                 var json = XServer.Common.PostResponseString(uri.ToString(), postdata);
-                if (log.LogLevel <= Wlniao.Log.LogLevel.Debug)
+                if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
                     Wlniao.Log.Loger.Topic("emi", uri.Scheme + "://" + uri.Host + uri.AbsolutePath + ", msgid:" + strUtil.CreateLongId() + ", usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\n >>> " + postdata + "\n <<< " + json);
                 }

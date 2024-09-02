@@ -33,7 +33,7 @@ namespace Wlniao
             }
             catch (Exception ex)
             {
-                log.Error(ex.Message);
+                Log.Loger.Error(ex.Message);
             }
 
             try
@@ -43,7 +43,7 @@ namespace Wlniao
             }
             catch (Exception ex)
             {
-                log.Error(ex.Message);
+                Log.Loger.Error(ex.Message);
             }
 
             try
@@ -79,7 +79,7 @@ namespace Wlniao
             }
             catch (Exception ex)
             {
-                log.Error(ex.Message);
+                Log.Loger.Error(ex.Message);
             }
             return builder;
         }

@@ -307,7 +307,7 @@ namespace Wlniao.Net
                 catch (Exception ex)
                 {
                     connMsg = "Redis connection configuration error: " + ex.Message;
-                    log.Error(connMsg);
+                    Log.Loger.Error(connMsg);
                 }
                 if (newsocket.Connected)
                 {

@@ -100,7 +100,7 @@ namespace Wlniao.XServer
             {
                 result.code = "401";
                 result.message = ex.Message;
-                log.Error(ex.Message);
+                Log.Loger.Error(ex.Message);
             }
             return Json(result);
         }

@@ -204,14 +204,14 @@ namespace Wlniao.Tasker
                     {
                         if (time == 1)
                         {
-                            log.Error(ex.Message);
+                            Log.Loger.Error(ex.Message);
                         }
                     }
                     catch (Exception ex)
                     {
                         if (time == 1)
                         {
-                            log.Error(ex.Message);
+                            Log.Loger.Error(ex.Message);
                         }
                     }
                     finally
@@ -226,7 +226,7 @@ namespace Wlniao.Tasker
             if (!Connecting)
             {
                 Connecting = true;
-                log.Debug("MQ服务端已连接!!!");
+                Log.Loger.Debug("MQ服务端已连接!!!");
             }
         }
         private void OnMqttClientDisconnected(MqttClientDisconnectedEventArgs e)
@@ -234,7 +234,7 @@ namespace Wlniao.Tasker
             if (Connecting)
             {
                 Connecting = false;
-                log.Debug("MQ服务端已断开!!!");
+                Log.Loger.Debug("MQ服务端已断开!!!");
             }
         }
         private void OnMqttClientApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)
@@ -243,16 +243,16 @@ namespace Wlniao.Tasker
             var func = subscribe.GetValueOrDefault(topic);
             if (func == null)
             {
-                log.Warn($"{e.ApplicationMessage.Topic}暂未注册");
+                Log.Loger.Warn($"{e.ApplicationMessage.Topic}暂未注册");
             }
             else if (!sm2.VerifySign(e.ApplicationMessage.Payload, e.ApplicationMessage.CorrelationData, null))
             {
-                log.Warn($"{e.ApplicationMessage.Topic}数据验签失败");
+                Log.Loger.Warn($"{e.ApplicationMessage.Topic}数据验签失败");
             }
             else
             {
                 var message = UTF8Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
-                log.Debug(message);
+                Log.Loger.Debug(message);
                 var obj = Json.StringToDic(message);
                 func(new Context
                 {

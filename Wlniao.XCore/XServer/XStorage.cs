@@ -55,7 +55,7 @@ namespace Wlniao.XServer
                     _XStorageType = Config.GetSetting("XStorageType", "local").ToLower();
                     if (_XStorageType != "local" && string.IsNullOrEmpty(XStorageUrl))
                     {
-                        log.Error("请先设置XStorageUrl参数");
+                        Log.Loger.Error("请先设置XStorageUrl参数");
                     }
                 }
                 return _XStorageType;
@@ -353,7 +353,7 @@ namespace Wlniao.XServer
                 }
                 catch (Exception ex)
                 {
-                    log.Error(ex.Message);
+                    Log.Loger.Error(ex.Message);
                 }
             }
             return false;
@@ -445,12 +445,12 @@ namespace Wlniao.XServer
                 }
                 else
                 {
-                    log.Warn("参数“XStorageType”配置无效，请重新配置");
+                    Log.Loger.Warn("参数“XStorageType”配置无效，请重新配置");
                 }
             }
             catch (Exception ex)
             {
-                log.Error(ex.Message);
+                Log.Loger.Error(ex.Message);
             }
             return false;
         }
@@ -479,7 +479,7 @@ namespace Wlniao.XServer
             }
             catch (Exception ex)
             {
-                log.Error(ex.Message);
+                Log.Loger.Error(ex.Message);
             }
             return false;
         }
@@ -791,7 +791,7 @@ namespace Wlniao.XServer
                 }
                 catch (Exception ex)
                 {
-                    log.Error("Upyun GetFolderUsage Error:" + ex.Message);
+                    Log.Loger.Error("Upyun GetFolderUsage Error:" + ex.Message);
                 }
                 return 0;
             }
@@ -949,7 +949,7 @@ namespace Wlniao.XServer
                 }
                 catch (Exception ex)
                 {
-                    log.Error("Upyun GetFileInfo Error:" + ex.Message);
+                    Log.Loger.Error("Upyun GetFileInfo Error:" + ex.Message);
                 }
                 return new Hashtable();
             }
@@ -1136,7 +1136,7 @@ namespace Wlniao.XServer
                                     var doc = new System.Xml.XmlDocument();
                                     doc.LoadXml(readTask.Result);
                                     msg = doc.GetElementsByTagName("Message")[0].InnerText;
-                                    log.Debug("XStorage Aliyun：" + msg);
+                                    Log.Loger.Debug("XStorage Aliyun：" + msg);
                                 }
                             }).Wait();
                         }
@@ -1425,7 +1425,7 @@ namespace Wlniao.XServer
                                     var doc = new System.Xml.XmlDocument();
                                     doc.LoadXml(readTask.Result);
                                     msg = doc.GetElementsByTagName("Message")[0].InnerText;
-                                    log.Debug("XStorage QCloud：" + msg);
+                                    Log.Loger.Debug("XStorage QCloud：" + msg);
                                 }
                             }).Wait();
                         }

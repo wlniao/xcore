@@ -54,7 +54,7 @@ namespace Wlniao.Middleware
             }
             catch (Exception ex)
             {
-                Wlniao.log.Error(ex.Message);
+                Log.Loger.Error(ex.Message);
                 await HandleExceptionAsync(context, ex.Message);
             }
         }

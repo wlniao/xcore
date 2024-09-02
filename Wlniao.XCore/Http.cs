@@ -188,7 +188,7 @@ namespace Wlniao
                         }
                         catch (Exception ex)
                         {
-                            log.Error("Error:" + ex.Message);
+                            Log.Loger.Error("Error:" + ex.Message);
                         }
                         finally
                         {
