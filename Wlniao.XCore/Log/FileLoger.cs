@@ -77,7 +77,10 @@ namespace Wlniao.Log
             if (Level <= LogLevel.Debug)
             {
                 Write("debug", message);
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.White);
+                if (Loger.LogLocal == "console")
+                {
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.White);
+                }
             }
         }
         /// <summary>
@@ -89,7 +92,10 @@ namespace Wlniao.Log
             if (Level <= LogLevel.Information)
             {
                 Write("info", message);
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.Gray);
+                if (Loger.LogLocal == "console")
+                {
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.Gray);
+                }
             }
         }
         /// <summary>
@@ -101,7 +107,10 @@ namespace Wlniao.Log
             if (Level <= LogLevel.Warning)
             {
                 Write("warn", message);
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.DarkYellow);
+                if (Loger.LogLocal == "console")
+                {
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.DarkYellow);
+                }
             }
         }
         /// <summary>
@@ -113,7 +122,10 @@ namespace Wlniao.Log
             if (Level <= LogLevel.Error)
             {
                 Write("error", message);
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.Red);
+                if (Loger.LogLocal == "console")
+                {
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.Red);
+                }
             }
         }
         /// <summary>
@@ -125,7 +137,10 @@ namespace Wlniao.Log
             if (Level <= LogLevel.Critical)
             {
                 Write("fatal", message);
-                Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.Magenta);
+                if (Loger.LogLocal == "console")
+                {
+                    Loger.Console(string.Format("{0} => {1}", DateTools.Format(), message), ConsoleColor.Magenta);
+                }
             }
         }
 
@@ -135,11 +150,11 @@ namespace Wlniao.Log
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
-        /// <param name="consoleWrite"></param>
-        public void Topic(String topic, String message, LogLevel logLevel, Boolean consoleWrite = true)
+        /// <param name="consoleLocal"></param>
+        public void Topic(String topic, String message, LogLevel logLevel, Boolean consoleLocal = true)
         {
             Write(topic, message);
-            if (consoleWrite && Level <= logLevel)
+            if (consoleLocal && Level <= logLevel && Loger.LogLocal == "console")
             {
                 var color = ConsoleColor.DarkGray;
                 if (logLevel == LogLevel.Information)
@@ -171,7 +186,7 @@ namespace Wlniao.Log
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
-        internal void Write(String topic, String message)
+        public void Write(String topic, String message)
         {
             try
             {

@@ -71,30 +71,6 @@ namespace Wlniao.Log
         /// </summary>
         public int Interval = 0;
 
-        /// <summary>
-        /// 本地日志输出方式
-        /// </summary>
-        private string logLocal = null;
-
-        /// <summary>
-        /// 本地日志输出方式
-        /// </summary>
-        public string LogLocal
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(logLocal))
-                {
-                    logLocal = Config.GetConfigs("WLN_LOG_LOCAL").ToLower();
-                    if (string.IsNullOrEmpty(logLocal))
-                    {
-                        logLocal = "console";
-                    }
-                }
-                return logLocal;
-            }
-        }
-
         private FileLoger flog = null;
         /// <summary>
         /// 
@@ -307,15 +283,15 @@ namespace Wlniao.Log
             if (Level <= LogLevel.Debug)
             {
                 var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
-                if (LogLocal == "console")
+                if (Loger.LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.White);
                 }
-                else if (LogLocal == "file")
+                else if (Loger.LogLocal == "file")
                 {
                     flog.Write("debug", message);
                 }
-                Write("debug", entrie, LogLevel.None, false);
+                //Write("debug", entrie, LogLevel.None, false); //Debug级别日志不存储
             }
         }
         /// <summary>
@@ -327,11 +303,11 @@ namespace Wlniao.Log
             if (Level <= LogLevel.Information)
             {
                 var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
-                if (LogLocal == "console")
+                if (Loger.LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.Gray);
                 }
-                else if (LogLocal == "file")
+                else if (Loger.LogLocal == "file")
                 {
                     flog.Write("info", message);
                 }
@@ -348,11 +324,11 @@ namespace Wlniao.Log
             if (Level <= LogLevel.Warning)
             {
                 var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
-                if (LogLocal == "console")
+                if (Loger.LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.DarkYellow);
                 }
-                else if (LogLocal == "file")
+                else if (Loger.LogLocal == "file")
                 {
                     flog.Write("warn", message);
                 }
@@ -369,11 +345,11 @@ namespace Wlniao.Log
             if (Level <= LogLevel.Error)
             {
                 var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
-                if (LogLocal == "console")
+                if (Loger.LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.Red);
                 }
-                else if (LogLocal == "file")
+                else if (Loger.LogLocal == "file")
                 {
                     flog.Write("error", message);
                 }
@@ -390,11 +366,11 @@ namespace Wlniao.Log
             if (Level <= LogLevel.Critical)
             {
                 var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
-                if (LogLocal == "console")
+                if (Loger.LogLocal == "console")
                 {
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), ConsoleColor.Magenta);
                 }
-                else if (LogLocal == "file")
+                else if (Loger.LogLocal == "file")
                 {
                     flog.Write("fatal", message);
                 }
@@ -408,13 +384,13 @@ namespace Wlniao.Log
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
-        /// <param name="consoleWrite"></param>
-        public void Topic(String topic, String message, LogLevel logLevel, Boolean consoleWrite = true)
+        /// <param name="consoleLocal"></param>
+        public void Topic(String topic, String message, LogLevel logLevel, Boolean consoleLocal = true)
         {
             var entrie = new LokiEntrie { line = message, time = DateTime.UtcNow };
-            if (consoleWrite && Level <= logLevel)
+            if (consoleLocal && Level <= logLevel)
             {
-                if (LogLocal == "console")
+                if (Loger.LogLocal == "console")
                 {
                     var color = ConsoleColor.DarkGray;
                     if (logLevel == LogLevel.Information)
@@ -439,7 +415,7 @@ namespace Wlniao.Log
                     }
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), color);
                 }
-                else if (LogLocal == "file")
+                else if (Loger.LogLocal == "file")
                 {
                     flog.Write(topic, message);
                 }

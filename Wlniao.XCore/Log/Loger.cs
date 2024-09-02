@@ -40,6 +40,10 @@ namespace Wlniao.Log
         /// 文件日志输出工具
         /// </summary>
 		private static ILogProvider fileProvider = new FileLoger(LogLevel);
+        /// <summary>
+        /// 本地日志输出方式
+        /// </summary>
+        private static string logLocal = null;
 
         /// <summary>
         /// 当前日志输出等级
@@ -71,6 +75,7 @@ namespace Wlniao.Log
                 return logLevel;
             }
         }
+
         /// <summary>
         /// 当前日志输出工具
         /// </summary>
@@ -101,6 +106,25 @@ namespace Wlniao.Log
         }
 
         /// <summary>
+        /// 本地日志输出方式
+        /// </summary>
+        public static string LogLocal
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(logLocal))
+                {
+                    logLocal = Config.GetConfigs("WLN_LOG_LOCAL").ToLower();
+                    if (string.IsNullOrEmpty(logLocal))
+                    {
+                        logLocal = "console";
+                    }
+                }
+                return logLocal;
+            }
+        }
+
+        /// <summary>
         /// 设置日志提供工具
         /// </summary>
         /// <param name="provider"></param>
@@ -108,6 +132,7 @@ namespace Wlniao.Log
         {
             logProvider = provider;
         }
+
         /// <summary>
         /// 直接在控制台打印内容
         /// </summary>
@@ -119,6 +144,7 @@ namespace Wlniao.Log
             System.Console.WriteLine(message);
             System.Console.ForegroundColor = ConsoleColor.White;
         }
+
         /// <summary>
         /// 直接在文件及控制台中输出日志
         /// </summary>
@@ -129,6 +155,7 @@ namespace Wlniao.Log
         {
             fileProvider.Topic(topic, message, LogLevel.Information);
         }
+
         /// <summary>
         /// 输出Debug级别的日志
         /// </summary>
@@ -175,10 +202,10 @@ namespace Wlniao.Log
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
-        /// <param name="localWrite"></param>
-        public static void Topic(String topic, String message, LogLevel logLevel = LogLevel.Information, Boolean localWrite = true)
+        /// <param name="consoleLocal"></param>
+        public static void Topic(String topic, String message, LogLevel logLevel = LogLevel.Information, Boolean consoleLocal = true)
         {
-            LogProvider.Topic(topic, message, logLevel, localWrite);
+            LogProvider.Topic(topic, message, logLevel, consoleLocal);
         }
 
     }

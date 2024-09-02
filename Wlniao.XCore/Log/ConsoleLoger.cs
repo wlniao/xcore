@@ -111,8 +111,8 @@ namespace Wlniao.Log
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
-        /// <param name="consoleWrite"></param>
-        public void Topic(String topic, String message, LogLevel logLevel, Boolean consoleWrite = true)
+        /// <param name="consoleLocal"></param>
+        public void Topic(String topic, String message, LogLevel logLevel, Boolean consoleLocal = true)
         {
             if (Level <= logLevel)
             {
