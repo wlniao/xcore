@@ -83,7 +83,7 @@ namespace Wlniao.Log
         {
             flog = new FileLoger(level);
             this.level = level;
-            this.Interval = this.Interval > 0 ? this.Interval : cvt.ToInt(Config.GetConfigs("WLN_LOG_INTERVAL", "3"));
+            this.Interval = this.Interval > 0 ? this.Interval : cvt.ToInt(Config.GetConfigs("WLN_LOG_INTERVAL", "5"));
             if (string.IsNullOrEmpty(server))
             {
                 if (serverHost == null)
@@ -178,21 +178,21 @@ namespace Wlniao.Log
                 }
                 if (push || this.Interval <= 0)
                 {
-                    var dto = new LokiDto { lines = new List<LokiStream>() };
+                    var dto = new LokiDto { streams = new List<LokiStream>() };
                     if (item != null)
                     {
                         // 实时推送时，写入当前日志流
-                        dto.lines.Add(item);
+                        dto.streams.Add(item);
                     }
                     lock (levels)
                     {
                         for (var i = 0; i < 20 && queue.Count > 0; i++)
                         {
                             // 同时写入队列中之前失败的日志流
-                            dto.lines.Add(queue.Dequeue());
+                            dto.streams.Add(queue.Dequeue());
                         }
                     }
-                    if (dto.lines.Count > 0)
+                    if (dto.streams.Count > 0)
                     {
                         // 存在要推送的数据时，调用接口推送
                         var err = false;
@@ -201,12 +201,12 @@ namespace Wlniao.Log
                             var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                             using (var client = new HttpClient(handler))
                             {
+                                var content = JsonSerializer.Serialize(dto);
                                 var request = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
-                                //var json = System.Text.Json.JsonSerializer.Serialize<LokiDto>(dto);
-                                //request.Content = new StreamContent(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
-                                //request.Content.Headers.TryAddWithoutValidation("Content-Type", "application/json; charset=UTF-8");
-                                //request.Headers.TryAddWithoutValidation("Connection", "close");
-                                request.Headers.TryAddWithoutValidation("X-Scope-OrgID", orgId);
+                                if (!string.IsNullOrEmpty(orgId))
+                                {
+                                    request.Headers.TryAddWithoutValidation("X-Scope-OrgID", orgId);
+                                }
                                 request.Content = new StringContent(JsonSerializer.Serialize(dto), System.Text.Encoding.UTF8, "application/json");
                                 var response = client.Send(request);
                                 var errmsg = response.Content.ReadAsStringAsync().Result;
@@ -233,7 +233,7 @@ namespace Wlniao.Log
                         {
                             lock (levels)
                             {
-                                foreach (var line in dto.lines)
+                                foreach (var line in dto.streams)
                                 {
                                     queue.Enqueue(line); //失败时把待写入数据全部放入队列
                                 }
@@ -431,7 +431,7 @@ namespace Wlniao.Log
             /// <summary>
             /// 写入日志流集合
             /// </summary>
-            public List<LokiStream> lines { get; set; }
+            public List<LokiStream> streams { get; set; }
         }
 
         /// <summary>
