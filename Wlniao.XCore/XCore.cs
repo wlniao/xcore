@@ -317,7 +317,7 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// 是否微服务允许节点
+        /// 是否微服务运行节点
         /// </summary>
         public static Boolean IsMicroservicesNode
         {
