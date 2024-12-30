@@ -186,7 +186,8 @@ namespace Wlniao.XServer
         [NonAction]
         public IActionResult OutMessage(String message, String code = null)
         {
-            result.success = true;
+            result.tips = true;
+            result.success = false;
             result.message = message;
             if (!string.IsNullOrEmpty(code))
             {
