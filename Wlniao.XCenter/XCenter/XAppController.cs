@@ -335,5 +335,59 @@ namespace Wlniao.XCenter
             return JsonStr(output);
         }
 
+
+        /// <summary>
+        /// 输出内容序列化消息内容
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="result"></param>
+        /// <param name="message"></param>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult OutputMessage<T>(ApiResult<T> result, String message, String code = null)
+        {
+            result.tips = true;
+            result.message = message;
+            if (!string.IsNullOrEmpty(code))
+            {
+                result.code = code;
+            }
+
+            var output = "";
+            var option = new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+            if (string.IsNullOrEmpty(this.sm4key))
+            {
+                output = JsonSerializer.Serialize<ApiResult<T>>(result, option);
+            }
+            else
+            {
+                var tmp = new ApiResult<String>
+                {
+                    code = result.code,
+                    node = result.node,
+                    tips = result.tips,
+                    traceid = result.traceid,
+                    message = result.message,
+                    success = result.success,
+                };
+                if (result.data is string)
+                {
+                    tmp.data = Encryptor.SM4EncryptECBToHex(result.data.ToString(), this.sm4key, true);
+                }
+                else if (result.data != null)
+                {
+                    var json = JsonSerializer.Serialize<T>(result.data, option);
+                    tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
+                }
+                output = JsonSerializer.Serialize<ApiResult<String>>(tmp, option);
+            }
+            if (result != null && !string.IsNullOrEmpty(result.debuger))
+            {
+                DebugMessage(result.debuger);
+            }
+            return JsonStr(output);
+        }
+
     }
 }

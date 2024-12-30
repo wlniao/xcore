@@ -93,19 +93,19 @@ namespace Wlniao.XServer
                         {
                             utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                         }
-                        Loger.Topic(apinode, $"msgid:{traceid}, {url}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
+                        Loger.Topic(apinode, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
                     }
                 }
                 catch (Exception ex)
                 {
                     utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
-                    Loger.Topic(apinode, $"msgid:{traceid}, {url}[{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
+                    Loger.Topic(apinode, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
                 }
                 if (string.IsNullOrEmpty(utime))
                 {
                     utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 }
-                var logs = $"msgid:{traceid}, {uri.AbsolutePath}[{utime}]{Environment.NewLine} >>> {txt}";
+                var logs = $"msgid:{traceid}, {uri.AbsolutePath}[usetime:{utime}]{Environment.NewLine} >>> {txt}";
                 if (string.IsNullOrEmpty(resStr))
                 {
                     rlt.tips = true;
