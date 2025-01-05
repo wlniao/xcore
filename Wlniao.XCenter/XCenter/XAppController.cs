@@ -20,11 +20,11 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 主平台接口访问工具
         /// </summary>
-        internal Context ctx = null;
+        protected Context ctx = null;
         /// <summary>
         /// 主平台登录会话状态
         /// </summary>
-        internal XSession xsession = null;
+        protected XSession xsession = null;
         /// <summary>
         /// 会话加密密钥
         /// </summary>
@@ -219,9 +219,23 @@ namespace Wlniao.XCenter
             else if (string.IsNullOrEmpty(this.sm4key))
             {
                 var sm2token = HeaderRequest("sm2token");
-                if (!string.IsNullOrEmpty(sm2token) && Context.XCenterPrivkey != null)
+                if (!string.IsNullOrEmpty(sm2token))
                 {
-                    this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                    try
+                    {
+                        if (Context.XCenterPrivkey == null || Context.XCenterPrivkey.Length == 0)
+                        {
+                            DebugMessage("Server privkey not config!!");
+                        }
+                        else
+                        {
+                            this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                        }
+                    }
+                    catch
+                    {
+                        DebugMessage("Request sm2token decrypt faild!!");
+                    }
                 }
             }
             if (!string.IsNullOrEmpty(this.sm4key))
@@ -235,10 +249,7 @@ namespace Wlniao.XCenter
             }
             try
             {
-                var obj = JsonSerializer.Deserialize<Dictionary<String, Object>>(input, new JsonSerializerOptions
-                {
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-                });
+                var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, Object>>(input);
                 if (obj != null)
                 {
                     foreach (var kv in obj)
@@ -273,7 +284,21 @@ namespace Wlniao.XCenter
                 var sm2token = HeaderRequest("sm2token");
                 if (!string.IsNullOrEmpty(sm2token) && Context.XCenterPrivkey != null)
                 {
-                    this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                    try
+                    {
+                        if (Context.XCenterPrivkey == null || Context.XCenterPrivkey.Length == 0)
+                        {
+                            DebugMessage("Server privkey not config!!");
+                        }
+                        else
+                        {
+                            this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                        }
+                    }
+                    catch
+                    {
+                        DebugMessage("Request sm2token decrypt faild!!");
+                    }
                 }
             }
             if (!string.IsNullOrEmpty(this.sm4key))
@@ -285,10 +310,7 @@ namespace Wlniao.XCenter
                     throw new Exception("请求内容解密失败");
                 }
             }
-            return JsonSerializer.Deserialize<T>(input, new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-            });
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(input);
         }
 
 

@@ -380,7 +380,11 @@ namespace Wlniao
         [NonAction]
         protected String GetPostString()
         {
-            if (strPost == null && Request.Method == "POST" && Request.BodyReader != null)
+            if (Request.Method == "OPTIONS")
+            {
+                return string.Empty;
+            }
+            else if (strPost == null && Request.Method == "POST" && Request.BodyReader != null)
             {
                 try
                 {
