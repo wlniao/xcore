@@ -29,6 +29,10 @@ namespace Wlniao.XCenter
         /// 会话加密密钥
         /// </summary>
         internal String sm4key = null;
+        /// <summary>
+        /// 会话加密是否初始化完成
+        /// </summary>
+        private bool sm4ready = false;
 
 
         /// <summary>
@@ -192,6 +196,7 @@ namespace Wlniao.XCenter
             if (!string.IsNullOrEmpty(sm4key))
             {
                 this.sm4key = sm4key;
+                this.sm4ready = true;
             }
             try
             {
@@ -230,6 +235,7 @@ namespace Wlniao.XCenter
                         else
                         {
                             this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                            this.sm4ready = true;
                         }
                     }
                     catch
@@ -273,6 +279,7 @@ namespace Wlniao.XCenter
             if (!string.IsNullOrEmpty(sm4key))
             {
                 this.sm4key = sm4key;
+                this.sm4ready = true;
             }
             var input = GetPostString();
             if (string.IsNullOrEmpty(input))
@@ -293,6 +300,7 @@ namespace Wlniao.XCenter
                         else
                         {
                             this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                            this.sm4ready = true;
                         }
                     }
                     catch
@@ -324,6 +332,29 @@ namespace Wlniao.XCenter
         {
             var output = "";
             var option = new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+            if (string.IsNullOrEmpty(this.sm4key) && !this.sm4ready)
+            {
+                var sm2token = HeaderRequest("sm2token");
+                if (!string.IsNullOrEmpty(sm2token))
+                {
+                    try
+                    {
+                        if (Context.XCenterPrivkey == null || Context.XCenterPrivkey.Length == 0)
+                        {
+                            DebugMessage("Server privkey not config!!");
+                        }
+                        else
+                        {
+                            this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                            this.sm4ready = true;
+                        }
+                    }
+                    catch
+                    {
+                        DebugMessage("Request sm2token decrypt faild!!");
+                    }
+                }
+            }
             if (string.IsNullOrEmpty(this.sm4key))
             {
                 output = JsonSerializer.Serialize<ApiResult<T>>(result, option);
@@ -378,6 +409,29 @@ namespace Wlniao.XCenter
 
             var output = "";
             var option = new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+            if (string.IsNullOrEmpty(this.sm4key) && !this.sm4ready)
+            {
+                var sm2token = HeaderRequest("sm2token");
+                if (!string.IsNullOrEmpty(sm2token))
+                {
+                    try
+                    {
+                        if (Context.XCenterPrivkey == null || Context.XCenterPrivkey.Length == 0)
+                        {
+                            DebugMessage("Server privkey not config!!");
+                        }
+                        else
+                        {
+                            this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                            this.sm4ready = true;
+                        }
+                    }
+                    catch
+                    {
+                        DebugMessage("Request sm2token decrypt faild!!");
+                    }
+                }
+            }
             if (string.IsNullOrEmpty(this.sm4key))
             {
                 output = JsonSerializer.Serialize<ApiResult<T>>(result, option);
