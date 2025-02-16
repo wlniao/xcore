@@ -47,7 +47,7 @@ namespace Wlniao.OpenApi
                 else
                 {
                     var r = new Random();
-                    var ts = cvt.ToHex(XCore.NowUnix, "0123456789abcdef");
+                    var ts = cvt.ToHex(DateTools.GetUnix(), "0123456789abcdef");
                     var ms = cvt.ToHex(long.Parse("86" + Mobile), "0123456789abcdef");
                     var v1 = cvt.ToHex(r.Next(4096, 26214), "0123456789abcdef");
                     var v2 = cvt.ToHex(r.Next(26214, 43690), "0123456789abcdef");

@@ -175,7 +175,6 @@ namespace Wlniao
         }
 
         #region 系统信息
-        private static Int64 nowUnix = 0;
         private static Int16 microNode = 0;
         private static String startupTime = null;
         private static String startupRoot = null;
@@ -185,29 +184,6 @@ namespace Wlniao
         private static String _WebNode = null;
         private static String _WebHost = null;
         private static String _Webroxy = null;
-        /// <summary>
-        /// 当前系统Unix时间戳
-        /// </summary>
-        public static Int64 NowUnix
-        {
-            get
-            {
-                if (nowUnix == 0)
-                {
-                    nowUnix = 1;
-                    nowUnix = DateTools.GetUnix();
-                    System.Threading.Tasks.Task.Run(() =>
-                    {
-                        while (true)
-                        {
-                            System.Threading.Tasks.Task.Delay(1000).Wait();
-                            nowUnix = DateTools.GetUnix();
-                        }
-                    });
-                }
-                return nowUnix;
-            }
-        }
         /// <summary>
         /// 程序启动时间
         /// </summary>

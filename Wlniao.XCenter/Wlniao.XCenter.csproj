@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>8.0.58</Version>
+		<Version>8.0.59</Version>
 		<Authors>XieChaoyi</Authors>
 		<Copyright>Copyright 2022 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -29,8 +29,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.43" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.38" />
+		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.44" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.39" />
 	</ItemGroup>
 
 	<ItemGroup>

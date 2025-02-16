@@ -96,16 +96,16 @@ namespace Wlniao.Net
                             catch { }
                             goto beginCheck;
                         }
-                        if (!socket.Using && socket.RemoteEndPoint.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < XCore.NowUnix - 15)
+                        if (!socket.Using && socket.RemoteEndPoint.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < DateTools.GetUnix() - 15)
                         {
                             socket.Using = true;
-                            socket.LastUse = XCore.NowUnix;
+                            socket.LastUse = DateTools.GetUnix();
                             return socket;
                         }
                     }
                     var newsocket = new WlnSocket(endpoint.AddressFamily, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
                     newsocket.Using = true;
-                    newsocket.LastUse = XCore.NowUnix;
+                    newsocket.LastUse = DateTools.GetUnix();
                     newsocket.Connect(endpoint);
                     newsocket.SendTimeout = TimeOutSeconds * 1000;  //10s
                     newsocket.ReceiveTimeout = TimeOutSeconds * 1000;  //10s
@@ -131,7 +131,7 @@ namespace Wlniao.Net
                 var reqStr = "";
                 reqStr += "GET " + uri.PathAndQuery + " HTTP/1.1";
                 reqStr += "\r\nHost: " + uri.Host;
-                reqStr += "\r\nDate: " + DateTools.ConvertToGMT(XCore.NowUnix);
+                reqStr += "\r\nDate: " + DateTools.ConvertToGMT(DateTools.GetUnix());
                 reqStr += "\r\nAccept: application/json";
                 if (kvs != null)
                 {

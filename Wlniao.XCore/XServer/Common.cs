@@ -420,7 +420,7 @@ namespace Wlniao.XServer
             #region 处理接口基本参数及签名
             if (!string.IsNullOrEmpty(Secret))
             {
-                kvList.Add(new KeyValuePair<String, String>("xstime", XCore.NowUnix.ToString()));
+                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
                     kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
@@ -607,7 +607,7 @@ namespace Wlniao.XServer
             #region 处理接口基本参数及签名
             if (!string.IsNullOrEmpty(Secret))
             {
-                kvList.Add(new KeyValuePair<String, String>("xstime", XCore.NowUnix.ToString()));
+                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
                     kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
@@ -817,7 +817,7 @@ namespace Wlniao.XServer
             if (!string.IsNullOrEmpty(Secret))
             {
                 // 排序并拼接签名原始字符
-                kvList.Add(new KeyValuePair<String, String>("xstime", XCore.NowUnix.ToString()));
+                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
                     kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
@@ -1074,7 +1074,7 @@ namespace Wlniao.XServer
             if (sig && !string.IsNullOrEmpty(Secret))
             {
                 // 排序并拼接签名原始字符
-                kvList.Add(new KeyValuePair<String, String>("xstime", XCore.NowUnix.ToString()));
+                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
                     kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));

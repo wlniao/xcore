@@ -81,7 +81,7 @@ namespace Wlniao.Caching
         {
             try
             {
-                var data = (XCore.NowUnix + expireSeconds) + "#" + value;
+                var data = (DateTools.GetUnix() + expireSeconds) + "#" + value;
                 using (var fs = new FileStream(GetKeyPath(key), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))
                 {
                     var writer = new StreamWriter(fs, Wlniao.Text.Encoding.UTF8);
@@ -144,7 +144,7 @@ namespace Wlniao.Caching
                 {
                     var text = FileEx.ReadUTF8String(fs);
                     var data = text.Split('#', 2, StringSplitOptions.RemoveEmptyEntries);
-                    if (cvt.ToLong(data[0]) > XCore.NowUnix)
+                    if (cvt.ToLong(data[0]) > DateTools.GetUnix())
                     {
                         return true;
                     }
@@ -168,7 +168,7 @@ namespace Wlniao.Caching
                 {
                     var text = FileEx.ReadUTF8String(fs);
                     var data = text.Split('#', 2, StringSplitOptions.RemoveEmptyEntries);
-                    if (cvt.ToLong(data[0]) > XCore.NowUnix)
+                    if (cvt.ToLong(data[0]) > DateTools.GetUnix())
                     {
                         return data[1];
                     }
