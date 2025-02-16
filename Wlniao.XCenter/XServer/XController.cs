@@ -39,7 +39,7 @@ namespace Wlniao.XServer
                 _rlt.message = "xsappid is missing";
                 filterContext.Result = new ContentResult { Content = Wlniao.Json.ToString(_rlt) };
             }
-            else if (cvt.ToLong(TimeSpan) < XCore.NowUnix - 3600)
+            else if (cvt.ToLong(TimeSpan) < DateTools.GetUnix() - 3600)
             {
                 _rlt.message = "request is expired";
                 filterContext.Result = new ContentResult() { Content = Wlniao.Json.ToString(_rlt) };

@@ -349,7 +349,7 @@ namespace Wlniao.Tasker
                     var tran = Instance.GetDatabase(Caching.Redis.Select).CreateTransaction();
                     foreach (var topic in topics.SplitBy())
                     {
-                        tran.SortedSetAddAsync("tasker_queue_" + topic, key, runtime > 0 ? runtime : XCore.NowUnix);
+                        tran.SortedSetAddAsync("tasker_queue_" + topic, key, runtime > 0 ? runtime : DateTools.GetUnix());
                     }
                     return tran.Execute();
                 }
@@ -373,7 +373,7 @@ namespace Wlniao.Tasker
             {
                 if (Instance != null && instance.IsConnected)
                 {
-                    var now = XCore.NowUnix;
+                    var now = DateTools.GetUnix();
                     var times = new List<long>();
                     if (delays == null || delays.Length == 0)
                     {

@@ -294,7 +294,7 @@ namespace Wlniao.XCenter
             {
                 return new ApiResult<T> { message = "参数“XCenterPublicKey”未配置，请先配置" };
             }
-            var now = XCore.NowUnix.ToString();
+            var now = DateTools.GetUnix();
             var rlt = new Wlniao.ApiResult<T>();
             var utime = "";
             var msgid = strUtil.CreateLongId();
@@ -446,7 +446,7 @@ namespace Wlniao.XCenter
             }
             else
             {
-                var now = Wlniao.XCore.NowUnix.ToString();
+                var now = DateTools.GetUnix();
                 var utime = "";
                 var start = DateTime.Now;
                 var msgid = strUtil.CreateLongId();
@@ -703,7 +703,7 @@ namespace Wlniao.XCenter
                 }
             }
             catch { }
-            if (obj != null && obj.GetInt64("expire") > XCore.NowUnix)
+            if (obj != null && obj.GetInt64("expire") > DateTools.GetUnix())
             {
                 return obj;
             }

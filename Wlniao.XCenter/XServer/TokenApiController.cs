@@ -55,7 +55,7 @@ namespace Wlniao.XServer
                     result.data = "202";
                     result.message = "缺少参数，timestamp不能为空";
                 }
-                else if (cvt.ToLong(timestamp) + 3600 < XCore.NowUnix)
+                else if (cvt.ToLong(timestamp) + 3600 < DateTools.GetUnix())
                 {
                     result.code = "203";
                     result.message = "请求已过期，请重新发起";

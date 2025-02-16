@@ -123,7 +123,7 @@ namespace Wlniao.XCenter
                     {
                         errorMsg = "authorization is missing";
                     }
-                    else if (xsession.ExpireTime < XCore.NowUnix && !string.IsNullOrEmpty(xsession.UserSid))
+                    else if (xsession.ExpireTime < DateTools.GetUnix() && !string.IsNullOrEmpty(xsession.UserSid))
                     {
                         errorMsg = "authorization is expire";
                     }

@@ -56,7 +56,7 @@ namespace Wlniao.XCenter
         {
             get
             {
-                if (ExpireTime > XCore.NowUnix && !string.IsNullOrEmpty(UserSid))
+                if (ExpireTime > DateTools.GetUnix() && !string.IsNullOrEmpty(UserSid))
                 {
                     return true;
                 }
@@ -202,7 +202,7 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public String BuildTicket(int exprie = 7200)
         {
-            var plain = (XCore.NowUnix + exprie) + "," + (string.IsNullOrEmpty(AppCode) ? "app" : AppCode) + "," + (string.IsNullOrEmpty(OwnerId) ? "000000000" : OwnerId);
+            var plain = (DateTools.GetUnix() + exprie) + "," + (string.IsNullOrEmpty(AppCode) ? "app" : AppCode) + "," + (string.IsNullOrEmpty(OwnerId) ? "000000000" : OwnerId);
             if (!string.IsNullOrEmpty(UserSid))
             {
                 var obj = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
