@@ -216,10 +216,10 @@ namespace Wlniao.XCenter
                     ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };
                     try
                     {
-                        if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPublicKey == null || XCenterPublicKey.Length < 20)
+                        if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPrivkey == null || XCenterPrivkey.Length < 20 || XCenterPublicKey == null || XCenterPublicKey.Length < 20)
                         {
                             ctx.message = "程序配置错误，请检查XCenter相关配置";
-                            Log.Loger.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterPublicKey 至少需要配置一项");
+                            Log.Loger.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterPrivkey/XCenterPublicKey 至少需要配置一项");
                         }
                         else
                         {
@@ -383,39 +383,6 @@ namespace Wlniao.XCenter
                         rlt.code = "105";
                         rlt.message = "远端暂无返回内容";
                     }
-
-                    //if (resObj.success)
-                    //{
-                    //    var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
-                    //    if (string.IsNullOrEmpty(json))
-                    //    {
-                    //        logDebug += "\n <<< RESPONSE EMPTY";
-                    //    }
-                    //    else
-                    //    {
-                    //        try
-                    //        {
-                    //            if (typeof(T) == typeof(string))
-                    //            {
-                    //                rlt.data = (T)System.Convert.ChangeType(json, typeof(T));
-                    //            }
-                    //            else
-                    //            {
-                    //                rlt.data = Wlniao.Json.ToObject<T>(json);
-                    //            }
-                    //            logDebug += "\n <<< " + Wlniao.Json.ToString(rlt);
-                    //        }
-                    //        catch
-                    //        {
-                    //            logDebug += "\n <<< " + json;
-                    //        }
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    logDebug += "\n <<< " + rlt.message;
-                    //}
-
                     logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + (string.IsNullOrEmpty(plaintext) ? "\"\"" : plaintext) + "}";
                 }
             }
