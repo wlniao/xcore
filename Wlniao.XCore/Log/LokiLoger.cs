@@ -83,7 +83,7 @@ namespace Wlniao.Log
         {
             flog = new FileLoger(level);
             this.level = level;
-            this.Interval = this.Interval > 0 ? this.Interval : cvt.ToInt(Config.GetConfigs("WLN_LOG_INTERVAL", "5"));
+            this.Interval = this.Interval > 0 ? this.Interval : cvt.ToInt(Config.GetConfigs("WLN_LOG_INTERVAL"));
             if (string.IsNullOrEmpty(server))
             {
                 if (serverHost == null)
@@ -215,7 +215,7 @@ namespace Wlniao.Log
                                     err = true;
                                     if (!string.IsNullOrEmpty(errmsg))
                                     {
-                                        LokiErrorLog("Push Result:" + errmsg);
+                                        LokiErrorLog("Push Result:" + errmsg + "[" + dto.streams.Count + "]");
                                         if (errmsg.Contains("loghttp.LogProtoStream"))
                                         {
                                             client.GetAsync(serverHost + "/ready");

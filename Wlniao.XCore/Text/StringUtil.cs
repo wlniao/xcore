@@ -503,7 +503,6 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        // ReSharper disable once UnusedMember.Global
         public static bool IsIP(string ip)
         {
             return IsIPv4(ip) || IsIPv6(ip);
@@ -513,17 +512,15 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        // ReSharper disable once UnusedMember.Global
         public static bool IsIPv4(string ip)
         {
             return Regex.IsMatch(ip, @"^((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$");
         }
         /// <summary>
-        /// 是否为ip
+        /// 是否为IPv6地址
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        // ReSharper disable once UnusedMember.Global
         public static bool IsIPv6(string ip)
         {
             if (string.IsNullOrEmpty(ip)||ip.Split(':').Length > 8)
