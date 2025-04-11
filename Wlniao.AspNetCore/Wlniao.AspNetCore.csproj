@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>8.0.46</Version>
+		<Version>8.0.47</Version>
 		<Authors>XieChaoyi</Authors>
 		<Copyright>Copyright 2020 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -30,7 +30,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.4" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.41" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.42" />
 	</ItemGroup>
 
 	<ItemGroup>

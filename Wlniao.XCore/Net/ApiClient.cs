@@ -40,20 +40,25 @@ namespace Wlniao.Net
         /// 发起Get请求
         /// </summary>
         /// <param name="url">请求的Url</param>
+        /// <param name="webroxy">代理服务器地址</param>
         /// <returns></returns>
-        public static string Get(string url)
+        public static string Get(string url, string webroxy = null)
         {
             var res = "";
             var uri = new Uri(url);
-            if (!string.IsNullOrEmpty(XCore.Webroxy))
+            if (string.IsNullOrEmpty(webroxy))
             {
-                url = XCore.Webroxy + uri.PathAndQuery;
+                webroxy = XCore.Webroxy;
+            }
+            if (!string.IsNullOrEmpty(webroxy))
+            {
+                url = webroxy + uri.PathAndQuery;
             }
             var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
             using (var client = new System.Net.Http.HttpClient(handler))
             {
                 var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
-                if (!string.IsNullOrEmpty(XCore.Webroxy))
+                if (!string.IsNullOrEmpty(webroxy))
                 {
                     request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
                 }
@@ -74,13 +79,18 @@ namespace Wlniao.Net
         /// <param name="url"></param>
         /// <param name="postData"></param>
         /// <param name="contentType"></param>
+        /// <param name="webroxy">代理服务器地址</param>
         /// <returns></returns>
-        public static string Post(string url, string postData, string contentType = "application/json")
+        public static string Post(string url, string postData, string contentType = "application/json", string webroxy = null)
         {
             var uri = new Uri(url);
-            if (!string.IsNullOrEmpty(XCore.Webroxy))
+            if (string.IsNullOrEmpty(webroxy))
             {
-                url = XCore.Webroxy + uri.PathAndQuery;
+                webroxy = XCore.Webroxy;
+            }
+            if (!string.IsNullOrEmpty(webroxy))
+            {
+                url = webroxy + uri.PathAndQuery;
             }
             var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
             using (var client = new HttpClient(handler))
@@ -89,7 +99,7 @@ namespace Wlniao.Net
                 var content = new StreamContent(stream);
                 client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
                 client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", contentType);
-                if (!string.IsNullOrEmpty(XCore.Webroxy))
+                if (!string.IsNullOrEmpty(webroxy))
                 {
                     client.DefaultRequestHeaders.TryAddWithoutValidation("X-Webroxy", uri.Host);
                 }
@@ -109,15 +119,20 @@ namespace Wlniao.Net
         /// </summary>
         /// <param name="url"></param>
         /// <param name="stream"></param>
+        /// <param name="webroxy">代理服务器地址</param>
         /// <returns></returns>
-        public static string Post(string url, System.IO.Stream stream)
+        public static string Post(string url, System.IO.Stream stream, string webroxy = null)
         {
             var str = "";
             var err = "";
             var uri = new Uri(url);
-            if (!string.IsNullOrEmpty(XCore.Webroxy))
+            if (string.IsNullOrEmpty(webroxy))
             {
-                url = XCore.Webroxy + uri.PathAndQuery;
+                webroxy = XCore.Webroxy;
+            }
+            if (!string.IsNullOrEmpty(webroxy))
+            {
+                url = webroxy + uri.PathAndQuery;
             }
             var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
             using (var client = new HttpClient(handler))
@@ -125,7 +140,7 @@ namespace Wlniao.Net
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Headers.Date = DateTime.UtcNow;
                 request.Headers.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Wlniao-XCore-XServer", "beta"));
-                if (!string.IsNullOrEmpty(XCore.Webroxy))
+                if (!string.IsNullOrEmpty(webroxy))
                 {
                     request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
                 }

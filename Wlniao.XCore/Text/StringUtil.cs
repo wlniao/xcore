@@ -663,7 +663,7 @@ namespace Wlniao.Text
             var encode = Encoding.UTF8;
             if (!string.IsNullOrEmpty(encoding))
             {
-                encode = System.Text.Encoding.GetEncoding(encoding);
+                encode = Encoding.GetEncoding(encoding);
             }
             var bytes = encode.GetBytes(str);
             int num = 0;
@@ -769,7 +769,7 @@ namespace Wlniao.Text
                 encode = Encoding.GetEncoding(encoding);
             }
             int length = str.Length;
-            var decoder = new Text.UrlDecoder(length, encode);
+            var decoder = new UrlDecoder(length, encode);
 
             for (int i = 0; i < length; i++)
             {
