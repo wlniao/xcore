@@ -640,31 +640,20 @@ namespace Wlniao
         {
             get
             {
-                var ip = "";
-                var forwardedIP = new Microsoft.Extensions.Primitives.StringValues();
-                if (Request.Headers.TryGetValue("x-forwarded-for", out forwardedIP))
+                var clientIp = (Request.HttpContext.Connection.RemoteIpAddress != null && !Request.HttpContext.Connection.RemoteIpAddress.IsIPv4MappedToIPv6) ? Request.HttpContext.Connection.RemoteIpAddress?.ToString() : Request.HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
+                if (Request.Headers.TryGetValue("x-forwarded-for", out Microsoft.Extensions.Primitives.StringValues forwardedIP))
                 {
                     // 通过代理网关部署时，获取"x-forwarded-for"传递的真实IP
-                    var ips = forwardedIP.ToString().Split(',');
-                    ip = ips[0];
-                    foreach (var item in ips)
+                    foreach (var ip in forwardedIP.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
                     {
-                        if (item != "127.0.0.1" && strUtil.IsIP(item))
+                        if (ip != "::1" && ip != "127.0.0.1" && strUtil.IsIP(ip))
                         {
-                            ip = item;
+                            clientIp = ip;
                             break;
                         }
                     }
                 }
-                else if (Request.HttpContext.Connection.RemoteIpAddress.IsIPv4MappedToIPv6)
-                {
-                    ip = Request.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
-                }
-                else
-                {
-                    ip = Request.HttpContext.Connection.RemoteIpAddress.ToString();
-                }
-                return ip;
+                return clientIp;
             }
         }
         /// <summary>

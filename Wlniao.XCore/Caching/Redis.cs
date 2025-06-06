@@ -111,16 +111,13 @@ namespace Wlniao.Caching
             {
                 if(_instance == null)
                 {
-                    lock (_lock)
+                    try
                     {
-                        try
-                        {
-                            return UseConnStr(ConnStr);
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new Exception("Redis connection configuration error: " + ex.Message);
-                        }
+                        _instance = UseConnStr(ConnStr);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception("Redis connection configuration error: " + ex.Message);
                     }
                 }
                 return _instance;
@@ -138,21 +135,17 @@ namespace Wlniao.Caching
         internal static RedisClient UseConnStr(string connstr)
         {
             var args = connstr.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            var instance = new RedisClient { SelectDB = Select };
             foreach (var item in args)
             {
-                if (_instance == null)
-                {
-                    _instance = new RedisClient();
-                    _instance.SelectDB = Select;
-                }
                 var arg = item.Trim();
                 if (arg.StartsWith("password="))
                 {
-                    _instance.Password = arg.Substring(9);
+                    instance.Password = arg.Substring(9);
                 }
                 else if (arg.StartsWith("username="))
                 {
-                    _instance.Username = arg.Substring(9);
+                    instance.Username = arg.Substring(9);
                 }
                 else
                 {
@@ -160,26 +153,34 @@ namespace Wlniao.Caching
                     var ips = arg.Split(':', StringSplitOptions.RemoveEmptyEntries);
                     if (ips.Length == 2 && int.TryParse(ips[1], out int port))
                     {
-                        _instance.AddEndPoint(new DnsEndPoint(ips[0], port));
+                        instance.AddEndPoint(new DnsEndPoint(ips[0], port));
                     }
                     else
                     {
-                        _instance.AddEndPoint(new DnsEndPoint(ips[0], 6379));
+                        instance.AddEndPoint(new DnsEndPoint(ips[0], 6379));
                     }
                 }
             }
-            return _instance;
+            return instance;
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="key"></param>
+        /// <param name="usePool"></param>
         /// <returns></returns>
-        public static string Get(string key)
+        public static string Get(string key, bool usePool = false)
         {
             try
             {
-                return Instance.Get(key);
+                if (usePool)
+                {
+                    return Instance.Get(key);
+                }
+                else
+                {
+                    return UseConnStr(ConnStr).Get(key);
+                }
             }
             catch (Exception ex)
             {
