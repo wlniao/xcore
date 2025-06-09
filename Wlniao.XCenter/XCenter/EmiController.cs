@@ -33,6 +33,10 @@ namespace Wlniao.XCenter
         /// </summary>
         private String nopermissionMessage = "";
         /// <summary>
+        /// 自动配置Emi相关Cookie
+        /// </summary>
+        public Boolean AutoSetEmiCookie = true;
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="context"></param>
@@ -64,12 +68,12 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult AuthX()
         {
+            var ehost = GetRequest("ehost");
             var xsession = GetRequest("xsession");
-            if (string.IsNullOrEmpty(xsession))
+            if (string.IsNullOrEmpty(ehost) || string.IsNullOrEmpty(xsession))
             {
                 return CheckAuth((ctx) =>
                 {
-                    Console.WriteLine(Request.Host);
                     var host = UrlReferer;
                     if (string.IsNullOrEmpty(host))
                     {
@@ -83,8 +87,8 @@ namespace Wlniao.XCenter
                 return CheckSession((xsession, ctx) =>
                 {
                     var path = "/" + (Request == null || Request.Path == null || string.IsNullOrEmpty(Request.Path.Value) ? "" : string.Join('/', Request.Path.Value.Split('/', StringSplitOptions.RemoveEmptyEntries).Skip(1)));
-                    var html = "<!DOCTYPE html><html lang=zh-CN><head><meta charset=utf-8><script>var to = location.pathname.substr(1); var ticket = 'authx'; if (ticket) { localStorage.setItem('ticket', ticket) } history.replaceState(null, null, to); setTimeout(() => { location.reload() }, 100)</script></html>";
-                    html = html.Replace("'authx'", "'" + xsession.BuildTicket() + "'");
+                    var html = "<!DOCTYPE html><html lang=zh-CN><head><meta charset=utf-8><script>var to = location.pathname.substr(1); var ehost = 'ehost'; var ticket = 'authx'; if (ehost) { localStorage.setItem('x-domain', ehost) } if (ticket) { localStorage.setItem('ticket', ticket) } history.replaceState(null, null, to); setTimeout(() => { location.reload() }, 100)</script></html>";
+                    html = html.Replace("'ehost'", "'" + ehost + "'").Replace("'authx'", "'" + xsession.BuildTicket() + "'");
                     if (!string.IsNullOrEmpty(path) && path.IndexOf('\'') < 0)
                     {
                         html = html.Replace("location.pathname.substr(1)", "'" + path + "'");
@@ -120,7 +124,10 @@ namespace Wlniao.XCenter
             if (Request.Query.Keys.Contains("ehost"))
             {
                 emihost = GetRequestNoSecurity("ehost");
-                Response.Cookies.Append("ehost", emihost, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
+                if (AutoSetEmiCookie)
+                {
+                    Response.Cookies.Append("ehost", emihost, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
+                }
             }
             else if (string.IsNullOrEmpty(emihost))
             {
@@ -223,7 +230,10 @@ namespace Wlniao.XCenter
                 if (Request.Query.Keys.Contains("xsession"))
                 {
                     authorization = GetRequestNoSecurity("xsession");
-                    Response.Cookies.Append("xs_" + ctx.app, authorization, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
+                    if (AutoSetEmiCookie)
+                    {
+                        Response.Cookies.Append("xs_" + ctx.app, authorization, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
+                    }
                 }
                 else if (string.IsNullOrEmpty(authorization))
                 {
