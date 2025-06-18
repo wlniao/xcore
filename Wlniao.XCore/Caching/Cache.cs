@@ -32,33 +32,33 @@ namespace Wlniao.Caching
     /// </summary>
     public class Cache
     {
+        private static object olock = new object();
         private static CacheType ctype = CacheType.None;
         internal static CacheType cType
         {
             get
             {
-                if (ctype == CacheType.None)
+                lock (olock)
                 {
-                    var cacheType = Config.GetConfigs("WLN_CACHE", "auto").ToLower();
-                    if (cacheType == "auto" && Redis.CanUse)
+                    if (ctype == CacheType.None)
                     {
-                        ctype = CacheType.Redis;
-                    }
-                    else if (cacheType == "redis")
-                    {
-                        ctype = CacheType.Redis;
-                    }
-                    else if (cacheType.Contains("file"))
-                    {
-                        ctype = CacheType.InFile;
-                    }
-                    else if (cacheType.Contains("memory"))
-                    {
-                        ctype = CacheType.InMemory;
-                    }
-                    else
-                    {
-                        ctype = CacheType.InMemory;
+                        var cacheType = Config.GetConfigs("WLN_CACHE", "auto").ToLower();
+                        if (cacheType == "redis" || (cacheType == "auto" && Redis.CanUse))
+                        {
+                            ctype = CacheType.Redis;
+                        }
+                        else if (cacheType.Contains("file"))
+                        {
+                            ctype = CacheType.InFile;
+                        }
+                        else if (cacheType.Contains("memory"))
+                        {
+                            ctype = CacheType.InMemory;
+                        }
+                        else
+                        {
+                            ctype = CacheType.InMemory;
+                        }
                     }
                 }
                 return ctype;

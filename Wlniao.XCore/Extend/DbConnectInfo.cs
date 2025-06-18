@@ -27,10 +27,14 @@ namespace Wlniao
 				{
 					connstr_rw = Wlniao.Config.GetConfigs("WLN_CONNSTR");
 				}
-				if (string.IsNullOrEmpty(connstr_rw))
-				{
-					connstr_rw = WLN_CONNSTR_MYSQL;
-				}
+                if (WLN_CONNSTR_TYPE == "mysql")
+                {
+                    connstr_rw = WLN_CONNSTR_MYSQL;
+                }
+                else
+                {
+                    connstr_rw = WLN_CONNSTR_SQLITE;
+                }
 				return connstr_rw;
 			}
 		}

@@ -51,13 +51,17 @@ namespace Wlniao.Caching
         {
             get
             {
-                if (_canuse == 0 && Instance == null)
+                if (_canuse > 0)
+                {
+                    return _canuse > 0;
+                }
+                else if (_canuse == 0 && Instance == null)
                 {
                     return _canuse > 0;
                 }
                 else
                 {
-                    return true;
+                    return false;
                 }
             }
         }
@@ -134,6 +138,10 @@ namespace Wlniao.Caching
         /// <param name="connstr"></param>
         internal static RedisClient UseConnStr(string connstr)
         {
+            if (string.IsNullOrEmpty(connstr))
+            {
+                return null;
+            }
             var args = connstr.Split(',', StringSplitOptions.RemoveEmptyEntries);
             var instance = new RedisClient { SelectDB = Select };
             foreach (var item in args)
