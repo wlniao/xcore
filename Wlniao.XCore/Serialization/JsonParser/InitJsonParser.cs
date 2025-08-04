@@ -1,7 +1,7 @@
 /*==============================================================================
-    ÎÄ¼þÃû³Æ£ºInitJsonParser.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£ºIntÀàÐÍµÄ×ª»»
+    ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½InitJsonParser.cs
+    ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Intï¿½ï¿½ï¿½Íµï¿½×ªï¿½ï¿½
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -26,11 +26,11 @@ using System.Text;
 namespace Wlniao.Serialization
 {
     /// <summary>
-    /// IntÀàÐÍµÄ×ª»»
+    /// Intï¿½ï¿½ï¿½Íµï¿½×ªï¿½ï¿½
     /// </summary>
     internal class InitJsonParser : JsonParserBase
     {
-        private Object _result;
+        private object _result;
         public InitJsonParser(CharSource charSrc) : base(charSrc)
         {
         }
@@ -38,7 +38,7 @@ namespace Wlniao.Serialization
         {
             _result = moveAndGetParser().getResult();
         }
-        public override Object getResult()
+        public override object getResult()
         {
             return _result;
         }

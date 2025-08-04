@@ -1,7 +1,7 @@
 /*==============================================================================
-    ÎÄ¼þÃû³Æ£ºJsonParser.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£ºJson ·´ÐòÁÐ»¯¹¤¾ß
+    ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½JsonParser.cs
+    ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Json ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -26,17 +26,17 @@ namespace Wlniao.Serialization
 {
 
     /// <summary>
-    /// Json ·´ÐòÁÐ»¯¹¤¾ß
+    /// Json ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public class JsonParser
     {
         /// <summary>
-        /// ½âÎö×Ö·û´®£¬·µ»Ø¶ÔÏó¡£
-        /// ¸ù¾Ý json µÄ²»Í¬£¬¿ÉÄÜ·µ»ØÕûÊý(int)¡¢²¼¶ûÀàÐÍ(bool)¡¢×Ö·û´®(string)¡¢Ò»°ã¶ÔÏó(Dictionary&lt;string, object&gt;)¡¢Êý×é(List&lt;object&gt;)µÈ²»Í¬ÀàÐÍ
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¶ï¿½ï¿½ï¿½
+        /// ï¿½ï¿½ï¿½ï¿½ json ï¿½Ä²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½Ü·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(int)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(bool)ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½(string)ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½(Dictionary&lt;string, object&gt;)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(List&lt;object&gt;)ï¿½È²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="src"></param>
-        /// <returns>¸ù¾Ý json µÄ²»Í¬£¬¿ÉÄÜ·µ»ØÕûÊý(int)¡¢²¼¶ûÀàÐÍ(bool)¡¢×Ö·û´®(string)¡¢Ò»°ã¶ÔÏó(Dictionary&lt;string, object&gt;)¡¢Êý×é(List&lt;object&gt;)µÈ²»Í¬ÀàÐÍ</returns>
-        public static Object Parse(String src)
+        /// <returns>ï¿½ï¿½ï¿½ï¿½ json ï¿½Ä²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½Ü·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(int)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(bool)ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½(string)ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½(Dictionary&lt;string, object&gt;)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(List&lt;object&gt;)ï¿½È²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½</returns>
+        public static object Parse(string src)
         {
             if (string.IsNullOrEmpty(src)) return null;
             return new InitJsonParser(new CharSource(src)).getResult();

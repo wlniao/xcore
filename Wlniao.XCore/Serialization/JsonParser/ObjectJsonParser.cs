@@ -27,8 +27,8 @@ namespace Wlniao.Serialization
 {
     internal class ObjectJsonParser : JsonParserBase
     {
-        private Dictionary<String, object> map = new Dictionary<String, object>();
-        public override Object getResult()
+        private Dictionary<string, object> map = new Dictionary<string, object>();
+        public override object getResult()
         {
             return this.map;
         }
@@ -59,7 +59,7 @@ namespace Wlniao.Serialization
             }
             // 解析key
             charSrc.back();
-            String key = moveAndGetParser().getResult().ToString();
+            string key = moveAndGetParser().getResult().ToString();
             // 解析冒号
             charSrc.moveToText();
             if (charSrc.getCurrent() != ':')
@@ -67,7 +67,7 @@ namespace Wlniao.Serialization
                 throw ex("json object's property pair must seperated with :");
             }
             // 解析value
-            Object val = moveAndGetParser().getResult();
+            object val = moveAndGetParser().getResult();
             // 获取值
             map.Add(key, val);
             // 处理剩下的字符

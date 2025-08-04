@@ -38,6 +38,6 @@ namespace Wlniao.Caching
         /// <summary>
         /// 
         /// </summary>
-        public String Value { get; set; }
+        public string Value { get; set; }
     }
 }

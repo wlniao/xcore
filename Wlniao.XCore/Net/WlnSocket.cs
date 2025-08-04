@@ -58,7 +58,7 @@ namespace Wlniao.Net
         /// 
         /// </summary>
         public int TimeOutSeconds = 10;
-        private static Object _lock = new object();
+        private static object _lock = new object();
         private static List<WlnSocket> sockets = new List<WlnSocket>();
         /// <summary>
         /// 从连接池获取一个实例
@@ -67,7 +67,7 @@ namespace Wlniao.Net
         /// <param name="port"></param>
         /// <param name="TimeOutSeconds"></param>
         /// <returns></returns>
-        public static WlnSocket GetSocket(String host, Int32 port, Int32 TimeOutSeconds = 10)
+        public static WlnSocket GetSocket(string host, int port, int TimeOutSeconds = 10)
         {
             var ipaddress = strUtil.IsIP(host) ? System.Net.IPAddress.Parse(host) : new Net.Dns.DnsTool().GetIPAddressDefault(host);
             if (ipaddress.IsIPv4MappedToIPv6)
@@ -121,7 +121,7 @@ namespace Wlniao.Net
         /// <param name="url"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static String HttpGet(String url, params KeyValuePair<String, String>[] kvs)
+        public static string HttpGet(string url, params KeyValuePair<string, string>[] kvs)
         {
             var sb = new System.Text.StringBuilder();
             var uri = new Uri(url);

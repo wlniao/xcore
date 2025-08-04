@@ -72,7 +72,7 @@ namespace Wlniao.Log
         /// 输出Debug级别的日志
         /// </summary>
         /// <param name="message"></param>
-        public void Debug(String message)
+        public void Debug(string message)
         {
             if (Level <= LogLevel.Debug)
             {
@@ -87,7 +87,7 @@ namespace Wlniao.Log
         /// 输出Info级别的日志
         /// </summary>
         /// <param name="message"></param>
-        public void Info(String message)
+        public void Info(string message)
         {
             if (Level <= LogLevel.Information)
             {
@@ -102,7 +102,7 @@ namespace Wlniao.Log
         /// 输出Warn级别的日志
         /// </summary>
         /// <param name="message"></param>
-        public void Warn(String message)
+        public void Warn(string message)
         {
             if (Level <= LogLevel.Warning)
             {
@@ -117,7 +117,7 @@ namespace Wlniao.Log
         /// 输出Error级别的日志
         /// </summary>
         /// <param name="message"></param>
-        public void Error(String message)
+        public void Error(string message)
         {
             if (Level <= LogLevel.Error)
             {
@@ -132,7 +132,7 @@ namespace Wlniao.Log
         /// 输出Fatal级别的日志
         /// </summary>
         /// <param name="message"></param>
-        public void Fatal(String message)
+        public void Fatal(string message)
         {
             if (Level <= LogLevel.Critical)
             {
@@ -151,7 +151,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
         /// <param name="consoleLocal"></param>
-        public void Topic(String topic, String message, LogLevel logLevel, Boolean consoleLocal = true)
+        public void Topic(string topic, string message, LogLevel logLevel, bool consoleLocal = true)
         {
             Write(topic, message);
             if (consoleLocal && Level <= logLevel && Loger.LogLocal == "console")
@@ -186,7 +186,7 @@ namespace Wlniao.Log
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
-        public void Write(String topic, String message)
+        public void Write(string topic, string message)
         {
             try
             {

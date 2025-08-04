@@ -1,7 +1,7 @@
 /*==============================================================================
-    ÎÄ¼þÃû³Æ£ºStringJsonParser.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£º×Ö·û´®ÀàÐÍ×ª»»
+    ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½StringJsonParser.cs
+    ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -26,12 +26,12 @@ using System.Text;
 namespace Wlniao.Serialization
 {
     /// <summary>
-    /// ×Ö·û´®ÀàÐÍ×ª»»
+    /// ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
     /// </summary>
     internal class StringJsonParser : ValueJsonParser
     {
-        private String _result;
-        public override Object getResult()
+        private string _result;
+        public override object getResult()
         {
             return _result;
         }

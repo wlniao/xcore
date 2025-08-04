@@ -1,7 +1,7 @@
 /*==============================================================================
-    ÎÄ¼þÃû³Æ£ºJsonParserBase.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£º
+    ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½JsonParserBase.cs
+    ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -33,7 +33,7 @@ namespace Wlniao.Serialization
 
         protected CharSource charSrc;
         protected abstract void parse();
-        public abstract Object getResult();
+        public abstract object getResult();
 
         public JsonParserBase()
         {
@@ -66,7 +66,7 @@ namespace Wlniao.Serialization
             return new ValueJsonParser(this.charSrc);
         }
 
-        protected JsonParserException ex(String msg)
+        protected JsonParserException ex(string msg)
         {
             return new JsonParserException(msg + "(index:" + this.charSrc.getIndex().ToString() + ")\n" + this.charSrc.strSrc);
         }

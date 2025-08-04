@@ -4,10 +4,12 @@
 
 *.log
 *.user
-xcore.dev.config
-.vs
-/*/.vscode
-/*/bin
-/*/obj
-/*/Properties
+*.dev.config
+*.DotSettings.user
+**.vs
+**.idea
+**.vscode
+**/bin
+**/obj
+**/Properties
 /Wlniao.XCore.Test2

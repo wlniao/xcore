@@ -1,7 +1,7 @@
 /*==============================================================================
-    ÎÄ¼þÃû³Æ£ºLoger.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£ºÍ¨ÓÃÈÕÖ¾Êä³ö¹¤¾ßÀà
+    ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½Loger.cs
+    ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 ================================================================================
  
     Copyright 2015 XieChaoyi
@@ -24,29 +24,29 @@ using System;
 namespace Wlniao.Log
 {
     /// <summary>
-    /// Í¨ÓÃÈÕÖ¾Êä³ö¹¤¾ßÀà
+    /// Í¨ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public class Loger
     {
         /// <summary>
-        /// µ±Ç°ÈÕÖ¾Êä³öµÈ¼¶£¬NoneÎªÎ´Éè¶¨£¬»á¸ù¾ÝÅäÖÃÎÄ¼þ½øÐÐ³õÊ¼»¯
+        /// ï¿½ï¿½Ç°ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½È¼ï¿½ï¿½ï¿½NoneÎªÎ´ï¿½è¶¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Ð³ï¿½Ê¼ï¿½ï¿½
         /// </summary>
         internal static LogLevel logLevel = LogLevel.None;
         /// <summary>
-        /// µ±Ç°ÈÕÖ¾Êä³ö¹¤¾ß
+        /// ï¿½ï¿½Ç°ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         private static ILogProvider logProvider = null;
         /// <summary>
-        /// ÎÄ¼þÈÕÖ¾Êä³ö¹¤¾ß
+        /// ï¿½Ä¼ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
 		private static ILogProvider fileProvider = new FileLoger(LogLevel);
         /// <summary>
-        /// ±¾µØÈÕÖ¾Êä³ö·½Ê½
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½Ê½
         /// </summary>
         private static string logLocal = null;
 
         /// <summary>
-        /// µ±Ç°ÈÕÖ¾Êä³öµÈ¼¶
+        /// ï¿½ï¿½Ç°ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½È¼ï¿½
         /// </summary>
         public static LogLevel LogLevel
         {
@@ -77,7 +77,7 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// µ±Ç°ÈÕÖ¾Êä³ö¹¤¾ß
+        /// ï¿½ï¿½Ç°ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <returns></returns>
         public static ILogProvider LogProvider
@@ -106,7 +106,7 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// ±¾µØÈÕÖ¾Êä³ö·½Ê½
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½Ê½
         /// </summary>
         public static string LogLocal
         {
@@ -125,7 +125,7 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// ÉèÖÃÈÕÖ¾Ìá¹©¹¤¾ß
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½á¹©ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="provider"></param>
         public static void SetLogger(ILogProvider provider)
@@ -134,11 +134,11 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// Ö±½ÓÔÚ¿ØÖÆÌ¨´òÓ¡ÄÚÈÝ
+        /// Ö±ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½Ì¨ï¿½ï¿½Ó¡ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="message"></param>
         /// <param name="color"></param>
-        public static void Console(String message, ConsoleColor color = ConsoleColor.White)
+        public static void Console(string message, ConsoleColor color = ConsoleColor.White)
         {
             System.Console.ForegroundColor = color;
             System.Console.WriteLine(message);
@@ -146,64 +146,64 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// Ö±½ÓÔÚÎÄ¼þ¼°¿ØÖÆÌ¨ÖÐÊä³öÈÕÖ¾
+        /// Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="color"></param>
-        public static void File(String topic, String message, ConsoleColor color = ConsoleColor.White)
+        public static void File(string topic, string message, ConsoleColor color = ConsoleColor.White)
         {
             fileProvider.Topic(topic, message, LogLevel.Information);
         }
 
         /// <summary>
-        /// Êä³öDebug¼¶±ðµÄÈÕÖ¾
+        /// ï¿½ï¿½ï¿½Debugï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
         /// </summary>
         /// <param name="message"></param>
-        public static void Debug(String message)
+        public static void Debug(string message)
         {
             LogProvider.Debug(message);
         }
         /// <summary>
-        /// Êä³öInfo¼¶±ðµÄÈÕÖ¾
+        /// ï¿½ï¿½ï¿½Infoï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
         /// </summary>
         /// <param name="message"></param>
-        public static void Info(String message)
+        public static void Info(string message)
         {
             LogProvider.Info(message);
         }
         /// <summary>
-        /// Êä³öWarn¼¶±ðµÄÈÕÖ¾
+        /// ï¿½ï¿½ï¿½Warnï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
         /// </summary>
         /// <param name="message"></param>
-        public static void Warn(String message)
+        public static void Warn(string message)
         {
             LogProvider.Warn(message);
         }
         /// <summary>
-        /// Êä³öError¼¶±ðµÄÈÕÖ¾
+        /// ï¿½ï¿½ï¿½Errorï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
         /// </summary>
         /// <param name="message"></param>
-        public static void Error(String message)
+        public static void Error(string message)
         {
             LogProvider.Error(message);
         }
         /// <summary>
-        /// Êä³öFatal¼¶±ðµÄÈÕÖ¾
+        /// ï¿½ï¿½ï¿½Fatalï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
         /// </summary>
         /// <param name="message"></param>
-        public static void Fatal(String message)
+        public static void Fatal(string message)
         {
             LogProvider.Fatal(message);
         }
         /// <summary>
-        /// Êä³ö×Ô¶¨ÒåÖ÷ÌâµÄÈÕÖ¾
+        /// ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
         /// <param name="consoleLocal"></param>
-        public static void Topic(String topic, String message, LogLevel logLevel = LogLevel.Information, Boolean consoleLocal = true)
+        public static void Topic(string topic, string message, LogLevel logLevel = LogLevel.Information, bool consoleLocal = true)
         {
             LogProvider.Topic(topic, message, logLevel, consoleLocal);
         }

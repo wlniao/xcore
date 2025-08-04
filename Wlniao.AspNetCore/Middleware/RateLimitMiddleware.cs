@@ -13,10 +13,12 @@ namespace Wlniao.Middleware
 {
     /// <summary>
     /// 按标识符（IP、用户ID等）限流
-    /// Usage: app.UseMiddleware<RateLimitMiddleware>(new RateLimitMiddleware.RateLimitOptions { TimeWindow = 30, MaxRequests = 60 });
     /// </summary>
     public class RateLimitMiddleware
     {
+        /// <summary>
+        /// 
+        /// </summary>
         public class RateLimitOptions
         {
             /// <summary>
@@ -56,6 +58,12 @@ namespace Wlniao.Middleware
         private readonly RequestDelegate _next;
         private readonly RateLimitOptions _options;
         private static MemoryCache memoryCache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="next"></param>
+        /// <param name="options"></param>
         public RateLimitMiddleware(RequestDelegate next, RateLimitOptions options)
         {
             _next = next;
@@ -89,7 +97,11 @@ namespace Wlniao.Middleware
                 _options.TZoneCount = 60;
             }
         }
-
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="context"></param>
         public async Task InvokeAsync(HttpContext context)
         {
             var clientKey = (context.Connection.RemoteIpAddress != null && !context.Connection.RemoteIpAddress.IsIPv4MappedToIPv6) ? context.Connection.RemoteIpAddress?.ToString() : context.Connection.RemoteIpAddress?.MapToIPv4().ToString();

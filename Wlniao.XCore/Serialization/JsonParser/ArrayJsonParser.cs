@@ -31,7 +31,7 @@ namespace Wlniao.Serialization
     internal class ArrayJsonParser : JsonParserBase
     {
         private List<object> list = new List<object>();
-        public override Object getResult()
+        public override object getResult()
         {
             return list;
         }
@@ -64,7 +64,7 @@ namespace Wlniao.Serialization
             {
                 charSrc.back();
                 // 将值加入列表
-                Object val = moveAndGetParser().getResult();
+                object val = moveAndGetParser().getResult();
                 list.Add(val);
             }
 

@@ -93,7 +93,7 @@ namespace Wlniao
         /// <param name="query"></param>
         /// <param name="args"></param>
         /// <returns></returns>
-        public static IQueryable<T> GetOrderQuery<T>(IQueryable<T> query, params KeyValuePair<String, String>[] args)
+        public static IQueryable<T> GetOrderQuery<T>(IQueryable<T> query, params KeyValuePair<string, string>[] args)
         {
             if (args == null || args.Length == 0)
             {
@@ -128,7 +128,7 @@ namespace Wlniao
         /// <param name="PropertyName"></param>
         /// <param name="AscOrDesc"></param>
         /// <returns></returns>
-        public static IQueryable<T> GetOrderQuery<T>(IQueryable<T> query, String PropertyName, String AscOrDesc = "")
+        public static IQueryable<T> GetOrderQuery<T>(IQueryable<T> query, string PropertyName, string AscOrDesc = "")
         {
             if (string.IsNullOrEmpty(PropertyName))
             {
@@ -136,7 +136,7 @@ namespace Wlniao
             }
             else
             {
-                return GetOrderQuery(query, new KeyValuePair<String, String>(PropertyName, AscOrDesc));
+                return GetOrderQuery(query, new KeyValuePair<string, string>(PropertyName, AscOrDesc));
             }
         }
     }

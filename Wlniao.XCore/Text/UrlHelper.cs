@@ -1,7 +1,7 @@
 /*==============================================================================
-    ÎÄ¼þÃû³Æ£ºUrlHelper.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£º·â×°ÁË url µÄ²Ù×÷
+    ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½UrlHelper.cs
+    ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×°ï¿½ï¿½ url ï¿½Ä²ï¿½ï¿½ï¿½
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -25,89 +25,89 @@ using System.Collections.Generic;
 namespace Wlniao.Text
 {
     /// <summary>
-    /// ·â×°ÁË url µÄ²Ù×÷
+    /// ï¿½ï¿½×°ï¿½ï¿½ url ï¿½Ä²ï¿½ï¿½ï¿½
     /// </summary>
     public class UrlHelper
     {
-        private static Boolean IsFirstDomainEqual(String url1, String url2)
+        private static bool IsFirstDomainEqual(string url1, string url2)
         {
-            String host1 = new UriBuilder(url1).Host;
-            String host2 = new UriBuilder(url2).Host;
+            string host1 = new UriBuilder(url1).Host;
+            string host2 = new UriBuilder(url2).Host;
             return host1.Equals(host2);
         }
         /// <summary>
-        /// ¼ì²éurlÊÇ·ñÍêÕû(ÊÇ·ñÒÔhttp¿ªÍ·»òÕßÒÔÓòÃû¿ªÍ·)
+        /// ï¿½ï¿½ï¿½urlï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½Ç·ï¿½ï¿½ï¿½httpï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·)
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public static Boolean IsFullUrl(String url)
+        public static bool IsFullUrl(string url)
         {
             if (strUtil.IsNullOrEmpty(url)) return false;
             if (url.Trim().StartsWith("/")) return false;
             if (url.Trim().StartsWith("http://")) return true;
-            String[] arrItem = url.Split('/');
+            string[] arrItem = url.Split('/');
             if (arrItem.Length < 1) return false;
             int dotIndex = arrItem[0].IndexOf(".");
             if (dotIndex <= 0) return false;
             return hasCommonExt(arrItem[0]) == false;
         }
-        private static readonly List<String> extList = getExtList();
-        private static List<String> getExtList()
+        private static readonly List<string> extList = getExtList();
+        private static List<string> getExtList()
         {
-            String[] exts = { "htm", "html", "xhtml", "txt", "json",
+            string[] exts = { "htm", "html", "xhtml", "txt", "json",
                                 "jpg", "gif", "png", "jpg", "jpeg", "bmp",
                                 "doc", "docx", "ppt", "pptx", "xls", "xlsx", "chm", "pdf",
                                 "zip", "7z", "rar", "exe", "dll",
                                 "mov", "wav", "mp3", "rm", "rmvb", "mkv", "avi",
                                 "asp", "aspx", "php", "jsp"
                             };
-            return new List<String>(exts);
+            return new List<string>(exts);
         }
         /// <summary>
-        /// ÅÐ¶ÏÍøÖ·ÊÇ·ñ°üº¬³£¼ûºó×ºÃû£¬±ÈÈç .htm/.html/.aspx/.jpg/.doc/.avi µÈ
+        /// ï¿½Ð¶ï¿½ï¿½ï¿½Ö·ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ .htm/.html/.aspx/.jpg/.doc/.avi ï¿½ï¿½
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
         private static bool hasCommonExt(string str)
         {
             int dotIndex = str.LastIndexOf(".");
-            String ext = str.Substring(dotIndex + 1, str.Length - dotIndex - 1);
+            string ext = str.Substring(dotIndex + 1, str.Length - dotIndex - 1);
             return extList.Contains(ext);
         }
         /// <summary>
-        /// ÅÐ¶ÏÍøÖ·ÊÇ·ñ°üº¬ºó×ºÃû£¬±ÈÈç xyzz/ab.htm °üº¬£¬my/xyz/dfae3 Ôò²»°üº¬
+        /// ï¿½Ð¶ï¿½ï¿½ï¿½Ö·ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ xyzz/ab.htm ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½my/xyz/dfae3 ï¿½ò²»°ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public static bool UrlHasExt(String url)
+        public static bool UrlHasExt(string url)
         {
             if (strUtil.IsNullOrEmpty(url)) return false;
-            String[] arrItem = url.Split('/');
-            String lastPart = arrItem[arrItem.Length - 1];
+            string[] arrItem = url.Split('/');
+            string lastPart = arrItem[arrItem.Length - 1];
             return lastPart.IndexOf(".") >= 0;
         }
         /// <summary>
-        /// ÌÞ³ýµô url µÄºó×ºÃû
+        /// ï¿½Þ³ï¿½ï¿½ï¿½ url ï¿½Äºï¿½×ºï¿½ï¿½
         /// </summary>
         /// <param name="rawUrl">Ô­Ê¼url</param>
-        /// <returns>·µ»Ø±»ÌÞ³ýµôºó×ºÃûµÄ url</returns>
-        public static String TrimUrlExt(String rawUrl)
+        /// <returns>ï¿½ï¿½ï¿½Ø±ï¿½ï¿½Þ³ï¿½ï¿½ï¿½ï¿½ï¿½×ºï¿½ï¿½ï¿½ï¿½ url</returns>
+        public static string TrimUrlExt(string rawUrl)
         {
             if (strUtil.IsNullOrEmpty(rawUrl)) return rawUrl;
             int dotIndex = rawUrl.IndexOf(".");
             if (dotIndex < 0) return rawUrl;
-            String[] arrItem = rawUrl.Split('.');
-            String ext = arrItem[arrItem.Length - 1];
+            string[] arrItem = rawUrl.Split('.');
+            string ext = arrItem[arrItem.Length - 1];
             if (ext.IndexOf('/') > 0) return rawUrl;
             return strUtil.TrimEnd(rawUrl, ext).TrimEnd('.');
         }
         /// <summary>
-        /// ÔÚ²»¿¼ÂÇºó×ºÃûµÄÇé¿öÏÂ£¬±È½ÏÁ½¸öÍøÖ·ÊÇ·ñÏàÍ¬
+        /// ï¿½Ú²ï¿½ï¿½ï¿½ï¿½Çºï¿½×ºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â£ï¿½ï¿½È½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½Ç·ï¿½ï¿½ï¿½Í¬
         /// </summary>
         /// <param name="url1"></param>
         /// <param name="url2"></param>
         /// <returns></returns>
-        public static Boolean CompareUrlWithoutExt(String url1, String url2)
+        public static bool CompareUrlWithoutExt(string url1, string url2)
         {
             if (strUtil.IsNullOrEmpty(url1) && strUtil.IsNullOrEmpty(url2)) return true;
             if (strUtil.IsNullOrEmpty(url1) || strUtil.IsNullOrEmpty(url2)) return false;

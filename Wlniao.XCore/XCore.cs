@@ -25,6 +25,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 using Wlniao.Log;
 
 namespace Wlniao
@@ -32,12 +35,12 @@ namespace Wlniao
     /// <summary>
     /// XCore内部运行信息及状态
     /// </summary>
-    public partial class XCore
+    public class XCore
     {
         /// <summary>
         /// 单线程锁
         /// </summary>
-        public static Object Lock = new object();
+        public static object Lock = new object();
         /// <summary>
         /// 框架初始化时间
         /// </summary>
@@ -100,19 +103,19 @@ namespace Wlniao
                 }
                 Console.ResetColor();
                 Console.WriteLine("");
-                if (!String.IsNullOrEmpty(XServerId))
+                if (!string.IsNullOrEmpty(XServerId))
                 {
                     Console.WriteLine("XServerId            " + XServerId);
                 }
-                if (!String.IsNullOrEmpty(WebHost))
+                if (!string.IsNullOrEmpty(WebHost))
                 {
                     Console.WriteLine("Web Host             " + WebHost);
                 }
-                if (!String.IsNullOrEmpty(WebNode))
+                if (!string.IsNullOrEmpty(WebNode))
                 {
                     Console.WriteLine("Program Node         " + WebNode);
                 }
-                if (!String.IsNullOrEmpty(ProgramVersion))
+                if (!string.IsNullOrEmpty(ProgramVersion))
                 {
                     Console.WriteLine("Program Version      " + ProgramVersion);
                 }
@@ -140,6 +143,16 @@ namespace Wlniao
         /// 托管的SSL证书检查服务
         /// </summary>
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback = ServerCertificateCustomValidation;
+        
+        /// <summary>
+        /// 基础的JSON序列化选项
+        /// </summary>
+        public static JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions
+        {
+            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
+            UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
+        };
+        
         /// <summary>
         /// 内置SSL证书检查服务（放通内部自签CA）
         /// </summary>
@@ -175,15 +188,15 @@ namespace Wlniao
         }
 
         #region 系统信息
-        private static Int16 microNode = 0;
-        private static String startupTime = null;
-        private static String startupRoot = null;
-        private static String sessionEncryptKey = null;
-        private static String _XServerId = null;
-        private static String _XServerIP = null;
-        private static String _WebNode = null;
-        private static String _WebHost = null;
-        private static String _Webroxy = null;
+        private static short microNode = 0;
+        private static string startupTime = null;
+        private static string startupRoot = null;
+        private static string sessionEncryptKey = null;
+        private static string _XServerId = null;
+        private static string _XServerIP = null;
+        private static string _WebNode = null;
+        private static string _WebHost = null;
+        private static string _Webroxy = null;
         /// <summary>
         /// 程序启动时间
         /// </summary>
@@ -201,7 +214,7 @@ namespace Wlniao
         /// <summary>
         /// 程序启动路径，默认为 /
         /// </summary>
-        public static String StartupRoot
+        public static string StartupRoot
         {
             get
             {
@@ -243,12 +256,12 @@ namespace Wlniao
         /// <summary>
         /// 框架的根目录
         /// </summary>
-        public const String FrameworkRoot = "xcore";
+        public const string FrameworkRoot = "xcore";
         private static int port = 0;
         /// <summary>
         /// 默认监听端口
         /// </summary>
-        public static Int32 ListenPort
+        public static int ListenPort
         {
             get
             {
@@ -266,7 +279,7 @@ namespace Wlniao
         /// <summary>
         /// 默认监听地址
         /// </summary>
-        public static String ListenUrls
+        public static string ListenUrls
         {
             get
             {
@@ -284,7 +297,7 @@ namespace Wlniao
         /// <summary>
         /// 是否为开发测试环境
         /// </summary>
-        public static Boolean IsDevTest
+        public static bool IsDevTest
         {
             get
             {
@@ -295,7 +308,7 @@ namespace Wlniao
         /// <summary>
         /// 是否微服务运行节点
         /// </summary>
-        public static Boolean IsMicroservicesNode
+        public static bool IsMicroservicesNode
         {
             get
             {

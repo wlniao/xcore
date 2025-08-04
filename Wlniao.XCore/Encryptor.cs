@@ -84,7 +84,7 @@ namespace Wlniao
         /// <param name="private_key">RSA私钥，查看方式：openssl pkcs12 -in cert.pfx -nocerts -nodes</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
-        public static string RsaDecryptWithPrivate(String data, String private_key, System.Text.Encoding encoding = null)
+        public static string RsaDecryptWithPrivate(string data, string private_key, System.Text.Encoding encoding = null)
         {
             var sData = System.Convert.FromBase64String(data);
             if (encoding == null)
@@ -124,7 +124,7 @@ namespace Wlniao
         /// <param name="public_key">RSA公钥，查看方式：openssl x509 -in send.crt -pubkey</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
-        public static string RsaEncryptWithPublic(String data, String public_key, System.Text.Encoding encoding = null)
+        public static string RsaEncryptWithPublic(string data, string public_key, System.Text.Encoding encoding = null)
         {
             if (encoding == null)
             {
@@ -149,7 +149,7 @@ namespace Wlniao
         /// <param name="private_key">RSA私钥，查看方式：openssl pkcs12 -in cert.pfx -nocerts -nodes</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
-        public static string RsaSignWithPrivate(String data, String private_key, System.Text.Encoding encoding = null)
+        public static string RsaSignWithPrivate(string data, string private_key, System.Text.Encoding encoding = null)
         {
             if (encoding == null)
             {
@@ -194,7 +194,7 @@ namespace Wlniao
         /// <param name="public_key">RSA公钥，查看方式：openssl x509 -in send.crt -pubkey</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
-        public static bool RsaVerifyWithPublic(String data, String sign, String public_key, System.Text.Encoding encoding = null)
+        public static bool RsaVerifyWithPublic(string data, string sign, string public_key, System.Text.Encoding encoding = null)
         {
             var sData = encoding.GetBytes(data);
             if (encoding == null)
@@ -493,7 +493,7 @@ namespace Wlniao
         /// <param name="plainText"></param>
         /// <param name="publicKey"></param>
         /// <returns></returns>
-        public static String SM2EncryptByPublicKey(string plainText, string publicKey)
+        public static string SM2EncryptByPublicKey(string plainText, string publicKey)
         {
             if (string.IsNullOrEmpty(plainText))
             {
@@ -510,7 +510,7 @@ namespace Wlniao
         /// <param name="plainBytes"></param>
         /// <param name="publicKey"></param>
         /// <returns></returns>
-        public static String SM2EncryptByPublicKey(byte[] plainBytes, byte[] publicKey)
+        public static string SM2EncryptByPublicKey(byte[] plainBytes, byte[] publicKey)
         {
             if (plainBytes == null || publicKey == null)
             {
@@ -526,7 +526,7 @@ namespace Wlniao
         /// <param name="encryText"></param>
         /// <param name="privateKey"></param>
         /// <returns></returns>
-        public static String SM2DecryptByPrivateKey(string encryText, string privateKey)
+        public static string SM2DecryptByPrivateKey(string encryText, string privateKey)
         {
             if (string.IsNullOrEmpty(encryText))
             {
@@ -548,7 +548,7 @@ namespace Wlniao
         /// <param name="encryBytes"></param>
         /// <param name="privateKey"></param>
         /// <returns></returns>
-        public static String SM2DecryptByPrivateKey(byte[] encryBytes, byte[] privateKey)
+        public static string SM2DecryptByPrivateKey(byte[] encryBytes, byte[] privateKey)
         {
             if (encryBytes == null || privateKey == null)
             {
@@ -565,7 +565,7 @@ namespace Wlniao
         /// <param name="secretKey"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static String SM4EncryptECBToHex(string plainText, string secretKey, bool isPadding = true)
+        public static string SM4EncryptECBToHex(string plainText, string secretKey, bool isPadding = true)
         {
             if (string.IsNullOrEmpty(plainText))
             {
@@ -584,7 +584,7 @@ namespace Wlniao
         /// <param name="secretKey"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static String SM4EncryptECBToBase64(string plainText, string secretKey, bool isPadding = true)
+        public static string SM4EncryptECBToBase64(string plainText, string secretKey, bool isPadding = true)
         {
             if (string.IsNullOrEmpty(plainText))
             {
@@ -603,7 +603,7 @@ namespace Wlniao
         /// <param name="secretKey"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static String SM4DecryptECBFromHex(string encryText, string secretKey, bool isPadding = true)
+        public static string SM4DecryptECBFromHex(string encryText, string secretKey, bool isPadding = true)
         {
             if (!string.IsNullOrEmpty(encryText))
             {
@@ -626,7 +626,7 @@ namespace Wlniao
         /// <param name="secretKey"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static String SM4DecryptECBFromBase64(string encryText, string secretKey, bool isPadding = true)
+        public static string SM4DecryptECBFromBase64(string encryText, string secretKey, bool isPadding = true)
         {
             if (!string.IsNullOrEmpty(encryText))
             {
@@ -651,7 +651,7 @@ namespace Wlniao
         /// <param name="iv"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static String SM4EncryptCBCToHex(string plainText, string secretKey, string iv, bool isPadding = true)
+        public static string SM4EncryptCBCToHex(string plainText, string secretKey, string iv, bool isPadding = true)
         {
             if (!string.IsNullOrEmpty(plainText))
             {
@@ -676,7 +676,7 @@ namespace Wlniao
         /// <param name="iv"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static String SM4EncryptCBCToBase64(string plainText, string secretKey, string iv, bool isPadding = true)
+        public static string SM4EncryptCBCToBase64(string plainText, string secretKey, string iv, bool isPadding = true)
         {
             if (!string.IsNullOrEmpty(plainText))
             {
@@ -701,7 +701,7 @@ namespace Wlniao
         /// <param name="iv"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static String SM4DecryptCBCFromHex(string encryText, string secretKey, string iv, bool isPadding = true)
+        public static string SM4DecryptCBCFromHex(string encryText, string secretKey, string iv, bool isPadding = true)
         {
             if (!string.IsNullOrEmpty(encryText))
             {
@@ -726,7 +726,7 @@ namespace Wlniao
         /// <param name="iv"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static String SM4DecryptCBCFromBase64(string encryText, string secretKey, string iv, bool isPadding = true)
+        public static string SM4DecryptCBCFromBase64(string encryText, string secretKey, string iv, bool isPadding = true)
         {
             if (!string.IsNullOrEmpty(encryText))
             {

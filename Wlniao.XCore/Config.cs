@@ -38,23 +38,23 @@ namespace Wlniao
         /// <summary>
         /// 环境变量内容
         /// </summary>
-        private static Dictionary<String, String> _env = null;
+        private static Dictionary<string, string> _env = null;
         /// <summary>
         /// 环境变量内容
         /// </summary>
-        private static Dictionary<String, String> _config = null;
+        private static Dictionary<string, string> _config = null;
         /// <summary>
         /// 
         /// </summary>
-        private static String _file = null;
+        private static string _file = null;
         /// <summary>
         /// 配置文件密钥
         /// </summary>
-		public static String Secret { get; set; }
+		public static string Secret { get; set; }
 		/// <summary>
 		/// 配置文件路径
 		/// </summary>
-		internal static String FileName
+		internal static string FileName
         {
             get
             {
@@ -72,6 +72,7 @@ namespace Wlniao
                 return _file;
             }
         }
+        
         /// <summary>
         /// 重置配置文件内容
         /// </summary>
@@ -86,7 +87,7 @@ namespace Wlniao
         /// <param name="key"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        public static String GetSetting(String key, String defaultValue = null)
+        public static string GetSetting(string key, string defaultValue = null)
         {
             var val = GetEnvironment(key.ToUpper());
             if (string.IsNullOrEmpty(val))
@@ -102,7 +103,7 @@ namespace Wlniao
         /// <param name="secret">SM4密钥</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>返回一个字符串值</returns>
-        public static String GetEncrypt(String key, String secret, String defaultValue = null)
+        public static string GetEncrypt(string key, string secret, string defaultValue = null)
         {
             var val = GetEnvironment(key.ToUpper());
             if (string.IsNullOrEmpty(val))
@@ -145,7 +146,7 @@ namespace Wlniao
         /// <param name="key">项的名称</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>返回一个字符串值</returns>
-        public static String GetConfigs(String key, String defaultValue = null)
+        public static string GetConfigs(string key, string defaultValue = null)
         {
             var val = GetEnvironment(key.ToUpper());
             if (string.IsNullOrEmpty(val))
@@ -182,7 +183,7 @@ namespace Wlniao
         /// <param name="key">项的名称</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>返回一个字符串值</returns>
-        private static String GetConfigsAutoWrite(String key, String defaultValue = null)
+        private static string GetConfigsAutoWrite(string key, string defaultValue = null)
         {
             if (_config == null)
             {
@@ -215,7 +216,7 @@ namespace Wlniao
         /// <param name="key">项的名称</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>返回一个字符串值</returns>
-        public static String GetEnvironment(String key, String defaultValue = "")
+        public static string GetEnvironment(string key, string defaultValue = "")
         {
             if (_env == null || _env.Count == 0)
             {
@@ -244,7 +245,7 @@ namespace Wlniao
         /// <param name="key">项的名称</param>
         /// <param name="value">项的值</param>
         /// <returns>返回结果</returns>
-        public static Boolean SetConfigs(String key, String value = "")
+        public static bool SetConfigs(string key, string value = "")
         {
             if (_config == null)
             {
@@ -260,7 +261,7 @@ namespace Wlniao
         /// <param name="value">项的值</param>
         /// <param name="secret">SM4密钥</param>
         /// <returns>返回结果</returns>
-        public static Boolean SetEncrypt(String key, String value, String secret)
+        public static bool SetEncrypt(string key, string value, string secret)
         {
             if (_config == null)
             {
@@ -279,7 +280,7 @@ namespace Wlniao
 		/// </summary>
 		/// <param name="key">项的名称</param>
 		/// <returns>返回结果</returns>
-		public static Boolean Remove(String key)
+		public static bool Remove(string key)
         {
             if (_config != null)
             {
@@ -297,7 +298,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="path">配置文件的路径(相对路径，相对于项目的根目录)</param>
         /// <returns>返回一个 Dictionary</returns>
-        public static void Read(String path)
+        public static void Read(string path)
         {
             lock (XCore.Lock)
             {
@@ -317,14 +318,14 @@ namespace Wlniao
         /// </summary>
         /// <param name="dic">一个 Dictionary</param>
         /// <param name="path">配置文件的路径(相对路径，相对于项目的根目录)</param>
-        public static bool Write(Dictionary<String, String> dic, String path)
+        public static bool Write(Dictionary<string, string> dic, string path)
         {
             try
             {
                 if (_config != null)
                 {
                     var sb = new StringBuilder();
-                    foreach (KeyValuePair<String, String> pair in _config.OrderBy(o => o.Key))
+                    foreach (KeyValuePair<string, string> pair in _config.OrderBy(o => o.Key))
                     {
                         if (_config.ContainsKey("yaml"))
                         {

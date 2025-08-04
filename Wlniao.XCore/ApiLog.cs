@@ -137,7 +137,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="ApiNode"></param>
         /// <param name="ApiUrl"></param>
-        public ApiLog(String ApiNode, String ApiUrl)
+        public ApiLog(string ApiNode, string ApiUrl)
         {
             _apinode = ApiNode;
             _apiurl = ApiUrl;
@@ -147,7 +147,7 @@ namespace Wlniao
         /// 
         /// </summary>
         /// <returns></returns>
-        public ApiLog Success(String message = "")
+        public ApiLog Success(string message = "")
         {
             _usetime = System.Convert.ToInt32((DateTime.Now - _time).TotalMilliseconds);
             _message = message;
@@ -159,7 +159,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public ApiLog Failed(String message = "")
+        public ApiLog Failed(string message = "")
         {
             _usetime = System.Convert.ToInt32((DateTime.Now - _time).TotalMilliseconds);
             _message = message;

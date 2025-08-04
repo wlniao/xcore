@@ -36,7 +36,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="absolutePath">要判断的 <see cref="System.String"/> 文件路径</param>
         /// <returns>返回编码类型("GB2312", "GBK", "HZ", "Big5", "CNS 11643", "ISO 2022CN", "UTF-8", "Unicode", "ASCII", "OTHER")</returns>
-        public static string GetEncodingName(String absolutePath)
+        public static string GetEncodingName(string absolutePath)
         {
             try
             {

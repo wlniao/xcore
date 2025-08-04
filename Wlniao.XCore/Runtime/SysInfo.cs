@@ -32,7 +32,7 @@ namespace Wlniao.Runtime
         /// <summary>
         /// 当前是否为Linux系统
         /// </summary>
-        public static Boolean IsLinux
+        public static bool IsLinux
         {
             get
             {
@@ -42,7 +42,7 @@ namespace Wlniao.Runtime
         /// <summary>
         /// 当前是否为Windows系统
         /// </summary>
-        public static Boolean IsWindows
+        public static bool IsWindows
         {
             get
             {
@@ -52,7 +52,7 @@ namespace Wlniao.Runtime
         /// <summary>
         /// 当前是否为OSX系统
         /// </summary>
-        public static Boolean OSX
+        public static bool OSX
         {
             get
             {
@@ -64,11 +64,11 @@ namespace Wlniao.Runtime
 
 
         #region 程序状态
-        private static String appMode = null;   //web,console,service,winform
+        private static string appMode = null;   //web,console,service,winform
         /// <summary>
         /// 是否为Web应用
         /// </summary>
-        public static Boolean IsWeb
+        public static bool IsWeb
         {
             get
             {
@@ -85,7 +85,7 @@ namespace Wlniao.Runtime
         /// <summary>
         /// 是否为控制台应用
         /// </summary>
-        public static Boolean IsConsole
+        public static bool IsConsole
         {
             get
             {
@@ -102,7 +102,7 @@ namespace Wlniao.Runtime
         /// <summary>
         /// 是否为系统服务
         /// </summary>
-        public static Boolean IsService
+        public static bool IsService
         {
             get
             {
@@ -119,7 +119,7 @@ namespace Wlniao.Runtime
         /// <summary>
         /// 是否为窗口程序
         /// </summary>
-        public static Boolean IsWinForm
+        public static bool IsWinForm
         {
             get
             {

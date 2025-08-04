@@ -72,7 +72,7 @@ namespace Wlniao.Caching
         /// <summary>
         /// Redis链接字符串
         /// </summary>
-        public static String ConnStr
+        public static string ConnStr
         {
             get
             {
@@ -202,7 +202,7 @@ namespace Wlniao.Caching
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static T Get<T>(String key)
+        public static T Get<T>(string key)
         {
             var str = Get(key);
             if (!string.IsNullOrEmpty(str))
@@ -221,7 +221,7 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <param name="expire"></param>
-        public static Boolean Set(String key, Byte[] value, Int32 expire)
+        public static bool Set(string key, byte[] value, int expire)
         {
             try
             {
@@ -243,7 +243,7 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <param name="expire"></param>
-        public static Boolean Set(String key, String value, Int32 expire)
+        public static bool Set(string key, string value, int expire)
         {
             return Set(key, UTF8Encoding.UTF8.GetBytes(value), expire);
         }
@@ -255,7 +255,7 @@ namespace Wlniao.Caching
         /// <param name="obj"></param>
         /// <param name="expire"></param>
         /// <returns></returns>
-        public static Boolean Set<T>(String key, T obj, Int32 expire)
+        public static bool Set<T>(string key, T obj, int expire)
         {
             return Set(key, JsonSerializer.Serialize(obj, new JsonSerializerOptions
             {
@@ -267,7 +267,7 @@ namespace Wlniao.Caching
         /// 
         /// </summary>
         /// <param name="key"></param>
-        public static Boolean KeyDelete(String key)
+        public static bool KeyDelete(string key)
         {
             try
             {
@@ -288,7 +288,7 @@ namespace Wlniao.Caching
         /// 
         /// </summary>
         /// <param name="key"></param>
-        public static Boolean KeyExists(String key)
+        public static bool KeyExists(string key)
         {
             try
             {

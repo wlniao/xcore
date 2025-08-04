@@ -79,7 +79,7 @@ namespace Wlniao.OpenApi
             /// 实例化一个空坐标系
             /// </summary>
             /// <param name="location">经纬度坐标（纬度在前）</param>
-            public Coord(String location)
+            public Coord(string location)
             {
                 var lbs = location.Split(',', ';');
                 if (double.Parse(lbs[0]) > 90 || double.Parse(lbs[0]) < -90)
@@ -220,7 +220,7 @@ namespace Wlniao.OpenApi
             /// <param name="degrees">半径(米)</param>
             /// <param name="large">大范围/小范围（400km以上/400km以内）</param>
             /// <returns></returns>
-            public static Coord GetCenterPoint(List<Coord> degrees,Boolean large=false)
+            public static Coord GetCenterPoint(List<Coord> degrees,bool large=false)
             {
                 int total = degrees.Count;
                 if (large)
@@ -305,7 +305,7 @@ namespace Wlniao.OpenApi
         /// <param name="radius">距离</param>
         /// <param name="query">类型，如：银行,酒店</param>
         /// <returns></returns>
-        public static ApiResult<List<PlaceModel>> Search(Double lat, Double lng, Int32 radius, String query = "")
+        public static ApiResult<List<PlaceModel>> Search(double lat, double lng, int radius, string query = "")
         {
             ApiResult<List<PlaceModel>> rlt = null;
             try
@@ -337,7 +337,7 @@ namespace Wlniao.OpenApi
         /// <param name="key">关键字</param>
         /// <param name="city">限定城市范围</param>
         /// <returns></returns>
-        public static ApiResult<List<SuggestionModel>> Suggestion(String key, String city = "")
+        public static ApiResult<List<SuggestionModel>> Suggestion(string key, string city = "")
         {
             ApiResult<List<SuggestionModel>> rlt = null;
             try
@@ -370,9 +370,9 @@ namespace Wlniao.OpenApi
         /// <param name="destinations"></param>
         /// <param name="mode">导航模式：walking（步行）、driving（驾车）、line（直线）</param>
         /// <returns></returns>
-        public static ApiResult<Double> GetDistance(String origins, String destinations, String mode = "")
+        public static ApiResult<double> GetDistance(string origins, string destinations, string mode = "")
         {
-            ApiResult<Double> rlt = null;
+            ApiResult<double> rlt = null;
             try
             {
                 var json = XServer.Common.Get("openapi", "lbs", "getdistance"
@@ -380,17 +380,17 @@ namespace Wlniao.OpenApi
                 , new KeyValuePair<string, string>("destinations", destinations)
                 , new KeyValuePair<string, string>("mode", mode)
                 );
-                rlt = Json.ToObject<ApiResult<Double>>(json);
+                rlt = Json.ToObject<ApiResult<double>>(json);
                 if (rlt == null)
                 {
-                    rlt = new ApiResult<Double>();
+                    rlt = new ApiResult<double>();
                     rlt.success = false;
                     rlt.message = "解析Json结果失败";
                 }
             }
             catch (Exception ex)
             {
-                rlt = new ApiResult<Double>();
+                rlt = new ApiResult<double>();
                 rlt.success = false;
                 rlt.message = "发生异常：" + ex.Message;
             }
@@ -402,7 +402,7 @@ namespace Wlniao.OpenApi
         /// <param name="longitude"></param>
         /// <param name="latitude"></param>
         /// <returns></returns>
-        public static ApiResult<String> GetAddressByPoint(Double longitude, Double latitude)
+        public static ApiResult<string> GetAddressByPoint(double longitude, double latitude)
         {
             return GetAddressByPoint(longitude.ToString("F8"), latitude.ToString("F8"));
         }
@@ -412,26 +412,26 @@ namespace Wlniao.OpenApi
         /// <param name="longitude"></param>
         /// <param name="latitude"></param>
         /// <returns></returns>
-        public static ApiResult<String> GetAddressByPoint(String longitude, String latitude)
+        public static ApiResult<string> GetAddressByPoint(string longitude, string latitude)
         {
-            ApiResult<String> rlt = null;
+            ApiResult<string> rlt = null;
             try
             {
                 var json = XServer.Common.Get("openapi", "lbs", "getaddressbypoint"
                 , new KeyValuePair<string, string>("longitude", longitude)
                 , new KeyValuePair<string, string>("latitude", latitude)
                 );
-                rlt = Json.ToObject<ApiResult<String>>(json);
+                rlt = Json.ToObject<ApiResult<string>>(json);
                 if (rlt == null)
                 {
-                    rlt = new ApiResult<String>();
+                    rlt = new ApiResult<string>();
                     rlt.success = false;
                     rlt.message = "解析Json结果失败";
                 }
             }
             catch (Exception ex)
             {
-                rlt = new ApiResult<String>();
+                rlt = new ApiResult<string>();
                 rlt.success = false;
                 rlt.message = "发生异常：" + ex.Message;
             }
@@ -442,7 +442,7 @@ namespace Wlniao.OpenApi
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        public static ApiResult<IPGis> GetByIP(String ip)
+        public static ApiResult<IPGis> GetByIP(string ip)
         {
             ApiResult<IPGis> rlt = null;
             try

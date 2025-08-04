@@ -179,8 +179,8 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public static byte[] GetBytesFromPemFile(string pemString, string headerPEM)
         {
-            string header = String.Format("-----BEGIN {0}-----", headerPEM);
-            string footer = String.Format("-----END {0}-----", headerPEM);
+            string header = string.Format("-----BEGIN {0}-----", headerPEM);
+            string footer = string.Format("-----END {0}-----", headerPEM);
             int start = pemString.IndexOf(header, StringComparison.Ordinal) + header.Length;
             int end = pemString.IndexOf(footer, start, StringComparison.Ordinal) - start;
             if (start < 0 || end < 0)

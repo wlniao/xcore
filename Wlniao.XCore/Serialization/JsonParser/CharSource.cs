@@ -1,7 +1,7 @@
 /*==============================================================================
-    ÎÄ¼þÃû³Æ£ºNotSerializeAttribute.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£º
+    ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½NotSerializeAttribute.cs
+    ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -32,28 +32,28 @@ namespace Wlniao.Serialization
     {
         public char[] charList;
         private int index = -1;
-        private String _strSrc;
-        public String strSrc { get { return _strSrc; } set { _strSrc = value; } }
-        public CharSource(String src)
+        private string _strSrc;
+        public string strSrc { get { return _strSrc; } set { _strSrc = value; } }
+        public CharSource(string src)
         {
             //this.strSrc = src;
             this.strSrc = clearComment(src);
             this.charList = this.strSrc.ToCharArray();
         }
         /// <summary>
-        /// Çå³ý±¸×¢£¨ÒÔ¡°//¡±¿ªÊ¼µÄÐÐ£©
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½Ô¡ï¿½//ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½Ð£ï¿½
         /// </summary>
         /// <param name="src"></param>
         /// <returns></returns>
-        private String clearComment(String src)
+        private string clearComment(string src)
         {
             if (src == null)
             {
                 return null;
             }
-            String[] arr = src.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] arr = src.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
             StringBuilder sb = new StringBuilder();
-            foreach (String line in arr)
+            foreach (string line in arr)
             {
                 if (line.Trim().StartsWith("//"))
                 {
@@ -90,7 +90,7 @@ namespace Wlniao.Serialization
             }
             moveToText();
         }
-        public Boolean isEnd()
+        public bool isEnd()
         {
             return (index >= charList.Length - 1);
         }

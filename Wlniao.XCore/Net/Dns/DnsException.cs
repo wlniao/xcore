@@ -14,7 +14,7 @@ namespace Wlniao.Net.Dns
         /// 
         /// </summary>
         /// <param name="message"></param>
-        public DnsException(String message) : base(message)
+        public DnsException(string message) : base(message)
         {
         }
     }

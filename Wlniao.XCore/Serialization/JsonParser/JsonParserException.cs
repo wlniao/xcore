@@ -1,7 +1,7 @@
 /*==============================================================================
-    ÎÄ¼þÃû³Æ£ºJsonParserException.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£º
+    ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½JsonParserException.cs
+    ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -29,23 +29,23 @@ namespace Wlniao.Serialization
     internal class JsonParserException : Exception
     {
 
-        private String msg;
+        private string msg;
 
         public JsonParserException()
         {
         }
 
-        public JsonParserException(String msg)
+        public JsonParserException(string msg)
         {
             this.msg = msg;
         }
 
-        public JsonParserException(String msg, Exception inner)
+        public JsonParserException(string msg, Exception inner)
             : base(msg, inner)
         {
         }
 
-        public override String Message
+        public override string Message
         {
             get
             {
@@ -54,7 +54,7 @@ namespace Wlniao.Serialization
         }
 
 
-        public override String ToString()
+        public override string ToString()
         {
             return base.ToString() + Environment.NewLine + this.msg;
         }

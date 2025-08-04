@@ -21,8 +21,7 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
-using System.Text;
+using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
@@ -32,9 +31,9 @@ namespace Wlniao.Caching
     /// <summary>
     /// InMemory缓存
     /// </summary>
-    public class InMemory
+    public static class InMemory
     {
-        private static Dictionary<String, CacheData> cache = new Dictionary<String, CacheData>();
+        private static readonly Dictionary<string, CacheData> Cache = new();
 
 
         /// <summary>
@@ -43,19 +42,21 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <param name="expireSeconds"></param>
-        public static Boolean Set(String key, String value, int expireSeconds = 86400)
+        public static bool Set(string key, string value, int expireSeconds = 86400)
         {
-            if (cache.ContainsKey(key))
+            if (Cache.ContainsKey(key))
             {
-                cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
-                cache[key].Value = value == null ? "" : value;
+                Cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
+                Cache[key].Value = value ?? "";
             }
             else
             {
-                var data = new CacheData();
-                data.Expire = DateTime.Now.AddSeconds(expireSeconds);
-                data.Value = value == null ? "" : value;
-                cache.Add(key, data);
+                var data = new CacheData
+                {
+                    Expire = DateTime.Now.AddSeconds(expireSeconds),
+                    Value = value ?? ""
+                };
+                Cache.Add(key, data);
             }
             return true;
         }
@@ -69,25 +70,27 @@ namespace Wlniao.Caching
         /// <param name="obj"></param>
         /// <param name="expireSeconds"></param>
         /// <returns></returns>
-        public static Boolean Set<T>(String key, T obj, int expireSeconds = 86400)
+        public static bool Set<T>(string key, T obj, int expireSeconds = 86400)
         {
-            if (cache.ContainsKey(key))
+            if (Cache.ContainsKey(key))
             {
-                cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
-                cache[key].Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+                Cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
+                Cache[key].Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
                 {
                     Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
                 });
             }
             else
             {
-                var data = new CacheData();
-                data.Expire = DateTime.Now.AddSeconds(expireSeconds);
-                data.Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+                var data = new CacheData
                 {
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                });
-                cache.Add(key, data);
+                    Expire = DateTime.Now.AddSeconds(expireSeconds),
+                    Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+                    {
+                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                    })
+                };
+                Cache.Add(key, data);
             }
             return true;
         }
@@ -98,25 +101,17 @@ namespace Wlniao.Caching
         /// 删除缓存内容
         /// </summary>
         /// <param name="key"></param>
-        public static Boolean Del(String key)
+        public static bool Del(string key)
         {
-            if (cache.ContainsKey(key))
-            {
-                return cache.Remove(key);
-            }
-            else
-            {
-                return false;
-            }
+            return Cache.ContainsKey(key) && Cache.Remove(key);
         }
 
         /// <summary>
         /// 删除缓存内容
         /// </summary>
         /// <param name="keys"></param>
-        public static Boolean RangeDelete(String keys)
+        public static bool RangeDelete(string keys)
         {
-
             if (string.IsNullOrEmpty(keys))
             {
                 return false;
@@ -124,30 +119,28 @@ namespace Wlniao.Caching
             else if (keys.EndsWith('*'))
             {
                 var tmp = keys.TrimEnd('*');
-                foreach (var key in cache.Keys)
-                {
-                    if (key.StartsWith(tmp))
-                    {
-                        return cache.Remove(key);
-                    }
-                }
+                return (from key in Cache.Keys where key.StartsWith(tmp) select Cache.Remove(key)).FirstOrDefault();
             }
             else
             {
-                return cache.Remove(keys);
+                return Cache.Remove(keys);
             }
-            return false;
         }
 
         /// <summary>
         /// 判断是否存在缓存项
         /// </summary>
         /// <param name="key"></param>
-        public static Boolean Exists(String key)
+        public static bool Exists(string key)
         {
-            if (cache.ContainsKey(key) && cache[key].Expire > DateTime.Now)
+            if (!Cache.ContainsKey(key)) return false;
+            if (Cache[key].Expire > DateTime.Now)
             {
                 return true;
+            }
+            else
+            {
+                Cache.Remove(key);
             }
             return false;
         }
@@ -156,11 +149,16 @@ namespace Wlniao.Caching
         /// 获取一个缓存项
         /// </summary>
         /// <param name="key"></param>
-        public static String Get(String key)
+        public static string Get(string key)
         {
-            if (cache.ContainsKey(key) && cache[key].Expire > DateTime.Now)
+            if (!Cache.ContainsKey(key)) return "";
+            if (Cache[key].Expire > DateTime.Now)
             {
-                return cache[key].Value == null ? "" : cache[key].Value;
+                return Cache[key].Value == null ? "" : Cache[key].Value;
+            }
+            else
+            {
+                Cache.Remove(key);
             }
             return "";
         }
@@ -168,11 +166,16 @@ namespace Wlniao.Caching
         /// 获取一个缓存项（允许null）
         /// </summary>
         /// <param name="key"></param>
-        public static String GetAllowNull(String key)
+        public static string GetAllowNull(string key)
         {
-            if (cache.ContainsKey(key) && cache[key].Expire > DateTime.Now)
+            if (!Cache.ContainsKey(key)) return null;
+            if (Cache[key].Expire > DateTime.Now)
             {
-                return cache[key].Value;
+                return Cache[key].Value;
+            }
+            else
+            {
+                Cache.Remove(key);
             }
             return null;
         }
@@ -182,14 +185,19 @@ namespace Wlniao.Caching
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static T Get<T>(String key)
+        public static T Get<T>(string key)
         {
-            if (cache.ContainsKey(key) && cache[key].Expire > DateTime.Now)
+            if (!Cache.ContainsKey(key)) return default(T);
+            if (Cache[key].Expire > DateTime.Now)
             {
-                return JsonSerializer.Deserialize<T>(cache[key].Value, new JsonSerializerOptions
+                return JsonSerializer.Deserialize<T>(Cache[key].Value, new JsonSerializerOptions
                 {
                     Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
                 });
+            }
+            else
+            {
+                Cache.Remove(key);
             }
             return default(T);
         }

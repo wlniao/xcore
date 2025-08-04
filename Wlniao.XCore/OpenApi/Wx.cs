@@ -247,18 +247,18 @@ namespace Wlniao.OpenApi
         /// <param name="appid"></param>
         /// <param name="appsecret"></param>
         /// <returns></returns>
-        public static ApiResult<String> GetAccessToken(String appid, String appsecret)
+        public static ApiResult<string> GetAccessToken(string appid, string appsecret)
         {
-            var rlt = new ApiResult<String>();
+            var rlt = new ApiResult<string>();
             try
             {
                 var json = XServer.Common.Get("openapi", "wx", "getaccesstoken"
                     , new KeyValuePair<string, string>("appid", appid)
                     , new KeyValuePair<string, string>("appsecret", appsecret));
-                rlt = Json.ToObject<ApiResult<String>>(json);
+                rlt = Json.ToObject<ApiResult<string>>(json);
                 if (rlt == null)
                 {
-                    rlt = new ApiResult<String>();
+                    rlt = new ApiResult<string>();
                     rlt.success = false;
                     rlt.message = "解析Json结果失败";
                 }
@@ -277,9 +277,9 @@ namespace Wlniao.OpenApi
         /// <param name="appid"></param>
         /// <param name="appsecret"></param>
         /// <returns></returns>
-        public static ApiResult<String> GetAccessTokenByLocal(String appid, String appsecret)
+        public static ApiResult<string> GetAccessTokenByLocal(string appid, string appsecret)
         {
-            var rlt = new ApiResult<String>();
+            var rlt = new ApiResult<string>();
             try
             {
                 #region 获取新的AccessToken
@@ -328,18 +328,18 @@ namespace Wlniao.OpenApi
         /// <param name="appid"></param>
         /// <param name="appsecret"></param>
         /// <returns></returns>
-        public static ApiResult<String> GetTicketJsApi(String appid, String appsecret)
+        public static ApiResult<string> GetTicketJsApi(string appid, string appsecret)
         {
-            var rlt = new ApiResult<String>();
+            var rlt = new ApiResult<string>();
             try
             {
                 var json = XServer.Common.Get("openapi", "wx", "getticketjsapi"
                     , new KeyValuePair<string, string>("appid", appid)
                     , new KeyValuePair<string, string>("appsecret", appsecret));
-                rlt = Json.ToObject<ApiResult<String>>(json);
+                rlt = Json.ToObject<ApiResult<string>>(json);
                 if (rlt == null)
                 {
-                    rlt = new ApiResult<String>();
+                    rlt = new ApiResult<string>();
                     rlt.success = false;
                     rlt.code = "";
                     rlt.message = "解析Json结果失败";
@@ -359,7 +359,7 @@ namespace Wlniao.OpenApi
         /// <param name="appid"></param>
         /// <param name="wxopenid"></param>
         /// <returns></returns>
-        public static UserInfo GetUserInfoByOpenApi(String appid, String wxopenid)
+        public static UserInfo GetUserInfoByOpenApi(string appid, string wxopenid)
         {
             var json = XServer.Common.Get("openapi", "wx", "getuserinfo"
                 , new KeyValuePair<string, string>("appid", appid)
@@ -377,7 +377,7 @@ namespace Wlniao.OpenApi
         /// <param name="access_token"></param>
         /// <param name="wxopenid"></param>
         /// <returns></returns>
-        public static UserInfo GetUserInfo(String access_token, String wxopenid)
+        public static UserInfo GetUserInfo(string access_token, string wxopenid)
         {
             string url = "https://api.weixin.qq.com/cgi-bin/user/info?access_token=" + access_token + "&openid=" + wxopenid + "&lang=zh_CN";
             string json = XServer.Common.GetResponseString(url);
@@ -397,9 +397,9 @@ namespace Wlniao.OpenApi
         /// <param name="url"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static ApiResult<String> SendTemplateMsg(String access_token, String wxopenid, String template_id,String topcolor, String url, Dictionary<String,TemplateData> data)
+        public static ApiResult<string> SendTemplateMsg(string access_token, string wxopenid, string template_id,string topcolor, string url, Dictionary<string,TemplateData> data)
         {
-            var rlt = new ApiResult<String>();
+            var rlt = new ApiResult<string>();
             try
             {
                 var json = Json.ToString(new
@@ -444,7 +444,7 @@ namespace Wlniao.OpenApi
         /// <param name="appid"></param>
         /// <param name="wxopenid"></param>
         /// <returns></returns>
-        public static ApiResult<AuthUserInfo> GetAuthUserInfoByOpenApi(String appid, String wxopenid)
+        public static ApiResult<AuthUserInfo> GetAuthUserInfoByOpenApi(string appid, string wxopenid)
         {
             ApiResult<AuthUserInfo> rlt = null;
             try
@@ -476,7 +476,7 @@ namespace Wlniao.OpenApi
         /// <param name="wxopenid"></param>
         /// <param name="access_token"></param>
         /// <returns></returns>
-        public static ApiResult<AuthUserInfo> GetAuthUserInfo(String appid, String wxopenid, String access_token)
+        public static ApiResult<AuthUserInfo> GetAuthUserInfo(string appid, string wxopenid, string access_token)
         {
             var rlt = new ApiResult<AuthUserInfo>();
             try
@@ -513,10 +513,10 @@ namespace Wlniao.OpenApi
         /// <param name="kvs">API参数</param>
         /// <param name="verifycode">密码</param>
         /// <returns>签名字符串</returns>
-        public static String GetSignatureStr(KeyValuePair<String, String>[] kvs, String verifycode = "")
+        public static string GetSignatureStr(KeyValuePair<string, string>[] kvs, string verifycode = "")
         {
             var values = new System.Text.StringBuilder();
-            var kvList = new List<KeyValuePair<String, String>>(kvs);
+            var kvList = new List<KeyValuePair<string, string>>(kvs);
             #region 排序并拼接签名原始字符
             kvList.Sort();
             foreach (var kv in kvList)

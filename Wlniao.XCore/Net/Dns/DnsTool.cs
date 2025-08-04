@@ -11,7 +11,7 @@ namespace Wlniao.Net.Dns
     /// </summary>
     public class DnsTool
     {
-        private Int32 requestID = 0;
+        private int requestID = 0;
         private IPAddress[] serverIPs;
         /// <summary>
         /// 
@@ -40,7 +40,7 @@ namespace Wlniao.Net.Dns
         /// 
         /// </summary>
         /// <param name="ServerIPorHost"></param>
-        public DnsTool(String ServerIPorHost)
+        public DnsTool(string ServerIPorHost)
         {
             if (Text.StringUtil.IsIP(ServerIPorHost))
             {
@@ -61,7 +61,7 @@ namespace Wlniao.Net.Dns
         /// </summary>
         /// <param name="qname"></param>
         /// <returns></returns>
-        public IPAddress GetIPAddressDefault(String qname)
+        public IPAddress GetIPAddressDefault(string qname)
         {
             IPAddress address = null;
             try
@@ -83,7 +83,7 @@ namespace Wlniao.Net.Dns
         /// <param name="qname"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public IPAddress GetIPAddress(String qname, DnsRecordType type = DnsRecordType.A)
+        public IPAddress GetIPAddress(string qname, DnsRecordType type = DnsRecordType.A)
         {
             if (qname.IndexOf('.') > 0)
             {
@@ -121,7 +121,7 @@ namespace Wlniao.Net.Dns
         /// </summary>
         /// <param name="qname"></param>
         /// <returns></returns>
-        public string GetCNAME(String qname)
+        public string GetCNAME(string qname)
         {
             var res = GetResponse(qname, DnsRecordType.CNAME);
             if (res != null)
@@ -139,7 +139,7 @@ namespace Wlniao.Net.Dns
         /// </summary>
         /// <param name="qname"></param>
         /// <returns></returns>
-        public String GetTXT(String qname)
+        public string GetTXT(string qname)
         {
             var res = GetResponse(qname, DnsRecordType.TXT);
             if (res != null)
@@ -159,7 +159,7 @@ namespace Wlniao.Net.Dns
         /// <param name="qname">记录名称</param>
         /// <param name="type">Query type</param>
         /// <returns></returns>
-        private DnsServerResponse GetResponse(String qname, DnsRecordType type)
+        private DnsServerResponse GetResponse(string qname, DnsRecordType type)
         {
             DnsServerResponse rlt = null;
             using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))

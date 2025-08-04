@@ -37,15 +37,15 @@ namespace Wlniao.Net
         /// <summary>
         /// 当前选中的数据库
         /// </summary>
-        public Int32 SelectDB = 0;
+        public int SelectDB = 0;
         /// <summary>
         /// 
         /// </summary>
-        public String Username = null;
+        public string Username = null;
         /// <summary>
         /// 
         /// </summary>
-        public String Password = null;
+        public string Password = null;
         /// <summary>
         /// 数据处理编码
         /// </summary>
@@ -81,7 +81,7 @@ namespace Wlniao.Net
         /// </summary>
         /// <param name="endpoint"></param>
         /// <param name="password"></param>
-        public RedisClient(EndPoint endpoint, String password)
+        public RedisClient(EndPoint endpoint, string password)
         {
             Password = password;
             EndPointList.Add(endpoint);
@@ -93,7 +93,7 @@ namespace Wlniao.Net
         /// <param name="username"></param>
         /// <param name="password"></param>
         /// <param name="nagle"></param>
-        public RedisClient(EndPoint endpoint, String username, String password, Boolean nagle = false)
+        public RedisClient(EndPoint endpoint, string username, string password, bool nagle = false)
         {
             Username = username;
             Password = password;
@@ -133,7 +133,7 @@ namespace Wlniao.Net
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <param name="expire"></param>
-        public Boolean Set(String key, byte[] value, Int32 expire)
+        public bool Set(string key, byte[] value, int expire)
         {
             try
             {
@@ -154,7 +154,7 @@ namespace Wlniao.Net
         /// 
         /// </summary>
         /// <param name="key"></param>
-        public Boolean KeyDelete(String key)
+        public bool KeyDelete(string key)
         {
             try
             {
@@ -172,7 +172,7 @@ namespace Wlniao.Net
         /// 
         /// </summary>
         /// <param name="key"></param>
-        public Boolean KeyExists(String key)
+        public bool KeyExists(string key)
         {
             try
             {
@@ -453,7 +453,7 @@ namespace Wlniao.Net
 
 
         #region 数据处理方法
-        private String ResToText(byte[] res)
+        private string ResToText(byte[] res)
         {
             if (res.Length > 0)
             {
@@ -474,7 +474,7 @@ namespace Wlniao.Net
             }
             return "";
         }
-        private Boolean ResToBool(byte[] res)
+        private bool ResToBool(byte[] res)
         {
             var temp = Encoding.GetString(res, 0, res.Length > 16 ? 16 : res.Length);
             if (temp.StartsWith("+OK"))

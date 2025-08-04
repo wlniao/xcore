@@ -36,7 +36,7 @@ namespace Wlniao.OpenApi
         /// 获取本机IP
         /// </summary>
         /// <returns></returns>
-        public static String GetIP()
+        public static string GetIP()
         {
             var ip = XServer.Common.Get("openapi", "tool", "getip");
             if (strUtil.IsIP(ip))
@@ -49,7 +49,7 @@ namespace Wlniao.OpenApi
         /// 获取本机IPv4
         /// </summary>
         /// <returns></returns>
-        public static String GetIPv4()
+        public static string GetIPv4()
         {
             var ip = XServer.Common.Get("openapi", "tool", "getipv4");
             if (strUtil.IsIPv4(ip))
@@ -62,7 +62,7 @@ namespace Wlniao.OpenApi
         /// 获取本机IPv6
         /// </summary>
         /// <returns></returns>
-        public static String GetIPv6()
+        public static string GetIPv6()
         {
             var ip = XServer.Common.Get("openapi", "tool", "getipv6");
             if (strUtil.IsIPv6(ip))
@@ -75,7 +75,7 @@ namespace Wlniao.OpenApi
         /// 获取本机IPv6（仅能联通的）
         /// </summary>
         /// <returns></returns>
-        public static String GetIPv6Connected()
+        public static string GetIPv6Connected()
         {
             var ip = XServer.Common.Get("openapi", "tool", "getipv6");
             if (strUtil.IsIPv6(ip))
@@ -137,7 +137,7 @@ namespace Wlniao.OpenApi
         /// 将汉字转换成拼音
         /// </summary>
         /// <returns></returns>
-        public static String GetPinyin(String str)
+        public static string GetPinyin(string str)
         {
             return XServer.Common.Get("openapi", "tool", "getpinyin", new KeyValuePair<string, string>("str", strUtil.UrlEncode(str)));
         }
@@ -145,7 +145,7 @@ namespace Wlniao.OpenApi
         /// 将汉字转换成拼音并获取首字母
         /// </summary>
         /// <returns></returns>
-        public static String GetChineseSpell(String str)
+        public static string GetChineseSpell(string str)
         {
             var py = GetPinyin(str);
             var words = py.Split(' ');
@@ -163,7 +163,7 @@ namespace Wlniao.OpenApi
         /// </summary>
         /// <param name="location">经纬度坐标（纬度在前）</param>
         /// <returns></returns>
-        public static ApiResult<Lbs.Coord> ConvertBaiduToGPS(String location)
+        public static ApiResult<Lbs.Coord> ConvertBaiduToGPS(string location)
         {
             var lbs = location.Split(',', ';');
             if (double.Parse(lbs[0]) > 90 || double.Parse(lbs[0]) < -90)
@@ -181,7 +181,7 @@ namespace Wlniao.OpenApi
         /// <param name="latitude">维度</param>
         /// <param name="longitude">经度</param>
         /// <returns></returns>
-        public static ApiResult<Lbs.Coord> ConvertBaiduToGPS(String latitude, String longitude)
+        public static ApiResult<Lbs.Coord> ConvertBaiduToGPS(string latitude, string longitude)
         {
             var rlt = new ApiResult<Lbs.Coord>();
             try
@@ -189,7 +189,7 @@ namespace Wlniao.OpenApi
                 var json = XServer.Common.Get("openapi", "tool", "geoconvert"
                 , new KeyValuePair<string, string>("lat", latitude)
                 , new KeyValuePair<string, string>("lng", longitude));
-                var _rlt = Json.ToObject<ApiResult<String>>(json);
+                var _rlt = Json.ToObject<ApiResult<string>>(json);
                 if (_rlt.success)
                 {
                     rlt.success = true;
@@ -213,7 +213,7 @@ namespace Wlniao.OpenApi
         /// </summary>
         /// <param name="location"></param>
         /// <returns></returns>
-        public static ApiResult<Lbs.Coord> ConvertGPSToBaiDu(String location)
+        public static ApiResult<Lbs.Coord> ConvertGPSToBaiDu(string location)
         {
             var lbs = location.Split(',', ';');
             if (double.Parse(lbs[0]) > 90 || double.Parse(lbs[0]) < -90)
@@ -231,7 +231,7 @@ namespace Wlniao.OpenApi
         /// <param name="longitude"></param>
         /// <param name="latitude"></param>
         /// <returns></returns>
-        public static ApiResult<Lbs.Coord> ConvertGPSToBaiDu(String longitude, String latitude)
+        public static ApiResult<Lbs.Coord> ConvertGPSToBaiDu(string longitude, string latitude)
         {
             var rlt = new ApiResult<Lbs.Coord>();
             try
@@ -239,7 +239,7 @@ namespace Wlniao.OpenApi
                 var json = XServer.Common.Get("openapi", "tool", "geoconvert2baidu"
                 , new KeyValuePair<string, string>("lat", latitude)
                 , new KeyValuePair<string, string>("lng", longitude));
-                var _rlt = Json.ToObject<ApiResult<String>>(json);
+                var _rlt = Json.ToObject<ApiResult<string>>(json);
                 if (_rlt.success)
                 {
                     rlt.success = true;
@@ -263,7 +263,7 @@ namespace Wlniao.OpenApi
         /// </summary>
         /// <param name="location"></param>
         /// <returns></returns>
-        public static ApiResult<Lbs.Coord> ConvertGPSToSoSo(String location)
+        public static ApiResult<Lbs.Coord> ConvertGPSToSoSo(string location)
         {
             var lbs = location.Split(',', ';');
             if (double.Parse(lbs[0]) > 90 || double.Parse(lbs[0]) < -90)
@@ -281,7 +281,7 @@ namespace Wlniao.OpenApi
         /// <param name="longitude"></param>
         /// <param name="latitude"></param>
         /// <returns></returns>
-        public static ApiResult<Lbs.Coord> ConvertGPSToSoSo(String longitude, String latitude)
+        public static ApiResult<Lbs.Coord> ConvertGPSToSoSo(string longitude, string latitude)
         {
             var rlt = new ApiResult<Lbs.Coord>();
             try
@@ -289,7 +289,7 @@ namespace Wlniao.OpenApi
                 var json = XServer.Common.Get("openapi", "tool", "geoconvert2soso"
                 , new KeyValuePair<string, string>("lat", latitude)
                 , new KeyValuePair<string, string>("lng", longitude));
-                var _rlt = Json.ToObject<ApiResult<String>>(json);
+                var _rlt = Json.ToObject<ApiResult<string>>(json);
                 if (_rlt.success)
                 {
                     rlt.success = true;

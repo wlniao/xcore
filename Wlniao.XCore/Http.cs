@@ -18,7 +18,7 @@ namespace Wlniao
         /// <summary>
         /// 监听的端口
         /// </summary>
-        public Int32 ListenPort = 80;
+        public int ListenPort = 80;
 
         /// <summary>
         /// 请求处理程序
@@ -34,44 +34,44 @@ namespace Wlniao
             /// <summary>  
             /// 请求时间
             /// </summary>  
-            public Int64 Time { get; set; }
+            public long Time { get; set; }
             /// <summary>  
             /// 响应状态
             /// </summary> 
-            public Int32 StatusCode = 200;
+            public int StatusCode = 200;
             /// <summary>  
             /// 请求路径
             /// </summary>  
-            public String Path { get; set; }
+            public string Path { get; set; }
             /// <summary>  
             /// 请求参数
             /// </summary>  
-            public String Query { get; set; }
+            public string Query { get; set; }
             /// <summary>  
             /// 请求方式
             /// </summary>  
-            public String Method { get; set; }
+            public string Method { get; set; }
             /// <summary>  
             /// 客户端IP
             /// </summary>  
-            public String ClientIP { get; set; }
+            public string ClientIP { get; set; }
             /// <summary>  
             /// 请求内容
             /// </summary>  
-            public String Request { get; set; }
+            public string Request { get; set; }
             /// <summary>  
             /// 输出内容
             /// </summary>  
-            public Object Response { get; set; }
+            public object Response { get; set; }
             /// <summary>  
             /// 身份令牌
             /// </summary>
-            public String AuthToken { get; set; }
+            public string AuthToken { get; set; }
             /// <summary>  
             /// 输出格式
             /// </summary>  
             [Serialization.NotSerialize]
-            public String ContentType
+            public string ContentType
             {
                 get
                 {
@@ -87,7 +87,7 @@ namespace Wlniao
         /// <summary>
         /// 
         /// </summary>
-        public Http(Int32 port = 80)
+        public Http(int port = 80)
         {
             ListenPort = port;
             this.Handler = new Action<Context>((ctx) => { Console.WriteLine("default handler unregistered"); });

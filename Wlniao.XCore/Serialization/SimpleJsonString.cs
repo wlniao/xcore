@@ -38,7 +38,7 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="list"></param>
         /// <returns></returns>
-        public static String ConvertList(IList list)
+        public static string ConvertList(IList list)
         {
             StringBuilder sb = new StringBuilder("[");
             if (list != null && list.Count > 0)
@@ -56,7 +56,7 @@ namespace Wlniao.Serialization
             return sb.ToString();
         }
 
-        private static String EncodeQuoteAndClearLine(String src)
+        private static string EncodeQuoteAndClearLine(string src)
         {
             //return src.Replace( "\"", "\\\"" ).Replace( "\r\n", "" ).Replace( "\n", "" ).Replace( "\r", "" ).Replace( "\r\n", "" );
             return JsonString.ClearNewLine(src);
@@ -66,7 +66,7 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static String ConvertObject(Object obj)
+        public static string ConvertObject(object obj)
         {
 
             var builder = new StringBuilder();
@@ -78,12 +78,12 @@ namespace Wlniao.Serialization
                 {
                     continue;
                 }
-                Object propertyValue = Reflection.GetPropertyValue(obj, info.Name);
+                object propertyValue = Reflection.GetPropertyValue(obj, info.Name);
                 if ((info.PropertyType == typeof(int)) || (info.PropertyType == typeof(long)) || (info.PropertyType == typeof(short)) || (info.PropertyType == typeof(float)) || (info.PropertyType == typeof(decimal)))
                 {
                     builder.AppendFormat("\"{0}\":{1}", info.Name, propertyValue);
                 }
-                else if (info.PropertyType == typeof(Boolean))
+                else if (info.PropertyType == typeof(bool))
                 {
                     builder.AppendFormat("\"{0}\":{1}", info.Name, propertyValue.ToString().ToLower());
                 }
@@ -93,7 +93,7 @@ namespace Wlniao.Serialization
                 }
                 else
                 {
-                    Object str = Reflection.GetPropertyValue(propertyValue, "Id");
+                    object str = Reflection.GetPropertyValue(propertyValue, "Id");
                     builder.AppendFormat("\"{0}\":\"{1}\"", info.Name, EncodeQuoteAndClearLine(str == null ? string.Empty : str.ToString()));
                 }
                 builder.Append(",");

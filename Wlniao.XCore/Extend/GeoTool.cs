@@ -70,7 +70,7 @@ namespace Wlniao
         /// <param name="hash"></param>
         /// <param name="direction"></param>
         /// <returns></returns>
-        public static String CalculateAdjacent(String hash, Direction direction)
+        public static string CalculateAdjacent(string hash, Direction direction)
         {
             hash = hash.ToLower();
 
@@ -108,7 +108,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="geohash"></param>
         /// <returns></returns>
-        public static double[] Decode(String geohash)
+        public static double[] Decode(string geohash)
         {
             bool even = true;
             double[] lat = { -90.0, 90.0 };
@@ -141,7 +141,7 @@ namespace Wlniao
         /// <param name="longitude">经度</param>
         /// <param name="precision">精度误差：1,2500km 2,630km; 3,78km; 4,20kmm; 5,2.4km; 6,610m; 7,76m; 8,19m; 9,2m; </param>
         /// <returns></returns>
-        public static String Encode(double latitude, double longitude, int precision = 12)
+        public static string Encode(double latitude, double longitude, int precision = 12)
         {
             bool even = true;
             int bit = 0;
@@ -198,29 +198,29 @@ namespace Wlniao
         /// </summary>
         /// <param name="geohash"></param>
         /// <returns></returns>
-        public static String[] GetGeoHashExpand(String geohash)
+        public static string[] GetGeoHashExpand(string geohash)
         {
 
             try
             {
-                String geohashTop = CalculateAdjacent(geohash, Direction.Top);//上
+                string geohashTop = CalculateAdjacent(geohash, Direction.Top);//上
 
-                String geohashBottom = CalculateAdjacent(geohash, Direction.Bottom);//下
+                string geohashBottom = CalculateAdjacent(geohash, Direction.Bottom);//下
 
-                String geohashLeft = CalculateAdjacent(geohash, Direction.Left);//左
+                string geohashLeft = CalculateAdjacent(geohash, Direction.Left);//左
 
-                String geohashRight = CalculateAdjacent(geohash, Direction.Right);//右
+                string geohashRight = CalculateAdjacent(geohash, Direction.Right);//右
 
 
-                String geohashTopLeft = CalculateAdjacent(geohashLeft, Direction.Top);//左上
+                string geohashTopLeft = CalculateAdjacent(geohashLeft, Direction.Top);//左上
 
-                String geohashTopRight = CalculateAdjacent(geohashRight, Direction.Top);//右上
+                string geohashTopRight = CalculateAdjacent(geohashRight, Direction.Top);//右上
 
-                String geohashBottomLeft = CalculateAdjacent(geohashLeft, Direction.Bottom);//左下
+                string geohashBottomLeft = CalculateAdjacent(geohashLeft, Direction.Bottom);//左下
 
-                String geohashBottomRight = CalculateAdjacent(geohashRight, Direction.Bottom);//右下
+                string geohashBottomRight = CalculateAdjacent(geohashRight, Direction.Bottom);//右下
 
-                String[] expand = { geohash, geohashTop, geohashBottom, geohashLeft, geohashRight, geohashTopLeft, geohashTopRight, geohashBottomLeft, geohashBottomRight };
+                string[] expand = { geohash, geohashTop, geohashBottom, geohashLeft, geohashRight, geohashTopLeft, geohashTopRight, geohashBottomLeft, geohashBottomRight };
                 return expand;
             }
             catch

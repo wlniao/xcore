@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using System.Text;
 using System.Buffers;
 using System.IO;
+using static Wlniao.cvt;
 
 namespace Wlniao
 {
@@ -169,19 +170,17 @@ namespace Wlniao
         public new ActionResult Json(Object data)
         {
             var jsonStr = "";
-            if (data != null)
+            if (data == null) return Content(jsonStr ?? "", "application/json", System.Text.Encoding.UTF8);
+            if (data is string)
             {
-                if (data is string)
+                jsonStr = data.ToString();
+            }
+            else
+            {
+                jsonStr = System.Text.Json.JsonSerializer.Serialize(data, new JsonSerializerOptions
                 {
-                    jsonStr = data.ToString();
-                }
-                else if (data != null)
-                {
-                    jsonStr = System.Text.Json.JsonSerializer.Serialize(data, new JsonSerializerOptions
-                    {
-                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                    });
-                }
+                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                });
             }
             return Content(jsonStr ?? "", "application/json", System.Text.Encoding.UTF8);
         }
@@ -192,22 +191,20 @@ namespace Wlniao
         /// <param name="encoding"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult Json(Object data, System.Text.Encoding encoding)
+        public ActionResult Json(object data, System.Text.Encoding encoding)
         {
             var jsonStr = "";
-            if (data != null)
+            if (data == null) return Content(jsonStr ?? "", "application/json", encoding ?? System.Text.Encoding.UTF8);
+            if (data is string)
             {
-                if (data is string)
+                jsonStr = data.ToString();
+            }
+            else
+            {
+                jsonStr = System.Text.Json.JsonSerializer.Serialize(data, new JsonSerializerOptions
                 {
-                    jsonStr = data.ToString();
-                }
-                else if (data != null)
-                {
-                    jsonStr = System.Text.Json.JsonSerializer.Serialize(data, new JsonSerializerOptions
-                    {
-                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                    });
-                }
+                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                });
             }
             return Content(jsonStr ?? "", "application/json", encoding ?? System.Text.Encoding.UTF8);
         }
@@ -217,7 +214,7 @@ namespace Wlniao
         /// <param name="jsonStr"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult JsonStr(String jsonStr)
+        public ActionResult JsonStr(string jsonStr)
         {
             if (string.IsNullOrEmpty(GetRequest("callback")) || jsonStr.LastIndexOf(')') > jsonStr.LastIndexOf(':'))
             {
@@ -235,7 +232,7 @@ namespace Wlniao
         /// <param name="encoding"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult JsonStr(String jsonStr, System.Text.Encoding encoding)
+        public ActionResult JsonStr(string jsonStr, System.Text.Encoding encoding)
         {
             if (string.IsNullOrEmpty(GetRequest("callback")) || jsonStr.LastIndexOf(')') > jsonStr.LastIndexOf(':'))
             {
@@ -252,7 +249,7 @@ namespace Wlniao
         /// <param name="message"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult ErrorMsg(String? message = null)
+        public ActionResult ErrorMsg(string? message = null)
         {
             if (string.IsNullOrEmpty(message))
             {
@@ -268,11 +265,11 @@ namespace Wlniao
             }
             else if (string.IsNullOrEmpty(GetRequest("callback")))
             {
-                return Content(Wlniao.Json.ToString(new { success = false, message = message }), "application/json", System.Text.Encoding.UTF8);
+                return Content(Serialization.Json.ToString(new { success = false, message = message }), "application/json", System.Text.Encoding.UTF8);
             }
             else
             {
-                return Content(GetRequest("callback") + "(" + Wlniao.Json.ToString(new { success = false, message = message }) + ")", "text/json", System.Text.Encoding.UTF8);
+                return Content(GetRequest("callback") + "(" + Serialization.Json.ToString(new { success = false, message = message }) + ")", "text/json", System.Text.Encoding.UTF8);
             }
         }
         /// <summary>
@@ -286,7 +283,7 @@ namespace Wlniao
             key = key.ToLower();
             if (Request.Cookies != null)
             {
-                var item = Request.Cookies.Where(o => o.Key.ToLower() == key).FirstOrDefault();
+                var item = Request.Cookies.FirstOrDefault(o => o.Key.ToLower() == key);
                 if (item.Value != null)
                 {
                     return item.Value;
@@ -369,9 +366,9 @@ namespace Wlniao
         /// <param name="Key"></param>
         /// <returns></returns>
         [NonAction]
-        protected Int32 GetRequestInt(String Key)
+        protected int GetRequestInt(string Key)
         {
-            return cvt.ToInt(GetRequest(Key, "0"));
+            return Convert.ToInt(GetRequest(Key, "0"));
         }
         /// <summary>
         /// 获取Post的文本内容
@@ -531,7 +528,7 @@ namespace Wlniao
         [NonAction]
         protected Int32 PostRequestInt(String Key)
         {
-            return cvt.ToInt(PostRequest(Key, "0"));
+            return Convert.ToInt(PostRequest(Key, "0"));
         }
 
         /// <summary>

@@ -35,7 +35,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <returns>文件的内容</returns>
-        public static System.Text.Encoding GetEncoding(String absolutePath)
+        public static System.Text.Encoding GetEncoding(string absolutePath)
         {
             var br = new System.IO.BinaryReader(new System.IO.FileStream(absolutePath.Replace(".html", ".md"), System.IO.FileMode.Open, System.IO.FileAccess.Read));
             var buffer = br.ReadBytes(2);
@@ -51,7 +51,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <returns>文件的内容</returns>
-        public static byte[] ReadByte(String absolutePath)
+        public static byte[] ReadByte(string absolutePath)
         {
             using (FileStream fs = new FileStream(absolutePath, FileMode.Open))
             {
@@ -81,7 +81,7 @@ namespace Wlniao.IO
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <param name="stream"></param>
         /// <returns>文件的内容</returns>
-        public static void WriteStream(String absolutePath, System.IO.Stream stream)
+        public static void WriteStream(string absolutePath, System.IO.Stream stream)
         {
             using (StreamWriter sw = new StreamWriter(new FileStream(absolutePath, FileMode.Create)))
             {
@@ -98,7 +98,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <returns>文件的内容</returns>
-        public static String Read(String absolutePath)
+        public static string Read(string absolutePath)
         {
             return Read(absolutePath, Encoding.UTF8);
         }
@@ -145,7 +145,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <returns>文件各行内容</returns>
-        public static String[] ReadAllLines(String absolutePath)
+        public static string[] ReadAllLines(string absolutePath)
         {
             return ReadAllLines(absolutePath, Encoding.UTF8);
         }
@@ -155,13 +155,13 @@ namespace Wlniao.IO
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <param name="encoding">编码方式</param>
         /// <returns>文件各行内容</returns>
-        public static String[] ReadAllLines(String absolutePath, System.Text.Encoding encoding)
+        public static string[] ReadAllLines(string absolutePath, System.Text.Encoding encoding)
         {
-            var list = new System.Collections.Generic.List<String>();
+            var list = new System.Collections.Generic.List<string>();
             using (FileStream fs = new FileStream(absolutePath, FileMode.Open))
             {
                 StreamReader reader = new StreamReader(fs, Encoding.UTF8);
-                String str;
+                string str;
                 while ((str = reader.ReadLine()) != null)
                 {
                     list.Add(str);
@@ -174,7 +174,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <param name="fileContent">需要写入文件的字符串</param>
-        public static void Write(String absolutePath, String fileContent)
+        public static void Write(string absolutePath, string fileContent)
         {
             Write(absolutePath, fileContent, true);
         }
@@ -184,7 +184,7 @@ namespace Wlniao.IO
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <param name="fileContent">需要写入文件的字符串</param>
         /// <param name="autoCreateDir">是否自动创建目录</param>
-        public static void Write(String absolutePath, String fileContent, Boolean autoCreateDir)
+        public static void Write(string absolutePath, string fileContent, bool autoCreateDir)
         {
             if (!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(absolutePath)))
             {
@@ -198,7 +198,7 @@ namespace Wlniao.IO
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <param name="fileContent">需要写入文件的字符串</param>
         /// <param name="encoding">编码方式</param>
-        public static void Write(String absolutePath, String fileContent, System.Text.Encoding encoding)
+        public static void Write(string absolutePath, string fileContent, System.Text.Encoding encoding)
         {
             if (!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(absolutePath)))
             {
@@ -215,7 +215,7 @@ namespace Wlniao.IO
         /// 删除文件
         /// </summary>
         /// <param name="absolutePath">文件的绝对路径</param>
-        public static void Delete(String absolutePath)
+        public static void Delete(string absolutePath)
         {
             System.IO.File.Delete(absolutePath);
         }
@@ -224,7 +224,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <returns></returns>
-        public static Boolean Exists(String absolutePath)
+        public static bool Exists(string absolutePath)
         {
             if (!string.IsNullOrEmpty(absolutePath) && System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(absolutePath)))
             {
@@ -237,7 +237,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="sourceFileName">原来的路径</param>
         /// <param name="destFileName">需要挪到的新路径</param>
-        public static void Move(String sourceFileName, String destFileName)
+        public static void Move(string sourceFileName, string destFileName)
         {
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(destFileName));
             System.IO.File.Move(sourceFileName, destFileName);
@@ -247,7 +247,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="sourceFileName">原来的路径</param>
         /// <param name="destFileName">需要挪到的新路径</param>
-        public static void Copy(String sourceFileName, String destFileName)
+        public static void Copy(string sourceFileName, string destFileName)
         {
             System.IO.File.Copy(sourceFileName, destFileName, false);
         }
@@ -257,7 +257,7 @@ namespace Wlniao.IO
         /// <param name="sourceFileName">原来的路径</param>
         /// <param name="destFileName">需要挪到的新路径</param>
         /// <param name="overwrite">如果目标存在，是否覆盖</param>
-        public static void Copy(String sourceFileName, String destFileName, Boolean overwrite)
+        public static void Copy(string sourceFileName, string destFileName, bool overwrite)
         {
             System.IO.File.Copy(sourceFileName, destFileName, overwrite);
         }
@@ -266,7 +266,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <param name="fileContent">需要追加的内容</param>
-        public static void Append(String absolutePath, String fileContent)
+        public static void Append(string absolutePath, string fileContent)
         {
             Append(absolutePath, fileContent, Encoding.UTF8);
         }
@@ -276,7 +276,7 @@ namespace Wlniao.IO
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <param name="fileContent">需要追加的内容</param>
         /// <param name="encoding">编码方式</param>
-        public static void Append(String absolutePath, String fileContent, System.Text.Encoding encoding)
+        public static void Append(string absolutePath, string fileContent, System.Text.Encoding encoding)
         {
             using (FileStream fs = new FileStream(absolutePath, FileMode.Append))
             {
@@ -289,7 +289,7 @@ namespace Wlniao.IO
         /// 使用ZIP格式压缩文件（未实现）
         /// </summary>
         /// <param name="sourceFileName">压缩的文件名</param>
-        public static void Zip(String sourceFileName)
+        public static void Zip(string sourceFileName)
         {
             Zip(sourceFileName, sourceFileName + ".zip");
         }
@@ -298,7 +298,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="sourceFileName">压缩的文件名</param>
         /// <param name="destFileName">压缩后输出的文件名</param>
-        public static void Zip(String sourceFileName, String destFileName)
+        public static void Zip(string sourceFileName, string destFileName)
         {
             throw new Exception("Zip 方法未实现");
         }
@@ -306,7 +306,7 @@ namespace Wlniao.IO
         /// 解包ZIP压缩文件（未实现）
         /// </summary>
         /// <param name="sourceFileName">需要解包的ZIP文件名</param>
-        public static void UnZip(String sourceFileName)
+        public static void UnZip(string sourceFileName)
         {
             throw new Exception("UnZip 方法未实现");
         }
@@ -315,7 +315,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="sourceFileName">需要解包的ZIP文件名</param>
         /// <param name="destFilePath">接包后的文件输出路径</param>
-        public static void UnZip(String sourceFileName, String destFilePath)
+        public static void UnZip(string sourceFileName, string destFilePath)
         {
             throw new Exception("UnZip 方法未实现");
         }

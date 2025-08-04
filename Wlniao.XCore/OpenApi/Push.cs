@@ -22,8 +22,8 @@ namespace Wlniao.OpenApi
         /// <param name="smtp">SMTP邮件服务器</param>
         /// <param name="useGet">是否使用GET方式发起请求</param>
         /// <returns></returns>
-        public static Boolean SendEmail(String to, String title, String body
-            , String from = "", String user = "", String pwd = "", String smtp = "", Boolean useGet = true)
+        public static bool SendEmail(string to, string title, string body
+            , string from = "", string user = "", string pwd = "", string smtp = "", bool useGet = true)
         {
             if (useGet && body.Length < 300)
             {

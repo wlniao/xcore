@@ -35,31 +35,31 @@ namespace Wlniao.Log
         /// 输出Debug级别的日志
         /// </summary>
         /// <param name="message"></param>
-        public void Debug(String message);
+        public void Debug(string message);
 
         /// <summary>
         /// 输出Info级别的日志
         /// </summary>
         /// <param name="message"></param>
-        public void Info(String message);
+        public void Info(string message);
 
         /// <summary>
         /// 输出Warn级别的日志
         /// </summary>
         /// <param name="message"></param>
-        public void Warn(String message);
+        public void Warn(string message);
 
         /// <summary>
         /// 输出Error级别的日志
         /// </summary>
         /// <param name="message"></param>
-        public void Error(String message);
+        public void Error(string message);
 
         /// <summary>
         /// 输出Fatal级别的日志
         /// </summary>
         /// <param name="message"></param>
-        public void Fatal(String message);
+        public void Fatal(string message);
 
         /// <summary>
         /// 输出自定义主题的日志
@@ -68,7 +68,7 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         /// <param name="logLevel"></param>
         /// <param name="consoleWrite"></param>
-        public void Topic(String topic, String message, LogLevel logLevel, Boolean consoleWrite = true);
+        public void Topic(string topic, string message, LogLevel logLevel, bool consoleWrite = true);
 
     }
 }

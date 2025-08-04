@@ -28,36 +28,36 @@ namespace Wlniao
     /// </summary>
     public class Result
     {
-        private List<String> _errors;
-        private Object _info;
+        private List<string> _errors;
+        private object _info;
         /// <summary>
         /// 
         /// </summary>
         public Result()
         {
-            _errors = new List<String>();
+            _errors = new List<string>();
         }
         /// <summary>
         /// 根据错误信息构建 result
         /// </summary>
         /// <param name="errorMsg"></param>
-        public Result(String errorMsg)
+        public Result(string errorMsg)
         {
-            _errors = new List<String>();
+            _errors = new List<string>();
             _errors.Add(errorMsg);
         }
         /// <summary>
         /// 添加错误信息
         /// </summary>
         /// <param name="errorMsg"></param>
-        public void Add(String errorMsg)
+        public void Add(string errorMsg)
         {
             _errors.Add(errorMsg);
         }
         /// <summary>
         /// 附带的对象
         /// </summary>
-        public Object Info
+        public object Info
         {
             get { return _info; }
             set { _info = value; }
@@ -65,7 +65,7 @@ namespace Wlniao
         /// <summary>
         /// 获取错误信息列表中第一条记录，没有时返回null
         /// </summary>
-        public String Error
+        public string Error
         {
             get
             {
@@ -82,7 +82,7 @@ namespace Wlniao
         /// <summary>
         /// 获取所有错误信息的列表
         /// </summary>
-        public List<String> Errors
+        public List<string> Errors
         {
             get { return _errors; }
             set { _errors = value; }
@@ -91,7 +91,7 @@ namespace Wlniao
         /// 结果是否全部正确有效
         /// </summary>
         [Serialization.NotSerialize]
-        public Boolean IsValid
+        public bool IsValid
         {
             get { return _errors.Count == 0; }
         }
@@ -99,7 +99,7 @@ namespace Wlniao
         /// 结果是否包含错误
         /// </summary>
         [Serialization.NotSerialize]
-        public Boolean HasErrors
+        public bool HasErrors
         {
             get { return _errors.Count > 0; }
         }
@@ -109,7 +109,7 @@ namespace Wlniao
         /// <param name="result"></param>
         public void Join(Result result)
         {
-            foreach (String str in result.Errors)
+            foreach (string str in result.Errors)
             {
                 Add(str);
             }

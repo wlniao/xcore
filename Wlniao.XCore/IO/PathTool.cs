@@ -33,7 +33,7 @@ namespace Wlniao.IO
         /// 自动根据系统追加一级目录
         /// </summary>
         /// <returns></returns>
-        public static String JoinPath(String path1, String path2)
+        public static string JoinPath(string path1, string path2)
         {
             path1 = path1.Replace("\\", "/");
             path2 = path2.Replace("\\", "/");
@@ -59,7 +59,7 @@ namespace Wlniao.IO
         /// 将相对路径转换为绝对路径
         /// </summary>
         /// <returns></returns>
-        internal static String Map(String path)
+        internal static string Map(string path)
         {
             if (strUtil.IsNullOrEmpty(path))
             {
@@ -83,7 +83,7 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="relativePath">必须是相对路径</param>
         /// <returns>返回绝对路径</returns>
-        public static String Map(params String[] relativePath)
+        public static string Map(params string[] relativePath)
         {
             var path = "";
             if (relativePath == null || relativePath.Length == 0)

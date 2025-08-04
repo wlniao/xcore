@@ -64,7 +64,7 @@ namespace Wlniao
         /// <param name="input"></param>
         /// <param name="separator">用指定字符分割</param>
         /// <returns></returns>
-        public static string[] SplitBy(this string input, params String[] separator)
+        public static string[] SplitBy(this string input, params string[] separator)
         {
             if (string.IsNullOrEmpty(input))
             {
@@ -85,7 +85,7 @@ namespace Wlniao
         {
             if (string.IsNullOrEmpty(input))
             {
-                return String.Empty;
+                return string.Empty;
             }
             return Regex.Replace(input, new string(new char[] { (char)65279 }), "");
         }

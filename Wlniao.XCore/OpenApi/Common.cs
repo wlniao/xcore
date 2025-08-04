@@ -37,7 +37,7 @@ namespace Wlniao.OpenApi
         /// <param name="action"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string Get(string controller, string action, params KeyValuePair<String, String>[] kvs)
+        public static string Get(string controller, string action, params KeyValuePair<string, string>[] kvs)
         {
             return XServer.Common.Get("openapi", controller, action, kvs);
         }
@@ -49,7 +49,7 @@ namespace Wlniao.OpenApi
         /// <param name="action"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static ApiResult<T> Get<T>(string controller, string action, params KeyValuePair<String, String>[] kvs)
+        public static ApiResult<T> Get<T>(string controller, string action, params KeyValuePair<string, string>[] kvs)
         {
             return XServer.Common.Get<T>("openapi", controller, action, kvs);
         }
@@ -60,7 +60,7 @@ namespace Wlniao.OpenApi
         /// <param name="action"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string GetOnlyData(string controller, string action, params KeyValuePair<String, String>[] kvs)
+        public static string GetOnlyData(string controller, string action, params KeyValuePair<string, string>[] kvs)
         {
             return XServer.Common.GetOnlyData("openapi", controller, action, kvs);
         }
@@ -72,7 +72,7 @@ namespace Wlniao.OpenApi
         /// <param name="postData"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string Post(string controller, string action, string postData, params KeyValuePair<String, String>[] kvs)
+        public static string Post(string controller, string action, string postData, params KeyValuePair<string, string>[] kvs)
         {
             return XServer.Common.Post("openapi", controller, action, postData, kvs);
         }
@@ -85,7 +85,7 @@ namespace Wlniao.OpenApi
         /// <param name="postData"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static ApiResult<T> Post<T>(string controller, string action, string postData, params KeyValuePair<String, String>[] kvs)
+        public static ApiResult<T> Post<T>(string controller, string action, string postData, params KeyValuePair<string, string>[] kvs)
         {
             return XServer.Common.Post<T>("openapi", controller, action, postData, kvs);
         }
@@ -98,7 +98,7 @@ namespace Wlniao.OpenApi
         /// <param name="stream"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string Post(string controller, string action, System.IO.Stream stream, params KeyValuePair<String, String>[] kvs)
+        public static string Post(string controller, string action, System.IO.Stream stream, params KeyValuePair<string, string>[] kvs)
         {
             return XServer.Common.Post("openapi", controller, action, stream, kvs);
         }
@@ -111,7 +111,7 @@ namespace Wlniao.OpenApi
         /// <param name="stream"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static ApiResult<T> Post<T>(string controller, string action, System.IO.Stream stream, params KeyValuePair<String, String>[] kvs)
+        public static ApiResult<T> Post<T>(string controller, string action, System.IO.Stream stream, params KeyValuePair<string, string>[] kvs)
         {
             return XServer.Common.Post<T>("openapi", controller, action, stream, kvs);
         }
@@ -122,7 +122,7 @@ namespace Wlniao.OpenApi
         /// <param name="path"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string CreateUrl(string app, string path, params KeyValuePair<String, String>[] kvs)
+        public static string CreateUrl(string app, string path, params KeyValuePair<string, string>[] kvs)
         {
             return XServer.Common.CreateUrl(false, app, path, kvs);
         }

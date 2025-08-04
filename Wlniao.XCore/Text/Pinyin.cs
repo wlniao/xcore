@@ -534,10 +534,10 @@ namespace Wlniao.Text
         /// </summary>        
         /// <param name="ch"></param>        
         /// <returns></returns>        
-        public static String GetFirst(Char ch)
+        public static string GetFirst(char ch)
         {
             var rs = Get(ch);
-            if (!String.IsNullOrEmpty(rs)) rs = rs.Substring(0, 1);
+            if (!string.IsNullOrEmpty(rs)) rs = rs.Substring(0, 1);
             return rs;
         }
 
@@ -546,9 +546,9 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static String GetFirst(String str)
+        public static string GetFirst(string str)
         {
-            if (String.IsNullOrEmpty(str)) return String.Empty;
+            if (string.IsNullOrEmpty(str)) return string.Empty;
 
             var sb = new StringBuilder(str.Length + 1);
             var chs = str.ToCharArray();
@@ -566,13 +566,13 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="ch"></param>
         /// <returns></returns>
-        public static String Get(Char ch)
+        public static string Get(char ch)
         {
             // 拉丁字符            
             if (ch <= '\x00FF') return ch.ToString();
 
             // 标点符号、分隔符            
-            if (Char.IsPunctuation(ch) || Char.IsSeparator(ch)) return ch.ToString();
+            if (char.IsPunctuation(ch) || char.IsSeparator(ch)) return ch.ToString();
 
             // 非中文字符            
             if (ch < '\x4E00' || ch > '\x9FA5') return ch.ToString();
@@ -580,7 +580,7 @@ namespace Wlniao.Text
             var arr = Encoding.GetEncoding("gb2312").GetBytes(ch.ToString());
             //Encoding.Default默认在中文环境里虽是GB2312，但在多变的环境可能是其它
             //var arr = Encoding.Default.GetBytes(ch.ToString()); 
-            var chr = (Int16)arr[0] * 256 + (Int16)arr[1] - 65536;
+            var chr = (short)arr[0] * 256 + (short)arr[1] - 65536;
 
             //***// 单字符--英文或半角字符  
             if (chr > 0 && chr < 160) return ch.ToString();
@@ -635,7 +635,7 @@ namespace Wlniao.Text
             //    if (pyValue[i] <= chr) return pyName[i];//这只能对应数组已经定义的           
             //}             
 
-            return String.Empty;
+            return string.Empty;
         }
 
         /// <summary>
@@ -643,9 +643,9 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="str">汉字字符串</param>
         /// <returns>转换后的拼音(全拼)字符串</returns>
-        public static String Get(String str)
+        public static string Get(string str)
         {
-            if (String.IsNullOrEmpty(str)) return String.Empty;
+            if (string.IsNullOrEmpty(str)) return string.Empty;
 
             var sb = new StringBuilder(str.Length * 10);
             var chs = str.ToCharArray();

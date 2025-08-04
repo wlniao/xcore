@@ -1,7 +1,7 @@
 /*==============================================================================
-    ÎÄ¼þÃû³Æ£ºConvert.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£º³£ÓÃÀàÐÍ×ª»»·½·¨
+    ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½Convert.cs
+    ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -26,16 +26,16 @@ using System.Text;
 namespace Wlniao
 {
     /// <summary>
-    /// ³£ÓÃÀàÐÍ×ª»»·½·¨
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public class Convert
     {
         /// <summary>
-        /// ÅÐ¶Ï×Ö·û´®ÊÇ·ñÊÇÐ¡Êý»òÕûÊý
+        /// ï¿½Ð¶ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static Boolean IsDecimal(String str)
+        public static bool IsDecimal(string str)
         {
             if (strUtil.IsNullOrEmpty(str))
                 return false;
@@ -44,7 +44,7 @@ namespace Wlniao
             else
                 return isDecimal_private(str);
         }
-        private static Boolean isDecimal_private(String str)
+        private static bool isDecimal_private(string str)
         {
             foreach (char ch in str.ToCharArray())
             {
@@ -54,18 +54,18 @@ namespace Wlniao
             return true;
         }
         /// <summary>
-        /// ÅÐ¶Ï×Ö·û´®ÊÇ·ñÊÇ¶à¸öÕûÊýµÄÁÐ±í£¬ÕûÊýÖ®¼ä±ØÐëÍ¨¹ýÓ¢ÎÄ¶ººÅ·Ö¸ô
+        /// ï¿½Ð¶ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½Ç¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½Ó¢ï¿½Ä¶ï¿½ï¿½Å·Ö¸ï¿½
         /// </summary>
         /// <param name="ids"></param>
         /// <returns></returns>
-        public static Boolean IsIdListValid(String ids)
+        public static bool IsIdListValid(string ids)
         {
             if (strUtil.IsNullOrEmpty(ids))
             {
                 return false;
             }
-            String[] strArray = ids.Split(new char[] { ',' });
-            foreach (String str in strArray)
+            string[] strArray = ids.Split(new char[] { ',' });
+            foreach (string str in strArray)
             {
                 if (!IsInt(str))
                 {
@@ -75,11 +75,11 @@ namespace Wlniao
             return true;
         }
         /// <summary>
-        /// ÅÐ¶Ï×Ö·û´®ÊÇ·ñÊÇÕûÊý»ò¸ºÕûÊý
+        /// ï¿½Ð¶ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static Boolean IsInt(String str)
+        public static bool IsInt(string str)
         {
             if (strUtil.IsNullOrEmpty(str))
                 return false;
@@ -96,66 +96,66 @@ namespace Wlniao
             if (chArray.Length == 10)
             {
                 int charInt;
-                Int32.TryParse(chArray[0].ToString(), out charInt);
+                int.TryParse(chArray[0].ToString(), out charInt);
                 if (charInt > 2)
                     return false;
                 int charInt2;
-                Int32.TryParse(chArray[1].ToString(), out charInt2);
+                int.TryParse(chArray[1].ToString(), out charInt2);
                 if ((charInt == 2) && (charInt2 > 0))
                     return false;
             }
             return true;
         }
         /// <summary>
-        /// ÅÐ¶Ï×Ö·û´®ÊÇ·ñÊÇ"true"»ò"false"(²»Çø·Ö´óÐ¡Ð´)
+        /// ï¿½Ð¶ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½"true"ï¿½ï¿½"false"(ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ð¡Ð´)
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>Ö»ÓÐ×Ö·û´®ÊÇ"true"»ò"false"(²»Çø·Ö´óÐ¡Ð´)Ê±£¬²Å·µ»Øtrue</returns>
-        public static Boolean IsBool(String str)
+        /// <returns>Ö»ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½"true"ï¿½ï¿½"false"(ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ð¡Ð´)Ê±ï¿½ï¿½ï¿½Å·ï¿½ï¿½ï¿½true</returns>
+        public static bool IsBool(string str)
         {
             if (str == null) return false;
             if (strUtil.EqualsIgnoreCase(str, "true") || strUtil.EqualsIgnoreCase(str, "false")) return true;
             return false;
         }
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³ÉÄ¿±êÀàÐÍ
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="val"></param>
         /// <param name="destinationType"></param>
         /// <returns></returns>
-        public static Object To(Object val, Type destinationType)
+        public static object To(object val, Type destinationType)
         {
             return System.Convert.ChangeType(val, destinationType);
         }
         /// <summary>
-        /// ½«ÕûÊý×ª»»³É Boolean ÀàÐÍ¡£Ö»ÓÐ²ÎÊýµÈÓÚ1Ê±£¬²Å·µ»Øtrue
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ Boolean ï¿½ï¿½ï¿½Í¡ï¿½Ö»ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1Ê±ï¿½ï¿½ï¿½Å·ï¿½ï¿½ï¿½true
         /// </summary>
         /// <param name="integer"></param>
-        /// <returns>Ö»ÓÐ²ÎÊýµÈÓÚ1Ê±£¬²Å·µ»Øtrue</returns>
-        public static Boolean ToBool(int integer)
+        /// <returns>Ö»ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1Ê±ï¿½ï¿½ï¿½Å·ï¿½ï¿½ï¿½true</returns>
+        public static bool ToBool(int integer)
         {
             return (integer == 1);
         }
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³É Boolean ÀàÐÍ¡£Ö»ÓÐ¶ÔÏóµÄ×Ö·û´®ÐÎÊ½µÈÓÚ1»òÕßtrue(²»Çø·Ö´óÐ¡Ð´)Ê±£¬²Å·µ»Øtrue
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ Boolean ï¿½ï¿½ï¿½Í¡ï¿½Ö»ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½true(ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ð¡Ð´)Ê±ï¿½ï¿½ï¿½Å·ï¿½ï¿½ï¿½true
         /// </summary>
         /// <param name="objBool"></param>
-        /// <returns>Ö»ÓÐ¶ÔÏóµÄ×Ö·û´®ÐÎÊ½µÈÓÚ1»òÕßtrue(²»Çø·Ö´óÐ¡Ð´)Ê±£¬²Å·µ»Øtrue</returns>
-        public static Boolean ToBool(Object objBool)
+        /// <returns>Ö»ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½true(ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ð¡Ð´)Ê±ï¿½ï¿½ï¿½Å·ï¿½ï¿½ï¿½true</returns>
+        public static bool ToBool(object objBool)
         {
             if (objBool == null)
             {
                 return false;
             }
-            String str = objBool.ToString();
+            string str = objBool.ToString();
             return (str.Equals("1") || str.ToUpper().Equals("TRUE"));
         }
         /// <summary>
-        /// ½«×Ö·û´®(²»Çø·Ö´óÐ¡Ð´)×ª»»³É Boolean ÀàÐÍ¡£Ö»ÓÐ×Ö·û´®µÈÓÚ1»òÕßtrueÊ±£¬²Å·µ»Øtrue
+        /// ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ð¡Ð´)×ªï¿½ï¿½ï¿½ï¿½ Boolean ï¿½ï¿½ï¿½Í¡ï¿½Ö»ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½trueÊ±ï¿½ï¿½ï¿½Å·ï¿½ï¿½ï¿½true
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>Ö»ÓÐ×Ö·û´®µÈÓÚ1»òÕßtrueÊ±£¬²Å·µ»Øtrue</returns>
-        public static Boolean ToBool(String str)
+        /// <returns>Ö»ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½trueÊ±ï¿½ï¿½ï¿½Å·ï¿½ï¿½ï¿½true</returns>
+        public static bool ToBool(string str)
         {
             if (str == null)
                 return false;
@@ -166,11 +166,11 @@ namespace Wlniao
             return (str.Equals("1") || str.ToUpper().Equals("TRUE"));
         }
         /// <summary>
-        /// ½«×Ö·û´®×ª»»³É System.Decimal ÀàÐÍ¡£Èç¹ûstr²»ÊÇÕûÊý»òÐ¡Êý£¬·µ»Ø0
+        /// ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ System.Decimal ï¿½ï¿½ï¿½Í¡ï¿½ï¿½ï¿½ï¿½strï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>Èç¹ûstr²»ÊÇÕûÊý»òÐ¡Êý£¬·µ»Ø0</returns>
-        public static decimal ToDecimal(String str)
+        /// <returns>ï¿½ï¿½ï¿½strï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0</returns>
+        public static decimal ToDecimal(string str)
         {
             if (!IsDecimal(str))
             {
@@ -179,11 +179,11 @@ namespace Wlniao
             return System.Convert.ToDecimal(str);
         }
         /// <summary>
-        /// ½«×Ö·û´®×ª»»³É System.Double ÀàÐÍ¡£Èç¹ûstr²»ÊÇÕûÊý»òÐ¡Êý£¬·µ»Ø0
+        /// ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ System.Double ï¿½ï¿½ï¿½Í¡ï¿½ï¿½ï¿½ï¿½strï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>Èç¹ûstr²»ÊÇÕûÊý»òÐ¡Êý£¬·µ»Ø0</returns>
-        public static Double ToDouble(String str)
+        /// <returns>ï¿½ï¿½ï¿½strï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0</returns>
+        public static double ToDouble(string str)
         {
             if (!IsDecimal(str))
             {
@@ -192,12 +192,12 @@ namespace Wlniao
             return System.Convert.ToDouble(str);
         }
         /// <summary>
-        /// ½«×Ö·û´®×ª»»³É System.Decimal ÀàÐÍ¡£Èç¹ûstr²»ÊÇÕûÊý»òÐ¡Êý£¬·µ»Ø²ÎÊý defaultValue Ö¸¶¨µÄÖµ
+        /// ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ System.Decimal ï¿½ï¿½ï¿½Í¡ï¿½ï¿½ï¿½ï¿½strï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½ defaultValue Ö¸ï¿½ï¿½ï¿½ï¿½Öµ
         /// </summary>
         /// <param name="str"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        public static decimal ToDecimal(String str, decimal defaultValue)
+        public static decimal ToDecimal(string str, decimal defaultValue)
         {
             if (!IsDecimal(str))
             {
@@ -206,12 +206,12 @@ namespace Wlniao
             return System.Convert.ToDecimal(str);
         }
         /// <summary>
-        /// ½«×Ö·û´®×ª»»³É float ÀàÐÍ¡£Èç¹ûstr²»ÊÇÕûÊý»òÐ¡Êý£¬·µ»Ø²ÎÊý defaultValue Ö¸¶¨µÄÖµ
+        /// ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ float ï¿½ï¿½ï¿½Í¡ï¿½ï¿½ï¿½ï¿½strï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½ defaultValue Ö¸ï¿½ï¿½ï¿½ï¿½Öµ
         /// </summary>
         /// <param name="str"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        public static float ToFloat(String str, float defaultValue = 0)
+        public static float ToFloat(string str, float defaultValue = 0)
         {
             if (!IsDecimal(str))
             {
@@ -220,51 +220,51 @@ namespace Wlniao
             return float.Parse(str);
         }
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³É³¤ÕûÊý£»Èç¹û²»ÊÇ³¤ÕûÊý£¬Ôò·µ»Ø0
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½É³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò·µ»ï¿½0
         /// </summary>
         /// <param name="objLong"></param>
-        /// <returns>Èç¹û²»ÊÇ³¤ÕûÊý£¬Ôò·µ»Ø0</returns>
-        public static long ToLong(Object objLong)
+        /// <returns>ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò·µ»ï¿½0</returns>
+        public static long ToLong(object objLong)
         {
             if ((objLong != null) && IsInt(objLong.ToString()))
             {
                 long result;
-                Int64.TryParse(objLong.ToString(), out result);
+                long.TryParse(objLong.ToString(), out result);
                 return result;
             }
             return 0;
         }
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³É³¤ÕûÊý£»Èç¹û²»ÊÇ³¤ÕûÊý£¬Ôò·µ»Ø0
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½É³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò·µ»ï¿½0
         /// </summary>
         /// <param name="strLong"></param>
-        /// <returns>Èç¹û²»ÊÇ³¤ÕûÊý£¬Ôò·µ»Ø0</returns>
-        public static long ToLong(String strLong)
+        /// <returns>ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò·µ»ï¿½0</returns>
+        public static long ToLong(string strLong)
         {
             long result = 0;
-            Int64.TryParse(strLong, out result);
+            long.TryParse(strLong, out result);
             return result;
         }
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³ÉÕûÊý£»Èç¹û²»ÊÇÕûÊý£¬Ôò·µ»Ø0
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò·µ»ï¿½0
         /// </summary>
         /// <param name="objInt"></param>
-        /// <returns>Èç¹û²»ÊÇÕûÊý£¬Ôò·µ»Ø0</returns>
-        public static int ToInt(Object objInt)
+        /// <returns>ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò·µ»ï¿½0</returns>
+        public static int ToInt(object objInt)
         {
             if (objInt != null)
             {
                 if (IsInt(objInt.ToString()))
                 {
                     int result;
-                    Int32.TryParse(objInt.ToString(), out result);
+                    int.TryParse(objInt.ToString(), out result);
                     return result;
                 }
             }
             return 0;
         }
         /// <summary>
-        /// ½« float ×ª»»³ÉÕûÊý
+        /// ï¿½ï¿½ float ×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
@@ -277,7 +277,7 @@ namespace Wlniao
             catch { return 0; }
         }
         /// <summary>
-        /// ½« double ×ª»»³ÉÕûÊý
+        /// ï¿½ï¿½ double ×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
@@ -290,7 +290,7 @@ namespace Wlniao
             catch { return 0; }
         }
         /// <summary>
-        /// ½« decimal ×ª»»³ÉÕûÊý
+        /// ï¿½ï¿½ decimal ×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
@@ -303,19 +303,19 @@ namespace Wlniao
             catch { return 0; }
         }
 
-        #region ½øÖÆ×ª»»
+        #region ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
 
         /// <summary>
-        /// ½«10½øÖÆÕûÊý×ª»»Îªn½øÖÆ
+        /// ï¿½ï¿½10ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªnï¿½ï¿½ï¿½ï¿½
         /// </summary>
-        /// <param name="inputNum">10½øÖÆÕûÊý</param>
+        /// <param name="inputNum">10ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</param>
         /// <param name="chars"></param>
         /// <returns></returns>
-        public static String ToHex(Int64 inputNum, String chars)
+        public static string ToHex(long inputNum, string chars)
         {
             int cbase = chars.Length;
             int imod;
-            String result = "";
+            string result = "";
             while (inputNum >= cbase)
             {
                 imod = (int)(inputNum % cbase);
@@ -325,16 +325,16 @@ namespace Wlniao
             return chars[(int)inputNum] + result;
         }
         /// <summary>
-        /// ½«n½øÖÆ×ª»»Îª10½øÖÆÕûÊý
+        /// ï¿½ï¿½nï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îª10ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
-        /// <param name="str">ÐèÒª×ª»»µÄn½øÖÆÊý</param>
+        /// <param name="str">ï¿½ï¿½Òª×ªï¿½ï¿½ï¿½ï¿½nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</param>
         /// <param name="chars"></param>
-        /// <returns>10½øÖÆÕûÊý</returns>
-        public static Int64 DeHex(String str, String chars)
+        /// <returns>10ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</returns>
+        public static long DeHex(string str, string chars)
         {
-            Int32 hex = chars.Length;
-            Int32 len = str.Length;
-            Int64 result = 0;
+            int hex = chars.Length;
+            int len = str.Length;
+            long result = 0;
             for (int i = 0; i < len; i++)
             {
                 var index = chars.IndexOf(str[i]);
@@ -342,31 +342,31 @@ namespace Wlniao
                 {
                     return 0;
                 }
-                result += chars.IndexOf(str[i]) * (Int64)Math.Pow(hex, (len - i - 1));
+                result += chars.IndexOf(str[i]) * (long)Math.Pow(hex, (len - i - 1));
             }
             return result;
         }
 
         /// <summary>
-        /// Ê®½øÖÆÊý×ª»»³É¶þ¡¢°Ë¡¢Ê®Áù½øÖÆÊý
+        /// Ê®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½É¶ï¿½ï¿½ï¿½ï¿½Ë¡ï¿½Ê®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
-        /// <param name="int_value">Ê®½øÖÆÊý</param>
-        /// <param name="mod">½øÖÆ</param>
+        /// <param name="int_value">Ê®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</param>
+        /// <param name="mod">ï¿½ï¿½ï¿½ï¿½</param>
         /// <returns></returns>
-        public static string IntToHex(Int32 int_value, Int32 mod)
+        public static string IntToHex(int int_value, int mod)
         {
             return Int64ToHex(int_value, mod);
         }
         /// <summary>
-        /// Ê®½øÖÆÊý×ª»»³É¶þ¡¢°Ë¡¢Ê®Áù½øÖÆÊý
+        /// Ê®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½É¶ï¿½ï¿½ï¿½ï¿½Ë¡ï¿½Ê®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
-        /// <param name="int_value">Ê®½øÖÆÊý</param>
-        /// <param name="mod">½øÖÆ</param>
+        /// <param name="int_value">Ê®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</param>
+        /// <param name="mod">ï¿½ï¿½ï¿½ï¿½</param>
         /// <returns></returns>
-        public static string Int64ToHex(Int64 int_value, Int32 mod)
+        public static string Int64ToHex(long int_value, int mod)
         {
             string hex_value = string.Empty;
-            Int64 add_value, mod_value, temp;
+            long add_value, mod_value, temp;
             char char_mod_value;
             temp = int_value;
             while (temp > 0)
@@ -408,65 +408,65 @@ namespace Wlniao
             return -1;
         }
 
-        #region ¶þÊ®Áù½øÖÆ×ª»»
+        #region ï¿½ï¿½Ê®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
         /// <summary>
-        /// 10½øÖÆ×ª»»³É26½øÖÆ£¨26´óÐ´×ÖÄ¸£©
+        /// 10ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½26ï¿½ï¿½ï¿½Æ£ï¿½26ï¿½ï¿½Ð´ï¿½ï¿½Ä¸ï¿½ï¿½
         /// </summary>
         /// <param name="val"></param>
         /// <returns></returns>
-        public static string IntToHex26(Int64 val)
+        public static string IntToHex26(long val)
         {
             return ToHex(val, "abcdefghijklmnokprstuvwxyz");
         }
         /// <summary>
-        /// 26½øÖÆ×ª»»³É10½øÖÆ
+        /// 26ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½10ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static Int32 Hex26ToInt(string str)
+        public static int Hex26ToInt(string str)
         {
             if (str.ToUpper() == str)
             {
                 str = str.ToLower();
             }
-            return (Int32)DeHex(str, "abcdefghijklmnokprstuvwxyz");
+            return (int)DeHex(str, "abcdefghijklmnokprstuvwxyz");
         }
         /// <summary>
-        /// 26½øÖÆ×ª»»³É10½øÖÆ
+        /// 26ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½10ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static Int64 Hex26ToInt64(string str)
+        public static long Hex26ToInt64(string str)
         {
             return DeHex(str, "abcdefghijklmnokprstuvwxyz");
         }
         #endregion
 
-        #region ÎåÊ®¶þ½øÖÆ×ª»»
+        #region ï¿½ï¿½Ê®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
         /// <summary>
-        /// 10½øÖÆ×ª»»³É52½øÖÆ£¨52¸öÓ¢ÎÄ×ÖÄ¸£©
+        /// 10ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½52ï¿½ï¿½ï¿½Æ£ï¿½52ï¿½ï¿½Ó¢ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½
         /// </summary>
         /// <param name="val"></param>
         /// <returns></returns>
-        public static string IntToHex52(Int64 val)
+        public static string IntToHex52(long val)
         {
             return ToHex(val, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         }
         /// <summary>
-        /// 52½øÖÆ×ª»»³É10½øÖÆ
+        /// 52ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½10ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static Int32 Hex52ToInt(string str)
+        public static int Hex52ToInt(string str)
         {
-            return (Int32)DeHex(str, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+            return (int)DeHex(str, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         }
         /// <summary>
-        /// 52½øÖÆ×ª»»³É10½øÖÆ
+        /// 52ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½10ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static Int64 Hex52ToInt64(string str)
+        public static long Hex52ToInt64(string str)
         {
             return DeHex(str, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         }
@@ -475,11 +475,11 @@ namespace Wlniao
         #endregion
 
         /// <summary>
-        /// IPv4µØÖ·×ª»»ÎªIPv6¸ñÊ½
+        /// IPv4ï¿½ï¿½Ö·×ªï¿½ï¿½ÎªIPv6ï¿½ï¿½Ê½
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        public static String IPv4ToIPv6(String ip)
+        public static string IPv4ToIPv6(string ip)
         {
             if (strUtil.IsIPv4(ip))
             {
@@ -492,11 +492,11 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³É·ÇNullÐÎÊ½£¬Èç¹û´«ÈëµÄ²ÎÊýÊÇ null£¬Ôò·µ»Ø¿Õ×Ö·û´®(¼´""£¬Ò²¼´string.Empty)
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½É·ï¿½Nullï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ nullï¿½ï¿½ï¿½ò·µ»Ø¿ï¿½ï¿½Ö·ï¿½ï¿½ï¿½(ï¿½ï¿½""ï¿½ï¿½Ò²ï¿½ï¿½string.Empty)
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>Èç¹ûÎªnull£¬Ôò·µ»Ø¿Õ×Ö·û´®(¼´""£¬Ò²¼´string.Empty)</returns>
-        public static String ToNotNull(Object str)
+        /// <returns>ï¿½ï¿½ï¿½Îªnullï¿½ï¿½ï¿½ò·µ»Ø¿ï¿½ï¿½Ö·ï¿½ï¿½ï¿½(ï¿½ï¿½""ï¿½ï¿½Ò²ï¿½ï¿½string.Empty)</returns>
+        public static string ToNotNull(object str)
         {
             if (str == null)
             {
@@ -505,21 +505,21 @@ namespace Wlniao
             return str.ToString();
         }
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³É DateTime ÐÎÊ½£¬Èç¹û²»·ûºÏ¸ñÊ½£¬Ôò·µ»Øµ±Ç°Ê±¼ä
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ DateTime ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½Ê½ï¿½ï¿½ï¿½ò·µ»Øµï¿½Ç°Ê±ï¿½ï¿½
         /// </summary>
         /// <param name="objTime"></param>
-        /// <returns>Èç¹û²»·ûºÏ¸ñÊ½£¬Ôò·µ»Øµ±Ç°Ê±¼ä</returns>
-        public static DateTime ToTime(Object objTime)
+        /// <returns>ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½Ê½ï¿½ï¿½ï¿½ò·µ»Øµï¿½Ç°Ê±ï¿½ï¿½</returns>
+        public static DateTime ToTime(object objTime)
         {
             return ToTime(objTime, DateTime.Now);
         }
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³É DateTime ÐÎÊ½£¬Èç¹û²»·ûºÏ¸ñÊ½£¬Ôò·µ»ØµÚ¶þ¸ö²ÎÊýÖ¸¶¨µÄÊ±¼ä
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ DateTime ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½Ê½ï¿½ï¿½ï¿½ò·µ»ØµÚ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
         /// </summary>
         /// <param name="objTime"></param>
         /// <param name="targetTime"></param>
         /// <returns></returns>
-        public static DateTime ToTime(Object objTime, DateTime targetTime)
+        public static DateTime ToTime(object objTime, DateTime targetTime)
         {
             if (objTime == null)
             {
@@ -527,7 +527,7 @@ namespace Wlniao
             }
             try
             {
-                if (objTime.GetType() == typeof(String))
+                if (objTime.GetType() == typeof(string))
                 {
                     return DateTools.Convert(objTime.ToString());
                 }
@@ -542,21 +542,21 @@ namespace Wlniao
             }
         }
         /// <summary>
-        /// ÅÐ¶ÏÁ½¸öÊ±¼äµÄÈÕÆÚÊÇ·ñÏàÍ¬(ÒªÇóÍ¬ÄêÍ¬ÔÂÍ¬ÈÕ)
+        /// ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Í¬(Òªï¿½ï¿½Í¬ï¿½ï¿½Í¬ï¿½ï¿½Í¬ï¿½ï¿½)
         /// </summary>
         /// <param name="day1"></param>
         /// <param name="day2"></param>
         /// <returns></returns>
-        public static Boolean IsDayEqual(DateTime day1, DateTime day2)
+        public static bool IsDayEqual(DateTime day1, DateTime day2)
         {
             return (day1.Year == day2.Year && day1.Month == day2.Month && day1.Day == day2.Day);
         }
         /// <summary>
-        /// »ñÈ¡ÈÕÆÚµÄÈÕ³£±í´ïÐÎÊ½£¬ÒªÇó×î½üÈýÌìÒÀ´ÎÓÃ {½ñÌì£¬×òÌì£¬Ç°Ìì} ±íÊ¾
+        /// ï¿½ï¿½È¡ï¿½ï¿½ï¿½Úµï¿½ï¿½Õ³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ {ï¿½ï¿½ï¿½ì£¬ï¿½ï¿½ï¿½ì£¬Ç°ï¿½ï¿½} ï¿½ï¿½Ê¾
         /// </summary>
         /// <param name="day"></param>
-        /// <returns>ÒªÇó×î½üÈýÌìÒÀ´ÎÓÃ {½ñÌì¡¢×òÌì¡¢Ç°Ìì} ±íÊ¾</returns>
-        public static String ToDayString(DateTime day)
+        /// <returns>Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ {ï¿½ï¿½ï¿½ì¡¢ï¿½ï¿½ï¿½ì¡¢Ç°ï¿½ï¿½} ï¿½ï¿½Ê¾</returns>
+        public static string ToDayString(DateTime day)
         {
             var today = DateTools.GetNow();
             if (day.Kind == DateTimeKind.Utc)
@@ -583,11 +583,11 @@ namespace Wlniao
             return day.ToString("yyyy-MM-dd");
         }
         /// <summary>
-        /// »ñÈ¡Ê±¼äµÄÈÕ³£±í´ïÐÎÊ½£¬¸ñÊ½Îª {**Ð¡Ê±Ç°£¬**·ÖÖÓÇ°£¬**ÃëÇ°}£¬ÒÔ¼° {×òÌì£¬Ç°Ìì}
+        /// ï¿½ï¿½È¡Ê±ï¿½ï¿½ï¿½ï¿½Õ³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½Ê½Îª {**Ð¡Ê±Ç°ï¿½ï¿½**ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½**ï¿½ï¿½Ç°}ï¿½ï¿½ï¿½Ô¼ï¿½ {ï¿½ï¿½ï¿½ì£¬Ç°ï¿½ï¿½}
         /// </summary>
         /// <param name="t"></param>
-        /// <returns>¸ñÊ½Îª {**Ð¡Ê±Ç°£¬**·ÖÖÓÇ°£¬**ÃëÇ°}£¬ÒÔ¼° {×òÌì£¬Ç°Ìì}</returns>
-        public static String ToTimeString(DateTime t)
+        /// <returns>ï¿½ï¿½Ê½Îª {**Ð¡Ê±Ç°ï¿½ï¿½**ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½**ï¿½ï¿½Ç°}ï¿½ï¿½ï¿½Ô¼ï¿½ {ï¿½ï¿½ï¿½ì£¬Ç°ï¿½ï¿½}</returns>
+        public static string ToTimeString(DateTime t)
         {
             var now = DateTools.GetNow();
             if (t.Kind == DateTimeKind.Utc)
@@ -639,40 +639,40 @@ namespace Wlniao
             }
         }
         /// <summary>
-        /// »ñÈ¡Ê±¼äµÄÓ¢ÎÄ±í´ïÐÎÊ½£¬¸ñÊ½Èç {Monday, November 12, 2012}
+        /// ï¿½ï¿½È¡Ê±ï¿½ï¿½ï¿½Ó¢ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ {Monday, November 12, 2012}
         /// </summary>
         /// <param name="t"></param>
-        /// <returns>¸ñÊ½Èç {Monday, November 12, 2012}</returns>
-        public static String ToDateEnString(DateTime t)
+        /// <returns>ï¿½ï¿½Ê½ï¿½ï¿½ {Monday, November 12, 2012}</returns>
+        public static string ToDateEnString(DateTime t)
         {
             return t.ToString("D", new System.Globalization.CultureInfo("en").DateTimeFormat);
         }
         /// <summary>
-        /// »ñÈ¡Ê±¼äµÄÓ¢ÎÄ±í´ïÐÎÊ½£¬¸ñÊ½Èç {Apr 07,2012}
+        /// ï¿½ï¿½È¡Ê±ï¿½ï¿½ï¿½Ó¢ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ {Apr 07,2012}
         /// </summary>
         /// <param name="t"></param>
-        /// <returns>¸ñÊ½Èç {Apr 07,2012}</returns>
-        public static String ToDateEnShortString(DateTime t)
+        /// <returns>ï¿½ï¿½Ê½ï¿½ï¿½ {Apr 07,2012}</returns>
+        public static string ToDateEnShortString(DateTime t)
         {
             string d = t.ToString("r", new System.Globalization.CultureInfo("en").DateTimeFormat);
             d = d.Remove(d.IndexOf(':') - 2);
             return d;
         }
         /// <summary>
-        /// »ñÈ¡Ê±¼äµÄÓ¢ÎÄ±í´ïÐÎÊ½£¬¸ñÊ½Èç {Mon, 12 Nov 2012 00:00:00 GMT}
+        /// ï¿½ï¿½È¡Ê±ï¿½ï¿½ï¿½Ó¢ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ {Mon, 12 Nov 2012 00:00:00 GMT}
         /// </summary>
         /// <param name="t"></param>
-        /// <returns>¸ñÊ½Èç {Mon, 12 Nov 2012 00:00:00 GMT}</returns>
-        public static String ToDateEnLongString(DateTime t)
+        /// <returns>ï¿½ï¿½Ê½ï¿½ï¿½ {Mon, 12 Nov 2012 00:00:00 GMT}</returns>
+        public static string ToDateEnLongString(DateTime t)
         {
             return t.ToString("r", new System.Globalization.CultureInfo("en").DateTimeFormat);
         }
         /// <summary>
-        /// ½«ÕûÊý×ª»»³É×Ö·û´®ÐÎÊ½£¬¶à¸öÕûÊýÖ®¼äÓÃÓ¢ÎÄ¶ººÅ·Ö¸ô
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½Ó¢ï¿½Ä¶ï¿½ï¿½Å·Ö¸ï¿½
         /// </summary>
         /// <param name="ids"></param>
         /// <returns></returns>
-        public static String ToString(int[] ids)
+        public static string ToString(int[] ids)
         {
             if (ids == null || ids.Length == 0)
             {
@@ -687,26 +687,26 @@ namespace Wlniao
             return builder.ToString();
         }
         /// <summary>
-        /// ½«ÎÄ±¾×ª»»ÎªÊý¾Ý×Öµä
+        /// ï¿½ï¿½ï¿½Ä±ï¿½×ªï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½
         /// </summary>
         /// <param name="doc"></param>
         /// <returns></returns>
-        public static Dictionary<String, String> ToDictionary(string doc)
+        public static Dictionary<string, string> ToDictionary(string doc)
         {
-            var result = new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase);
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrEmpty(doc))
             {
-                String[] arrLine = doc.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (String oneLine in arrLine)
+                string[] arrLine = doc.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string oneLine in arrLine)
                 {
-                    //ÎÞÖµµÄÐÐÌø¹ý
+                    //ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                     var tempLine = oneLine.TrimStart().TrimStart('-').TrimStart();
-                    //×¢ÊÍÐÐÌø¹ý
+                    //×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                     if (tempLine.StartsWith("//") || tempLine.StartsWith("#"))
                     {
                         continue;
                     }
-                    String[] arrPair = tempLine.Split(new char[] { '=' }, 2);
+                    string[] arrPair = tempLine.Split(new char[] { '=' }, 2);
                     if (arrPair.Length == 2)
                     {
                         var arrTrim = new char[] { '"', '\'' };
@@ -734,14 +734,14 @@ namespace Wlniao
             return result;
         }
         /// <summary>
-        /// ½«×Ö·û´®ÐÎÊ½µÄ id ÁÐ±í×ª»»³ÉÕûÐÍÊý×é
+        /// ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ id ï¿½Ð±ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="myids"></param>
         /// <returns></returns>
-        public static int[] ToIntArray(String myids)
+        public static int[] ToIntArray(string myids)
         {
             if (strUtil.IsNullOrEmpty(myids)) return new int[] { };
-            String[] arrIds = myids.Split(',');
+            string[] arrIds = myids.Split(',');
             int[] Ids = new int[arrIds.Length];
             for (int i = 0; i < arrIds.Length; i++)
             {
@@ -751,11 +751,11 @@ namespace Wlniao
             return Ids;
         }
         /// <summary>
-        /// ½«×Ö·û´®×ª»»³ÉÒÔ¾®ºÅ¿ªÍ·µÄ±í´ïÐÎÊ½£»Èç¹û²»ÊÇÓÐÐ§µÄÑÕÉ«Öµ£¬Ôò·µ»Ønull
+        /// ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½Ô¾ï¿½ï¿½Å¿ï¿½Í·ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½ï¿½ï¿½É«Öµï¿½ï¿½ï¿½ò·µ»ï¿½null
         /// </summary>
         /// <param name="val"></param>
-        /// <returns>½«×Ö·û´®×ª»»³ÉÒÔ¾®ºÅ¿ªÍ·µÄ±í´ïÐÎÊ½£»Èç¹û²»ÊÇÓÐÐ§µÄÑÕÉ«Öµ£¬Ôò·µ»Ønull</returns>
-        public static String ToColorValue(String val)
+        /// <returns>ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½Ô¾ï¿½ï¿½Å¿ï¿½Í·ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½ï¿½ï¿½É«Öµï¿½ï¿½ï¿½ò·µ»ï¿½null</returns>
+        public static string ToColorValue(string val)
         {
             if (strUtil.IsColorValue(val) == false)
             {
@@ -769,7 +769,7 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// ½« Stream ×ª³É byte[]
+        /// ï¿½ï¿½ Stream ×ªï¿½ï¿½ byte[]
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
@@ -777,13 +777,13 @@ namespace Wlniao
         {
             byte[] bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);
-            // ÉèÖÃµ±Ç°Á÷µÄÎ»ÖÃÎªÁ÷µÄ¿ªÊ¼ 
+            // ï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½Îªï¿½ï¿½ï¿½Ä¿ï¿½Ê¼ 
             stream.Seek(0, System.IO.SeekOrigin.Begin);
             return bytes;
         }
 
         /// <summary>
-        /// ½« byte[] ×ª³É Stream
+        /// ï¿½ï¿½ byte[] ×ªï¿½ï¿½ Stream
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
@@ -795,10 +795,10 @@ namespace Wlniao
 
 
         /// <summary>
-        /// ½«´ËÊµÀýÖÐµÄÖ¸¶¨ <see cref="sbyte"/> ×Ö·ûÊý×é×ª»»µ½ <see cref="byte"/> ×Ö·ûÊý×é¡£
+        /// ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½Ðµï¿½Ö¸ï¿½ï¿½ <see cref="sbyte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ <see cref="byte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½é¡£
         /// </summary>
-        /// <param name="sbyteArray">Òª×ª»»µÄ <see cref="sbyte"/> ×Ö·ûÊý×é</param>
-        /// <returns>·µ»Ø×ª»»ºóµÄ <see cref="byte"/> ×Ö·ûÊý×é</returns>
+        /// <param name="sbyteArray">Òª×ªï¿½ï¿½ï¿½ï¿½ <see cref="sbyte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½</param>
+        /// <returns>ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ <see cref="byte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½</returns>
         public static byte[] ToByteArray(sbyte[] sbyteArray)
         {
             byte[] byteArray = new byte[sbyteArray.Length];
@@ -809,10 +809,10 @@ namespace Wlniao
 
 
         /// <summary>
-        /// ½«´ËÊµÀýÖÐµÄÖ¸¶¨×Ö·û´®×ª»»µ½ <see cref="byte"/> ×Ö·ûÊý×é¡£
+        /// ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½Ðµï¿½Ö¸ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ <see cref="byte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½é¡£
         /// </summary>
-        /// <param name="sourceString">Òª×ª»»µÄ×Ö·û´®</param>
-        /// <returns>·µ»Ø×ª»»ºóµÄ <see cref="byte"/> ×Ö·ûÊý×é</returns>
+        /// <param name="sourceString">Òª×ªï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½</param>
+        /// <returns>ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ <see cref="byte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½</returns>
         public static byte[] ToByteArray(string sourceString)
         {
             byte[] byteArray = new byte[sourceString.Length];
@@ -823,10 +823,10 @@ namespace Wlniao
 
 
         /// <summary>
-        /// ½«´ËÊµÀýÖÐµÄÖ¸¶¨ <see cref="object"/> Êý×é×ª»»µ½ <see cref="byte"/> ×Ö·ûÊý×é¡£
+        /// ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½Ðµï¿½Ö¸ï¿½ï¿½ <see cref="object"/> ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ <see cref="byte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½é¡£
         /// </summary>
-        /// <param name="tempObjectArray">Òª×ª»»µÄ <see cref="object"/> ×Ö·ûÊý×é</param>
-        /// <returns>·µ»Ø×ª»»ºóµÄ <see cref="byte"/> ×Ö·ûÊý×é</returns>
+        /// <param name="tempObjectArray">Òª×ªï¿½ï¿½ï¿½ï¿½ <see cref="object"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½</param>
+        /// <returns>ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ <see cref="byte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½</returns>
         public static byte[] ToByteArray(object[] tempObjectArray)
         {
             byte[] byteArray = new byte[tempObjectArray.Length];
@@ -836,10 +836,10 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// ½«´ËÊµÀýÖÐµÄÖ¸¶¨ <see cref="byte"/> ×Ö·ûÊý×é×ª»»µ½ <see cref="sbyte"/> ×Ö·ûÊý×é¡£
+        /// ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½Ðµï¿½Ö¸ï¿½ï¿½ <see cref="byte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ <see cref="sbyte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½é¡£
         /// </summary>
-        /// <param name="byteArray">Òª×ª»»µÄ <see cref="byte"/> ×Ö·ûÊý×é</param>
-        /// <returns>·µ»Ø×ª»»ºóµÄ <see cref="sbyte"/> ×Ö·ûÊý×é</returns>
+        /// <param name="byteArray">Òª×ªï¿½ï¿½ï¿½ï¿½ <see cref="byte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½</param>
+        /// <returns>ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ <see cref="sbyte"/> ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½</returns>
         public static sbyte[] ToSByteArray(byte[] byteArray)
         {
             sbyte[] sbyteArray = new sbyte[byteArray.Length];
@@ -850,7 +850,7 @@ namespace Wlniao
 
 
         /// <summary>
-        /// ×Ö·û´®×ª16½øÖÆ×Ö½ÚÊý×é
+        /// ï¿½Ö·ï¿½ï¿½ï¿½×ª16ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="hexString"></param>
         /// <returns></returns>
@@ -877,16 +877,16 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// byte[]Êý×é×ª16½øÖÆ×Ö·û´®
+        /// byte[]ï¿½ï¿½ï¿½ï¿½×ª16ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½
         /// </summary>
-        /// <param name="input">byte[]Êý×é</param>
-        /// <returns>16½øÖÆ×Ö·û´®</returns>
+        /// <param name="input">byte[]ï¿½ï¿½ï¿½ï¿½</param>
+        /// <returns>16ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½</returns>
         public static string BytesToHexString(byte[] input)
         {
             var hexString = new StringBuilder();
             for (int i = 0; i < input.Length; i++)
             {
-                hexString.Append(String.Format("{0:x2}", input[i]));
+                hexString.Append(string.Format("{0:x2}", input[i]));
             }
             return hexString.ToString();
         }
@@ -897,7 +897,7 @@ namespace Wlniao
         /// <param name="money"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public static String ToMoney(float money, string format = "")
+        public static string ToMoney(float money, string format = "")
         {
             if (string.IsNullOrEmpty(format) || !format.StartsWith("F"))
             {
@@ -923,7 +923,7 @@ namespace Wlniao
         /// <param name="money"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public static String ToMoney(double money, string format = "")
+        public static string ToMoney(double money, string format = "")
         {
             return ToMoney((float)money, format);
         }
@@ -933,16 +933,16 @@ namespace Wlniao
         /// <param name="money"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public static String ToMoney(decimal money, string format = "")
+        public static string ToMoney(decimal money, string format = "")
         {
             return ToMoney((float)money, format);
         }
         /// <summary>
-        /// ½«Ô¶³ÌSvgÍ¼Æ¬×ª»»³ÉSvg¸ñÊ½µÄ×Ö·û´®£¨¿É×ª»»Url²ÎÊý£©
+        /// ï¿½ï¿½Ô¶ï¿½ï¿½SvgÍ¼Æ¬×ªï¿½ï¿½ï¿½ï¿½Svgï¿½ï¿½Ê½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Urlï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public static String ToSvgStr(String url)
+        public static string ToSvgStr(string url)
         {
             var svg = XServer.Common.GetResponseString(url);
             if (!string.IsNullOrEmpty(svg))
@@ -969,40 +969,40 @@ namespace Wlniao
 
         
         /// <summary>
-        /// ¸ù¾Ý²»Í¬½øÖÆµÄÐ´·¨·µ»Ø¶ÔÓ¦ÊýÖµ
+        /// ï¿½ï¿½ï¿½Ý²ï¿½Í¬ï¿½ï¿½ï¿½Æµï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ø¶ï¿½Ó¦ï¿½ï¿½Öµ
         /// </summary>
-        /// <param name="literal">¸÷½øÖÆÐ´·¨</param>
-        /// <returns>¶ÔÓ¦ÊýÖµ</returns>
+        /// <param name="literal">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½</param>
+        /// <returns>ï¿½ï¿½Ó¦ï¿½ï¿½Öµ</returns>
         public static long Identity(long literal)
         {
             return literal;
         }
 
         /// <summary>
-        /// ¸ù¾Ý²»Í¬½øÖÆµÄÐ´·¨·µ»Ø¶ÔÓ¦ÊýÖµ
+        /// ï¿½ï¿½ï¿½Ý²ï¿½Í¬ï¿½ï¿½ï¿½Æµï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ø¶ï¿½Ó¦ï¿½ï¿½Öµ
         /// </summary>
-        /// <param name="literal">¸÷½øÖÆÐ´·¨</param>
-        /// <returns>¶ÔÓ¦ÊýÖµ</returns>
+        /// <param name="literal">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½</param>
+        /// <returns>ï¿½ï¿½Ó¦ï¿½ï¿½Öµ</returns>
         public static ulong Identity(ulong literal)
         {
             return literal;
         }
 
         /// <summary>
-        /// ¸ù¾Ý²»Í¬½øÖÆµÄÐ´·¨·µ»Ø¶ÔÓ¦ÊýÖµ
+        /// ï¿½ï¿½ï¿½Ý²ï¿½Í¬ï¿½ï¿½ï¿½Æµï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ø¶ï¿½Ó¦ï¿½ï¿½Öµ
         /// </summary>
-        /// <param name="literal">¸÷½øÖÆÐ´·¨</param>
-        /// <returns>¶ÔÓ¦ÊýÖµ</returns>
+        /// <param name="literal">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½</param>
+        /// <returns>ï¿½ï¿½Ó¦ï¿½ï¿½Öµ</returns>
         public static float Identity(float literal)
         {
             return literal;
         }
 
         /// <summary>
-        /// ¸ù¾Ý²»Í¬½øÖÆµÄÐ´·¨·µ»Ø¶ÔÓ¦ÊýÖµ
+        /// ï¿½ï¿½ï¿½Ý²ï¿½Í¬ï¿½ï¿½ï¿½Æµï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ø¶ï¿½Ó¦ï¿½ï¿½Öµ
         /// </summary>
-        /// <param name="literal">¸÷½øÖÆÐ´·¨</param>
-        /// <returns>¶ÔÓ¦ÊýÖµ</returns>
+        /// <param name="literal">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½</param>
+        /// <returns>ï¿½ï¿½Ó¦ï¿½ï¿½Öµ</returns>
         public static double Identity(double literal)
         {
             return literal;

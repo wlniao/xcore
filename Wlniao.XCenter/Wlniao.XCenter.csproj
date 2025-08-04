@@ -26,11 +26,12 @@
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/wlniao/xcore</RepositoryUrl>
 		<TargetFrameworks>net8.0</TargetFrameworks>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.49" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.44" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.45" />
 	</ItemGroup>
 
 	<ItemGroup>

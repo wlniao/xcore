@@ -35,13 +35,13 @@ namespace Wlniao.Runtime
     {
         private const string defaultLang = "zh-cn";
         // 这个一定要放在第一行，以保证第一个加载
-        private static Dictionary<String, Dictionary<String, String>> langSetting = new Dictionary<String, Dictionary<String, String>>(StringComparer.OrdinalIgnoreCase);
+        private static Dictionary<string, Dictionary<string, string>> langSetting = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
         /// <summary>
         /// 获取某 key 的语言值
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static String Get(String key)
+        public static string Get(string key)
         {
             return Get(GetLang(), key, null);
         }
@@ -51,7 +51,7 @@ namespace Wlniao.Runtime
         /// <param name="key"></param>
         /// <param name="defaultStr"></param>
         /// <returns></returns>
-        public static String Get(String key, String defaultStr)
+        public static string Get(string key, string defaultStr)
         {
             return Get(GetLang(), key, defaultStr);
         }
@@ -62,7 +62,7 @@ namespace Wlniao.Runtime
         /// <param name="key"></param>
         /// <param name="defaultStr"></param>
         /// <returns></returns>
-        public static String Get(String langStr, String key, String defaultStr)
+        public static string Get(string langStr, string key, string defaultStr)
         {
             if (string.IsNullOrEmpty(langStr))
             {
@@ -77,7 +77,7 @@ namespace Wlniao.Runtime
                         try
                         {
                             var langPath = PathTool.Map(XCore.FrameworkRoot, "lang");
-                            foreach (String file in Directory.GetFiles(langPath))
+                            foreach (string file in Directory.GetFiles(langPath))
                             {
                                 if (file.EndsWith(".ini"))
                                 {
@@ -90,7 +90,7 @@ namespace Wlniao.Runtime
                         catch { }
                         if (!langSetting.ContainsKey(langStr))
                         {
-                            langSetting.TryAdd(langStr, new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase));
+                            langSetting.TryAdd(langStr, new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
                             if (langStr == defaultLang)
                             {
                                 langSetting[defaultLang].TryAdd("today", "今天");
@@ -132,12 +132,12 @@ namespace Wlniao.Runtime
         /// 获取所有支持的语言包
         /// </summary>
         /// <returns></returns>
-        public static List<Dictionary<String, String>> GetSupportedLang()
+        public static List<Dictionary<string, string>> GetSupportedLang()
         {
-            var list = new List<Dictionary<String, String>>();
-            foreach (String key in langSetting.Keys)
+            var list = new List<Dictionary<string, string>>();
+            foreach (string key in langSetting.Keys)
             {
-                Dictionary<String, String> pair = new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase);
+                Dictionary<string, string> pair = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 pair.TryAdd("Name", GetLangName(key));
                 pair.TryAdd("Value", key);
                 list.Add(pair);
@@ -148,7 +148,7 @@ namespace Wlniao.Runtime
         /// 获取当前语言字符(比如 zh-cn，或 en-us)
         /// </summary>
         /// <returns></returns>
-        public static String GetLang()
+        public static string GetLang()
         {
             var nativeLang = System.Globalization.CultureInfo.CurrentCulture.Name.ToLower();
             if (langSetting.ContainsKey(nativeLang))
@@ -162,7 +162,7 @@ namespace Wlniao.Runtime
         /// </summary>
         /// <param name="langStr"></param>
         /// <returns></returns>
-        public static String GetLangName(String langStr)
+        public static string GetLangName(string langStr)
         {
             switch (langStr.ToLower())
             {

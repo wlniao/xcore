@@ -112,7 +112,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="Message"></param>
         /// <param name="Success"></param>
-        public ApiResult(String Message, Boolean Success = false)
+        public ApiResult(string Message, bool Success = false)
         {
             this.code = "";
             this.node = XCore.WebNode;
@@ -126,7 +126,7 @@ namespace Wlniao
         /// <param name="Code"></param>
         /// <param name="Message"></param>
         /// <param name="Success"></param>
-        public ApiResult(String Node, String Code, String Message, Boolean Success = false)
+        public ApiResult(string Node, string Code, string Message, bool Success = false)
         {
             this.node = Node;
             this.code = Code;

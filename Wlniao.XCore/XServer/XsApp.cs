@@ -60,22 +60,22 @@ namespace Wlniao.XServer
         /// </summary>
         /// <param name="AppId"></param>
         /// <returns></returns>
-        public static ApiResult<XsApp> GetById(String AppId)
+        public static ApiResult<XsApp> GetById(string AppId)
         {
             return Common.Get<XsApp>("openapi", "xsapp", "get"
-                , new KeyValuePair<String, String>("appid", AppId));
+                , new KeyValuePair<string, string>("appid", AppId));
         }
         /// <summary>
         /// 通过AppCode获取服务实例列表
         /// </summary>
         /// <param name="AppCode">如datapi/control/website等</param>
         /// <returns></returns>
-        public static ApiResult<Dictionary<String, Int32>> GetInstances(String AppCode)
+        public static ApiResult<Dictionary<string, int>> GetInstances(string AppCode)
         {
-            var _rlt = Common.Get<Dictionary<String, Object>>("openapi", "xsapp", "instances"
-                , new KeyValuePair<String, String>("state", Config.GetConfigs("XServerState", "2"))
-                , new KeyValuePair<String, String>("appcode", AppCode));
-            var rlt = new ApiResult<Dictionary<String, Int32>>() { success = _rlt.success, message = _rlt.message, data = new Dictionary<string, int>() };
+            var _rlt = Common.Get<Dictionary<string, object>>("openapi", "xsapp", "instances"
+                , new KeyValuePair<string, string>("state", Config.GetConfigs("XServerState", "2"))
+                , new KeyValuePair<string, string>("appcode", AppCode));
+            var rlt = new ApiResult<Dictionary<string, int>>() { success = _rlt.success, message = _rlt.message, data = new Dictionary<string, int>() };
             if (_rlt.success && _rlt.data != null)
             {
                 var em = _rlt.data.GetEnumerator();
@@ -94,12 +94,12 @@ namespace Wlniao.XServer
         /// </summary>
         /// <param name="AppId"></param>
         /// <returns></returns>
-        public static ApiResult<Dictionary<String, Int32>> GetInstancesByAppId(String AppId)
+        public static ApiResult<Dictionary<string, int>> GetInstancesByAppId(string AppId)
         {
-            var _rlt = Common.Get<Dictionary<String, Object>>("openapi", "xsapp", "instances"
-                , new KeyValuePair<String, String>("state", Config.GetConfigs("XServerState", "2"))
-                , new KeyValuePair<String, String>("appid", AppId));
-            var rlt = new ApiResult<Dictionary<String, Int32>>() { success = _rlt.success, message = _rlt.message, data = new Dictionary<string, int>() };
+            var _rlt = Common.Get<Dictionary<string, object>>("openapi", "xsapp", "instances"
+                , new KeyValuePair<string, string>("state", Config.GetConfigs("XServerState", "2"))
+                , new KeyValuePair<string, string>("appid", AppId));
+            var rlt = new ApiResult<Dictionary<string, int>>() { success = _rlt.success, message = _rlt.message, data = new Dictionary<string, int>() };
             if (_rlt.success && _rlt.data != null)
             {
                 var em = _rlt.data.GetEnumerator();

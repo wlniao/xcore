@@ -44,13 +44,13 @@ namespace Wlniao.OpenApi
         /// <summary>
         /// 
         /// </summary>
-        private static Dictionary<String, String> namelist = new Dictionary<String, String>();
+        private static Dictionary<string, string> namelist = new Dictionary<string, string>();
         /// <summary>
         /// 根据LocationId获取地点名称
         /// </summary>
         /// <param name="Id"></param>
         /// <returns></returns>
-        public static String GetName(String Id)
+        public static string GetName(string Id)
         {
             if (string.IsNullOrEmpty(Id))
             {
@@ -79,7 +79,7 @@ namespace Wlniao.OpenApi
         public static Location Get(string Id)
         {
             var rlt = Common.Get<Location>("location", "get"
-                , new KeyValuePair<String, String>("id", Id));
+                , new KeyValuePair<string, string>("id", Id));
             if (rlt.success)
             {
                 return rlt.data;
@@ -96,12 +96,12 @@ namespace Wlniao.OpenApi
         /// <param name="Latitude">纬度</param>
         /// <param name="GPSType">坐标类型 1,GPS坐标  2,百度坐标</param>
         /// <returns></returns>
-        public static Location Get(String Longitude, String Latitude, Int32 GPSType = 1)
+        public static Location Get(string Longitude, string Latitude, int GPSType = 1)
         {
-            String json = Common.Get("location", "get"
-                , new KeyValuePair<String, String>("longitude", Longitude)
-                , new KeyValuePair<String, String>("latitude", Latitude)
-                , new KeyValuePair<String, String>("gpstype", GPSType.ToString()));
+            string json = Common.Get("location", "get"
+                , new KeyValuePair<string, string>("longitude", Longitude)
+                , new KeyValuePair<string, string>("latitude", Latitude)
+                , new KeyValuePair<string, string>("gpstype", GPSType.ToString()));
             if (string.IsNullOrEmpty(json))
             {
                 return null;
@@ -116,11 +116,11 @@ namespace Wlniao.OpenApi
         /// 获取地点列表
         /// </summary>
         /// <returns></returns>
-        public static List<Location> GetList(String Parent, Int32 Count, params KeyValuePair<String, String>[] kvs)
+        public static List<Location> GetList(string Parent, int Count, params KeyValuePair<string, string>[] kvs)
         {
-            var kvList = new List<KeyValuePair<String, String>>(kvs);
-            kvList.Add(new KeyValuePair<String, String>("parent", Parent));
-            kvList.Add(new KeyValuePair<String, String>("count", Count.ToString()));
+            var kvList = new List<KeyValuePair<string, string>>(kvs);
+            kvList.Add(new KeyValuePair<string, string>("parent", Parent));
+            kvList.Add(new KeyValuePair<string, string>("count", Count.ToString()));
             var rlt = Common.Get<List<Location>>("location", "getlist", kvList.ToArray());
             if (rlt.success)
             {
@@ -132,14 +132,14 @@ namespace Wlniao.OpenApi
         /// 获取地点列表
         /// </summary>
         /// <returns></returns>
-        public static List<Location> GetList(String Parent, Int32 Count, Double Longitude = 0, Double Latitude = 0, Int32 GPSType = 0, params KeyValuePair<String, String>[] kvs)
+        public static List<Location> GetList(string Parent, int Count, double Longitude = 0, double Latitude = 0, int GPSType = 0, params KeyValuePair<string, string>[] kvs)
         {
-            var kvList = new List<KeyValuePair<String, String>>(kvs);
-            kvList.Add(new KeyValuePair<String, String>("count", Count.ToString()));
-            kvList.Add(new KeyValuePair<String, String>("parent", Parent));
-            kvList.Add(new KeyValuePair<String, String>("longitude", Longitude.ToString("F8")));
-            kvList.Add(new KeyValuePair<String, String>("latitude", Latitude.ToString("F8")));
-            kvList.Add(new KeyValuePair<String, String>("gpstype", GPSType.ToString()));
+            var kvList = new List<KeyValuePair<string, string>>(kvs);
+            kvList.Add(new KeyValuePair<string, string>("count", Count.ToString()));
+            kvList.Add(new KeyValuePair<string, string>("parent", Parent));
+            kvList.Add(new KeyValuePair<string, string>("longitude", Longitude.ToString("F8")));
+            kvList.Add(new KeyValuePair<string, string>("latitude", Latitude.ToString("F8")));
+            kvList.Add(new KeyValuePair<string, string>("gpstype", GPSType.ToString()));
             var rlt = Common.Get<List<Location>>("location", "getlist", kvList.ToArray());
             if (rlt.success)
             {
@@ -156,15 +156,15 @@ namespace Wlniao.OpenApi
         /// <param name="Tag"></param>
         /// <param name="Count"></param>
         /// <returns></returns>
-        public static List<Location> GetListNearBy(Double Longitude, Double Latitude, Int32 GPSType = 0, String Tag = "", Int32 Count = 15)
+        public static List<Location> GetListNearBy(double Longitude, double Latitude, int GPSType = 0, string Tag = "", int Count = 15)
         {
             var rlt = Common.Get<List<Location>>("location", "getlist"
-                , new KeyValuePair<String, String>("tag", Tag)
-                , new KeyValuePair<String, String>("count", Count.ToString())
-                , new KeyValuePair<String, String>("latitude", Latitude.ToString("F8"))
-                , new KeyValuePair<String, String>("longitude", Longitude.ToString("F8"))
-                , new KeyValuePair<String, String>("gpstype", GPSType.ToString())
-                , new KeyValuePair<String, String>("nearby", "true"));
+                , new KeyValuePair<string, string>("tag", Tag)
+                , new KeyValuePair<string, string>("count", Count.ToString())
+                , new KeyValuePair<string, string>("latitude", Latitude.ToString("F8"))
+                , new KeyValuePair<string, string>("longitude", Longitude.ToString("F8"))
+                , new KeyValuePair<string, string>("gpstype", GPSType.ToString())
+                , new KeyValuePair<string, string>("nearby", "true"));
             if (rlt.success)
             {
                 return rlt.data;
@@ -176,12 +176,12 @@ namespace Wlniao.OpenApi
         /// 获取地点列表
         /// </summary>
         /// <returns></returns>
-        public static String GetTree(String Parent, String Tag = "", String Key = "")
+        public static string GetTree(string Parent, string Tag = "", string Key = "")
         {
             return Common.Get("location", "gettree"
-                , new KeyValuePair<String, String>("key", Key)
-                , new KeyValuePair<String, String>("tag", Tag)
-                , new KeyValuePair<String, String>("parent", Parent));
+                , new KeyValuePair<string, string>("key", Key)
+                , new KeyValuePair<string, string>("tag", Tag)
+                , new KeyValuePair<string, string>("parent", Parent));
         }
 
         /// <summary>
@@ -189,10 +189,10 @@ namespace Wlniao.OpenApi
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public static List<String> GetPath(String id)
+        public static List<string> GetPath(string id)
         {
             var zxs = "11,12,31,50";   //直辖市ID
-            var ids = new List<String>();
+            var ids = new List<string>();
 
             if (id.Length <= 21 && (id.Length == 2 || id.Length == 4 || id.Length == 6 || id.Length == 9 || id.Length == 11
                  || id.Length == 12 || id.Length == 14 || id.Length == 15 || id.Length == 16 || id.Length == 17

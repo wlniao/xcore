@@ -77,7 +77,7 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <param name="expireSeconds"></param>
-        public static Boolean Set(String key, String value, int expireSeconds = 86400)
+        public static bool Set(string key, string value, int expireSeconds = 86400)
         {
             try
             {
@@ -102,7 +102,7 @@ namespace Wlniao.Caching
         /// <param name="obj"></param>
         /// <param name="expireSeconds"></param>
         /// <returns></returns>
-        public static Boolean Set<T>(String key, T obj, int expireSeconds = 86400)
+        public static bool Set<T>(string key, T obj, int expireSeconds = 86400)
         {
             return Set(key, JsonSerializer.Serialize(obj, new JsonSerializerOptions
             {
@@ -116,7 +116,7 @@ namespace Wlniao.Caching
         /// 删除缓存内容
         /// </summary>
         /// <param name="key"></param>
-        public static Boolean Del(String key)
+        public static bool Del(string key)
         {
             try
             {
@@ -135,7 +135,7 @@ namespace Wlniao.Caching
         /// 判断是否存在缓存项
         /// </summary>
         /// <param name="key"></param>
-        public static Boolean Exists(String key)
+        public static bool Exists(string key)
         {
             try
             {
@@ -159,7 +159,7 @@ namespace Wlniao.Caching
         /// 获取一个缓存项
         /// </summary>
         /// <param name="key"></param>
-        public static String Get(String key)
+        public static string Get(string key)
         {
             try
             {
@@ -184,7 +184,7 @@ namespace Wlniao.Caching
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static T Get<T>(String key)
+        public static T Get<T>(string key)
         {
             var json = Get(key);
             if (!string.IsNullOrEmpty(json))

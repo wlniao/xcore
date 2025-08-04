@@ -52,7 +52,7 @@ namespace Wlniao.XServer
             _App = "";
             _AppId = "";
             _Secret = "";
-            _AppInstances = new Dictionary<String, CommonApp>();
+            _AppInstances = new Dictionary<string, CommonApp>();
         }
         #region XServer访问
         /// <summary>
@@ -63,7 +63,7 @@ namespace Wlniao.XServer
             /// <summary>
             /// 主机地址
             /// </summary>
-            public String HostAddress { get; set; }
+            public string HostAddress { get; set; }
             public System.Net.IPAddress HostIP = null;
             /// <summary>
             /// 权重
@@ -114,8 +114,8 @@ namespace Wlniao.XServer
         internal class CommonApp
         {
             public string App { get; private set; }
-            private Dictionary<String, Instance> _instances;
-            public Dictionary<String, Instance> Instances
+            private Dictionary<string, Instance> _instances;
+            public Dictionary<string, Instance> Instances
             {
                 get
                 {
@@ -158,10 +158,10 @@ namespace Wlniao.XServer
             /// 实例化一个APP
             /// </summary>
             /// <param name="App"></param>
-            public CommonApp(String App)
+            public CommonApp(string App)
             {
                 this.App = App;
-                _instances = new Dictionary<String, Instance>();               
+                _instances = new Dictionary<string, Instance>();               
                 if (App.ToLower() == "openapi")
                 {
                     var host = Config.GetSetting(App + "Host");
@@ -183,10 +183,10 @@ namespace Wlniao.XServer
             /// </summary>
             /// <param name="AppCode"></param>
             /// <param name="HostAddress"></param>
-            public CommonApp(String AppCode, String HostAddress)
+            public CommonApp(string AppCode, string HostAddress)
             {
                 App = AppCode;
-                _instances = new Dictionary<String, Instance>();
+                _instances = new Dictionary<string, Instance>();
                 Add(HostAddress);
             }
             /// <summary>
@@ -194,7 +194,7 @@ namespace Wlniao.XServer
             /// </summary>
             /// <param name="HostAddress">实例地址</param>
             /// <param name="Weight">权重</param>
-            public void Add(String HostAddress, Int32 Weight = 100)
+            public void Add(string HostAddress, int Weight = 100)
             {
                 if (Weight <= 0)
                 {
@@ -235,13 +235,13 @@ namespace Wlniao.XServer
                 }
             }
         }
-        private static Dictionary<String, CommonApp> _AppInstances = new Dictionary<String, CommonApp>();
+        private static Dictionary<string, CommonApp> _AppInstances = new Dictionary<string, CommonApp>();
         /// <summary>
         /// App的实例
         /// </summary>
         /// <param name="app"></param>
         /// <returns></returns>
-        internal static CommonApp GetInstances(String app)
+        internal static CommonApp GetInstances(string app)
         {
             var _key = app.ToLower();
             if (_AppInstances.ContainsKey(_key))
@@ -306,7 +306,7 @@ namespace Wlniao.XServer
         /// </summary>
         /// <param name="url">请求的Url</param>
         /// <returns></returns>
-        public static string GetResponseString(String url)
+        public static string GetResponseString(string url)
         {
             var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
             using (var client = new System.Net.Http.HttpClient(handler))
@@ -330,7 +330,7 @@ namespace Wlniao.XServer
         /// <param name="postData"></param>
         /// <param name="contentType"></param>
         /// <returns></returns>
-        public static string PostResponseString(String url, String postData, String contentType = "application/json")
+        public static string PostResponseString(string url, string postData, string contentType = "application/json")
         {
             var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
             using (var client = new System.Net.Http.HttpClient(handler))
@@ -356,7 +356,7 @@ namespace Wlniao.XServer
         /// <param name="url"></param>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public static string PostResponseString(String url, System.IO.Stream stream)
+        public static string PostResponseString(string url, System.IO.Stream stream)
         {
             var str = "";
             var err = "";
@@ -411,19 +411,19 @@ namespace Wlniao.XServer
         /// <param name="logs"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        private static string Get(Int32 engine, CommonApp common, string controller, string action, out List<ApiLog> logs, params KeyValuePair<String, String>[] kvs)
+        private static string Get(int engine, CommonApp common, string controller, string action, out List<ApiLog> logs, params KeyValuePair<string, string>[] kvs)
         {
             logs = new List<ApiLog>();
             var res = "";
             var data = "";
-            var kvList = new List<KeyValuePair<String, String>>(kvs);
+            var kvList = new List<KeyValuePair<string, string>>(kvs);
             #region 处理接口基本参数及签名
             if (!string.IsNullOrEmpty(Secret))
             {
-                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
+                kvList.Add(new KeyValuePair<string, string>("xstime", DateTools.GetUnix().ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
-                    kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
+                    kvList.Add(new KeyValuePair<string, string>("xsappid", AppId));
                 }
                 kvList = kvList.OrderBy(o => o.Key).ToList();
                 var values = new System.Text.StringBuilder();
@@ -441,7 +441,7 @@ namespace Wlniao.XServer
                 {
                     sig_builder.Append(b.ToString("x2"));
                 }
-                kvList.Add(new KeyValuePair<String, String>("sig", sig_builder.ToString()));
+                kvList.Add(new KeyValuePair<string, string>("sig", sig_builder.ToString()));
             }
             #endregion
             foreach (var kv in kvList)
@@ -481,7 +481,7 @@ namespace Wlniao.XServer
         /// <param name="logs"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        internal static string Get(CommonApp common, string controller, string action, out List<ApiLog> logs, params KeyValuePair<String, String>[] kvs)
+        internal static string Get(CommonApp common, string controller, string action, out List<ApiLog> logs, params KeyValuePair<string, string>[] kvs)
         {
             return Get(0, common, controller, action, out logs, kvs);
         }
@@ -493,7 +493,7 @@ namespace Wlniao.XServer
         /// <param name="action"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string Get(string app, string controller, string action, params KeyValuePair<String, String>[] kvs)
+        public static string Get(string app, string controller, string action, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
             return Get(common, controller, action, out _, kvs);
@@ -507,7 +507,7 @@ namespace Wlniao.XServer
         /// <param name="logs"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string Get(string app, string controller, string action, out List<ApiLog> logs, params KeyValuePair<String, String>[] kvs)
+        public static string Get(string app, string controller, string action, out List<ApiLog> logs, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
             return Get(common, controller, action, out logs, kvs);
@@ -521,7 +521,7 @@ namespace Wlniao.XServer
         /// <param name="action"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static ApiResult<T> Get<T>(string app, string controller, string action, params KeyValuePair<String, String>[] kvs)
+        public static ApiResult<T> Get<T>(string app, string controller, string action, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
             var str = Get(common, controller, action, out List<ApiLog> logs, kvs);
@@ -535,7 +535,7 @@ namespace Wlniao.XServer
         /// <param name="action"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string GetOnlyData(string app, string controller, string action, params KeyValuePair<String, String>[] kvs)
+        public static string GetOnlyData(string app, string controller, string action, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
             var json = Get(common, controller, action, out _, kvs);
@@ -572,7 +572,7 @@ namespace Wlniao.XServer
                 //}
                 if (temp.StartsWith("\"[") || temp.StartsWith("\"{"))
                 {
-                    var rlt = Json.ToObject<ApiResult<String>>(json);
+                    var rlt = Json.ToObject<ApiResult<string>>(json);
                     if (rlt.success)
                     {
                         return rlt.data;
@@ -600,17 +600,17 @@ namespace Wlniao.XServer
         /// <param name="logs"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        internal static string Post(CommonApp common, string controller, string action, string postData, out List<ApiLog> logs, params KeyValuePair<String, String>[] kvs)
+        internal static string Post(CommonApp common, string controller, string action, string postData, out List<ApiLog> logs, params KeyValuePair<string, string>[] kvs)
         {
             var data = "";
-            var kvList = new List<KeyValuePair<String, String>>(kvs);
+            var kvList = new List<KeyValuePair<string, string>>(kvs);
             #region 处理接口基本参数及签名
             if (!string.IsNullOrEmpty(Secret))
             {
-                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
+                kvList.Add(new KeyValuePair<string, string>("xstime", DateTools.GetUnix().ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
-                    kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
+                    kvList.Add(new KeyValuePair<string, string>("xsappid", AppId));
                 }
                 kvList = kvList.OrderBy(o => o.Key).ToList();
                 var values = new System.Text.StringBuilder();
@@ -629,7 +629,7 @@ namespace Wlniao.XServer
                 {
                     sig_builder.Append(b.ToString("x2"));
                 }
-                kvList.Add(new KeyValuePair<String, String>("sig", sig_builder.ToString()));
+                kvList.Add(new KeyValuePair<string, string>("sig", sig_builder.ToString()));
             }
             #endregion
             foreach (var kv in kvList)
@@ -763,7 +763,7 @@ namespace Wlniao.XServer
         /// <param name="postData"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string Post(string app, string controller, string action, string postData, params KeyValuePair<String, String>[] kvs)
+        public static string Post(string app, string controller, string action, string postData, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
             return Post(common, controller, action, postData, out _, kvs);
@@ -778,7 +778,7 @@ namespace Wlniao.XServer
         /// <param name="logs"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string Post(string app, string controller, string action, string postData, out List<ApiLog> logs, params KeyValuePair<String, String>[] kvs)
+        public static string Post(string app, string controller, string action, string postData, out List<ApiLog> logs, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
             return Post(common, controller, action, postData, out logs, kvs);
@@ -793,7 +793,7 @@ namespace Wlniao.XServer
         /// <param name="postData"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static ApiResult<T> Post<T>(string app, string controller, string action, string postData, params KeyValuePair<String, String>[] kvs)
+        public static ApiResult<T> Post<T>(string app, string controller, string action, string postData, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
             var rlt = Json.ToObject<ApiResult<T>>(Post(common, controller, action, postData, out List<ApiLog> logs, kvs));
@@ -809,18 +809,18 @@ namespace Wlniao.XServer
         /// <param name="logs"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        internal static string Post(CommonApp common, string controller, string action, System.IO.Stream stream, out List<ApiLog> logs, params KeyValuePair<String, String>[] kvs)
+        internal static string Post(CommonApp common, string controller, string action, System.IO.Stream stream, out List<ApiLog> logs, params KeyValuePair<string, string>[] kvs)
         {
             var data = "";
-            var kvList = new List<KeyValuePair<String, String>>(kvs);
+            var kvList = new List<KeyValuePair<string, string>>(kvs);
             #region 处理接口基本参数及签名            
             if (!string.IsNullOrEmpty(Secret))
             {
                 // 排序并拼接签名原始字符
-                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
+                kvList.Add(new KeyValuePair<string, string>("xstime", DateTools.GetUnix().ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
-                    kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
+                    kvList.Add(new KeyValuePair<string, string>("xsappid", AppId));
                 }
                 kvList = kvList.OrderBy(o => o.Key).ToList();
                 var values = new System.Text.StringBuilder();
@@ -839,7 +839,7 @@ namespace Wlniao.XServer
                 {
                     sig_builder.Append(b.ToString("x2"));
                 }
-                kvList.Add(new KeyValuePair<String, String>("sig", sig_builder.ToString()));
+                kvList.Add(new KeyValuePair<string, string>("sig", sig_builder.ToString()));
             }
             #endregion
             foreach (var kv in kvList)
@@ -965,7 +965,7 @@ namespace Wlniao.XServer
         /// <param name="stream"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string Post(string app, string controller, string action, System.IO.Stream stream, params KeyValuePair<String, String>[] kvs)
+        public static string Post(string app, string controller, string action, System.IO.Stream stream, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
             return Post(common, controller, action, stream, out _, kvs);
@@ -980,7 +980,7 @@ namespace Wlniao.XServer
         /// <param name="logs"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string Post(string app, string controller, string action, System.IO.Stream stream, out List<ApiLog> logs, params KeyValuePair<String, String>[] kvs)
+        public static string Post(string app, string controller, string action, System.IO.Stream stream, out List<ApiLog> logs, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
             return Post(common, controller, action, stream, out logs, kvs);
@@ -995,7 +995,7 @@ namespace Wlniao.XServer
         /// <param name="stream"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static ApiResult<T> Post<T>(string app, string controller, string action, System.IO.Stream stream, params KeyValuePair<String, String>[] kvs)
+        public static ApiResult<T> Post<T>(string app, string controller, string action, System.IO.Stream stream, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
             var rlt = Json.ToObject<ApiResult<T>>(Post(common, controller, action, stream, out List<ApiLog> logs, kvs));
@@ -1007,7 +1007,7 @@ namespace Wlniao.XServer
         /// <param name="app"></param>
         /// <param name="https"></param>
         /// <returns></returns>
-        public static string GetAppHost(String app, Boolean https = false)
+        public static string GetAppHost(string app, bool https = false)
         {
             var em = GetInstances(app).Instances.GetEnumerator();
             while (em.MoveNext())
@@ -1032,7 +1032,7 @@ namespace Wlniao.XServer
         /// </summary>
         /// <param name="app"></param>
         /// <param name="host"></param>
-        public static void SetAppHost(String app, String host)
+        public static void SetAppHost(string app, string host)
         {
             var _app = app.ToLower();
             if (_AppInstances.ContainsKey(_app))
@@ -1052,7 +1052,7 @@ namespace Wlniao.XServer
         /// <param name="path"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string CreateUrl(bool sig, string app, string path, params KeyValuePair<String, String>[] kvs)
+        public static string CreateUrl(bool sig, string app, string path, params KeyValuePair<string, string>[] kvs)
         {
             return CreateUrl(sig, app, "", path, kvs);
         }
@@ -1065,19 +1065,19 @@ namespace Wlniao.XServer
         /// <param name="path"></param>
         /// <param name="kvs"></param>
         /// <returns></returns>
-        public static string CreateUrl(bool sig, string app, string host, string path, params KeyValuePair<String, String>[] kvs)
+        public static string CreateUrl(bool sig, string app, string host, string path, params KeyValuePair<string, string>[] kvs)
         {
             var data = "";
             var common = GetInstances(app);
-            var kvList = new List<KeyValuePair<String, String>>(kvs);
+            var kvList = new List<KeyValuePair<string, string>>(kvs);
             #region 处理接口基本参数及签名            
             if (sig && !string.IsNullOrEmpty(Secret))
             {
                 // 排序并拼接签名原始字符
-                kvList.Add(new KeyValuePair<String, String>("xstime", DateTools.GetUnix().ToString()));
+                kvList.Add(new KeyValuePair<string, string>("xstime", DateTools.GetUnix().ToString()));
                 if (!string.IsNullOrEmpty(AppId))
                 {
-                    kvList.Add(new KeyValuePair<String, String>("xsappid", AppId));
+                    kvList.Add(new KeyValuePair<string, string>("xsappid", AppId));
                 }
                 kvList = kvList.OrderBy(o => o.Key).ToList();
                 var values = new System.Text.StringBuilder();
@@ -1096,7 +1096,7 @@ namespace Wlniao.XServer
                 {
                     sig_builder.Append(b.ToString("x2"));
                 }
-                kvList.Add(new KeyValuePair<String, String>("sig", sig_builder.ToString()));
+                kvList.Add(new KeyValuePair<string, string>("sig", sig_builder.ToString()));
             }
             #endregion
             foreach (var kv in kvList)
@@ -1133,9 +1133,9 @@ namespace Wlniao.XServer
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public static ApiResult<String> CheckUrl(string url)
+        public static ApiResult<string> CheckUrl(string url)
         {
-            var rlt = new ApiResult<String>();
+            var rlt = new ApiResult<string>();
             var dic = strUtil.GetQueryString(url);
             if (dic.ContainsKey("xsappid"))
             {

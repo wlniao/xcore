@@ -308,7 +308,7 @@ namespace Wlniao.XServer
         /// <param name="FileName"></param>
         /// <param name="url"></param>
         /// <returns></returns>
-        public static Boolean SaveUrl(String FileName, String url)
+        public static bool SaveUrl(string FileName, string url)
         {
             using (var client = new System.Net.Http.HttpClient())
             {
@@ -364,7 +364,7 @@ namespace Wlniao.XServer
         /// <param name="FileName"></param>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public static Boolean Upload(String FileName, System.IO.Stream stream)
+        public static bool Upload(string FileName, System.IO.Stream stream)
         {
             var rlt = Upload(FileName, cvt.ToBytes(stream));
             stream.Dispose();
@@ -376,7 +376,7 @@ namespace Wlniao.XServer
         /// <param name="FileName"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static Boolean Upload(String FileName, byte[] data)
+        public static bool Upload(string FileName, byte[] data)
         {
             try
             {
@@ -461,7 +461,7 @@ namespace Wlniao.XServer
         /// <param name="absolutePath">文件的绝对路径</param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static Boolean UploadLocal(String absolutePath, byte[] data)
+        public static bool UploadLocal(string absolutePath, byte[] data)
         {
             try
             {
@@ -488,7 +488,7 @@ namespace Wlniao.XServer
         /// </summary>
         /// <param name="FileName"></param>
         /// <returns></returns>
-        public static Byte[] Read(String FileName)
+        public static byte[] Read(string FileName)
         {
             byte[] buffur = null;
             if (File.Exists(FileName))
@@ -522,7 +522,7 @@ namespace Wlniao.XServer
             /// <summary>
             /// 本地存储的路径
             /// </summary>
-            public static String Path
+            public static string Path
             {
                 get
                 {
@@ -535,10 +535,10 @@ namespace Wlniao.XServer
         /// </summary>
         public static class Upyun
         {
-            internal static String bucketname = null;
-            internal static String username = null;
-            internal static String password = null;
-            internal static String formapi = null;
+            internal static string bucketname = null;
+            internal static string username = null;
+            internal static string password = null;
+            internal static string formapi = null;
             private static bool upAuth = true;
             private static string api_domain = "v0.api.upyun.com";
             private static string DL = "/";
@@ -563,7 +563,7 @@ namespace Wlniao.XServer
             /// <summary>
             /// 是否启用
             /// </summary>
-            private static Boolean canUsing
+            private static bool canUsing
             {
                 get
                 {
@@ -585,7 +585,7 @@ namespace Wlniao.XServer
             /// <param name="expire">过期时间（单位：秒）</param>
             /// <param name="max">文件最大大小</param>
             /// <returns></returns>
-            public static String FormApi(int expire = 5400, int max = 200)
+            public static string FormApi(int expire = 5400, int max = 200)
             {
                 return FormApi(expire, max, null);
             }
@@ -596,7 +596,7 @@ namespace Wlniao.XServer
             /// <param name="max">文件最大大小</param>
             /// <param name="dir">上传目录</param>
             /// <returns></returns>
-            public static String FormApi(int expire, int max, string dir)
+            public static string FormApi(int expire, int max, string dir)
             {
                 Load();
                 max = max * 1024 * 1024;
@@ -982,11 +982,11 @@ namespace Wlniao.XServer
         public class Aliyun
         {
             private static Aliyun instance = new Aliyun();
-            private String bucket = null;
-            private String ossregion = null;
-            private String ossdomain = null;
-            private String ossaccesskeyid = null;
-            private String ossaccesskeySecret = null;
+            private string bucket = null;
+            private string ossregion = null;
+            private string ossdomain = null;
+            private string ossaccesskeyid = null;
+            private string ossaccesskeySecret = null;
             /// <summary>
             /// 
             /// </summary>
@@ -1002,7 +1002,7 @@ namespace Wlniao.XServer
             /// <summary>
             /// 
             /// </summary>
-            public Aliyun(String bucket, String domain, String accesskeyid, String accesskeySecret)
+            public Aliyun(string bucket, string domain, string accesskeyid, string accesskeySecret)
             {
                 this.bucket = bucket;
                 ossdomain = domain;
@@ -1042,7 +1042,7 @@ namespace Wlniao.XServer
             /// <summary>
             /// 是否可用
             /// </summary>
-            public Boolean canUsing
+            public bool canUsing
             {
                 get
                 {
@@ -1151,7 +1151,7 @@ namespace Wlniao.XServer
             /// <param name="expire">过期时间（单位：秒）</param>
             /// <param name="max">文件最大大小</param>
             /// <returns></returns>
-            public String formApi(int expire = 5400, int max = 200)
+            public string formApi(int expire = 5400, int max = 200)
             {
                 return formApi(null, expire, max);
             }
@@ -1162,7 +1162,7 @@ namespace Wlniao.XServer
             /// <param name="expire">过期时间（单位：秒）</param>
             /// <param name="max">文件最大大小（单位：M）</param>
             /// <returns></returns>
-            public String formApi(string dir, int expire = 5400, int max = 200)
+            public string formApi(string dir, int expire = 5400, int max = 200)
             {
                 if (canUsing)
                 {
@@ -1199,7 +1199,7 @@ namespace Wlniao.XServer
             /// <param name="data"></param>
             /// <param name="message"></param>
             /// <returns></returns>
-            public Boolean writeFile(string path, byte[] data, out string message)
+            public bool writeFile(string path, byte[] data, out string message)
             {
                 message = "";
                 if (canUsing)
@@ -1228,7 +1228,7 @@ namespace Wlniao.XServer
             /// <param name="expire">过期时间（单位：秒）</param>
             /// <param name="max">文件最大大小</param>
             /// <returns></returns>
-            public static String FormApi(int expire = 5400, int max = 200)
+            public static string FormApi(int expire = 5400, int max = 200)
             {
                 return instance.formApi(null, expire, max);
             }
@@ -1239,7 +1239,7 @@ namespace Wlniao.XServer
             /// <param name="expire">过期时间（单位：秒）</param>
             /// <param name="max">文件最大大小（单位：M）</param>
             /// <returns></returns>
-            public static String FormApi(string dir, int expire = 5400, int max = 200)
+            public static string FormApi(string dir, int expire = 5400, int max = 200)
             {
                 return instance.formApi(dir, expire, max);
             }
@@ -1260,10 +1260,10 @@ namespace Wlniao.XServer
         public class QCloud
         {
             private static QCloud instance = new QCloud();
-            private String bucket = null;
-            private String cosdomain = null;
-            private String cosaccesskeyid = null;
-            private String cosaccesskeySecret = null;
+            private string bucket = null;
+            private string cosdomain = null;
+            private string cosaccesskeyid = null;
+            private string cosaccesskeySecret = null;
             /// <summary>
             /// 
             /// </summary>
@@ -1277,7 +1277,7 @@ namespace Wlniao.XServer
             /// <summary>
             /// 
             /// </summary>
-            public QCloud(String bucket, String domain, String accesskeyid, String accesskeySecret)
+            public QCloud(string bucket, string domain, string accesskeyid, string accesskeySecret)
             {
                 this.bucket = bucket;
                 cosdomain = domain;
@@ -1288,7 +1288,7 @@ namespace Wlniao.XServer
             /// <summary>
             /// 是否可用
             /// </summary>
-            public Boolean canUsing
+            public bool canUsing
             {
                 get
                 {
@@ -1333,7 +1333,7 @@ namespace Wlniao.XServer
                     request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
                     request.Content.Headers.ContentLength = postData.Length;
 
-                    var kvList = new List<KeyValuePair<String, String>>();
+                    var kvList = new List<KeyValuePair<string, string>>();
                     if (path.IndexOf('?') > 0)
                     {
                         var param = path.Substring(path.IndexOf('?') + 1);
@@ -1352,7 +1352,7 @@ namespace Wlniao.XServer
                     }
 
 
-                    var hdList = new List<KeyValuePair<String, String>>();
+                    var hdList = new List<KeyValuePair<string, string>>();
                     foreach (DictionaryEntry kv in headers)
                     {
                         hdList.Add(new KeyValuePair<string, string>(strUtil.UrlEncodeSymbol(kv.Key.ToString().ToLower()), strUtil.UrlEncodeSymbol(kv.Value.ToString())));
@@ -1440,7 +1440,7 @@ namespace Wlniao.XServer
             /// <param name="expire">过期时间（单位：秒）</param>
             /// <param name="max">文件最大大小</param>
             /// <returns></returns>
-            public String formApi(int expire = 5400, int max = 200)
+            public string formApi(int expire = 5400, int max = 200)
             {
                 return formApi(null, expire, max);
             }
@@ -1451,7 +1451,7 @@ namespace Wlniao.XServer
             /// <param name="max">文件最大大小（单位：M）</param>
             /// <param name="dir">上传目录</param>
             /// <returns></returns>
-            public String formApi(string dir, int expire = 5400, int max = 200)
+            public string formApi(string dir, int expire = 5400, int max = 200)
             {
                 if (canUsing)
                 {
@@ -1491,7 +1491,7 @@ namespace Wlniao.XServer
             /// <param name="data"></param>
             /// <param name="message"></param>
             /// <returns></returns>
-            public Boolean writeFile(string path, byte[] data, out string message)
+            public bool writeFile(string path, byte[] data, out string message)
             {
                 message = "";
                 if (canUsing)
@@ -1519,7 +1519,7 @@ namespace Wlniao.XServer
             /// <param name="expire">过期时间（单位：秒）</param>
             /// <param name="max">文件最大大小</param>
             /// <returns></returns>
-            public static String FormApi(int expire = 5400, int max = 200)
+            public static string FormApi(int expire = 5400, int max = 200)
             {
                 return instance.formApi(null, expire, max);
             }
@@ -1530,7 +1530,7 @@ namespace Wlniao.XServer
             /// <param name="max">文件最大大小（单位：M）</param>
             /// <param name="dir">上传目录</param>
             /// <returns></returns>
-            public static String FormApi(string dir, int expire = 5400, int max = 200)
+            public static string FormApi(string dir, int expire = 5400, int max = 200)
             {
                 return instance.formApi(dir, expire, max);
             }

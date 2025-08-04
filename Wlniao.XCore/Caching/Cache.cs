@@ -111,7 +111,7 @@ namespace Wlniao.Caching
         /// <param name="value"></param>
         /// <param name="expireSeconds">缓存过期时间（秒）</param>
         /// <returns></returns>
-        public static Boolean Set(String key, String value, int expireSeconds = 86400)
+        public static bool Set(string key, string value, int expireSeconds = 86400)
         {
             if (cType == CacheType.Redis)
             {
@@ -135,7 +135,7 @@ namespace Wlniao.Caching
         /// <param name="obj">要缓存的对象</param>
         /// <param name="expireSeconds">缓存过期时间（秒）</param>
         /// <returns></returns>
-        public static Boolean Set<T>(String key, T obj, int expireSeconds = 86400)
+        public static bool Set<T>(string key, T obj, int expireSeconds = 86400)
         {
             if (cType == CacheType.Redis)
             {
@@ -155,7 +155,7 @@ namespace Wlniao.Caching
         /// 删除缓存内容
         /// </summary>
         /// <param name="key"></param>
-        public static Boolean Del(String key)
+        public static bool Del(string key)
         {
             if (cType == CacheType.Redis)
             {
@@ -175,7 +175,7 @@ namespace Wlniao.Caching
         /// 判断是否存在缓存项
         /// </summary>
         /// <param name="key"></param>
-        public static Boolean Exists(String key)
+        public static bool Exists(string key)
         {
             if (cType == CacheType.Redis)
             {
@@ -195,7 +195,7 @@ namespace Wlniao.Caching
         /// 获取一个缓存项
         /// </summary>
         /// <param name="key"></param>
-        public static String Get(String key)
+        public static string Get(string key)
         {
             if (cType == CacheType.Redis)
             {
@@ -214,7 +214,7 @@ namespace Wlniao.Caching
         /// 获取一个缓存项（允许null）
         /// </summary>
         /// <param name="key"></param>
-        public static String GetAllowNull(String key)
+        public static string GetAllowNull(string key)
         {
             if (cType == CacheType.Redis)
             {
@@ -235,7 +235,7 @@ namespace Wlniao.Caching
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static T Get<T>(String key)
+        public static T Get<T>(string key)
         {
             if (cType == CacheType.Redis)
             {
@@ -294,7 +294,7 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static Boolean LocalSet(String key, String value)
+        public static bool LocalSet(string key, string value)
         {
             if (cachePath == null)
             {
@@ -312,7 +312,7 @@ namespace Wlniao.Caching
         /// </summary>
         /// <param name="key"></param>
         /// <param name="expireSeconds">缓存过期时间（秒）</param>
-        public static String LocalGet(String key, int expireSeconds = 86400)
+        public static string LocalGet(string key, int expireSeconds = 86400)
         {
             if (cachePath == null)
             {

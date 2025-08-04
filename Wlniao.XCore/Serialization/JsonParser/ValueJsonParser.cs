@@ -1,7 +1,7 @@
 /*==============================================================================
-    ÎÄ¼þÃû³Æ£ºValueJsonParser.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£ºÖµÀàÐÍ×ª»»
+    ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ValueJsonParser.cs
+    ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -26,16 +26,16 @@ using System.Text;
 namespace Wlniao.Serialization
 {
     /// <summary>
-    /// ÖµÀàÐÍ×ª»»
+    /// Öµï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
     /// </summary>
     internal class ValueJsonParser : JsonParserBase
     {
         protected StringBuilder sb = new StringBuilder();
-        private static readonly String separatorChars = ",\":[]{}";
+        private static readonly string separatorChars = ",\":[]{}";
 
-        private Object _result;
+        private object _result;
 
-        public override Object getResult()
+        public override object getResult()
         {
             return _result;
         }
@@ -51,7 +51,7 @@ namespace Wlniao.Serialization
         {
             paserOne();
             charSrc.back();
-            String s = sb.ToString().Trim();
+            string s = sb.ToString().Trim();
             if (s.Equals(""))
             {
                 throw ex("value is empty");
@@ -118,7 +118,7 @@ namespace Wlniao.Serialization
             }
         }
 
-        private static Object getStringValue(String s)
+        private static object getStringValue(string s)
         {
             int i = 0;
             if (int.TryParse(s, out i))

@@ -35,7 +35,7 @@ namespace Wlniao.Runtime
         /// </summary>
         /// <param name="typeFullName"></param>
         /// <returns></returns>
-        public static Object GetInstance(String typeFullName)
+        public static object GetInstance(string typeFullName)
         {
             if (typeFullName.IndexOf(',') <= 0)
             {
@@ -51,7 +51,7 @@ namespace Wlniao.Runtime
         /// <param name="t"></param>
         /// <param name="args"></param>
         /// <returns></returns>
-        public static Object GetInstance(Type t, params object[] args)
+        public static object GetInstance(Type t, params object[] args)
         {
             return Activator.CreateInstance(t, args);
         }
@@ -61,7 +61,7 @@ namespace Wlniao.Runtime
         /// <param name="asmName">不需要后缀名</param>
         /// <param name="typeName"></param>
         /// <returns></returns>
-        public static Object GetInstance(String asmName, String typeName)
+        public static object GetInstance(string asmName, string typeName)
         {
             // Load不需要ext，LoadFrom需要
             Assembly asm = Assembly.Load(new AssemblyName(asmName));
@@ -74,7 +74,7 @@ namespace Wlniao.Runtime
         /// <param name="asm">程序集</param>
         /// <param name="typeName"></param>
         /// <returns></returns>
-        public static Object GetInstance(Assembly asm, String typeName)
+        public static object GetInstance(Assembly asm, string typeName)
         {
             Type type = asm.GetType(typeName, false, false);
             return GetInstance(type);
@@ -101,7 +101,7 @@ namespace Wlniao.Runtime
         /// <param name="currentObject"></param>
         /// <param name="propertyName"></param>
         /// <returns></returns>
-        public static Object GetPropertyValue(Object currentObject, String propertyName)
+        public static object GetPropertyValue(object currentObject, string propertyName)
         {
             if (currentObject == null) return null;
             if (strUtil.IsNullOrEmpty(propertyName)) return null;
@@ -115,11 +115,11 @@ namespace Wlniao.Runtime
         /// <param name="currentObject"></param>
         /// <param name="propertyName"></param>
         /// <param name="propertyValue"></param>
-        public static void SetPropertyValue(Object currentObject, String propertyName, Object propertyValue)
+        public static void SetPropertyValue(object currentObject, string propertyName, object propertyValue)
         {
             if (currentObject == null)
             {
-                throw new NullReferenceException(String.Format("propertyName={0}, propertyValue={1}", propertyName, propertyValue));
+                throw new NullReferenceException(string.Format("propertyName={0}, propertyValue={1}", propertyName, propertyValue));
             }
             var p = currentObject.GetType().GetRuntimeProperty(propertyName);
             if (p != null)
@@ -134,7 +134,7 @@ namespace Wlniao.Runtime
                     }
                     else if (IsInterface(pt, typeof(IList)))
                     {
-                        var list = (List<Object>)propertyValue;
+                        var list = (List<object>)propertyValue;
                         if (list.Count > 0)
                         {
                             if (list[0] is string)
@@ -183,7 +183,7 @@ namespace Wlniao.Runtime
                                 foreach(var obj in list)
                                 {
                                     var item = Reflection.GetInstance(type);
-                                    var dic = (Dictionary<String, Object>)obj;
+                                    var dic = (Dictionary<string, object>)obj;
                                     var em = dic.GetEnumerator();
                                     while (em.MoveNext())
                                     {
@@ -209,14 +209,14 @@ namespace Wlniao.Runtime
         /// </summary>
         /// <param name="p"></param>
         /// <returns></returns>
-        public static String getPropertyTypeName(PropertyInfo p)
+        public static string getPropertyTypeName(PropertyInfo p)
         {
             if (p.PropertyType.IsConstructedGenericType == false)
                 return p.PropertyType.FullName;
             Type pGenericType = p.PropertyType.GetGenericTypeDefinition();
-            String genericTypeName = pGenericType.FullName.Split('`')[0];            
+            string genericTypeName = pGenericType.FullName.Split('`')[0];            
             Type[] ts = p.PropertyType.GenericTypeArguments;
-            String args = null;
+            string args = null;
             foreach (Type at in ts)
             {
                 if (args != null) args += ", ";
@@ -230,7 +230,7 @@ namespace Wlniao.Runtime
         /// <param name="obj"></param>
         /// <param name="methodName"></param>
         /// <returns></returns>
-        public static Object CallMethod(Object obj, String methodName)
+        public static object CallMethod(object obj, string methodName)
         {
             return CallMethod(obj, methodName, null);
         }
@@ -240,7 +240,7 @@ namespace Wlniao.Runtime
         /// <param name="currentType"></param>
         /// <param name="methodName"></param>
         /// <returns></returns>
-        public static Object CallMethod(Type currentType, String methodName)
+        public static object CallMethod(Type currentType, string methodName)
         {
             return CallMethod(currentType, methodName, null);
         }
@@ -251,7 +251,7 @@ namespace Wlniao.Runtime
         /// <param name="methodName"></param>
         /// <param name="args"></param>
         /// <returns></returns>
-        public static Object CallMethod(Object obj, String methodName, object[] args)
+        public static object CallMethod(object obj, string methodName, object[] args)
         {
             //var method = obj.GetType().GetRuntimeMethod(methodName,new Type[] { obj.GetType() });
             //return method.Invoke(obj, args);
@@ -266,7 +266,7 @@ namespace Wlniao.Runtime
         /// <param name="methodName"></param>
         /// <param name="args"></param>
         /// <returns></returns>
-        public static Object CallMethod(Type currentType, String methodName, object[] args)
+        public static object CallMethod(Type currentType, string methodName, object[] args)
         {
             return CallMethod(GetInstance(currentType), methodName, args);
         }
@@ -348,7 +348,7 @@ namespace Wlniao.Runtime
         /// <returns></returns>
         public static object[] GetAttributes(MemberInfo memberInfo)
         {
-            var attributes = new List<Object>();
+            var attributes = new List<object>();
             var iCustomAttributes = memberInfo.GetCustomAttributes(false);
             var customAttributes = iCustomAttributes.GetEnumerator();
             while (customAttributes.MoveNext())
@@ -365,7 +365,7 @@ namespace Wlniao.Runtime
         /// <returns></returns>
         public static object[] GetAttributes(MemberInfo memberInfo, Type attributeType)
         {
-            var attributes = new List<Object>();
+            var attributes = new List<object>();
             var iCustomAttributes = memberInfo.GetCustomAttributes(attributeType, false);
             var customAttributes = iCustomAttributes.GetEnumerator();
             while (customAttributes.MoveNext())
@@ -379,12 +379,12 @@ namespace Wlniao.Runtime
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static Boolean IsBaseType(Type type)
+        public static bool IsBaseType(Type type)
         {
             return type == typeof(int) ||
                 type == typeof(long) ||
                 type == typeof(short) ||
-                type == typeof(String) ||
+                type == typeof(string) ||
                 type == typeof(DateTime) ||
                 type == typeof(bool) ||
                 type == typeof(double) ||
@@ -398,7 +398,7 @@ namespace Wlniao.Runtime
         /// <param name="t">需要判断的类型</param>
         /// <param name="interfaceType">是否实现的接口</param>
         /// <returns></returns>
-        public static Boolean IsInterface(Type t, Type interfaceType)
+        public static bool IsInterface(Type t, Type interfaceType)
         {
             Type[] interfaces = t.GetTypeInfo().GetInterfaces();
             foreach (Type type in interfaces)

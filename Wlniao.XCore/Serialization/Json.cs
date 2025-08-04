@@ -39,9 +39,9 @@ namespace Wlniao.Serialization
         /// <param name="map">键值对</param>
         /// <param name="field">字段名称</param>
         /// <returns></returns>
-        public static Object GetField(Dictionary<String, object> map, String field)
+        public static object GetField(Dictionary<string, object> map, string field)
         {
-            foreach (KeyValuePair<String, object> pair in map)
+            foreach (KeyValuePair<string, object> pair in map)
             {
                 if (pair.Key == field)
                 {
@@ -56,9 +56,9 @@ namespace Wlniao.Serialization
         /// <param name="map">键值对</param>
         /// <param name="field">字段名称</param>
         /// <returns></returns>
-        public static String GetFieldStr(Dictionary<String, object> map, String field)
+        public static string GetFieldStr(Dictionary<string, object> map, string field)
         {
-            foreach (KeyValuePair<String, object> pair in map)
+            foreach (KeyValuePair<string, object> pair in map)
             {
                 if (pair.Key == field)
                 {
@@ -73,10 +73,10 @@ namespace Wlniao.Serialization
         /// <param name="oneJsonString">json 字符串</param>
         /// <param name="field">字段名称</param>
         /// <returns></returns>
-        public static Object GetField(String oneJsonString, String field)
+        public static object GetField(string oneJsonString, string field)
         {
-            var map = JsonParser.Parse(oneJsonString) as Dictionary<String, object>;
-            foreach (KeyValuePair<String, object> pair in map)
+            var map = JsonParser.Parse(oneJsonString) as Dictionary<string, object>;
+            foreach (KeyValuePair<string, object> pair in map)
             {
                 if (pair.Key == field)
                 {
@@ -91,10 +91,10 @@ namespace Wlniao.Serialization
         /// <param name="oneJsonString">json 字符串</param>
         /// <param name="field">字段名称</param>
         /// <returns></returns>
-        public static String GetFieldStr(String oneJsonString, String field)
+        public static string GetFieldStr(string oneJsonString, string field)
         {
-            var map = JsonParser.Parse(oneJsonString) as Dictionary<String, object>;
-            foreach (KeyValuePair<String, object> pair in map)
+            var map = JsonParser.Parse(oneJsonString) as Dictionary<string, object>;
+            foreach (KeyValuePair<string, object> pair in map)
             {
                 if (pair.Key == field)
                 {
@@ -109,9 +109,9 @@ namespace Wlniao.Serialization
         /// <param name="oneJsonString">json 字符串</param>
         /// <param name="t">目标类型</param>
         /// <returns></returns>
-        public static Object ToObject(String oneJsonString, Type t)
+        public static object ToObject(string oneJsonString, Type t)
         {
-            var map = JsonParser.Parse(oneJsonString) as Dictionary<String, object>;
+            var map = JsonParser.Parse(oneJsonString) as Dictionary<string, object>;
             return setValueToObject(t, map);
         }
 
@@ -121,7 +121,7 @@ namespace Wlniao.Serialization
         /// <typeparam name="T"></typeparam>
         /// <param name="jsonString">json 字符串</param>
         /// <returns></returns>
-        public static T ToObject<T>(String jsonString)
+        public static T ToObject<T>(string jsonString)
         {
             return System.Text.Json.JsonSerializer.Deserialize<T>(jsonString, new JsonSerializerOptions
             {
@@ -137,7 +137,7 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="obj">序列化的对象</param>
         /// <returns></returns>
-        public static String ToString<T>(T obj)
+        public static string ToString<T>(T obj)
         {
             return JsonSerializer.Serialize<T>(obj, new JsonSerializerOptions
             {
@@ -151,7 +151,7 @@ namespace Wlniao.Serialization
         /// <param name="obj">序列化的对象</param>
         /// <param name="kvs">序列化的对象</param>
         /// <returns></returns>
-        public static String ToString<T>(T obj, params KeyValuePair<string, string>[] kvs)
+        public static string ToString<T>(T obj, params KeyValuePair<string, string>[] kvs)
         {
             string s = JsonString.Convert(obj, false, typeof(T).Name);
             if (kvs != null && kvs.Length > 0)
@@ -175,7 +175,7 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="list">序列化的List对象</param>
         /// <returns></returns>
-        public static String ToStringList(IList list)
+        public static string ToStringList(IList list)
         {
             return Serialization.SimpleJsonString.ConvertList(list);
         }
@@ -186,14 +186,14 @@ namespace Wlniao.Serialization
         /// <typeparam name="T"></typeparam>
         /// <param name="jsonString">json 字符串</param>
         /// <returns>返回对象列表</returns>
-        public static List<T> ToList<T>(String jsonString)
+        public static List<T> ToList<T>(string jsonString)
         {
             List<T> list = new List<T>();
             if (strUtil.IsNullOrEmpty(jsonString)) return list;
             List<object> lists = Serialization.JsonParser.Parse(jsonString) as List<object>;
             if (lists != null)
             {
-                foreach (Dictionary<String, object> map in lists)
+                foreach (Dictionary<string, object> map in lists)
                 {
                     if (typeof(T) == map.GetType())
                     {
@@ -202,7 +202,7 @@ namespace Wlniao.Serialization
                     }
                     else
                     {
-                        Object result = Serialization.Json.setValueToObject(typeof(T), map);
+                        object result = Serialization.Json.setValueToObject(typeof(T), map);
                         list.Add((T)result);
                     }
                 }
@@ -216,7 +216,7 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="dic"></param>
         /// <returns></returns>
-        public static String DicToString(Dictionary<String, object> dic)
+        public static string DicToString(Dictionary<string, object> dic)
         {
             return JsonString.ConvertDictionary(dic, false, "");
         }
@@ -226,14 +226,14 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="JsonString"></param>
         /// <returns></returns>
-        public static Dictionary<String, object> StringToDic(String JsonString)
+        public static Dictionary<string, object> StringToDic(string JsonString)
         {
-            String str = trimBeginEnd(JsonString, "[", "]");
+            string str = trimBeginEnd(JsonString, "[", "]");
             if (strUtil.IsNullOrEmpty(str))
             {
-                return new Dictionary<String, object>();
+                return new Dictionary<string, object>();
             }
-            return JsonParser.Parse(str) as Dictionary<String, object>;
+            return JsonParser.Parse(str) as Dictionary<string, object>;
         }
 
         /// <summary>
@@ -241,17 +241,17 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="jsonString"></param>
         /// <returns></returns>
-        public static List<Dictionary<String, object>> StringToDicList(String jsonString)
+        public static List<Dictionary<string, object>> StringToDicList(string jsonString)
         {
 
 
             List<object> list = JsonParser.Parse(jsonString) as List<object>;
 
-            List<Dictionary<String, object>> results = new List<Dictionary<String, object>>();
-            foreach (Object obj in list)
+            List<Dictionary<string, object>> results = new List<Dictionary<string, object>>();
+            foreach (object obj in list)
             {
 
-                Dictionary<String, object> item = obj as Dictionary<String, object>;
+                Dictionary<string, object> item = obj as Dictionary<string, object>;
                 results.Add(item);
             }
 
@@ -263,7 +263,7 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static String ClearStr(String str)
+        public static string ClearStr(string str)
         {
             str = System.Text.RegularExpressions.Regex.Replace(str, @"\/\*.+\*\/", "");
             str = str.Replace("\r\n", "");
@@ -272,42 +272,42 @@ namespace Wlniao.Serialization
             return str;
         }
 
-        internal static Object setValueToObject(Type t, Dictionary<String, object> map)
+        internal static object setValueToObject(Type t, Dictionary<string, object> map)
         {
             var result = Runtime.Reflection.GetInstance(t);
             if (map != null)
             {
                 var properties = Runtime.Reflection.GetPropertyList(t);
-                foreach (KeyValuePair<String, object> pair in map)
+                foreach (KeyValuePair<string, object> pair in map)
                 {
 
-                    String pName = pair.Key;
-                    String pValue = pair.Value.ToString();
+                    string pName = pair.Key;
+                    string pValue = pair.Value.ToString();
 
 
                     PropertyInfo info = getPropertyInfo(properties, pName);
                     //if ((info != null) && !info.IsDefined(typeof(NotSaveAttribute), false))
                     if (info != null)
                     {
-                        Object objValue = null;
+                        object objValue = null;
 
                         if (Runtime.Reflection.IsBaseType(info.PropertyType))
                         {
                             objValue = System.Convert.ChangeType(pValue, info.PropertyType);
                             Runtime.Reflection.SetPropertyValue(result, pName, objValue);
                         }
-                        else if (info.PropertyType == typeof(Dictionary<String, object>))
+                        else if (info.PropertyType == typeof(Dictionary<string, object>))
                         {
                             objValue = pair.Value;
                             Runtime.Reflection.SetPropertyValue(result, pName, objValue);
                         }
-                        else if (info.PropertyType == typeof(Dictionary<String, String>))
+                        else if (info.PropertyType == typeof(Dictionary<string, string>))
                         {
-                            Dictionary<String, String> dic = new Dictionary<string, string>();
+                            Dictionary<string, string> dic = new Dictionary<string, string>();
                             try
                             {
-                                var keys = (Dictionary<String, object>.KeyCollection)Runtime.Reflection.GetPropertyValue(pair.Value, "Keys");
-                                var values = (Dictionary<String, object>.ValueCollection)Runtime.Reflection.GetPropertyValue(pair.Value, "Values");
+                                var keys = (Dictionary<string, object>.KeyCollection)Runtime.Reflection.GetPropertyValue(pair.Value, "Keys");
+                                var values = (Dictionary<string, object>.ValueCollection)Runtime.Reflection.GetPropertyValue(pair.Value, "Values");
                                 if (keys != null && values != null && keys.Count == values.Count)
                                 {
                                     string[] _keys = new string[keys.Count];
@@ -338,7 +338,7 @@ namespace Wlniao.Serialization
                         {
                             try
                             {
-                                var list = (List<Object>)pair.Value;
+                                var list = (List<object>)pair.Value;
                                 Runtime.Reflection.SetPropertyValue(result, pName, list);
                             }
                             catch { }
@@ -350,8 +350,8 @@ namespace Wlniao.Serialization
                                 objValue = Runtime.Reflection.GetInstance(info.PropertyType);
                                 try
                                 {
-                                    var keys = (Dictionary<String, object>.KeyCollection)Runtime.Reflection.GetPropertyValue(pair.Value, "Keys");
-                                    var values = (Dictionary<String, object>.ValueCollection)Runtime.Reflection.GetPropertyValue(pair.Value, "Values");
+                                    var keys = (Dictionary<string, object>.KeyCollection)Runtime.Reflection.GetPropertyValue(pair.Value, "Keys");
+                                    var values = (Dictionary<string, object>.ValueCollection)Runtime.Reflection.GetPropertyValue(pair.Value, "Values");
                                     if (keys != null && values != null && keys.Count == values.Count)
                                     {
                                         string[] _keys = new string[keys.Count];
@@ -394,7 +394,7 @@ namespace Wlniao.Serialization
         }       
 
 
-        private static PropertyInfo getPropertyInfo(PropertyInfo[] propertyList, String pName)
+        private static PropertyInfo getPropertyInfo(PropertyInfo[] propertyList, string pName)
         {
             foreach (PropertyInfo info in propertyList)
             {
@@ -406,7 +406,7 @@ namespace Wlniao.Serialization
             return null;
         }
 
-        private static String trimBeginEnd(String str, String beginStr, String endStr)
+        private static string trimBeginEnd(string str, string beginStr, string endStr)
         {
             str = str.Trim();
             str = strUtil.TrimStart(str, beginStr);
@@ -420,7 +420,7 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        private static String Encode(String str)
+        private static string Encode(string str)
         {
             return str.Replace("\"", "&quot;").Replace(":", "&#58;").Replace(",", "&#44;").Replace("'", "\\'");
         }
@@ -430,7 +430,7 @@ namespace Wlniao.Serialization
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        private static String Decode(String str)
+        private static string Decode(string str)
         {
             return str.Replace("&quot;", "\"").Replace("&#58;", ":").Replace("&#44;", ",").Replace("\\'", "'");
         }

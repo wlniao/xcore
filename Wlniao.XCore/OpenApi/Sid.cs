@@ -35,11 +35,11 @@ namespace Wlniao.OpenApi
         /// 根据手机号生成Sid
         /// </summary>
         /// <returns></returns>
-        public static String Get(String Mobile)
+        public static string Get(string Mobile)
         {
             if (strUtil.IsMobile(Mobile))
             {
-                var _rlt = Wlniao.OpenApi.Common.Get<String>("sid", "get", new KeyValuePair<string, string>("mobile", Mobile));
+                var _rlt = Wlniao.OpenApi.Common.Get<string>("sid", "get", new KeyValuePair<string, string>("mobile", Mobile));
                 if (_rlt.success)
                 {
                     return _rlt.data;
@@ -62,7 +62,7 @@ namespace Wlniao.OpenApi
         /// </summary>
         /// <param name="Sid"></param>
         /// <returns></returns>
-        public static String GetMobile(String Sid)
+        public static string GetMobile(string Sid)
         {
             try
             {

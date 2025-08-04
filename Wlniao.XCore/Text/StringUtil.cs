@@ -438,7 +438,7 @@ namespace Wlniao.Text
 
             int chineseCharBegin = System.Convert.ToInt32(0x4e00);
             int chineseCharEnd = System.Convert.ToInt32(0x9fff);
-            int code = System.Char.ConvertToUtf32(input, index);
+            int code = char.ConvertToUtf32(input, index);
             return (code >= chineseCharBegin && code <= chineseCharEnd);
         }
 
@@ -998,7 +998,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
-        public static string ParseHtml(Object html)
+        public static string ParseHtml(object html)
         {
             if (html == null) return string.Empty;
             return HtmlReg.Replace(html.ToString(), "").Replace(" ", " ");
@@ -1010,7 +1010,7 @@ namespace Wlniao.Text
         /// <param name="html"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public static String ParseHtml(Object html, int count)
+        public static string ParseHtml(object html, int count)
         {
             return CutString(ParseHtml(html), count).Replace("　", "");
         }
@@ -1021,13 +1021,13 @@ namespace Wlniao.Text
         /// <param name="html"></param>
         /// <param name="count">需要截取的长度(小于20个字符按20个字符计算)</param>
         /// <returns></returns>
-        public static String CutHtmlAndColse(String html, int count)
+        public static string CutHtmlAndColse(string html, int count)
         {
             if (html == null) return "";
             html = html.Trim();
             if (count <= 0) return "";
             if (count < 20) count = 20;
-            String unclosedHtml = html.Length <= count ? html : html.Trim().Substring(0, count);
+            string unclosedHtml = html.Length <= count ? html : html.Trim().Substring(0, count);
             return CloseHtml(unclosedHtml);
         }
 
@@ -1037,7 +1037,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="unClosedHtml"></param>
         /// <returns></returns>
-        public static String CloseHtml(String unClosedHtml)
+        public static string CloseHtml(string unClosedHtml)
         {
             if (unClosedHtml == null) return "";
             var arrTags = new[] { "strong", "b", "i", "u", "em", "font", "span", "label", "pre", "td", "th", "tr", "tbody", "table", "li", "ul", "ol", "h1", "h2", "h3", "h4", "h5", "h6", "p", "div" };
@@ -1069,7 +1069,7 @@ namespace Wlniao.Text
         /// <param name="srcString"></param>
         /// <param name="separator"></param>
         /// <returns></returns>
-        public static String[] Split(String srcString, String separator)
+        public static string[] Split(string srcString, string separator)
         {
             if (srcString == null) return null;
             if (separator == null) throw new ArgumentNullException();
@@ -1082,7 +1082,7 @@ namespace Wlniao.Text
         /// <param name="rawSql"></param>
         /// <param name="number"></param>
         /// <returns></returns>
-        public static String SqlClean(String rawSql, int number)
+        public static string SqlClean(string rawSql, int number)
         {
             if (IsNullOrEmpty(rawSql)) return rawSql;
             return SubString(rawSql, number).Replace("'", "''");
@@ -1094,7 +1094,7 @@ namespace Wlniao.Text
         /// <param name="str"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        public static String SubString(String str, int length)
+        public static string SubString(string str, int length)
         {
             if (str == null) return null;
             if (str.Length > length) return str.Substring(0, length);
@@ -1106,7 +1106,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static String Text2Html(String str)
+        public static string Text2Html(string str)
         {
             return str.Replace("\n", "<br/>");
         }
@@ -1116,7 +1116,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static String Html2Text(string str)
+        public static string Html2Text(string str)
         {
             return RemoveHtmlTag(HtmlDecode(str).Replace(" ", "").Replace("\n", "").Replace("\t", "").Replace("<br>", "\r\n").Replace("<br/>", "\r\n").Replace("</p><p>", "\r\n")).Trim();
         }
@@ -1126,7 +1126,7 @@ namespace Wlniao.Text
         /// <param name="srcString"></param>
         /// <param name="trimString"></param>
         /// <returns></returns>
-        public static String TrimEnd(String srcString, String trimString)
+        public static string TrimEnd(string srcString, string trimString)
         {
             if (IsNullOrEmpty(trimString)) return srcString;
             if (srcString.EndsWith(trimString) == false) return srcString;
@@ -1140,11 +1140,11 @@ namespace Wlniao.Text
         /// <param name="srcString"></param>
         /// <param name="trimString"></param>
         /// <returns></returns>
-        public static String TrimStart(String srcString, String trimString)
+        public static string TrimStart(string srcString, string trimString)
         {
             if (srcString == null) return null;
             if (trimString == null) return srcString;
-            if (IsNullOrEmpty(srcString)) return String.Empty;
+            if (IsNullOrEmpty(srcString)) return string.Empty;
             if (srcString.StartsWith(trimString) == false) return srcString;
             return srcString.Substring(trimString.Length);
         }
@@ -1154,7 +1154,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
-        public static String ResetScript(String html)
+        public static string ResetScript(string html)
         {
 
             Regex reg = new Regex("<script.*?</script>", RegexOptions.Singleline);
@@ -1176,10 +1176,10 @@ namespace Wlniao.Text
         /// <param name="str"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public static List<String> SplitByNum(String str, int count)
+        public static List<string> SplitByNum(string str, int count)
         {
 
-            List<String> list = new List<string>();
+            List<string> list = new List<string>();
 
             if (str == null) return list;
             if (str.Length == 0)
@@ -1221,13 +1221,13 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="val"></param>
         /// <returns></returns>
-        public static String TrimHtml(String val)
+        public static string TrimHtml(string val)
         {
 
             if (val == null) return null;
             val = val.Trim();
 
-            String text = ParseHtml(val);
+            string text = ParseHtml(val);
             text = TrimHtmlBlank(text);
             if (IsNullOrEmpty(text) && HasNotImg(val) && HasNotFlash(val)) return "";
 
@@ -1235,7 +1235,7 @@ namespace Wlniao.Text
             return val;
         }
 
-        private static String TrimHtmlBlank(String text)
+        private static string TrimHtmlBlank(string text)
         {
 
             if (text == null) return null;
@@ -1254,19 +1254,19 @@ namespace Wlniao.Text
             return text;
         }
 
-        private static Boolean HasNotImg(String val)
+        private static bool HasNotImg(string val)
         {
             if (val.ToLower().IndexOf("<img ", StringComparison.Ordinal) >= 0) return false;
             return true;
         }
 
-        private static Boolean HasNotFlash(String val)
+        private static bool HasNotFlash(string val)
         {
             if (val.ToLower().IndexOf("x-shockwave-flash", StringComparison.Ordinal) >= 0) return false;
             return true;
         }
 
-        private const String HtmlBlank = "&nbsp;";
+        private const string HtmlBlank = "&nbsp;";
 
 
         /// <summary>
@@ -1274,7 +1274,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="rawString"></param>
         /// <returns></returns>
-        public static int GetEndNumber(String rawString)
+        public static int GetEndNumber(string rawString)
         {
             if (IsNullOrEmpty(rawString)) return 0;
             char[] chArray = rawString.ToCharArray();
@@ -1584,7 +1584,7 @@ namespace Wlniao.Text
             //用正则表达式取出标记
             pattern = ("<([a-zA-Z]+)[^<>]*>");
             m = Regex.Matches(tempResult, pattern);
-            var endHtml = new System.Collections.Generic.List<String>();
+            var endHtml = new System.Collections.Generic.List<string>();
             foreach (Match mt in m)
             {
                 endHtml.Add(mt.Result("$1"));
@@ -1656,7 +1656,7 @@ namespace Wlniao.Text
         public static string GetStringByUnicode(string strUnicode)
         {
             string dst = "";
-            string[] src = strUnicode.Split(new[] { "\\u" }, Int32.MaxValue, StringSplitOptions.RemoveEmptyEntries);
+            string[] src = strUnicode.Split(new[] { "\\u" }, int.MaxValue, StringSplitOptions.RemoveEmptyEntries);
             for (var i = 0; i < src.Length; i++)
             {
                 var bytes = new byte[2];
@@ -1939,7 +1939,7 @@ namespace Wlniao.Text
         /// <param name="content">需要检测的内容，如：超G强抗t△干dst△扰敏■■感※◇词 kljb过＆滤jb一■＆№正■№则匹◎←配代crSBtr码（只……支{持^中#^文）</param>
         /// <param name="blackwords">需要检测的关键字，如：(超强|抗干扰|敏感词|过滤|正则匹配|代码|只支持|中文)</param>
         /// <returns>检测到敏感词时，Result.IsValid为false，且Result.Errors为命中关键字列表</returns>
-        public static ApiResult<String> CheckSensitiveWordsZhcn(string content, string blackwords)
+        public static ApiResult<string> CheckSensitiveWordsZhcn(string content, string blackwords)
         {
             return CheckSensitiveWordsZhcn(content, blackwords, 0);
         }
@@ -1950,7 +1950,7 @@ namespace Wlniao.Text
         /// <param name="blackwords">需要检测的关键字，如：(超强|抗干扰|敏感词|过滤|正则匹配|代码|只支持|中文)</param>
         /// <param name="times">最低命中次数</param>
         /// <returns>检测到敏感词时，Result.IsValid为false，且Result.Errors为命中关键字列表</returns>
-        public static ApiResult<String> CheckSensitiveWordsZhcn(string content, string blackwords, int times)
+        public static ApiResult<string> CheckSensitiveWordsZhcn(string content, string blackwords, int times)
         {
             return CheckSensitiveWords(Regex.Replace(content, "[^\u4e00-\u9fa5]", ""), blackwords, times);
         }
@@ -1961,7 +1961,7 @@ namespace Wlniao.Text
         /// <param name="content">需要检测的内容</param>
         /// <param name="blackwords">需要检测的关键字</param>
         /// <returns>检测到敏感词时，Result.IsValid为false，且Result.Errors为命中关键字列表</returns>
-        public static ApiResult<String> CheckSensitiveWords(string content, string blackwords)
+        public static ApiResult<string> CheckSensitiveWords(string content, string blackwords)
         {
             return CheckSensitiveWords(content, blackwords, 0);
         }
@@ -1972,9 +1972,9 @@ namespace Wlniao.Text
         /// <param name="blackwords">需要检测的关键字</param>
         /// <param name="times">最低命中次数</param>
         /// <returns>检测到敏感词时，Result.IsValid为false，且Result.Errors为命中关键字列表</returns>
-        public static ApiResult<String> CheckSensitiveWords(string content, string blackwords, int times)
+        public static ApiResult<string> CheckSensitiveWords(string content, string blackwords, int times)
         {
-            var result = new ApiResult<String>();
+            var result = new ApiResult<string>();
             result.message = "无匹配字符";
             if (!string.IsNullOrEmpty(blackwords))
             {
@@ -2010,7 +2010,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public static String CoverName(String name)
+        public static string CoverName(string name)
         {
             if (string.IsNullOrEmpty(name) || name.Length < 2)
             {
@@ -2030,7 +2030,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="mobile"></param>
         /// <returns></returns>
-        public static String CoverMobile(String mobile)
+        public static string CoverMobile(string mobile)
         {
             if (!string.IsNullOrEmpty(mobile) && mobile.Length >= 11)
             {
@@ -2043,7 +2043,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="certificate"></param>
         /// <returns></returns>
-        public static String CoverCertificate(String certificate)
+        public static string CoverCertificate(string certificate)
         {
             if (!string.IsNullOrEmpty(certificate) && certificate.Length >= 15)
             {
