@@ -234,11 +234,21 @@ namespace Wlniao.Engine
         /// <returns></returns>
         public bool Auth()
         {
-            if (this.IdentityAuthentication == null)
+            var outmsg = true;
+            if (this.IdentityAuthentication == null && !string.IsNullOrEmpty(this.Authorization))
             {
-                this.Session.Decode(this.Authorization, this.ConsumerSecretKey, this.ConsumerId);
+                try
+                {
+                    this.Session.Decode(this.Authorization, this.ConsumerSecretKey, this.ConsumerId);
+                }
+                catch (Exception e)
+                {
+                    Loger.Error($"EngineSession.Decode: {e.Message}[${this.ConsumerId}]");
+                    this.OutMessage($"EngineSession.Decode: {e.Message}", 401, false);
+                    outmsg = false;
+                }
             }
-            else
+            else if (this.IdentityAuthentication != null)
             {
                 // 执行登录身份认证的回调方法
                 try
@@ -247,8 +257,9 @@ namespace Wlniao.Engine
                 }
                 catch (Exception e)
                 {
-                    Loger.Error($"IdentityAuthentication: {e.Message}");
-                    throw;
+                    Loger.Error($"IdentityAuthentication: {e.Message}[${this.ConsumerId}]");
+                    this.OutMessage($"IdentityAuthentication: {e.Message}", 401, false);
+                    outmsg = false;
                 }
             }
 
@@ -257,7 +268,10 @@ namespace Wlniao.Engine
                 this.Ready = false;
                 this.Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
                 this.Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
-                this.OutMessage("unauthorized", 401, false);
+                if(outmsg)
+                {
+                    this.OutMessage("unauthorized", 401, false);
+                }
             }
             else
             {
