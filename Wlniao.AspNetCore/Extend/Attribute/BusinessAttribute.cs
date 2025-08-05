@@ -17,7 +17,7 @@ public class BusinessServiceAttribute : Attribute
     /// 表示可通过AddBusiness方式动态注入的业务类
     /// </summary>
     /// <param name="serviceLifetime"></param>
-    public BusinessServiceAttribute(ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
+    public BusinessServiceAttribute(ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
     {
         LifeTime = serviceLifetime;
     }

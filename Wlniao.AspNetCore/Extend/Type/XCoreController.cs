@@ -11,10 +11,11 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
 using Microsoft.AspNetCore.Http;
-using System.Text;
 using System.Buffers;
 using System.IO;
+using Wlniao.Text;
 using static Wlniao.cvt;
+using Encoding = System.Text.Encoding;
 
 namespace Wlniao
 {
@@ -643,14 +644,14 @@ namespace Wlniao
                     // 通过代理网关部署时，获取"x-forwarded-for"传递的真实IP
                     foreach (var ip in forwardedIP.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
                     {
-                        if (ip != "::1" && ip != "127.0.0.1" && strUtil.IsIP(ip))
+                        if (ip != "::1" && ip != "127.0.0.1" && StringUtil.IsIP(ip))
                         {
                             clientIp = ip;
                             break;
                         }
                     }
                 }
-                return clientIp;
+                return clientIp ?? string.Empty;
             }
         }
         /// <summary>
