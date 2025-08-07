@@ -69,6 +69,16 @@ namespace Wlniao.Engine
         /// 
         /// </summary>
         public string ConsumerSecretKey { get; private set; }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ConsumerPublicKey { get; private set; }
+    
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ConsumerPrivateKey { get; private set; }
 
         /// <summary>
         /// 当前登录认证信息
@@ -117,6 +127,8 @@ namespace Wlniao.Engine
             this.Authorization = string.Empty;
             this.ConsumerId = string.Empty;
             this.ConsumerSecretKey = string.Empty;
+            this.ConsumerPublicKey = string.Empty;
+            this.ConsumerPrivateKey = string.Empty;
             this.Session = new EngineSession();
         }
 
@@ -149,6 +161,8 @@ namespace Wlniao.Engine
                     this.Host = consumer.Domain;
                     this.ConsumerId = consumer.Id;
                     this.ConsumerSecretKey = consumer.SecretKey;
+                    this.ConsumerPublicKey = consumer.PublicKey;
+                    this.ConsumerPrivateKey = consumer.PrivateKey;
                 }
                 catch (Exception e)
                 {
@@ -164,7 +178,7 @@ namespace Wlniao.Engine
             
             if (this.SafetyCertification != null)
             {
-                // 执行加载租户信息的回调方法
+                // 执行加载安全认证的回调方法
                 try
                 {
                     this.SKey = this.SafetyCertification(this.Request) ?? string.Empty;
@@ -172,6 +186,19 @@ namespace Wlniao.Engine
                 catch (Exception e)
                 {
                     Loger.Error($"SafetyCertification: {e.Message}");
+                    throw;
+                }
+            }
+            else if (!string.IsNullOrEmpty(this.ConsumerPrivateKey) && this.HeaderInput.TryGetValue("sm2token", out string? sm2Token) && !string.IsNullOrEmpty(sm2Token))
+            {
+                // 执行加载安全认证的回调方法
+                try
+                {
+                    this.SKey = Wlniao.Encryptor.SM2DecryptByPrivateKey(sm2Token, this.ConsumerPrivateKey);
+                }
+                catch (Exception e)
+                {
+                    Loger.Error($"Default SafetyCertification: {e.Message}");
                     throw;
                 }
             }

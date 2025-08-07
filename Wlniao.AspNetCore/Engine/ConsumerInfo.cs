@@ -16,6 +16,16 @@ namespace Wlniao.Engine
         public string SecretKey { get; set;}
         
         /// <summary>
+        /// 当前系统安全公钥
+        /// </summary>
+        public string PublicKey { get; set;}
+        
+        /// <summary>
+        /// 当前系统安全私钥
+        /// </summary>
+        public string PrivateKey { get; set;}
+        
+        /// <summary>
         /// 当前系统域名
         /// </summary>
         public string Domain { get; set; }
