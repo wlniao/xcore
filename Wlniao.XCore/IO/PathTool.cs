@@ -98,7 +98,7 @@ namespace Wlniao.IO
 				{
 					path = JoinPath(XCore.StartupRoot, path);
 				}
-				for (int i = 1; i < relativePath.Length; i++)
+				for (var i = 1; i < relativePath.Length; i++)
                 {
                     path = JoinPath(path, relativePath[i]);
                 }

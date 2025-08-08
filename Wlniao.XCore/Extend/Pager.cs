@@ -135,7 +135,6 @@ namespace Wlniao
         /// <summary>
         /// 跳过的记录数量
         /// </summary>
-        [Serialization.NotSerialize]
         [System.Text.Json.Serialization.JsonIgnore]
         public int skip
         {

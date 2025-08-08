@@ -1,10 +1,10 @@
 /*==============================================================================
-    �ļ����ƣ�Json.cs
-    ���û�����CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    �����������ṩ�������ռ��ݵ��÷���
+    文件名称：Json.cs
+    适用环境：CoreCLR 5.0,.NET Framework 6.0/8.0/10.0
+    功能描述：Json序列化、反序列化工具
 ================================================================================
  
-    Copyright 2015 XieChaoyi
+    Copyright 2014 XieChaoyi
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -19,10 +19,110 @@
     limitations under the License.
 
 ===============================================================================*/
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 namespace Wlniao
 {
     /// <summary>
-    /// Json���л��������л�����
+    /// Json序列化、反序列化工具
     /// </summary>
-    public class Json : Wlniao.Serialization.Json { }
+    public class Json
+    {
+        /// <summary>
+        /// 将 json 字符串反序列化为对象
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="jsonString">json 字符串</param>
+        /// <returns></returns>
+        public static T Deserialize<T>(string jsonString)
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<T>(jsonString, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
+                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
+            });
+        }
+        
+        /// <summary>
+        /// 将 json 字符串反序列化为字典对象
+        /// </summary>
+        /// <param name="jsonString"></param>
+        /// <returns></returns>
+        public static Dictionary<string, object> DeserializeToDic(string jsonString)
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonString, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
+                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
+            });
+        }
+        
+        /// <summary>
+        /// 将 json 字符串反序列化为对象列表
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="jsonString">json 字符串</param>
+        /// <returns>返回对象列表</returns>
+        public static List<T> DeserializeToList<T>(string jsonString)
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<List<T>>(jsonString, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
+                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
+            });
+        }
+
+        /// <summary>
+        /// 将对象序列化为json字符串,支持子对象的序列化
+        /// </summary>
+        /// <param name="obj">序列化的对象</param>
+        /// <returns></returns>
+        public static string Serialize<T>(T obj)
+        {
+            return JsonSerializer.Serialize<T>(obj, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
+                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
+            });
+        }
+        
+        /// <summary>
+        /// 将对象序列化为json字符串,支持子对象的序列化
+        /// </summary>
+        /// <param name="obj">序列化的对象</param>
+        /// <param name="kvs">序列化的对象</param>
+        /// <returns></returns>
+        public static string Serialize<T>(T obj, params KeyValuePair<string, string>[] kvs)
+        {
+            var s = Serialize(obj);
+            if (kvs == null || kvs.Length == 0 || !s.StartsWith('{')) return s;
+            var strPx = kvs.Aggregate("", (current, kv) => current + ("\"" + kv.Key + "\":\"" + kv.Value + "\","));
+            var temp = s[1..].Trim();
+            if (temp == "}")
+            {
+                strPx = strPx[..^1];
+            }
+            s = "{" + strPx + temp;
+            return s;
+        }
+
+
+
+        /// <summary>
+        /// 将引号、冒号、逗号进行解码
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        private static string Decode(string str)
+        {
+            return str.Replace("&quot;", "\"").Replace("&#58;", ":").Replace("&#44;", ",").Replace("\\'", "'");
+        }
+    }
 }
+

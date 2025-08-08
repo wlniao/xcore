@@ -161,7 +161,7 @@ namespace Wlniao
         /// <param name="message"></param>
         public static void ServiceStop(String node, String code = "302", String message = "服务器正在维护中 Server maintenance.")
         {
-            var json = Json.ToString(new { node, code, success = false, message });
+            var json = Wlniao.Json.Serialize(new { node, code, success = false, message });
             new WebHostBuilder().UseKestrel(o => { o.Listen(System.Net.IPAddress.IPv6Any, XCore.ListenPort); }).Configure(app =>
             {
                 Console.ForegroundColor = ConsoleColor.Red;

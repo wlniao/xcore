@@ -255,7 +255,7 @@ namespace Wlniao.OpenApi
                 var json = XServer.Common.Get("openapi", "wx", "getaccesstoken"
                     , new KeyValuePair<string, string>("appid", appid)
                     , new KeyValuePair<string, string>("appsecret", appsecret));
-                rlt = Json.ToObject<ApiResult<string>>(json);
+                rlt = Json.Deserialize<ApiResult<string>>(json);
                 if (rlt == null)
                 {
                     rlt = new ApiResult<string>();
@@ -300,14 +300,14 @@ namespace Wlniao.OpenApi
                     if (_response.IndexOf("access_token") > 0)
                     {
                         //var obj = Json.ToObject<Wlniao.OpenApi.Wx.AccessToken>(_response);
-                        var obj = Json.ToObject<Dictionary<string, object>>(_response);
+                        var obj = Json.Deserialize<Dictionary<string, object>>(_response);
                         rlt.data = obj.GetString("access_token");
                         rlt.message = "expires in " + obj.GetString("expires_in");
                         rlt.success = obj != null && !string.IsNullOrEmpty(rlt.data);
                     }
                     else
                     {
-                        var obj = Json.ToObject<Dictionary<string, object>>(_response);
+                        var obj = Json.Deserialize<Dictionary<string, object>>(_response);
                         rlt.message = obj.GetString("errmsg");
                     }
                 }
@@ -336,7 +336,7 @@ namespace Wlniao.OpenApi
                 var json = XServer.Common.Get("openapi", "wx", "getticketjsapi"
                     , new KeyValuePair<string, string>("appid", appid)
                     , new KeyValuePair<string, string>("appsecret", appsecret));
-                rlt = Json.ToObject<ApiResult<string>>(json);
+                rlt = Json.Deserialize<ApiResult<string>>(json);
                 if (rlt == null)
                 {
                     rlt = new ApiResult<string>();
@@ -364,7 +364,7 @@ namespace Wlniao.OpenApi
             var json = XServer.Common.Get("openapi", "wx", "getuserinfo"
                 , new KeyValuePair<string, string>("appid", appid)
                 , new KeyValuePair<string, string>("wxopenid", wxopenid));
-            var rlt = Json.ToObject<ApiResult<UserInfo>>(json);
+            var rlt = Json.Deserialize<ApiResult<UserInfo>>(json);
             if (rlt.success)
             {
                 return rlt.data;
@@ -379,11 +379,11 @@ namespace Wlniao.OpenApi
         /// <returns></returns>
         public static UserInfo GetUserInfo(string access_token, string wxopenid)
         {
-            string url = "https://api.weixin.qq.com/cgi-bin/user/info?access_token=" + access_token + "&openid=" + wxopenid + "&lang=zh_CN";
-            string json = XServer.Common.GetResponseString(url);
+            var url = "https://api.weixin.qq.com/cgi-bin/user/info?access_token=" + access_token + "&openid=" + wxopenid + "&lang=zh_CN";
+            var json = XServer.Common.GetResponseString(url);
             if (!string.IsNullOrEmpty(json))
             {
-                return Json.ToObject<UserInfo>(json);
+                return Json.Deserialize<UserInfo>(json);
             }
             return null;
         }
@@ -402,7 +402,7 @@ namespace Wlniao.OpenApi
             var rlt = new ApiResult<string>();
             try
             {
-                var json = Json.ToString(new
+                var json = Json.Serialize(new
                 {
                     touser = wxopenid
                     ,
@@ -417,7 +417,7 @@ namespace Wlniao.OpenApi
                 var str = XServer.Common.PostResponseString("https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=" + access_token, json);
                 if (!string.IsNullOrEmpty(str))
                 {
-                    var msg = Json.ToObject<ErrMsg>(str);
+                    var msg = Json.Deserialize<ErrMsg>(str);
                     if (msg.errcode == "0")
                     {
                         rlt.success = true;
@@ -452,7 +452,7 @@ namespace Wlniao.OpenApi
                 var json = XServer.Common.Get("openapi", "wx", "getuserinfo"
                     , new KeyValuePair<string, string>("appid", appid)
                     , new KeyValuePair<string, string>("wxopenid", wxopenid));
-                rlt = Json.ToObject<ApiResult<AuthUserInfo>>(json);
+                rlt = Json.Deserialize<ApiResult<AuthUserInfo>>(json);
                 if (rlt == null)
                 {
                     rlt = new ApiResult<AuthUserInfo>();
@@ -483,7 +483,7 @@ namespace Wlniao.OpenApi
             {
                 var url = string.Format("https://api.weixin.qq.com/sns/userinfo?access_token={0}&openid={1}&lang=zh_CN", access_token, wxopenid);
                 var userJson = XServer.Common.GetResponseString(url);
-                var ui = Json.ToObject<AuthUserInfo>(userJson);
+                var ui = Json.Deserialize<AuthUserInfo>(userJson);
                 if (!string.IsNullOrEmpty(ui.nickname))
                 {
                     rlt.success = true;

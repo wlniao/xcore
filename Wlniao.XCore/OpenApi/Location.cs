@@ -98,7 +98,7 @@ namespace Wlniao.OpenApi
         /// <returns></returns>
         public static Location Get(string Longitude, string Latitude, int GPSType = 1)
         {
-            string json = Common.Get("location", "get"
+            var json = Common.Get("location", "get"
                 , new KeyValuePair<string, string>("longitude", Longitude)
                 , new KeyValuePair<string, string>("latitude", Latitude)
                 , new KeyValuePair<string, string>("gpstype", GPSType.ToString()));
@@ -108,7 +108,7 @@ namespace Wlniao.OpenApi
             }
             else
             {
-                return Json.ToObject<Location>(json);
+                return Json.Deserialize<Location>(json);
             }
         }
 

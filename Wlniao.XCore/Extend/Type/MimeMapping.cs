@@ -65,7 +65,7 @@ namespace Wlniao
 
             private static string GetFileName(string path)
             {
-                int num = path.LastIndexOfAny(_pathSeparatorChars);
+                var num = path.LastIndexOfAny(_pathSeparatorChars);
                 if (num < 0)
                 {
                     return path;
@@ -77,9 +77,9 @@ namespace Wlniao
             {
                 EnsureMapping();
                 fileName = GetFileName(fileName);
-                for (int i = 0; i < fileName.Length; i++)
+                for (var i = 0; i < fileName.Length; i++)
                 {
-                    if (fileName[i] == '.' && _mappings.TryGetValue(fileName.Substring(i), out string result))
+                    if (fileName[i] == '.' && _mappings.TryGetValue(fileName.Substring(i), out var result))
                     {
                         return result;
                     }

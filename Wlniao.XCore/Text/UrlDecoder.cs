@@ -52,7 +52,7 @@ namespace Wlniao.Text
             {
                 this._byteBuffer = new byte[this._bufferSize];
             }
-            int index = this._numBytes;
+            var index = this._numBytes;
             this._numBytes = index + 1;
             this._byteBuffer[index] = b;
         }
@@ -63,7 +63,7 @@ namespace Wlniao.Text
             {
                 this.FlushBytes();
             }
-            int index = this._numChars;
+            var index = this._numChars;
             this._numChars = index + 1;
             this._charBuffer[index] = ch;
         }

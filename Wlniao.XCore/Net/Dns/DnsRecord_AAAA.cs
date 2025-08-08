@@ -38,7 +38,7 @@ namespace Wlniao.Net.Dns
         public static DnsRecord_AAAA Parse(string name, byte[] reply, ref int offset, int rdLength, int ttl)
         {
             // IPv6 = 16xbyte
-            byte[] ip = new byte[rdLength];
+            var ip = new byte[rdLength];
             Array.Copy(reply, offset, ip, 0, rdLength);
             offset += rdLength;
 

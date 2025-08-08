@@ -42,15 +42,15 @@ namespace Wlniao
 		/// <returns>枚举的Description</returns>
 		public static string GetDescription(this Enum value, bool nameInstead = true)
 		{
-			Type type = value.GetType();
-			string name = Enum.GetName(type, value);
+			var type = value.GetType();
+			var name = Enum.GetName(type, value);
 			if (name == null)
 			{
 				return null;
 			}
 
-			FieldInfo field = type.GetField(name);
-			DescriptionAttribute attribute = System.Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) as DescriptionAttribute;
+			var field = type.GetField(name);
+			var attribute = System.Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) as DescriptionAttribute;
 
 			if (attribute == null && nameInstead == true)
 			{

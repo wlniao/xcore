@@ -64,8 +64,8 @@ namespace Wlniao.Runtime
         public static object GetInstance(string asmName, string typeName)
         {
             // Load不需要ext，LoadFrom需要
-            Assembly asm = Assembly.Load(new AssemblyName(asmName));
-            Type type = asm.GetType(typeName, false, false);
+            var asm = Assembly.Load(new AssemblyName(asmName));
+            var type = asm.GetType(typeName, false, false);
             return GetInstance(type);
         }
         /// <summary>
@@ -76,7 +76,7 @@ namespace Wlniao.Runtime
         /// <returns></returns>
         public static object GetInstance(Assembly asm, string typeName)
         {
-            Type type = asm.GetType(typeName, false, false);
+            var type = asm.GetType(typeName, false, false);
             return GetInstance(type);
         }
         /// <summary>
@@ -105,7 +105,7 @@ namespace Wlniao.Runtime
         {
             if (currentObject == null) return null;
             if (strUtil.IsNullOrEmpty(propertyName)) return null;
-            PropertyInfo p = currentObject.GetType().GetRuntimeProperty(propertyName);
+            var p = currentObject.GetType().GetRuntimeProperty(propertyName);
             if (p == null) return null;
             return p.GetValue(currentObject, null);
         }
@@ -213,11 +213,11 @@ namespace Wlniao.Runtime
         {
             if (p.PropertyType.IsConstructedGenericType == false)
                 return p.PropertyType.FullName;
-            Type pGenericType = p.PropertyType.GetGenericTypeDefinition();
-            string genericTypeName = pGenericType.FullName.Split('`')[0];            
-            Type[] ts = p.PropertyType.GenericTypeArguments;
+            var pGenericType = p.PropertyType.GetGenericTypeDefinition();
+            var genericTypeName = pGenericType.FullName.Split('`')[0];            
+            var ts = p.PropertyType.GenericTypeArguments;
             string args = null;
-            foreach (Type at in ts)
+            foreach (var at in ts)
             {
                 if (args != null) args += ", ";
                 args += at.FullName;
@@ -400,8 +400,8 @@ namespace Wlniao.Runtime
         /// <returns></returns>
         public static bool IsInterface(Type t, Type interfaceType)
         {
-            Type[] interfaces = t.GetTypeInfo().GetInterfaces();
-            foreach (Type type in interfaces)
+            var interfaces = t.GetTypeInfo().GetInterfaces();
+            foreach (var type in interfaces)
             {
                 if (interfaceType.FullName.Equals(type.FullName)) return true;
             }

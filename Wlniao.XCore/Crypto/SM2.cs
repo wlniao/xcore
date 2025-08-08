@@ -235,12 +235,12 @@ namespace Wlniao.Crypto
         {
             // for sm2p256v1, n is 00fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54123,
             // r and s are the result of mod n, so they should be less than n and have length<=32
-            byte[] rs = rOrS.ToByteArray();
+            var rs = rOrS.ToByteArray();
             if (rs.Length == RS_LEN) return rs;
             else if (rs.Length == RS_LEN + 1 && rs[0] == 0) return Org.BouncyCastle.Utilities.Arrays.CopyOfRange(rs, 1, RS_LEN + 1);
             else if (rs.Length < RS_LEN)
             {
-                byte[] result = new byte[RS_LEN];
+                var result = new byte[RS_LEN];
                 Org.BouncyCastle.Utilities.Arrays.Fill(result, (byte)0);
                 Buffer.BlockCopy(rs, 0, result, RS_LEN - rs.Length, rs.Length);
                 return result;
@@ -259,9 +259,9 @@ namespace Wlniao.Crypto
         public static byte[] RsAsn1ToPlainByteArray(byte[] rsDer)
         {
             var seq = Org.BouncyCastle.Asn1.Asn1Sequence.GetInstance(rsDer);
-            byte[] r = BigIntToFixexLengthBytes(Org.BouncyCastle.Asn1.DerInteger.GetInstance(seq[0]).Value);
-            byte[] s = BigIntToFixexLengthBytes(Org.BouncyCastle.Asn1.DerInteger.GetInstance(seq[1]).Value);
-            byte[] result = new byte[RS_LEN * 2];
+            var r = BigIntToFixexLengthBytes(Org.BouncyCastle.Asn1.DerInteger.GetInstance(seq[0]).Value);
+            var s = BigIntToFixexLengthBytes(Org.BouncyCastle.Asn1.DerInteger.GetInstance(seq[1]).Value);
+            var result = new byte[RS_LEN * 2];
             Buffer.BlockCopy(r, 0, result, 0, r.Length);
             Buffer.BlockCopy(s, 0, result, RS_LEN, s.Length);
             return result;
@@ -297,9 +297,9 @@ namespace Wlniao.Crypto
         public static byte[] C123ToC132(byte[] c1c2c3)
         {
             var gn = GMNamedCurves.GetByName("SM2P256V1");
-            int c1Len = (gn.Curve.FieldSize + 7) / 8 * 2 + 1; //sm2p256v1的这个固定65。可看GMNamedCurves、ECCurve代码。
-            int c3Len = 32; //new SM3Digest().getDigestSize();
-            byte[] result = new byte[c1c2c3.Length];
+            var c1Len = (gn.Curve.FieldSize + 7) / 8 * 2 + 1; //sm2p256v1的这个固定65。可看GMNamedCurves、ECCurve代码。
+            var c3Len = 32; //new SM3Digest().getDigestSize();
+            var result = new byte[c1c2c3.Length];
             Array.Copy(c1c2c3, 0, result, 0, c1Len); //c1
             Array.Copy(c1c2c3, c1c2c3.Length - c3Len, result, c1Len, c3Len); //c3
             Array.Copy(c1c2c3, c1Len, result, c1Len + c3Len, c1c2c3.Length - c1Len - c3Len); //c2
@@ -313,9 +313,9 @@ namespace Wlniao.Crypto
         public static byte[] C132ToC123(byte[] c1c3c2)
         {
             var gn = GMNamedCurves.GetByName("SM2P256V1");
-            int c1Len = (gn.Curve.FieldSize + 7) / 8 * 2 + 1;
-            int c3Len = 32; //new SM3Digest().getDigestSize();
-            byte[] result = new byte[c1c3c2.Length];
+            var c1Len = (gn.Curve.FieldSize + 7) / 8 * 2 + 1;
+            var c3Len = 32; //new SM3Digest().getDigestSize();
+            var result = new byte[c1c3c2.Length];
             Array.Copy(c1c3c2, 0, result, 0, c1Len); //c1: 0->65
             Array.Copy(c1c3c2, c1Len + c3Len, result, c1Len, c1c3c2.Length - c1Len - c3Len); //c2
             Array.Copy(c1c3c2, c1Len, result, c1c3c2.Length - c3Len, c3Len); //c3

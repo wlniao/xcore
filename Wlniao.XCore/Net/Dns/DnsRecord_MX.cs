@@ -61,9 +61,9 @@ namespace Wlniao.Net.Dns
                 a mail exchange for the owner name. 
 			*/
 
-            int pref = reply[offset++] << 8 | reply[offset++];
+            var pref = reply[offset++] << 8 | reply[offset++];
 
-            string server = "";
+            var server = "";
             if (DnsTool.GetQName(reply, ref offset, ref server))
             {
                 return new DnsRecord_MX(name, pref, server, ttl);
@@ -96,7 +96,7 @@ namespace Wlniao.Net.Dns
                 throw new ArgumentException("Argument obj is not MX_Record !");
             }
 
-            DnsRecord_MX mx = (DnsRecord_MX)obj;
+            var mx = (DnsRecord_MX)obj;
             if (this.Preference > mx.Preference)
             {
                 return 1;

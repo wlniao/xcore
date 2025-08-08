@@ -328,9 +328,9 @@ namespace Wlniao.XServer
                     {
                         if (XStorageType == "local")
                         {
-                            string toFileName = IO.PathTool.Map(UploadPath, FileName);
-                            string toFilePath = System.IO.Path.GetDirectoryName(toFileName);
-                            string toFileExt = System.IO.Path.GetExtension(toFileName);
+                            var toFileName = IO.PathTool.Map(UploadPath, FileName);
+                            var toFilePath = System.IO.Path.GetDirectoryName(toFileName);
+                            var toFileExt = System.IO.Path.GetExtension(toFileName);
                             if (!Directory.Exists(toFilePath))
                             {
                                 Directory.CreateDirectory(toFilePath);
@@ -620,7 +620,7 @@ namespace Wlniao.XServer
                     var json = "{\"bucket\":\"" + bucketname + "\",\"save-key\":\"" + dir + "{random}{.suffix}\",\"expiration\":\"" + (DateTools.GetUnix() + expire) + "\"}";
                     var policy = Encryptor.Base64Encrypt(json);
                     var signature = Encryptor.Md5Encryptor32(policy + "&" + formapi);
-                    return Json.ToString(new { to = "upyun", host = XStorageUrl, bucket = bucketname, policy, signature });
+                    return Json.Serialize(new { to = "upyun", host = XStorageUrl, bucket = bucketname, policy, signature });
                 }
                 return "";
             }
@@ -844,10 +844,10 @@ namespace Wlniao.XServer
                             str = str.Replace("\t", "\\");
                             str = str.Replace("\n", "\\");
                             var ss = str.Split('\\');
-                            int i = 0;
+                            var i = 0;
                             while (i < ss.Length)
                             {
-                                FolderItem fi = new FolderItem(ss[i], ss[i + 1], int.Parse(ss[i + 2]), int.Parse(ss[i + 3]));
+                                var fi = new FolderItem(ss[i], ss[i + 1], int.Parse(ss[i + 2]), int.Parse(ss[i + 3]));
                                 AL.Add(fi);
                                 i += 4;
                             }
@@ -960,8 +960,8 @@ namespace Wlniao.XServer
             /// <returns></returns>
             public static string md5_file(string pathName)
             {
-                string strResult = "";
-                string strHashData = "";
+                var strResult = "";
+                var strHashData = "";
 
                 byte[] arrbytHashValue;
                 var oFileStream = new System.IO.FileStream(pathName, System.IO.FileMode.Open,
@@ -1188,7 +1188,7 @@ namespace Wlniao.XServer
                     var bytesSecret = Wlniao.Text.Encoding.UTF8.GetBytes(ossaccesskeySecret);
                     var signature = System.Convert.ToBase64String(Encryptor.HmacSHA1(bytesPolicy, bytesSecret));
                     var host = ossdomain.IndexOf("://") < 0 ? "//" + ossdomain : ossdomain;
-                    return Json.ToString(new { to = "oss", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
+                    return Json.Serialize(new { to = "oss", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
                 }
                 return "";
             }
@@ -1478,7 +1478,7 @@ namespace Wlniao.XServer
                     var signKey = Encryptor.HmacSHA1(keytime, cosaccesskeySecret);
                     var signature = Encryptor.HmacSHA1(stringToSign, signKey);
                     var host = cosdomain.IndexOf("://") < 0 ? "//" + cosdomain : cosdomain;
-                    return Json.ToString(new { to = "cos", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, domain = host, keytime = keytime, secretid = cosaccesskeyid, dir, max, policy, signature });
+                    return Json.Serialize(new { to = "cos", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, domain = host, keytime = keytime, secretid = cosaccesskeyid, dir, max, policy, signature });
                 }
                 return "";
             }

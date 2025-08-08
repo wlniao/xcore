@@ -37,7 +37,7 @@ namespace Wlniao.Net.Dns
         /// <param name="ttl">Time to live in seconds.</param>
         public static DnsRecord_CNAME Parse(string name, byte[] reply, ref int offset, int rdLength, int ttl)
         {
-            string alias = "";
+            var alias = "";
             if (DnsTool.GetQName(reply, ref offset, ref alias))
             {
                 return new DnsRecord_CNAME(name, alias, ttl);

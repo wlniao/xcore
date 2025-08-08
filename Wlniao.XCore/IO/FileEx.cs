@@ -53,9 +53,9 @@ namespace Wlniao.IO
         /// <returns>文件的内容</returns>
         public static byte[] ReadByte(string absolutePath)
         {
-            using (FileStream fs = new FileStream(absolutePath, FileMode.Open))
+            using (var fs = new FileStream(absolutePath, FileMode.Open))
             {
-                byte[] buffer = new byte[fs.Length];
+                var buffer = new byte[fs.Length];
                 fs.Read(buffer, 0, buffer.Length);
                 fs.Flush();
                 return buffer;
@@ -69,7 +69,7 @@ namespace Wlniao.IO
         /// <returns>文件的内容</returns>
         public static void WriteByte(string absolutePath, byte[] buffer)
         {
-            using (StreamWriter sw = new StreamWriter(new FileStream(absolutePath, FileMode.Create)))
+            using (var sw = new StreamWriter(new FileStream(absolutePath, FileMode.Create)))
             {
                 sw.Write(buffer);
                 sw.Flush();
@@ -83,9 +83,9 @@ namespace Wlniao.IO
         /// <returns>文件的内容</returns>
         public static void WriteStream(string absolutePath, System.IO.Stream stream)
         {
-            using (StreamWriter sw = new StreamWriter(new FileStream(absolutePath, FileMode.Create)))
+            using (var sw = new StreamWriter(new FileStream(absolutePath, FileMode.Create)))
             {
-                byte[] bytes = new byte[stream.Length];
+                var bytes = new byte[stream.Length];
                 stream.Read(bytes, 0, bytes.Length);
                 // 设置当前流的位置为流的开始 
                 stream.Seek(0, System.IO.SeekOrigin.Begin);
@@ -110,15 +110,15 @@ namespace Wlniao.IO
         /// <returns>文件的内容</returns>
         public static string Read(string absolutePath, System.Text.Encoding encoding)
         {
-            using (FileStream fs = new FileStream(absolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var fs = new FileStream(absolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 if (fs.CanRead)
                 {
-                    byte[] bytes = new byte[(int)fs.Length];
-                    int r = fs.Read(bytes, 0, bytes.Length);
+                    var bytes = new byte[(int)fs.Length];
+                    var r = fs.Read(bytes, 0, bytes.Length);
                     if (encoding == System.Text.UTF8Encoding.UTF8 && bytes.Length > 3)
                     {
-                        byte[] bomBuffer = new byte[] { 0xef, 0xbb, 0xbf };
+                        var bomBuffer = new byte[] { 0xef, 0xbb, 0xbf };
                         if (bytes[0] == bomBuffer[0]
                             && bytes[1] == bomBuffer[1]
                             && bytes[2] == bomBuffer[2])
@@ -158,9 +158,9 @@ namespace Wlniao.IO
         public static string[] ReadAllLines(string absolutePath, System.Text.Encoding encoding)
         {
             var list = new System.Collections.Generic.List<string>();
-            using (FileStream fs = new FileStream(absolutePath, FileMode.Open))
+            using (var fs = new FileStream(absolutePath, FileMode.Open))
             {
-                StreamReader reader = new StreamReader(fs, Encoding.UTF8);
+                var reader = new StreamReader(fs, Encoding.UTF8);
                 string str;
                 while ((str = reader.ReadLine()) != null)
                 {
@@ -278,9 +278,9 @@ namespace Wlniao.IO
         /// <param name="encoding">编码方式</param>
         public static void Append(string absolutePath, string fileContent, System.Text.Encoding encoding)
         {
-            using (FileStream fs = new FileStream(absolutePath, FileMode.Append))
+            using (var fs = new FileStream(absolutePath, FileMode.Append))
             {
-                StreamWriter writer = new StreamWriter(fs, encoding);
+                var writer = new StreamWriter(fs, encoding);
                 writer.Write(fileContent);
                 writer.Flush();
             }

@@ -42,7 +42,7 @@ namespace Wlniao.IO
             {
                 if (File.Exists(absolutePath))
                 {
-                    using (FileStream fs = new FileStream(absolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (var fs = new FileStream(absolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
                         if (fs.CanRead && fs.Length > 0)
                         {
@@ -75,10 +75,10 @@ namespace Wlniao.IO
         public static string GetEncodingName(sbyte[] buffer)
         {
             int i;
-            int[][] GBFreq = new int[94][];
-            int[][] GBKFreq = new int[126][];
-            int[][] Big5Freq = new int[94][];
-            int[][] EUC_TWFreq = new int[94][];
+            var GBFreq = new int[94][];
+            var GBKFreq = new int[126][];
+            var Big5Freq = new int[94][];
+            var EUC_TWFreq = new int[94][];
             if (GBFreq[0] == null)
             {
                 for (i = 0; i < 94; i++)
@@ -2146,7 +2146,7 @@ namespace Wlniao.IO
         /// <returns>返回 0 至 100 之间的可能性</returns>
         private static int UTF8Probability(sbyte[] rawtext)
         {
-            int score = 0;
+            var score = 0;
             int i, rawtextlen = 0;
             int goodbytes = 0, asciibytes = 0;
 
@@ -2230,7 +2230,7 @@ namespace Wlniao.IO
         /// <returns>返回 0 至 100 之间的可能性</returns>
         private static int ASCIIProbability(sbyte[] rawtext)
         {
-            int score = 70;
+            var score = 70;
             int i, rawtextlen;
 
 

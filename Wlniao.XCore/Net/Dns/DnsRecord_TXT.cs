@@ -39,7 +39,7 @@ namespace Wlniao.Net.Dns
         {
             // TXT RR
 
-            string text = DnsTool.ReadCharacterString(reply, ref offset);
+            var text = DnsTool.ReadCharacterString(reply, ref offset);
 
             return new DnsRecord_TXT(name, text, ttl);
         }

@@ -77,7 +77,7 @@ namespace Wlniao.Runtime
                         try
                         {
                             var langPath = PathTool.Map(XCore.FrameworkRoot, "lang");
-                            foreach (string file in Directory.GetFiles(langPath))
+                            foreach (var file in Directory.GetFiles(langPath))
                             {
                                 if (file.EndsWith(".ini"))
                                 {
@@ -135,9 +135,9 @@ namespace Wlniao.Runtime
         public static List<Dictionary<string, string>> GetSupportedLang()
         {
             var list = new List<Dictionary<string, string>>();
-            foreach (string key in langSetting.Keys)
+            foreach (var key in langSetting.Keys)
             {
-                Dictionary<string, string> pair = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var pair = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 pair.TryAdd("Name", GetLangName(key));
                 pair.TryAdd("Value", key);
                 list.Add(pair);

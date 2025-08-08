@@ -189,7 +189,7 @@ namespace Wlniao.OpenApi
                 var json = XServer.Common.Get("openapi", "tool", "geoconvert"
                 , new KeyValuePair<string, string>("lat", latitude)
                 , new KeyValuePair<string, string>("lng", longitude));
-                var _rlt = Json.ToObject<ApiResult<string>>(json);
+                var _rlt = Json.Deserialize<ApiResult<string>>(json);
                 if (_rlt.success)
                 {
                     rlt.success = true;
@@ -239,7 +239,7 @@ namespace Wlniao.OpenApi
                 var json = XServer.Common.Get("openapi", "tool", "geoconvert2baidu"
                 , new KeyValuePair<string, string>("lat", latitude)
                 , new KeyValuePair<string, string>("lng", longitude));
-                var _rlt = Json.ToObject<ApiResult<string>>(json);
+                var _rlt = Json.Deserialize<ApiResult<string>>(json);
                 if (_rlt.success)
                 {
                     rlt.success = true;
@@ -289,7 +289,7 @@ namespace Wlniao.OpenApi
                 var json = XServer.Common.Get("openapi", "tool", "geoconvert2soso"
                 , new KeyValuePair<string, string>("lat", latitude)
                 , new KeyValuePair<string, string>("lng", longitude));
-                var _rlt = Json.ToObject<ApiResult<string>>(json);
+                var _rlt = Json.Deserialize<ApiResult<string>>(json);
                 if (_rlt.success)
                 {
                     rlt.success = true;

@@ -325,7 +325,7 @@ namespace Wlniao
                 if (_config != null)
                 {
                     var sb = new StringBuilder();
-                    foreach (KeyValuePair<string, string> pair in _config.OrderBy(o => o.Key))
+                    foreach (var pair in _config.OrderBy(o => o.Key))
                     {
                         if (_config.ContainsKey("yaml"))
                         {

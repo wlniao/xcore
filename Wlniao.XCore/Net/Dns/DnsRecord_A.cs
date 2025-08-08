@@ -39,7 +39,7 @@ namespace Wlniao.Net.Dns
         {
             // IPv4 = byte byte byte byte
 
-            byte[] ip = new byte[rdLength];
+            var ip = new byte[rdLength];
             Array.Copy(reply, offset, ip, 0, rdLength);
             offset += rdLength;
 

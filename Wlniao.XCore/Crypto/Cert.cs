@@ -54,14 +54,14 @@ namespace Wlniao.Crypto
         public static string PrivateKeyPkcs1ToPkcs8(string privateKey)
         {
             privateKey = Pkcs1PrivateKeyFormat(privateKey);
-            PemReader pr = new PemReader(new StringReader(privateKey));
-            AsymmetricCipherKeyPair? kp = pr.ReadObject() as AsymmetricCipherKeyPair;
-            StringWriter sw = new StringWriter();
-            PemWriter pWrt = new PemWriter(sw);
-            Pkcs8Generator pkcs8 = new Pkcs8Generator(kp.Private);
+            var pr = new PemReader(new StringReader(privateKey));
+            var kp = pr.ReadObject() as AsymmetricCipherKeyPair;
+            var sw = new StringWriter();
+            var pWrt = new PemWriter(sw);
+            var pkcs8 = new Pkcs8Generator(kp.Private);
             pWrt.WriteObject(pkcs8);
             pWrt.Writer.Close();
-            string result = sw.ToString();
+            var result = sw.ToString();
             return result;
         }
         /// <summary>
@@ -72,14 +72,14 @@ namespace Wlniao.Crypto
         public static string PrivateKeyPkcs8ToPkcs1(string privateKey)
         {
             privateKey = Pkcs8PrivateKeyFormat(privateKey);
-            PemReader pr = new PemReader(new StringReader(privateKey));
-            RsaPrivateCrtKeyParameters? kp = pr.ReadObject() as RsaPrivateCrtKeyParameters;
+            var pr = new PemReader(new StringReader(privateKey));
+            var kp = pr.ReadObject() as RsaPrivateCrtKeyParameters;
             var keyParameter = PrivateKeyFactory.CreateKey(PrivateKeyInfoFactory.CreatePrivateKeyInfo(kp));
-            StringWriter sw = new StringWriter();
-            PemWriter pWrt = new PemWriter(sw);
+            var sw = new StringWriter();
+            var pWrt = new PemWriter(sw);
             pWrt.WriteObject(keyParameter);
             pWrt.Writer.Close();
-            string result = sw.ToString();
+            var result = sw.ToString();
             return result;
         }
         /// <summary>
@@ -95,10 +95,10 @@ namespace Wlniao.Crypto
                 return str;
             }
 
-            List<string> res = new List<string>();
+            var res = new List<string>();
             res.Add("-----BEGIN RSA PRIVATE KEY-----");
 
-            int pos = 0;
+            var pos = 0;
 
             while (pos < str.Length)
             {
@@ -138,10 +138,10 @@ namespace Wlniao.Crypto
             {
                 return str;
             }
-            List<string> res = new List<string>();
+            var res = new List<string>();
             res.Add("-----BEGIN PRIVATE KEY-----");
 
-            int pos = 0;
+            var pos = 0;
 
             while (pos < str.Length)
             {
@@ -179,10 +179,10 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public static byte[] GetBytesFromPemFile(string pemString, string headerPEM)
         {
-            string header = string.Format("-----BEGIN {0}-----", headerPEM);
-            string footer = string.Format("-----END {0}-----", headerPEM);
-            int start = pemString.IndexOf(header, StringComparison.Ordinal) + header.Length;
-            int end = pemString.IndexOf(footer, start, StringComparison.Ordinal) - start;
+            var header = string.Format("-----BEGIN {0}-----", headerPEM);
+            var footer = string.Format("-----END {0}-----", headerPEM);
+            var start = pemString.IndexOf(header, StringComparison.Ordinal) + header.Length;
+            var end = pemString.IndexOf(footer, start, StringComparison.Ordinal) - start;
             if (start < 0 || end < 0)
             {
                 return null;
@@ -200,9 +200,9 @@ namespace Wlniao.Crypto
             {
                 privateKey = PrivateKeyPkcs8ToPkcs1(privateKey);
             }
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
-            byte[] Buffer = GetBytesFromPemFile(privateKey, "RSA PRIVATE KEY");
-            System.Security.Cryptography.RSAParameters rsaParam = rsa.ExportParameters(false);
+            var rsa = new RSACryptoServiceProvider();
+            var Buffer = GetBytesFromPemFile(privateKey, "RSA PRIVATE KEY");
+            var rsaParam = rsa.ExportParameters(false);
             rsaParam.Modulus = Buffer;
             rsa.ImportParameters(rsaParam);
             return rsa;

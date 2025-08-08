@@ -332,19 +332,19 @@ namespace Wlniao.Net.Dns
             //----Create query ------------------------------------//
 
             // Convert unicode domain name. For more info see RFC 5890.
-            System.Globalization.IdnMapping ldn = new System.Globalization.IdnMapping();
+            var ldn = new System.Globalization.IdnMapping();
             qname = ldn.GetAscii(qname);
 
-            string[] labels = qname.Split(new char[] { '.' });
-            int position = 12;
+            var labels = qname.Split(new char[] { '.' });
+            var position = 12;
 
             // Copy all domain parts(labels) to query
             // eg. lumisoft.ee = 2 labels, lumisoft and ee.
             // format = label.length + label(bytes)
-            foreach (string label in labels)
+            foreach (var label in labels)
             {
                 // convert label string to byte array
-                byte[] b = Encoding.ASCII.GetBytes(label);
+                var b = Encoding.ASCII.GetBytes(label);
 
                 // add label lenght to query
                 buffer[position++] = (byte)(b.Length);
@@ -418,21 +418,21 @@ namespace Wlniao.Net.Dns
             */
 
             // Get reply code
-            int id = (reply[0] << 8 | reply[1]);
-            OpCode opcode = (OpCode)((reply[2] >> 3) & 15);
-            ResponceCode replyCode = (ResponceCode)(reply[3] & 15);
-            int queryCount = (reply[4] << 8 | reply[5]);
-            int answerCount = (reply[6] << 8 | reply[7]);
-            int authoritiveAnswerCount = (reply[8] << 8 | reply[9]);
-            int additionalAnswerCount = (reply[10] << 8 | reply[11]);
+            var id = (reply[0] << 8 | reply[1]);
+            var opcode = (OpCode)((reply[2] >> 3) & 15);
+            var replyCode = (ResponceCode)(reply[3] & 15);
+            var queryCount = (reply[4] << 8 | reply[5]);
+            var answerCount = (reply[6] << 8 | reply[7]);
+            var authoritiveAnswerCount = (reply[8] << 8 | reply[9]);
+            var additionalAnswerCount = (reply[10] << 8 | reply[11]);
             //---- End of headers ---------------------------------//
 
-            int pos = 12;
+            var pos = 12;
 
             //----- Parse question part ------------//
-            for (int q = 0; q < queryCount; q++)
+            for (var q = 0; q < queryCount; q++)
             {
-                string dummy = "";
+                var dummy = "";
                 GetQName(reply, ref pos, ref dummy);
                 //qtype + qclass
                 pos += 4;
@@ -442,9 +442,9 @@ namespace Wlniao.Net.Dns
             // 1) parse answers
             // 2) parse authoritive answers
             // 3) parse additional answers
-            List<DnsRecord> answers = ParseAnswers(reply, answerCount, ref pos);
-            List<DnsRecord> authoritiveAnswers = ParseAnswers(reply, authoritiveAnswerCount, ref pos);
-            List<DnsRecord> additionalAnswers = ParseAnswers(reply, additionalAnswerCount, ref pos);
+            var answers = ParseAnswers(reply, answerCount, ref pos);
+            var authoritiveAnswers = ParseAnswers(reply, authoritiveAnswerCount, ref pos);
+            var additionalAnswers = ParseAnswers(reply, additionalAnswerCount, ref pos);
 
             return new DnsServerResponse(true, id, replyCode, answers, authoritiveAnswers, additionalAnswers);
         }
@@ -487,18 +487,18 @@ namespace Wlniao.Net.Dns
 
             var answers = new List<DnsRecord>();
             //---- Start parsing answers ------------------------------------------------------------------//
-            for (int i = 0; i < answerCount; i++)
+            for (var i = 0; i < answerCount; i++)
             {
-                string name = "";
+                var name = "";
                 if (!GetQName(reply, ref offset, ref name))
                 {
                     break;
                 }
 
-                int type = reply[offset++] << 8 | reply[offset++];
-                int rdClass = reply[offset++] << 8 | reply[offset++];
-                int ttl = reply[offset++] << 24 | reply[offset++] << 16 | reply[offset++] << 8 | reply[offset++];
-                int rdLength = reply[offset++] << 8 | reply[offset++];
+                var type = reply[offset++] << 8 | reply[offset++];
+                var rdClass = reply[offset++] << 8 | reply[offset++];
+                var ttl = reply[offset++] << 24 | reply[offset++] << 16 | reply[offset++] << 8 | reply[offset++];
+                var rdLength = reply[offset++] << 8 | reply[offset++];
 
                 var _type = (DnsRecordType)type;
                 if (_type == DnsRecordType.A)
@@ -577,8 +577,8 @@ namespace Wlniao.Net.Dns
                 in length (including the length octet).
             */
 
-            int dataLength = (int)data[offset++];
-            string retVal = Encoding.ASCII.GetString(data, offset, dataLength);
+            var dataLength = (int)data[offset++];
+            var retVal = Encoding.ASCII.GetString(data, offset, dataLength);
             offset += dataLength;
 
             return retVal;
@@ -589,10 +589,10 @@ namespace Wlniao.Net.Dns
         #region method GetQName
         internal static bool GetQName(byte[] reply, ref int offset, ref string name)
         {
-            bool retVal = GetQNameI(reply, ref offset, ref name);
+            var retVal = GetQNameI(reply, ref offset, ref name);
 
             // Convert domain name to unicode. For more info see RFC 5890.
-            System.Globalization.IdnMapping ldn = new System.Globalization.IdnMapping();
+            var ldn = new System.Globalization.IdnMapping();
             name = ldn.GetUnicode(name);
 
             return retVal;
@@ -616,7 +616,7 @@ namespace Wlniao.Net.Dns
                     }
 
                     // Check if it's pointer(In pointer first two bits always 1)
-                    bool isPointer = ((reply[offset] & 0xC0) == 0xC0);
+                    var isPointer = ((reply[offset] & 0xC0) == 0xC0);
 
                     // If pointer
                     if (isPointer)
@@ -625,7 +625,7 @@ namespace Wlniao.Net.Dns
 						    0 | 1 | 2 | 3 | 4 | 5 | 6 | 7  # byte 2 # 0 | 1 | 2 | | 3 | 4 | 5 | 6 | 7
 						    empty | < ---- pointer location number --------------------------------->
                         */
-                        int pStart = ((reply[offset] & 0x3F) << 8) | (reply[++offset]);
+                        var pStart = ((reply[offset] & 0x3F) << 8) | (reply[++offset]);
                         offset++;
 
                         return GetQNameI(reply, ref pStart, ref name);
@@ -636,7 +636,7 @@ namespace Wlniao.Net.Dns
 						    0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
 						    empty | lablel length in bytes 
                         */
-                        int labelLength = (reply[offset] & 0x3F);
+                        var labelLength = (reply[offset] & 0x3F);
                         offset++;
 
                         // Copy label into name 

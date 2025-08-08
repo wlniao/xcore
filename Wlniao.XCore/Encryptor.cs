@@ -60,7 +60,7 @@ namespace Wlniao
         {
             var password = "";
             var s = MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(str ?? ""));
-            foreach (byte b in s)
+            foreach (var b in s)
             {
                 password += b.ToString("X2");
             }
@@ -287,7 +287,7 @@ namespace Wlniao
             {
                 var keyBytes = System.Text.Encoding.UTF8.GetBytes(key);
                 var dataBytes = System.Text.Encoding.UTF8.GetBytes(str);
-                foreach (byte b in HmacSHA1(dataBytes, keyBytes))
+                foreach (var b in HmacSHA1(dataBytes, keyBytes))
                 {
                     enText += b.ToString("x2");
                 }
@@ -433,7 +433,7 @@ namespace Wlniao
                     var inputByteArray = System.Text.Encoding.UTF8.GetBytes(pToEncrypt);
                     using (var ms = new MemoryStream())
                     {
-                        using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                        using (var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
                         {
                             cs.Write(inputByteArray, 0, inputByteArray.Length);
                             cs.FlushFinalBlock();
@@ -475,7 +475,7 @@ namespace Wlniao
                     var inputByteArray = System.Convert.FromBase64String(pToDecrypt);
                     using (var ms = new MemoryStream())
                     {
-                        using (CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
+                        using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
                         {
                             cs.Write(inputByteArray, 0, inputByteArray.Length);
                             cs.FlushFinalBlock();

@@ -77,7 +77,7 @@ namespace Wlniao.IO
             byte[] source2;
             source2 = new byte[length2];
 
-            for (int x = 0; x < length2; x++)
+            for (var x = 0; x < length2; x++)
             {
                 if (x < length)
                 {
@@ -91,9 +91,9 @@ namespace Wlniao.IO
 
             byte b1, b2, b3;
             byte temp, temp1, temp2, temp3, temp4;
-            byte[] buffer = new byte[blockCount * 4];
-            char[] result = new char[blockCount * 4];
-            for (int x = 0; x < blockCount; x++)
+            var buffer = new byte[blockCount * 4];
+            var result = new char[blockCount * 4];
+            for (var x = 0; x < blockCount; x++)
             {
                 b1 = source2[x * 3];
                 b2 = source2[x * 3 + 1];
@@ -118,7 +118,7 @@ namespace Wlniao.IO
 
             }
 
-            for (int x = 0; x < blockCount * 4; x++)
+            for (var x = 0; x < blockCount * 4; x++)
             {
                 result[x] = sixbit2char(buffer[x]);
             }
@@ -137,7 +137,7 @@ namespace Wlniao.IO
         }
         private char sixbit2char(byte b)
         {
-            char[] lookupTable = new char[64]{
+            var lookupTable = new char[64]{
                   'A','B','C','D','E','F','G','H','I','J','K','L','M',
                  'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
                  'a','b','c','d','e','f','g','h','i','j','k','l','m',
@@ -182,11 +182,11 @@ namespace Wlniao.IO
         /// <param name="input"></param>
         private void init(char[] input)
         {
-            int temp = 0;
+            var temp = 0;
             source = input;
             length = input.Length;
 
-            for (int x = 0; x < 2; x++)
+            for (var x = 0; x < 2; x++)
             {
                 if (input[length - x - 1] == '=')
                     temp++;
@@ -206,10 +206,10 @@ namespace Wlniao.IO
             //初始化
             init(strInput.ToCharArray());
 
-            byte[] buffer = new byte[length];
-            byte[] buffer2 = new byte[length2];
+            var buffer = new byte[length];
+            var buffer2 = new byte[length2];
 
-            for (int x = 0; x < length; x++)
+            for (var x = 0; x < length; x++)
             {
                 buffer[x] = char2sixbit(source[x]);
             }
@@ -217,7 +217,7 @@ namespace Wlniao.IO
             byte b, b1, b2, b3;
             byte temp1, temp2, temp3, temp4;
 
-            for (int x = 0; x < blockCount; x++)
+            for (var x = 0; x < blockCount; x++)
             {
                 temp1 = buffer[x * 4];
                 temp2 = buffer[x * 4 + 1];
@@ -242,9 +242,9 @@ namespace Wlniao.IO
             }
 
             length3 = length2 - paddingCount;
-            byte[] result = new byte[length3];
+            var result = new byte[length3];
 
-            for (int x = 0; x < length3; x++)
+            for (var x = 0; x < length3; x++)
             {
                 result[x] = buffer2[x];
             }
@@ -258,7 +258,7 @@ namespace Wlniao.IO
         /// <returns></returns>
         private byte char2sixbit(char c)
         {
-            char[] lookupTable = new char[64]{  
+            var lookupTable = new char[64]{  
                  'A','B','C','D','E','F','G','H','I','J','K','L','M','N',
                  'O','P','Q','R','S','T','U','V','W','X','Y', 'Z',
                  'a','b','c','d','e','f','g','h','i','j','k','l','m','n',
@@ -268,7 +268,7 @@ namespace Wlniao.IO
                 return 0;
             else
             {
-                for (int x = 0; x < 64; x++)
+                for (var x = 0; x < 64; x++)
                 {
                     if (lookupTable[x] == c)
                         return (byte)x;
@@ -291,7 +291,7 @@ namespace Wlniao.IO
         /// <returns></returns>
         public static string Encoder(string str)
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(str);
+            var bytes = Encoding.UTF8.GetBytes(str);
            return System.Convert.ToBase64String(bytes);
         }
         /// <summary>
@@ -310,7 +310,7 @@ namespace Wlniao.IO
         /// <returns></returns>
         public static string Decoder(string str)
         {
-            byte[] outputb = System.Convert.FromBase64String(str);
+            var outputb = System.Convert.FromBase64String(str);
             return Encoding.UTF8.GetString(outputb, 0, outputb.Length);
         }
         /// <summary>

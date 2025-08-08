@@ -66,22 +66,22 @@ namespace Wlniao
         {
             if (string.IsNullOrEmpty(sortby)) throw new Exception("必须指定排序字段!");
 
-            PropertyInfo sortProperty = typeof(T).GetProperty(sortby, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            var sortProperty = typeof(T).GetProperty(sortby, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
             if (sortProperty == null) throw new Exception("查询对象中不存在排序字段" + sortby + "！");
 
-            ParameterExpression param = Expression.Parameter(typeof(T), "t");
+            var param = Expression.Parameter(typeof(T), "t");
             Expression body = param;
             if (Nullable.GetUnderlyingType(body.Type) != null)
             {
                 body = Expression.Property(body, "Value");
             }
             body = Expression.MakeMemberAccess(body, sortProperty);
-            LambdaExpression keySelectorLambda = Expression.Lambda(body, param);
+            var keySelectorLambda = Expression.Lambda(body, param);
             if (string.IsNullOrEmpty(order))
             {
                 order = "ascending";
             }
-            string queryMethod = order.StartsWith("desc") ? "OrderByDescending" : "OrderBy";
+            var queryMethod = order.StartsWith("desc") ? "OrderByDescending" : "OrderBy";
             query = query.Provider.CreateQuery<T>(Expression.Call(typeof(Queryable), queryMethod, new Type[] { typeof(T), body.Type }, query.Expression, Expression.Quote(keySelectorLambda)));
             return query;
         }
@@ -113,7 +113,7 @@ namespace Wlniao
                     var OrderName = (!string.IsNullOrEmpty(arg.Value) && arg.Value.ToLower().Contains("desc")) ? "OrderByDescending" : "OrderBy";
 
 
-                    MethodCallExpression resultExp = Expression.Call(typeof(Queryable), OrderName, new Type[] { typeof(T), property.PropertyType }, query.Expression, Expression.Quote(orderByExp));
+                    var resultExp = Expression.Call(typeof(Queryable), OrderName, new Type[] { typeof(T), property.PropertyType }, query.Expression, Expression.Quote(orderByExp));
                     query = query.Provider.CreateQuery<T>(resultExp);
                 }
                 return query;

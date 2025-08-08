@@ -19,18 +19,12 @@
     limitations under the License.
 
 ===============================================================================*/
-using Org.BouncyCastle.Asn1.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Wlniao.Caching;
-using Wlniao.Handler;
-using Wlniao.OpenApi;
-using Wlniao.Serialization;
-using static Wlniao.Log.LokiLoger;
 
 namespace Wlniao.Log
 {
@@ -201,13 +195,13 @@ namespace Wlniao.Log
                             var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                             using (var client = new HttpClient(handler))
                             {
-                                var content = JsonSerializer.Serialize(dto);
+                                var content = Json.Serialize(dto);
                                 var request = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
                                 if (!string.IsNullOrEmpty(orgId))
                                 {
                                     request.Headers.TryAddWithoutValidation("X-Scope-OrgID", orgId);
                                 }
-                                request.Content = new StringContent(JsonSerializer.Serialize(dto), System.Text.Encoding.UTF8, "application/json");
+                                request.Content = new StringContent(Json.Serialize(dto), System.Text.Encoding.UTF8, "application/json");
                                 var response = client.Send(request);
                                 var errmsg = response.Content.ReadAsStringAsync().Result;
                                 if (response.StatusCode != System.Net.HttpStatusCode.NoContent && response.StatusCode != System.Net.HttpStatusCode.OK)
@@ -442,7 +436,7 @@ namespace Wlniao.Log
             /// <summary>
             /// 日志时间
             /// </summary>
-            [Serialization.NotSerialize]
+            [System.Text.Json.Serialization.JsonIgnore]
             internal DateTime time { get; set; }
             /// <summary>
             /// 日志行

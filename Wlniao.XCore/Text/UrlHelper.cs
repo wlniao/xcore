@@ -1,7 +1,7 @@
 /*==============================================================================
-    �ļ����ƣ�UrlHelper.cs
-    ���û�����CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ������������װ�� url �Ĳ���
+    文件名称：UrlHelper.cs
+    适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    功能描述：封装了 url 的操作
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -25,29 +25,29 @@ using System.Collections.Generic;
 namespace Wlniao.Text
 {
     /// <summary>
-    /// ��װ�� url �Ĳ���
+    /// 封装了 url 的操作
     /// </summary>
     public class UrlHelper
     {
         private static bool IsFirstDomainEqual(string url1, string url2)
         {
-            string host1 = new UriBuilder(url1).Host;
-            string host2 = new UriBuilder(url2).Host;
+            var host1 = new UriBuilder(url1).Host;
+            var host2 = new UriBuilder(url2).Host;
             return host1.Equals(host2);
         }
         /// <summary>
-        /// ���url�Ƿ�����(�Ƿ���http��ͷ������������ͷ)
+        /// 检查url是否完整(是否以http开头或者以域名开头)
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
         public static bool IsFullUrl(string url)
         {
-            if (strUtil.IsNullOrEmpty(url)) return false;
+            if (StringUtil.IsNullOrEmpty(url)) return false;
             if (url.Trim().StartsWith("/")) return false;
             if (url.Trim().StartsWith("http://")) return true;
-            string[] arrItem = url.Split('/');
+            var arrItem = url.Split('/');
             if (arrItem.Length < 1) return false;
-            int dotIndex = arrItem[0].IndexOf(".");
+            var dotIndex = arrItem[0].IndexOf(".");
             if (dotIndex <= 0) return false;
             return hasCommonExt(arrItem[0]) == false;
         }
@@ -64,45 +64,45 @@ namespace Wlniao.Text
             return new List<string>(exts);
         }
         /// <summary>
-        /// �ж���ַ�Ƿ����������׺�������� .htm/.html/.aspx/.jpg/.doc/.avi ��
+        /// 判断网址是否包含常见后缀名，比如 .htm/.html/.aspx/.jpg/.doc/.avi 等
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
         private static bool hasCommonExt(string str)
         {
-            int dotIndex = str.LastIndexOf(".");
-            string ext = str.Substring(dotIndex + 1, str.Length - dotIndex - 1);
+            var dotIndex = str.LastIndexOf(".");
+            var ext = str.Substring(dotIndex + 1, str.Length - dotIndex - 1);
             return extList.Contains(ext);
         }
         /// <summary>
-        /// �ж���ַ�Ƿ������׺�������� xyzz/ab.htm ������my/xyz/dfae3 �򲻰���
+        /// 判断网址是否包含后缀名，比如 xyzz/ab.htm 包含，my/xyz/dfae3 则不包含
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
         public static bool UrlHasExt(string url)
         {
             if (strUtil.IsNullOrEmpty(url)) return false;
-            string[] arrItem = url.Split('/');
-            string lastPart = arrItem[arrItem.Length - 1];
+            var arrItem = url.Split('/');
+            var lastPart = arrItem[arrItem.Length - 1];
             return lastPart.IndexOf(".") >= 0;
         }
         /// <summary>
-        /// �޳��� url �ĺ�׺��
+        /// 剔除掉 url 的后缀名
         /// </summary>
-        /// <param name="rawUrl">ԭʼurl</param>
-        /// <returns>���ر��޳�����׺���� url</returns>
+        /// <param name="rawUrl">原始url</param>
+        /// <returns>返回被剔除掉后缀名的 url</returns>
         public static string TrimUrlExt(string rawUrl)
         {
             if (strUtil.IsNullOrEmpty(rawUrl)) return rawUrl;
-            int dotIndex = rawUrl.IndexOf(".");
+            var dotIndex = rawUrl.IndexOf(".");
             if (dotIndex < 0) return rawUrl;
-            string[] arrItem = rawUrl.Split('.');
-            string ext = arrItem[arrItem.Length - 1];
+            var arrItem = rawUrl.Split('.');
+            var ext = arrItem[arrItem.Length - 1];
             if (ext.IndexOf('/') > 0) return rawUrl;
             return strUtil.TrimEnd(rawUrl, ext).TrimEnd('.');
         }
         /// <summary>
-        /// �ڲ����Ǻ�׺��������£��Ƚ�������ַ�Ƿ���ͬ
+        /// 在不考虑后缀名的情况下，比较两个网址是否相同
         /// </summary>
         /// <param name="url1"></param>
         /// <param name="url2"></param>

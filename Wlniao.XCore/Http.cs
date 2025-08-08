@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using Wlniao.Serialization;
 
 namespace Wlniao
 {
@@ -69,8 +66,8 @@ namespace Wlniao
             public string AuthToken { get; set; }
             /// <summary>  
             /// 输出格式
-            /// </summary>  
-            [Serialization.NotSerialize]
+            /// </summary>
+            [System.Text.Json.Serialization.JsonIgnore]
             public string ContentType
             {
                 get
@@ -113,7 +110,7 @@ namespace Wlniao
                             //通过clientSocket接收数据
                             var start = DateTime.Now;
                             var request = new byte[1024 * 64];
-                            int receiveNumber = socket.Receive(request);
+                            var receiveNumber = socket.Receive(request);
                             if (receiveNumber > 0)
                             {
                                 var encoding = Encoding.UTF8;
@@ -168,7 +165,7 @@ namespace Wlniao
                                     else if (ctx.Response != null)
                                     {
                                         ctx.ContentType = "application/json; charset=utf-8";
-                                        data = encoding.GetBytes(JsonString.Convert(ctx.Response));
+                                        data = encoding.GetBytes(Json.Serialize(ctx.Response));
                                     }
                                 }
                                 if (data != null)

@@ -1,363 +1,1 @@
-/*==============================================================================
-    ÎÄ¼şÃû³Æ£ºDateTools.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£º³£ÓÃµÄÊ±¼ä²Ù×÷´¦Àí·½·¨
-================================================================================
- 
-    Copyright 2014 XieChaoyi
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-               http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-
-===============================================================================*/
-using System;
-namespace Wlniao
-{
-    /// <summary>
-    /// ³£ÓÃµÄÊ±¼ä²Ù×÷´¦Àí·½·¨
-    /// </summary>
-    public partial class DateTools
-    {
-        private static bool init = false;
-        internal static int _TimeZone = 0;
-        /// <summary>
-        /// µ±Ç°ÔËĞĞµÄÊ±Çø
-        /// </summary>
-        public static int TimeZone
-        {
-            get
-            {
-                if (init)
-                {
-                    return _TimeZone;
-                }
-                else
-                {
-                    _TimeZone = cvt.ToInt(Config.GetConfigs("WLN_TIMEZONE", "8"));
-                    init = true;
-                }
-                return _TimeZone;
-            }
-        }
-        /// <summary>
-        /// »ñÈ¡UnixÊ±¼ä´Á
-        /// </summary>
-        /// <returns></returns>
-        public static long GetUnix()
-        {
-            return DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
-        }
-        /// <summary>
-        /// »ñÈ¡UnixÊ±¼ä´Á
-        /// </summary>
-        /// <param name="strtime"></param>
-        /// <returns></returns>
-        public static long GetUnix(string strtime)
-        {
-            if (string.IsNullOrEmpty(strtime))
-            {
-                return 0;
-            }
-            var time = DateTime.Parse(strtime);
-            if (time.Kind == DateTimeKind.Unspecified)
-            {
-                return time.AddHours(0 - DateTools.TimeZone).Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
-            }
-            else
-            {
-                return time.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
-            }
-        }
-        /// <summary>
-        /// »ñÈ¡UnixÊ±¼ä´Á
-        /// </summary>
-        /// <param name="time"></param>
-        /// <returns></returns>
-        public static long GetUnix(DateTime time)
-        {
-            if (time.Kind == DateTimeKind.Unspecified)
-            {
-                return time.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)).Ticks / 10000000 - TimeZone * 3600;
-            }
-            else
-            {
-                return time.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;
-            }
-        }
-        /// <summary>
-        /// »ñÈ¡ÎŞÊ±ÇøµÄµ±Ç°Ê±¼ä
-        /// </summary>
-        /// <returns></returns>
-        public static DateTime GetNow()
-        {
-            var temp = DateTime.UtcNow.AddHours(TimeZone);
-            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Unspecified);
-        }
-        /// <summary>
-        /// ½«UnixÊ±¼ä´Á×ª»»ÎªÎŞÊ±ÇøµÄÊ±¼ä£¨¿ÉÍ¨¹ıWLN_TIMEZONEÉèÖÃ£©
-        /// </summary>
-        /// <param name="unixtime"></param>
-        /// <returns></returns>
-        public static DateTime Convert(long unixtime)
-        {
-            return new DateTime(1970, 1, 1, TimeZone, 0, 0, 0, DateTimeKind.Unspecified).Add(new TimeSpan(unixtime * 10000000));
-        }
-        /// <summary>
-        /// ½«Ê±¼ä×Ö·û´®×ª»»ÎªÎŞÊ±ÇøµÄÊ±¼ä
-        /// </summary>
-        /// <param name="strtime"></param>
-        /// <returns></returns>
-        public static DateTime Convert(string strtime)
-        {
-            var time = DateTime.Parse(strtime);
-            if (time.Kind == DateTimeKind.Unspecified)
-            {
-                return time;
-            }
-            else
-            {
-                return new DateTime(time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, DateTimeKind.Unspecified).AddHours(TimeZone);
-            }
-        }
-
-        /// <summary>
-        /// ½«UnixÊ±¼ä´Á×ª»»ÎªUTCÊÀ½çĞ­µ÷Ê±¼ä
-        /// </summary>
-        /// <param name="unixtime"></param>
-        /// <returns></returns>
-        public static DateTime ConvertToUtc(long unixtime)
-        {
-            return new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000));
-        }
-        /// <summary>
-        /// ½«Ê±¼ä×Ö·û´®×ª»»ÎªUTCÊÀ½çĞ­µ÷Ê±¼ä
-        /// </summary>
-        /// <param name="strtime"></param>
-        /// <returns></returns>
-        public static DateTime ConvertToUtc(string strtime)
-        {
-            var time = DateTime.Parse(strtime);
-            if (time.Kind == DateTimeKind.Unspecified)
-            {
-                return new DateTime(time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, DateTimeKind.Utc).AddHours(0 - TimeZone); ;
-            }
-            else if (time.Kind == DateTimeKind.Local)
-            {
-                return time.ToUniversalTime();
-            }
-            else
-            {
-                return time;
-            }
-        }
-
-        /// <summary>
-        /// ½«UnixÊ±¼ä´Á×ª»»³ÉGMT¸ñÊ½
-        /// </summary>
-        /// <param name="unixtime"></param>
-        /// <returns></returns>
-        public static string ConvertToGMT(long unixtime = 0)
-        {
-            if (unixtime > 0)
-            {
-                return ConvertToUtc(unixtime).ToString("r");
-            }
-            else
-            {
-                return DateTime.UtcNow.ToString("r");
-            }
-        }
-        /// <summary>
-        /// ½«GMT¸ñÊ½×ª»»ÎªUTCÊÀ½çĞ­µ÷Ê±¼ä
-        /// </summary>
-        /// <param name="gmt"></param>
-        /// <returns></returns>
-        public static DateTime ConvertGmtToUtc(string gmt)
-        {
-            var dt = DateTime.MinValue;
-            try
-            {
-                string pattern = "";
-                if (gmt.IndexOf("+0") != -1)
-                {
-                    gmt = gmt.Replace("GMT", "");
-                    pattern = "ddd, dd MMM yyyy HH':'mm':'ss zzz";
-                }
-                if (gmt.ToUpper().IndexOf("GMT") != -1)
-                {
-                    pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
-                }
-                if (string.IsNullOrEmpty(pattern))
-                {
-                    dt = System.Convert.ToDateTime(gmt);
-                }
-                else
-                {
-                    dt = DateTime.ParseExact(gmt, pattern, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AdjustToUniversal);
-                }
-            }
-            catch { }
-            return dt;
-        }
-        /// <summary>
-        /// ½«Ê±¼ä°´Ö¸¶¨¸ñÊ½Êä³ö£¨¿ÉÍ¨¹ıWLN_TIMEZONEÉèÖÃ£©
-        /// </summary>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string Format(string format = "yyyy-MM-dd HH:mm:ss")
-        {
-            return DateTime.UtcNow.AddHours(TimeZone).ToString(format);// ÒÔUTCÊ±¼ä½øĞĞÊ±Çø¼ÆËã
-        }
-        /// <summary>
-        /// ½«Ê±¼ä°´Ö¸¶¨¸ñÊ½Êä³ö£¨¿ÉÍ¨¹ıWLN_TIMEZONEÉèÖÃ£©
-        /// </summary>
-        /// <param name="time"></param>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string Format(DateTime time, string format = "yyyy-MM-dd HH:mm:ss")
-        {
-            if (time.Kind == DateTimeKind.Utc)
-            {
-                return time.AddHours(TimeZone).ToString(format);// Ö±½Ó¸ñÊ½Êä³ö±¾µØÊ±¼ä
-            }
-            else if (time.Kind == DateTimeKind.Local)
-            {
-                return time.ToUniversalTime().AddHours(TimeZone).ToString(format);// °´±¾µØÊ±¼ä¸ñÊ½Êä³ö
-            }
-            else
-            {
-                return time.ToString(format);// Ö±½Ó¸ñÊ½Êä³ö±¾µØÊ±¼ä
-            }
-        }
-
-        /// <summary>
-        /// ½«µ±Ç°UTCÊ±¼ä°´Ö¸¶¨¸ñÊ½Êä³ö
-        /// </summary>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string FormatUtc(string format = "yyyy-MM-dd HH:mm:ss")
-        {
-            return DateTime.UtcNow.ToString(format);
-        }
-        /// <summary>
-        /// ¸ñÊ½Êä³ö±¾µØÊ±¼ä
-        /// </summary>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string FormatLocal(string format = "yyyy-MM-dd HH:mm:ss")
-        {
-            return DateTime.Now.ToString(format); //ÒÔUTCÊ±¼ä½øĞĞÊ±Çø¼ÆËã
-        }
-        /// <summary>
-        /// ¸ñÊ½Êä³öÖ¸¶¨Ê±ÇøµÄÊ±¼ä
-        /// </summary>
-        /// <param name="timezone"></param>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string FormatTimeZone(int timezone, string format = "yyyy-MM-dd HH:mm:ss")
-        {
-            return DateTime.UtcNow.AddHours(timezone).ToString(format); //ÒÔUTCÊ±¼ä½øĞĞÊ±Çø¼ÆËã
-        }
-        /// <summary>
-        /// ½«UnixÊ±¼ä´Á°´Ö¸¶¨¸ñÊ½Êä³ö£¨¿ÉÍ¨¹ıWLN_TIMEZONEÉèÖÃ£©
-        /// </summary>
-        /// <param name="unixtime"></param>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string FormatUnix(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
-        {
-            return unixtime <= 0 ? "" : new DateTime(1970, 1, 1, TimeZone, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToString(format);
-        }
-        /// <summary>
-        /// ½«UnixÊ±¼ä´Á°´UTCĞ­µ÷Ê±¼°Ö¸¶¨¸ñÊ½Êä³ö
-        /// </summary>
-        /// <param name="unixtime"></param>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string FormatUnixToUtc(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
-        {
-            return unixtime <= 0 ? "" : new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToString(format);
-        }
-        /// <summary>
-        /// ½«UnixÊ±¼ä´Á°´±¾µØÊ±¼ä¼°Ö¸¶¨¸ñÊ½Êä³ö
-        /// </summary>
-        /// <param name="unixtime"></param>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string FormatUnixToLocal(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
-        {
-            return unixtime <= 0 ? "" : new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToLocalTime().ToString(format);
-        }
-        /// <summary>
-        /// ½«UnixÊ±¼ä´Á°´Ö¸¶¨Ê±Çø¼°¸ñÊ½Êä³ö
-        /// </summary>
-        /// <param name="timezone"></param>
-        /// <param name="unixtime"></param>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string FormatUnixToTimeZone(long unixtime, int timezone, string format = "yyyy-MM-dd HH:mm:ss")
-        {
-            if (unixtime <= 0)
-            {
-                return "";
-            }
-            else
-            {
-                return new DateTime(1970, 1, 1, timezone, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToString(format); //ÒÔUTCÊ±¼ä½øĞĞÊ±Çø¼ÆËã
-            }
-        }
-        /// <summary>
-        /// ½«µ±Ç°ÈÕÆÚ°´Ö¸¶¨¸ñÊ½Êä³ö£¨¿ÉÍ¨¹ıWLN_TIMEZONEÉèÖÃ£©
-        /// </summary>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public static string FormatDate(string format = "yyyy-MM-dd")
-        {
-            return DateTime.UtcNow.AddHours(TimeZone).ToString(format);// ÒÔUTCÊ±¼ä½øĞĞÊ±Çø¼ÆËã
-        }
-        /// <summary>
-        /// »ñÈ¡µ±ÈÕÆğÊ¼Ê±¼ä£¨¿ÉÍ¨¹ıWLN_TIMEZONEÉèÖÃ£©
-        /// </summary>
-        /// <param name="unixtime"></param>
-        /// <returns></returns>
-        public static long GetDayStart(long unixtime)
-        {
-            return unixtime - ((unixtime + 3600 * TimeZone) % 86400);
-        }
-        /// <summary>
-        /// »ñÈ¡Ò»ÖÜÖĞµÄÄ³Ìì
-        /// </summary>
-        /// <returns></returns>
-        public static DayOfWeek GetDayOfWeek()
-        {
-            return DateTime.UtcNow.AddSeconds(3600 * TimeZone).DayOfWeek;
-        }
-        /// <summary>
-        /// »ñÈ¡Ò»ÖÜÖĞµÄÄ³Ìì
-        /// </summary>
-        /// <param name="unixtime"></param>
-        /// <returns></returns>
-        public static DayOfWeek GetDayOfWeek(long unixtime)
-        {
-            return new DateTime(1970, 1, 1, TimeZone, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).DayOfWeek;
-        }
-        /// <summary>
-        /// »ñÈ¡µ±ÈÕÆğÊ¼Ê±¼ä
-        /// </summary>
-        /// <param name="unixtime"></param>
-        /// <returns></returns>
-        public static long GetUtcDayStart(long unixtime)
-        {
-            return unixtime - unixtime % 86400;
-        }
-    }
-}
+/*==============================================================================    æ–‡ä»¶åç§°ï¼šDateTools.cs    é€‚ç”¨ç¯å¢ƒï¼šCoreCLR 5.0,.NET Framework 2.0/4.0/5.0    åŠŸèƒ½æè¿°ï¼šå¸¸ç”¨çš„æ—¶é—´æ“ä½œå¤„ç†æ–¹æ³•================================================================================     Copyright 2014 XieChaoyi    Licensed under the Apache License, Version 2.0 (the "License");    you may not use this file except in compliance with the License.    You may obtain a copy of the License at               http://www.apache.org/licenses/LICENSE-2.0    Unless required by applicable law or agreed to in writing, software    distributed under the License is distributed on an "AS IS" BASIS,    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    See the License for the specific language governing permissions and    limitations under the License.===============================================================================*/using System;namespace Wlniao{    /// <summary>    /// å¸¸ç”¨çš„æ—¶é—´æ“ä½œå¤„ç†æ–¹æ³•    /// </summary>    public partial class DateTools    {        private static bool init = false;        internal static int _TimeZone = 0;        /// <summary>        /// å½“å‰è¿è¡Œçš„æ—¶åŒº        /// </summary>        public static int TimeZone        {            get            {                if (init)                {                    return _TimeZone;                }                else                {                    _TimeZone = cvt.ToInt(Config.GetConfigs("WLN_TIMEZONE", "8"));                    init = true;                }                return _TimeZone;            }        }        /// <summary>        /// è·å–Unixæ—¶é—´æˆ³        /// </summary>        /// <returns></returns>        public static long GetUnix()        {            return DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;        }        /// <summary>        /// è·å–Unixæ—¶é—´æˆ³        /// </summary>        /// <param name="strtime"></param>        /// <returns></returns>        public static long GetUnix(string strtime)        {            if (string.IsNullOrEmpty(strtime))            {                return 0;            }            var time = DateTime.Parse(strtime);            if (time.Kind == DateTimeKind.Unspecified)            {                return time.AddHours(0 - DateTools.TimeZone).Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;            }            else            {                return time.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;            }        }        /// <summary>        /// è·å–Unixæ—¶é—´æˆ³        /// </summary>        /// <param name="time"></param>        /// <returns></returns>        public static long GetUnix(DateTime time)        {            if (time.Kind == DateTimeKind.Unspecified)            {                return time.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)).Ticks / 10000000 - TimeZone * 3600;            }            else            {                return time.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000;            }        }        /// <summary>        /// è·å–æ— æ—¶åŒºçš„å½“å‰æ—¶é—´        /// </summary>        /// <returns></returns>        public static DateTime GetNow()        {            var temp = DateTime.UtcNow.AddHours(TimeZone);            return new DateTime(temp.Year, temp.Month, temp.Day, temp.Hour, temp.Minute, temp.Second, temp.Millisecond, DateTimeKind.Unspecified);        }        /// <summary>        /// å°†Unixæ—¶é—´æˆ³è½¬æ¢ä¸ºæ— æ—¶åŒºçš„æ—¶é—´ï¼ˆå¯é€šè¿‡WLN_TIMEZONEè®¾ç½®ï¼‰        /// </summary>        /// <param name="unixtime"></param>        /// <returns></returns>        public static DateTime Convert(long unixtime)        {            return new DateTime(1970, 1, 1, TimeZone, 0, 0, 0, DateTimeKind.Unspecified).Add(new TimeSpan(unixtime * 10000000));        }        /// <summary>        /// å°†æ—¶é—´å­—ç¬¦ä¸²è½¬æ¢ä¸ºæ— æ—¶åŒºçš„æ—¶é—´        /// </summary>        /// <param name="strtime"></param>        /// <returns></returns>        public static DateTime Convert(string strtime)        {            var time = DateTime.Parse(strtime);            if (time.Kind == DateTimeKind.Unspecified)            {                return time;            }            else            {                return new DateTime(time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, DateTimeKind.Unspecified).AddHours(TimeZone);            }        }        /// <summary>        /// å°†Unixæ—¶é—´æˆ³è½¬æ¢ä¸ºUTCä¸–ç•Œåè°ƒæ—¶é—´        /// </summary>        /// <param name="unixtime"></param>        /// <returns></returns>        public static DateTime ConvertToUtc(long unixtime)        {            return new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000));        }        /// <summary>        /// å°†æ—¶é—´å­—ç¬¦ä¸²è½¬æ¢ä¸ºUTCä¸–ç•Œåè°ƒæ—¶é—´        /// </summary>        /// <param name="strtime"></param>        /// <returns></returns>        public static DateTime ConvertToUtc(string strtime)        {            var time = DateTime.Parse(strtime);            if (time.Kind == DateTimeKind.Unspecified)            {                return new DateTime(time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, DateTimeKind.Utc).AddHours(0 - TimeZone); ;            }            else if (time.Kind == DateTimeKind.Local)            {                return time.ToUniversalTime();            }            else            {                return time;            }        }        /// <summary>        /// å°†Unixæ—¶é—´æˆ³è½¬æ¢æˆGMTæ ¼å¼        /// </summary>        /// <param name="unixtime"></param>        /// <returns></returns>        public static string ConvertToGMT(long unixtime = 0)        {            if (unixtime > 0)            {                return ConvertToUtc(unixtime).ToString("r");            }            else            {                return DateTime.UtcNow.ToString("r");            }        }        /// <summary>        /// å°†GMTæ ¼å¼è½¬æ¢ä¸ºUTCä¸–ç•Œåè°ƒæ—¶é—´        /// </summary>        /// <param name="gmt"></param>        /// <returns></returns>        public static DateTime ConvertGmtToUtc(string gmt)        {            var dt = DateTime.MinValue;            try            {                var pattern = "";                if (gmt.IndexOf("+0") != -1)                {                    gmt = gmt.Replace("GMT", "");                    pattern = "ddd, dd MMM yyyy HH':'mm':'ss zzz";                }                if (gmt.ToUpper().IndexOf("GMT") != -1)                {                    pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";                }                if (string.IsNullOrEmpty(pattern))                {                    dt = System.Convert.ToDateTime(gmt);                }                else                {                    dt = DateTime.ParseExact(gmt, pattern, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AdjustToUniversal);                }            }            catch { }            return dt;        }        /// <summary>        /// å°†æ—¶é—´æŒ‰æŒ‡å®šæ ¼å¼è¾“å‡ºï¼ˆå¯é€šè¿‡WLN_TIMEZONEè®¾ç½®ï¼‰        /// </summary>        /// <param name="format"></param>        /// <returns></returns>        public static string Format(string format = "yyyy-MM-dd HH:mm:ss")        {            return DateTime.UtcNow.AddHours(TimeZone).ToString(format);// ä»¥UTCæ—¶é—´è¿›è¡Œæ—¶åŒºè®¡ç®—        }        /// <summary>        /// å°†æ—¶é—´æŒ‰æŒ‡å®šæ ¼å¼è¾“å‡ºï¼ˆå¯é€šè¿‡WLN_TIMEZONEè®¾ç½®ï¼‰        /// </summary>        /// <param name="time"></param>        /// <param name="format"></param>        /// <returns></returns>        public static string Format(DateTime time, string format = "yyyy-MM-dd HH:mm:ss")        {            if (time.Kind == DateTimeKind.Utc)            {                return time.AddHours(TimeZone).ToString(format);// ç›´æ¥æ ¼å¼è¾“å‡ºæœ¬åœ°æ—¶é—´            }            else if (time.Kind == DateTimeKind.Local)            {                return time.ToUniversalTime().AddHours(TimeZone).ToString(format);// æŒ‰æœ¬åœ°æ—¶é—´æ ¼å¼è¾“å‡º            }            else            {                return time.ToString(format);// ç›´æ¥æ ¼å¼è¾“å‡ºæœ¬åœ°æ—¶é—´            }        }        /// <summary>        /// å°†å½“å‰UTCæ—¶é—´æŒ‰æŒ‡å®šæ ¼å¼è¾“å‡º        /// </summary>        /// <param name="format"></param>        /// <returns></returns>        public static string FormatUtc(string format = "yyyy-MM-dd HH:mm:ss")        {            return DateTime.UtcNow.ToString(format);        }        /// <summary>        /// æ ¼å¼è¾“å‡ºæœ¬åœ°æ—¶é—´        /// </summary>        /// <param name="format"></param>        /// <returns></returns>        public static string FormatLocal(string format = "yyyy-MM-dd HH:mm:ss")        {            return DateTime.Now.ToString(format); //ä»¥UTCæ—¶é—´è¿›è¡Œæ—¶åŒºè®¡ç®—        }        /// <summary>        /// æ ¼å¼è¾“å‡ºæŒ‡å®šæ—¶åŒºçš„æ—¶é—´        /// </summary>        /// <param name="timezone"></param>        /// <param name="format"></param>        /// <returns></returns>        public static string FormatTimeZone(int timezone, string format = "yyyy-MM-dd HH:mm:ss")        {            return DateTime.UtcNow.AddHours(timezone).ToString(format); //ä»¥UTCæ—¶é—´è¿›è¡Œæ—¶åŒºè®¡ç®—        }        /// <summary>        /// å°†Unixæ—¶é—´æˆ³æŒ‰æŒ‡å®šæ ¼å¼è¾“å‡ºï¼ˆå¯é€šè¿‡WLN_TIMEZONEè®¾ç½®ï¼‰        /// </summary>        /// <param name="unixtime"></param>        /// <param name="format"></param>        /// <returns></returns>        public static string FormatUnix(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")        {            return unixtime <= 0 ? "" : new DateTime(1970, 1, 1, TimeZone, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToString(format);        }        /// <summary>        /// å°†Unixæ—¶é—´æˆ³æŒ‰UTCåè°ƒæ—¶åŠæŒ‡å®šæ ¼å¼è¾“å‡º        /// </summary>        /// <param name="unixtime"></param>        /// <param name="format"></param>        /// <returns></returns>        public static string FormatUnixToUtc(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")        {            return unixtime <= 0 ? "" : new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToString(format);        }        /// <summary>        /// å°†Unixæ—¶é—´æˆ³æŒ‰æœ¬åœ°æ—¶é—´åŠæŒ‡å®šæ ¼å¼è¾“å‡º        /// </summary>        /// <param name="unixtime"></param>        /// <param name="format"></param>        /// <returns></returns>        public static string FormatUnixToLocal(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")        {            return unixtime <= 0 ? "" : new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToLocalTime().ToString(format);        }        /// <summary>        /// å°†Unixæ—¶é—´æˆ³æŒ‰æŒ‡å®šæ—¶åŒºåŠæ ¼å¼è¾“å‡º        /// </summary>        /// <param name="timezone"></param>        /// <param name="unixtime"></param>        /// <param name="format"></param>        /// <returns></returns>        public static string FormatUnixToTimeZone(long unixtime, int timezone, string format = "yyyy-MM-dd HH:mm:ss")        {            if (unixtime <= 0)            {                return "";            }            else            {                return new DateTime(1970, 1, 1, timezone, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).ToString(format); //ä»¥UTCæ—¶é—´è¿›è¡Œæ—¶åŒºè®¡ç®—            }        }        /// <summary>        /// å°†å½“å‰æ—¥æœŸæŒ‰æŒ‡å®šæ ¼å¼è¾“å‡ºï¼ˆå¯é€šè¿‡WLN_TIMEZONEè®¾ç½®ï¼‰        /// </summary>        /// <param name="format"></param>        /// <returns></returns>        public static string FormatDate(string format = "yyyy-MM-dd")        {            return DateTime.UtcNow.AddHours(TimeZone).ToString(format);// ä»¥UTCæ—¶é—´è¿›è¡Œæ—¶åŒºè®¡ç®—        }        /// <summary>        /// è·å–å½“æ—¥èµ·å§‹æ—¶é—´ï¼ˆå¯é€šè¿‡WLN_TIMEZONEè®¾ç½®ï¼‰        /// </summary>        /// <param name="unixtime"></param>        /// <returns></returns>        public static long GetDayStart(long unixtime)        {            return unixtime - ((unixtime + 3600 * TimeZone) % 86400);        }        /// <summary>        /// è·å–ä¸€å‘¨ä¸­çš„æŸå¤©        /// </summary>        /// <returns></returns>        public static DayOfWeek GetDayOfWeek()        {            return DateTime.UtcNow.AddSeconds(3600 * TimeZone).DayOfWeek;        }        /// <summary>        /// è·å–ä¸€å‘¨ä¸­çš„æŸå¤©        /// </summary>        /// <param name="unixtime"></param>        /// <returns></returns>        public static DayOfWeek GetDayOfWeek(long unixtime)        {            return new DateTime(1970, 1, 1, TimeZone, 0, 0, 0, DateTimeKind.Utc).Add(new TimeSpan(unixtime * 10000000)).DayOfWeek;        }        /// <summary>        /// è·å–å½“æ—¥èµ·å§‹æ—¶é—´        /// </summary>        /// <param name="unixtime"></param>        /// <returns></returns>        public static long GetUtcDayStart(long unixtime)        {            return unixtime - unixtime % 86400;        }    }}

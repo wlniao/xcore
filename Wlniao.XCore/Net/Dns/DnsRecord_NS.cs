@@ -39,7 +39,7 @@ namespace Wlniao.Net.Dns
         {
             // Name server name
 
-            string server = "";
+            var server = "";
             if (DnsTool.GetQName(reply, ref offset, ref server))
             {
                 return new DnsRecord_NS(name, server, ttl);

@@ -77,7 +77,7 @@ namespace Wlniao.Middleware
             if (context.Request.Method == "POST" || context.Request.Query.ContainsKey("do"))
             {
                 context.Response.ContentType = "text/json";
-                return context.Response.WriteAsync(Wlniao.Json.ToString(new { success = false, message = "系统异常，稍后可尝试重新提交" }));
+                return context.Response.WriteAsync(Wlniao.Json.Serialize(new { success = false, message = "系统异常，稍后可尝试重新提交" }));
             }
             else
             {

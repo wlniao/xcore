@@ -595,16 +595,16 @@ namespace Wlniao.Text
             else if (chr <= lastOfOneLevelChCode)
             {
                 // 将一级汉字分为12块,每块33个汉字.
-                for (int aPos = 11; aPos >= 0; aPos--)
+                for (var aPos = 11; aPos >= 0; aPos--)
                 {
-                    int aboutPos = aPos * 33;
+                    var aboutPos = aPos * 33;
                     // 从最后的块开始扫描,如果机内码大于块的第一个机内码,说明在此块中
                     if (chr >= pyValue[aboutPos])
                     {
                         // Console.WriteLine("存在于第 " + aPos.ToString() + " 块,此块的第一个机内码是: " + pyValue[aPos * 33].ToString());
                         // 遍历块中的每个音节机内码,从最后的音节机内码开始扫描,
                         // 如果音节内码小于机内码,则取此音节
-                        for (int i = aboutPos + 32; i >= aboutPos; i--)
+                        for (var i = aboutPos + 32; i >= aboutPos; i--)
                         {
                             if (pyValue[i] <= chr)
                             {
@@ -619,7 +619,7 @@ namespace Wlniao.Text
             // 如果是在二级汉字中
             else
             {
-                int pos = Array.IndexOf(otherChinese, ch.ToString());
+                var pos = Array.IndexOf(otherChinese, ch.ToString());
                 if (pos != decimal.MinusOne)
                 {
                     return otherPinYin[pos];

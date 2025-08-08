@@ -38,7 +38,7 @@ namespace Wlniao.Net.Dns
         {
             // SPF RR
 
-            string text = DnsTool.ReadCharacterString(reply, ref offset);
+            var text = DnsTool.ReadCharacterString(reply, ref offset);
 
             return new DnsRecord_SPF(name, text, ttl);
         }

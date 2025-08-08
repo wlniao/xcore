@@ -437,7 +437,7 @@ namespace Wlniao.XServer
                 values.Append(Secret);
                 var md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
                 var sig_builder = new System.Text.StringBuilder();
-                foreach (byte b in md5_result)
+                foreach (var b in md5_result)
                 {
                     sig_builder.Append(b.ToString("x2"));
                 }
@@ -524,8 +524,8 @@ namespace Wlniao.XServer
         public static ApiResult<T> Get<T>(string app, string controller, string action, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
-            var str = Get(common, controller, action, out List<ApiLog> logs, kvs);
-            return Json.ToObject<ApiResult<T>>(str);
+            var str = Get(common, controller, action, out var logs, kvs);
+            return Json.Deserialize<ApiResult<T>>(str);
         }
         /// <summary>
         /// Get请求但只返回成功后的data部分
@@ -572,7 +572,7 @@ namespace Wlniao.XServer
                 //}
                 if (temp.StartsWith("\"[") || temp.StartsWith("\"{"))
                 {
-                    var rlt = Json.ToObject<ApiResult<string>>(json);
+                    var rlt = Json.Deserialize<ApiResult<string>>(json);
                     if (rlt.success)
                     {
                         return rlt.data;
@@ -580,10 +580,10 @@ namespace Wlniao.XServer
                 }
                 else
                 {
-                    var rlt = Json.ToObject<ApiResult<dynamic>>(json);
+                    var rlt = Json.Deserialize<ApiResult<dynamic>>(json);
                     if (rlt.success)
                     {
-                        return Json.ToString(rlt.data);
+                        return Json.Serialize(rlt.data);
                     }
                 }
             }
@@ -625,7 +625,7 @@ namespace Wlniao.XServer
                 //生成sig
                 var md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
                 var sig_builder = new System.Text.StringBuilder();
-                foreach (byte b in md5_result)
+                foreach (var b in md5_result)
                 {
                     sig_builder.Append(b.ToString("x2"));
                 }
@@ -796,7 +796,7 @@ namespace Wlniao.XServer
         public static ApiResult<T> Post<T>(string app, string controller, string action, string postData, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
-            var rlt = Json.ToObject<ApiResult<T>>(Post(common, controller, action, postData, out List<ApiLog> logs, kvs));
+            var rlt = Json.Deserialize<ApiResult<T>>(Post(common, controller, action, postData, out var logs, kvs));
             return rlt;
         }
         /// <summary>
@@ -835,7 +835,7 @@ namespace Wlniao.XServer
                 //生成sig
                 var md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
                 var sig_builder = new System.Text.StringBuilder();
-                foreach (byte b in md5_result)
+                foreach (var b in md5_result)
                 {
                     sig_builder.Append(b.ToString("x2"));
                 }
@@ -998,7 +998,7 @@ namespace Wlniao.XServer
         public static ApiResult<T> Post<T>(string app, string controller, string action, System.IO.Stream stream, params KeyValuePair<string, string>[] kvs)
         {
             var common = GetInstances(app);
-            var rlt = Json.ToObject<ApiResult<T>>(Post(common, controller, action, stream, out List<ApiLog> logs, kvs));
+            var rlt = Json.Deserialize<ApiResult<T>>(Post(common, controller, action, stream, out var logs, kvs));
             return rlt;
         }
         /// <summary>
@@ -1092,7 +1092,7 @@ namespace Wlniao.XServer
                 //生成sig
                 var md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
                 var sig_builder = new System.Text.StringBuilder();
-                foreach (byte b in md5_result)
+                foreach (var b in md5_result)
                 {
                     sig_builder.Append(b.ToString("x2"));
                 }
@@ -1157,7 +1157,7 @@ namespace Wlniao.XServer
                         values.Append(_rlt.data.secret);
                         var md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
                         var sig_builder = new System.Text.StringBuilder();
-                        foreach (byte b in md5_result)
+                        foreach (var b in md5_result)
                         {
                             sig_builder.Append(b.ToString("x2"));
                         }

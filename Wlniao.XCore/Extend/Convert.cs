@@ -46,7 +46,7 @@ namespace Wlniao
         }
         private static bool isDecimal_private(string str)
         {
-            foreach (char ch in str.ToCharArray())
+            foreach (var ch in str.ToCharArray())
             {
                 if (!(char.IsDigit(ch) || (ch == '.')))
                     return false;
@@ -64,8 +64,8 @@ namespace Wlniao
             {
                 return false;
             }
-            string[] strArray = ids.Split(new char[] { ',' });
-            foreach (string str in strArray)
+            var strArray = ids.Split(new char[] { ',' });
+            foreach (var str in strArray)
             {
                 if (!IsInt(str))
                 {
@@ -87,8 +87,8 @@ namespace Wlniao
                 str = str.Substring(1, str.Length - 1);
             if (str.Length > 10)
                 return false;
-            char[] chArray = str.ToCharArray();
-            foreach (char ch in chArray)
+            var chArray = str.ToCharArray();
+            foreach (var ch in chArray)
             {
                 if (!char.IsDigit(ch))
                     return false;
@@ -147,7 +147,7 @@ namespace Wlniao
             {
                 return false;
             }
-            string str = objBool.ToString();
+            var str = objBool.ToString();
             return (str.Equals("1") || str.ToUpper().Equals("TRUE"));
         }
         /// <summary>
@@ -313,9 +313,9 @@ namespace Wlniao
         /// <returns></returns>
         public static string ToHex(long inputNum, string chars)
         {
-            int cbase = chars.Length;
+            var cbase = chars.Length;
             int imod;
-            string result = "";
+            var result = "";
             while (inputNum >= cbase)
             {
                 imod = (int)(inputNum % cbase);
@@ -332,10 +332,10 @@ namespace Wlniao
         /// <returns>10��������</returns>
         public static long DeHex(string str, string chars)
         {
-            int hex = chars.Length;
-            int len = str.Length;
+            var hex = chars.Length;
+            var len = str.Length;
             long result = 0;
-            for (int i = 0; i < len; i++)
+            for (var i = 0; i < len; i++)
             {
                 var index = chars.IndexOf(str[i]);
                 if (index < 0)
@@ -365,7 +365,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string Int64ToHex(long int_value, int mod)
         {
-            string hex_value = string.Empty;
+            var hex_value = string.Empty;
             long add_value, mod_value, temp;
             char char_mod_value;
             temp = int_value;
@@ -654,7 +654,7 @@ namespace Wlniao
         /// <returns>��ʽ�� {Apr 07,2012}</returns>
         public static string ToDateEnShortString(DateTime t)
         {
-            string d = t.ToString("r", new System.Globalization.CultureInfo("en").DateTimeFormat);
+            var d = t.ToString("r", new System.Globalization.CultureInfo("en").DateTimeFormat);
             d = d.Remove(d.IndexOf(':') - 2);
             return d;
         }
@@ -679,7 +679,7 @@ namespace Wlniao
                 return "";
             }
             var builder = new StringBuilder();
-            for (int i = 0; i < ids.Length; i++)
+            for (var i = 0; i < ids.Length; i++)
             {
                 builder.Append(ids[i]);
                 if (i < ids.Length - 1) builder.Append(',');
@@ -696,8 +696,8 @@ namespace Wlniao
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrEmpty(doc))
             {
-                string[] arrLine = doc.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (string oneLine in arrLine)
+                var arrLine = doc.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var oneLine in arrLine)
                 {
                     //��ֵ��������
                     var tempLine = oneLine.TrimStart().TrimStart('-').TrimStart();
@@ -706,7 +706,7 @@ namespace Wlniao
                     {
                         continue;
                     }
-                    string[] arrPair = tempLine.Split(new char[] { '=' }, 2);
+                    var arrPair = tempLine.Split(new char[] { '=' }, 2);
                     if (arrPair.Length == 2)
                     {
                         var arrTrim = new char[] { '"', '\'' };
@@ -741,11 +741,11 @@ namespace Wlniao
         public static int[] ToIntArray(string myids)
         {
             if (strUtil.IsNullOrEmpty(myids)) return new int[] { };
-            string[] arrIds = myids.Split(',');
-            int[] Ids = new int[arrIds.Length];
-            for (int i = 0; i < arrIds.Length; i++)
+            var arrIds = myids.Split(',');
+            var Ids = new int[arrIds.Length];
+            for (var i = 0; i < arrIds.Length; i++)
             {
-                int oneID = ToInt(arrIds[i].Trim());
+                var oneID = ToInt(arrIds[i].Trim());
                 Ids[i] = oneID;
             }
             return Ids;
@@ -775,7 +775,7 @@ namespace Wlniao
         /// <returns></returns>
         public static byte[] ToBytes(System.IO.Stream stream)
         {
-            byte[] bytes = new byte[stream.Length];
+            var bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);
             // ���õ�ǰ����λ��Ϊ���Ŀ�ʼ 
             stream.Seek(0, System.IO.SeekOrigin.Begin);
@@ -801,8 +801,8 @@ namespace Wlniao
         /// <returns>����ת����� <see cref="byte"/> �ַ�����</returns>
         public static byte[] ToByteArray(sbyte[] sbyteArray)
         {
-            byte[] byteArray = new byte[sbyteArray.Length];
-            for (int index = 0; index < sbyteArray.Length; index++)
+            var byteArray = new byte[sbyteArray.Length];
+            for (var index = 0; index < sbyteArray.Length; index++)
                 byteArray[index] = (byte)sbyteArray[index];
             return byteArray;
         }
@@ -815,8 +815,8 @@ namespace Wlniao
         /// <returns>����ת����� <see cref="byte"/> �ַ�����</returns>
         public static byte[] ToByteArray(string sourceString)
         {
-            byte[] byteArray = new byte[sourceString.Length];
-            for (int index = 0; index < sourceString.Length; index++)
+            var byteArray = new byte[sourceString.Length];
+            for (var index = 0; index < sourceString.Length; index++)
                 byteArray[index] = (byte)sourceString[index];
             return byteArray;
         }
@@ -829,8 +829,8 @@ namespace Wlniao
         /// <returns>����ת����� <see cref="byte"/> �ַ�����</returns>
         public static byte[] ToByteArray(object[] tempObjectArray)
         {
-            byte[] byteArray = new byte[tempObjectArray.Length];
-            for (int index = 0; index < tempObjectArray.Length; index++)
+            var byteArray = new byte[tempObjectArray.Length];
+            for (var index = 0; index < tempObjectArray.Length; index++)
                 byteArray[index] = (byte)tempObjectArray[index];
             return byteArray;
         }
@@ -842,8 +842,8 @@ namespace Wlniao
         /// <returns>����ת����� <see cref="sbyte"/> �ַ�����</returns>
         public static sbyte[] ToSByteArray(byte[] byteArray)
         {
-            sbyte[] sbyteArray = new sbyte[byteArray.Length];
-            for (int index = 0; index < byteArray.Length; index++)
+            var sbyteArray = new sbyte[byteArray.Length];
+            for (var index = 0; index < byteArray.Length; index++)
                 sbyteArray[index] = (sbyte)byteArray[index];
             return sbyteArray;
         }
@@ -868,8 +868,8 @@ namespace Wlniao
             {
                 hexString += " ";
             }
-            byte[] returnBytes = new byte[hexString.Length / 2];
-            for (int i = 0; i < returnBytes.Length; i++)
+            var returnBytes = new byte[hexString.Length / 2];
+            for (var i = 0; i < returnBytes.Length; i++)
             {
                 returnBytes[i] = System.Convert.ToByte(hexString.Substring(i * 2, 2), 16);
             }
@@ -884,7 +884,7 @@ namespace Wlniao
         public static string BytesToHexString(byte[] input)
         {
             var hexString = new StringBuilder();
-            for (int i = 0; i < input.Length; i++)
+            for (var i = 0; i < input.Length; i++)
             {
                 hexString.Append(string.Format("{0:x2}", input[i]));
             }
@@ -901,7 +901,7 @@ namespace Wlniao
         {
             if (string.IsNullOrEmpty(format) || !format.StartsWith("F"))
             {
-                string _str = money.ToString("F2");
+                var _str = money.ToString("F2");
                 if (_str.EndsWith("0"))
                 {
                     _str = money.ToString("F1");

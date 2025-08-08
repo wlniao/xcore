@@ -21,6 +21,8 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
 namespace Wlniao
 {
     /// <summary>
@@ -90,7 +92,7 @@ namespace Wlniao
         /// <summary>
         /// 结果是否全部正确有效
         /// </summary>
-        [Serialization.NotSerialize]
+        [System.Text.Json.Serialization.JsonIgnore]
         public bool IsValid
         {
             get { return _errors.Count == 0; }
@@ -98,7 +100,7 @@ namespace Wlniao
         /// <summary>
         /// 结果是否包含错误
         /// </summary>
-        [Serialization.NotSerialize]
+        [System.Text.Json.Serialization.JsonIgnore]
         public bool HasErrors
         {
             get { return _errors.Count > 0; }
@@ -109,7 +111,7 @@ namespace Wlniao
         /// <param name="result"></param>
         public void Join(Result result)
         {
-            foreach (string str in result.Errors)
+            foreach (var str in result.Errors)
             {
                 Add(str);
             }

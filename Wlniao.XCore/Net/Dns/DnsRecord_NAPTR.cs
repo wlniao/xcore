@@ -72,17 +72,17 @@ namespace Wlniao.Net.Dns
                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
             */
 
-            int order = reply[offset++] << 8 | reply[offset++];
+            var order = reply[offset++] << 8 | reply[offset++];
 
-            int preference = reply[offset++] << 8 | reply[offset++];
+            var preference = reply[offset++] << 8 | reply[offset++];
 
-            string flags = DnsTool.ReadCharacterString(reply, ref offset);
+            var flags = DnsTool.ReadCharacterString(reply, ref offset);
 
-            string services = DnsTool.ReadCharacterString(reply, ref offset);
+            var services = DnsTool.ReadCharacterString(reply, ref offset);
 
-            string regexp = DnsTool.ReadCharacterString(reply, ref offset);
+            var regexp = DnsTool.ReadCharacterString(reply, ref offset);
 
-            string replacement = "";
+            var replacement = "";
             DnsTool.GetQName(reply, ref offset, ref replacement);
 
             return new DnsRecord_NAPTR(name, order, preference, flags, services, regexp, replacement, ttl);

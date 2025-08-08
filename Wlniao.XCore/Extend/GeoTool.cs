@@ -74,10 +74,10 @@ namespace Wlniao
         {
             hash = hash.ToLower();
 
-            char lastChr = hash[hash.Length - 1];
-            int type = hash.Length % 2;
+            var lastChr = hash[hash.Length - 1];
+            var type = hash.Length % 2;
             var dir = (int)direction;
-            string nHash = hash.Substring(0, hash.Length - 1);
+            var nHash = hash.Substring(0, hash.Length - 1);
 
             if (Borders[type][dir].IndexOf(lastChr) != -1)
             {
@@ -110,16 +110,16 @@ namespace Wlniao
         /// <returns></returns>
         public static double[] Decode(string geohash)
         {
-            bool even = true;
+            var even = true;
             double[] lat = { -90.0, 90.0 };
             double[] lon = { -180.0, 180.0 };
 
-            foreach (char c in geohash)
+            foreach (var c in geohash)
             {
-                int cd = Base32.IndexOf(c);
-                for (int j = 0; j < 5; j++)
+                var cd = Base32.IndexOf(c);
+                for (var j = 0; j < 5; j++)
                 {
-                    int mask = Bits[j];
+                    var mask = Bits[j];
                     if (even)
                     {
                         RefineInterval(ref lon, cd, mask);
@@ -143,10 +143,10 @@ namespace Wlniao
         /// <returns></returns>
         public static string Encode(double latitude, double longitude, int precision = 12)
         {
-            bool even = true;
-            int bit = 0;
-            int ch = 0;
-            string geohash = "";
+            var even = true;
+            var bit = 0;
+            var ch = 0;
+            var geohash = "";
 
             double[] lat = { -90.0, 90.0 };
             double[] lon = { -180.0, 180.0 };
@@ -203,22 +203,22 @@ namespace Wlniao
 
             try
             {
-                string geohashTop = CalculateAdjacent(geohash, Direction.Top);//上
+                var geohashTop = CalculateAdjacent(geohash, Direction.Top);//上
 
-                string geohashBottom = CalculateAdjacent(geohash, Direction.Bottom);//下
+                var geohashBottom = CalculateAdjacent(geohash, Direction.Bottom);//下
 
-                string geohashLeft = CalculateAdjacent(geohash, Direction.Left);//左
+                var geohashLeft = CalculateAdjacent(geohash, Direction.Left);//左
 
-                string geohashRight = CalculateAdjacent(geohash, Direction.Right);//右
+                var geohashRight = CalculateAdjacent(geohash, Direction.Right);//右
 
 
-                string geohashTopLeft = CalculateAdjacent(geohashLeft, Direction.Top);//左上
+                var geohashTopLeft = CalculateAdjacent(geohashLeft, Direction.Top);//左上
 
-                string geohashTopRight = CalculateAdjacent(geohashRight, Direction.Top);//右上
+                var geohashTopRight = CalculateAdjacent(geohashRight, Direction.Top);//右上
 
-                string geohashBottomLeft = CalculateAdjacent(geohashLeft, Direction.Bottom);//左下
+                var geohashBottomLeft = CalculateAdjacent(geohashLeft, Direction.Bottom);//左下
 
-                string geohashBottomRight = CalculateAdjacent(geohashRight, Direction.Bottom);//右下
+                var geohashBottomRight = CalculateAdjacent(geohashRight, Direction.Bottom);//右下
 
                 string[] expand = { geohash, geohashTop, geohashBottom, geohashLeft, geohashRight, geohashTopLeft, geohashTopRight, geohashBottomLeft, geohashBottomRight };
                 return expand;
@@ -250,13 +250,13 @@ namespace Wlniao
         /// <returns></returns>
         public static double GetDistance(double lat1, double lng1, double lat2, double lng2)
         {
-            double radLat1 = Rad(lat1);
-            double radLng1 = Rad(lng1);
-            double radLat2 = Rad(lat2);
-            double radLng2 = Rad(lng2);
-            double a = radLat1 - radLat2;
-            double b = radLng1 - radLng2;
-            double result = 2 * Math.Asin(Math.Sqrt(Math.Pow(Math.Sin(a / 2), 2) + Math.Cos(radLat1) * Math.Cos(radLat2) * Math.Pow(Math.Sin(b / 2), 2))) * EARTH_RADIUS;
+            var radLat1 = Rad(lat1);
+            var radLng1 = Rad(lng1);
+            var radLat2 = Rad(lat2);
+            var radLng2 = Rad(lng2);
+            var a = radLat1 - radLat2;
+            var b = radLng1 - radLng2;
+            var result = 2 * Math.Asin(Math.Sqrt(Math.Pow(Math.Sin(a / 2), 2) + Math.Cos(radLat1) * Math.Cos(radLat2) * Math.Pow(Math.Sin(b / 2), 2))) * EARTH_RADIUS;
             return result;
         }
     }

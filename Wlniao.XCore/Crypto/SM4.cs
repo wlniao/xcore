@@ -19,7 +19,7 @@ namespace Wlniao.Crypto
 
 		private long GET_ULONG_BE(byte[] b, int i)
 		{
-			long n = (long)(b[i] & 0xff) << 24 | (long)((b[i + 1] & 0xff) << 16) | (long)((b[i + 2] & 0xff) << 8) | (long)(b[i + 3] & 0xff) & 0xffffffffL;
+			var n = (long)(b[i] & 0xff) << 24 | (long)((b[i + 1] & 0xff) << 16) | (long)((b[i + 2] & 0xff) << 8) | (long)(b[i + 3] & 0xff) & 0xffffffffL;
 			return n;
 		}
 
@@ -48,7 +48,7 @@ namespace Wlniao.Crypto
 		/// <param name="i"></param>
 		private void SWAP(long[] sk, int i)
 		{
-			long t = sk[i];
+			var t = sk[i];
 			sk[i] = sk[(31 - i)];
 			sk[(31 - i)] = t;
 		}
@@ -106,17 +106,17 @@ namespace Wlniao.Crypto
 
 		private byte sm4Sbox(byte inch)
 		{
-			int i = inch & 0xFF;
-			byte retVal = SboxTable[i];
+			var i = inch & 0xFF;
+			var retVal = SboxTable[i];
 			return retVal;
 		}
 
 		private long sm4Lt(long ka)
 		{
-			long bb = 0L;
-			long c = 0L;
-			byte[] a = new byte[4];
-			byte[] b = new byte[4];
+			var bb = 0L;
+			var c = 0L;
+			var a = new byte[4];
+			var b = new byte[4];
 			PUT_ULONG_BE(ka, a, 0);
 			b[0] = sm4Sbox(a[0]);
 			b[1] = sm4Sbox(a[1]);
@@ -134,10 +134,10 @@ namespace Wlniao.Crypto
 
 		private long sm4CalciRK(long ka)
 		{
-			long bb = 0L;
-			long rk = 0L;
-			byte[] a = new byte[4];
-			byte[] b = new byte[4];
+			var bb = 0L;
+			var rk = 0L;
+			var a = new byte[4];
+			var b = new byte[4];
 			PUT_ULONG_BE(ka, a, 0);
 			b[0] = sm4Sbox(a[0]);
 			b[1] = sm4Sbox(a[1]);
@@ -150,9 +150,9 @@ namespace Wlniao.Crypto
 
 		private void sm4_setkey(long[] SK, byte[] KEY)
 		{
-			long[] MK = new long[4];
-			long[] k = new long[36];
-			int i = 0;
+			var MK = new long[4];
+			var k = new long[36];
+			var i = 0;
 			MK[0] = GET_ULONG_BE(KEY, 0);
 			MK[1] = GET_ULONG_BE(KEY, 4);
 			MK[2] = GET_ULONG_BE(KEY, 8);
@@ -170,8 +170,8 @@ namespace Wlniao.Crypto
 
 		private void sm4_one_round(long[] sk, byte[] input, byte[] output)
 		{
-			int i = 0;
-			long[] ulbuf = new long[36];
+			var i = 0;
+			var ulbuf = new long[36];
 			ulbuf[0] = GET_ULONG_BE(input, 0);
 			ulbuf[1] = GET_ULONG_BE(input, 4);
 			ulbuf[2] = GET_ULONG_BE(input, 8);
@@ -194,13 +194,13 @@ namespace Wlniao.Crypto
 				return null;
 			}
 
-			byte[] ret = (byte[])null;
+			var ret = (byte[])null;
 			if (mode == SM4_ENCRYPT)
 			{
-				int p = 16 - input.Length % 16;
+				var p = 16 - input.Length % 16;
 				ret = new byte[input.Length + p];
 				Array.Copy(input, 0, ret, 0, input.Length);
-				for (int i = 0; i < p; i++)
+				for (var i = 0; i < p; i++)
 				{
 					ret[input.Length + i] = (byte)p;
 				}
@@ -221,14 +221,14 @@ namespace Wlniao.Crypto
 				input = padding(input, SM4_ENCRYPT);
 			}
 
-			int length = input.Length;
-			byte[] bins = new byte[length];
+			var length = input.Length;
+			var bins = new byte[length];
 			Array.Copy(input, 0, bins, 0, length);
-			byte[] bous = new byte[length];
-			for (int i = 0; length > 0; length -= 16, i++)
+			var bous = new byte[length];
+			for (var i = 0; length > 0; length -= 16, i++)
 			{
-				byte[] inBytes = new byte[16];
-				byte[] outBytes = new byte[16];
+				var inBytes = new byte[16];
+				var outBytes = new byte[16];
 				Array.Copy(bins, i * 16, inBytes, 0, length > 16 ? 16 : length);
 				sm4_one_round(sk, inBytes, outBytes);
 				Array.Copy(outBytes, 0, bous, i * 16, length > 16 ? 16 : length);
@@ -248,19 +248,19 @@ namespace Wlniao.Crypto
 				input = padding(input, SM4_ENCRYPT);
 			}
 
-			int i = 0;
-			int length = input.Length;
-			byte[] bins = new byte[length];
+			var i = 0;
+			var length = input.Length;
+			var bins = new byte[length];
 			Array.Copy(input, 0, bins, 0, length);
 			byte[] bous = null;
-			List<byte> bousList = new List<byte>();
+			var bousList = new List<byte>();
 			if (mode == SM4_ENCRYPT)
 			{
-				for (int j = 0; length > 0; length -= 16, j++)
+				for (var j = 0; length > 0; length -= 16, j++)
 				{
-					byte[] inBytes = new byte[16];
-					byte[] outBytes = new byte[16];
-					byte[] out1 = new byte[16];
+					var inBytes = new byte[16];
+					var outBytes = new byte[16];
+					var out1 = new byte[16];
 
 					Array.Copy(bins, i * 16, inBytes, 0, length > 16 ? 16 : length);
 					for (i = 0; i < 16; i++)
@@ -269,7 +269,7 @@ namespace Wlniao.Crypto
 					}
 					sm4_one_round(sk, outBytes, out1);
 					Array.Copy(out1, 0, iv, 0, 16);
-					for (int k = 0; k < 16; k++)
+					for (var k = 0; k < 16; k++)
 					{
 						bousList.Add(out1[k]);
 					}
@@ -277,12 +277,12 @@ namespace Wlniao.Crypto
 			}
 			else
 			{
-				byte[] temp = new byte[16];
-				for (int j = 0; length > 0; length -= 16, j++)
+				var temp = new byte[16];
+				for (var j = 0; length > 0; length -= 16, j++)
 				{
-					byte[] inBytes = new byte[16];
-					byte[] outBytes = new byte[16];
-					byte[] out1 = new byte[16];
+					var inBytes = new byte[16];
+					var outBytes = new byte[16];
+					var out1 = new byte[16];
 
 					Array.Copy(bins, i * 16, inBytes, 0, length > 16 ? 16 : length);
 					Array.Copy(inBytes, 0, temp, 0, 16);
@@ -292,7 +292,7 @@ namespace Wlniao.Crypto
 						out1[i] = ((byte)(outBytes[i] ^ iv[i]));
 					}
 					Array.Copy(temp, 0, iv, 0, 16);
-					for (int k = 0; k < 16; k++)
+					for (var k = 0; k < 16; k++)
 					{
 						bousList.Add(out1[k]);
 					}
@@ -322,7 +322,7 @@ namespace Wlniao.Crypto
 		{
 			var skBytes = new long[32];
 			sm4_setkey(skBytes, keyBytes);
-			byte[] encryBytes = sm4_crypt_ecb(SM4_ENCRYPT, isPadding, skBytes, plainBytes);
+			var encryBytes = sm4_crypt_ecb(SM4_ENCRYPT, isPadding, skBytes, plainBytes);
 			return encryBytes;
 		}
 		/// <summary>
@@ -355,7 +355,7 @@ namespace Wlniao.Crypto
 		{
 			var skBytes = new long[32];
 			sm4_setkey(skBytes, keyBytes);
-			byte[] encryBytes = sm4_crypt_cbc(SM4_ENCRYPT, isPadding, skBytes, ivBytes, plainBytes);
+			var encryBytes = sm4_crypt_cbc(SM4_ENCRYPT, isPadding, skBytes, ivBytes, plainBytes);
 			return encryBytes;
 		}
 		/// <summary>

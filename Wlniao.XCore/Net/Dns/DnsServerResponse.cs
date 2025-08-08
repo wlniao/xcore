@@ -141,7 +141,7 @@ namespace Wlniao.Net.Dns
             }
 
             // Sort MX records by preference.
-            DnsRecord_MX[] retVal = mx.ToArray();
+            var retVal = mx.ToArray();
             Array.Sort(retVal);
 
             return retVal;

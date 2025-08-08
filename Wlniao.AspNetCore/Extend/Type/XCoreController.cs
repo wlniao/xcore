@@ -1,20 +1,13 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
-using System.Diagnostics;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Net.Http.Headers;
-using static Wlniao.OpenApi.Wx;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
-using Microsoft.AspNetCore.Http;
-using System.Buffers;
-using System.IO;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Wlniao.Text;
-using static Wlniao.cvt;
 using Encoding = System.Text.Encoding;
 
 namespace Wlniao
@@ -124,7 +117,7 @@ namespace Wlniao
             }
             else
             {
-                var jsonStr = Wlniao.Json.ToString(new { success = false, message = errorMsg, data = "" });
+                var jsonStr = Wlniao.Json.Serialize(new { success = false, message = errorMsg, data = "" });
                 var errorPage = new ContentResult();
                 if (string.IsNullOrEmpty(GetRequest("callback")))
                 {
@@ -266,11 +259,11 @@ namespace Wlniao
             }
             else if (string.IsNullOrEmpty(GetRequest("callback")))
             {
-                return Content(Serialization.Json.ToString(new { success = false, message = message }), "application/json", System.Text.Encoding.UTF8);
+                return Content(Wlniao.Json.Serialize(new { success = false, message = message }), "application/json", System.Text.Encoding.UTF8);
             }
             else
             {
-                return Content(GetRequest("callback") + "(" + Serialization.Json.ToString(new { success = false, message = message }) + ")", "text/json", System.Text.Encoding.UTF8);
+                return Content(GetRequest("callback") + "(" + Wlniao.Json.Serialize(new { success = false, message = message }) + ")", "text/json", System.Text.Encoding.UTF8);
             }
         }
         /// <summary>

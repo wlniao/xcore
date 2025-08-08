@@ -166,13 +166,13 @@ namespace Wlniao.OpenApi
             /// </summary>
             public static double GetDistance(Coord Degree1, Coord Degree2)
             {
-                double radLat1 = radians(Degree1.latitude);
-                double radLat2 = radians(Degree2.latitude);
-                double a = radLat1 - radLat2;
-                double b = radians(Degree1.longitude) - radians(Degree2.longitude);
+                var radLat1 = radians(Degree1.latitude);
+                var radLat2 = radians(Degree2.latitude);
+                var a = radLat1 - radLat2;
+                var b = radians(Degree1.longitude) - radians(Degree2.longitude);
 
-                double s = 2 * Math.Asin(Math.Sqrt(Math.Pow(Math.Sin(a / 2), 2)
-                    + Math.Cos(radLat1) * Math.Cos(radLat2) * Math.Pow(Math.Sin(b / 2), 2)));
+                var s = 2 * Math.Asin(Math.Sqrt(Math.Pow(Math.Sin(a / 2), 2)
+                                                + Math.Cos(radLat1) * Math.Cos(radLat2) * Math.Pow(Math.Sin(b / 2), 2)));
                 s = s * EARTH_RADIUS;
                 s = Math.Round(s * 10000) / 10000;
                 return s;
@@ -182,12 +182,12 @@ namespace Wlniao.OpenApi
             /// </summary>
             public static double GetDistanceGoogle(Coord Degree1, Coord Degree2)
             {
-                double radLat1 = radians(Degree1.latitude);
-                double radLng1 = radians(Degree1.longitude);
-                double radLat2 = radians(Degree2.latitude);
-                double radLng2 = radians(Degree2.longitude);
+                var radLat1 = radians(Degree1.latitude);
+                var radLng1 = radians(Degree1.longitude);
+                var radLat2 = radians(Degree2.latitude);
+                var radLng2 = radians(Degree2.longitude);
 
-                double s = Math.Acos(Math.Cos(radLat1) * Math.Cos(radLat2) * Math.Cos(radLng1 - radLng2) + Math.Sin(radLat1) * Math.Sin(radLat2));
+                var s = Math.Acos(Math.Cos(radLat1) * Math.Cos(radLat2) * Math.Cos(radLng1 - radLng2) + Math.Sin(radLat1) * Math.Sin(radLat2));
                 s = s * EARTH_RADIUS;
                 s = Math.Round(s * 10000) / 10000;
                 return s;
@@ -201,10 +201,10 @@ namespace Wlniao.OpenApi
             /// <returns></returns>
             public static Coord[] GetDegreeCoordinates(Coord degree, double distance)
             {
-                double dlng = 2 * Math.Asin(Math.Sin(distance / (2 * EARTH_RADIUS)) / Math.Cos(degree.longitude));
+                var dlng = 2 * Math.Asin(Math.Sin(distance / (2 * EARTH_RADIUS)) / Math.Cos(degree.longitude));
                 dlng = degrees(dlng);//转换成角度数
 
-                double dlat = distance / EARTH_RADIUS;
+                var dlat = distance / EARTH_RADIUS;
                 dlat = degrees(dlat);//转换成角度数
 
                 return new Coord[] { new Coord(Math.Round(degree.latitude - dlat,6),Math.Round(degree.longitude + dlng,6)),//left-top
@@ -222,7 +222,7 @@ namespace Wlniao.OpenApi
             /// <returns></returns>
             public static Coord GetCenterPoint(List<Coord> degrees,bool large=false)
             {
-                int total = degrees.Count;
+                var total = degrees.Count;
                 if (large)
                 {
                     // 大范围计算（400km以上）
@@ -315,7 +315,7 @@ namespace Wlniao.OpenApi
                 , new KeyValuePair<string, string>("radius", radius.ToString())
                 , new KeyValuePair<string, string>("query", query)
                 );
-                rlt = Json.ToObject<ApiResult<List<PlaceModel>>>(json);
+                rlt = Json.Deserialize<ApiResult<List<PlaceModel>>>(json);
                 if (rlt == null)
                 {
                     rlt = new ApiResult<List<PlaceModel>>();
@@ -346,7 +346,7 @@ namespace Wlniao.OpenApi
                 , new KeyValuePair<string, string>("key", key)
                 , new KeyValuePair<string, string>("city", city)
                 );
-                rlt = Json.ToObject<ApiResult<List<SuggestionModel>>>(json);
+                rlt = Json.Deserialize<ApiResult<List<SuggestionModel>>>(json);
                 if (rlt == null)
                 {
                     rlt = new ApiResult<List<SuggestionModel>>();
@@ -380,7 +380,7 @@ namespace Wlniao.OpenApi
                 , new KeyValuePair<string, string>("destinations", destinations)
                 , new KeyValuePair<string, string>("mode", mode)
                 );
-                rlt = Json.ToObject<ApiResult<double>>(json);
+                rlt = Json.Deserialize<ApiResult<double>>(json);
                 if (rlt == null)
                 {
                     rlt = new ApiResult<double>();
@@ -421,7 +421,7 @@ namespace Wlniao.OpenApi
                 , new KeyValuePair<string, string>("longitude", longitude)
                 , new KeyValuePair<string, string>("latitude", latitude)
                 );
-                rlt = Json.ToObject<ApiResult<string>>(json);
+                rlt = Json.Deserialize<ApiResult<string>>(json);
                 if (rlt == null)
                 {
                     rlt = new ApiResult<string>();
@@ -450,7 +450,7 @@ namespace Wlniao.OpenApi
                 var json = XServer.Common.Get("openapi", "lbs", "getbyip"
                 , new KeyValuePair<string, string>("ip", ip)
                 );
-                rlt = Json.ToObject<ApiResult<IPGis>>(json);
+                rlt = Json.Deserialize<ApiResult<IPGis>>(json);
                 if (rlt == null)
                 {
                     rlt = new ApiResult<IPGis>();

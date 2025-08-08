@@ -144,7 +144,7 @@ namespace Wlniao.Crypto
         /// </summary>
         public void Finish()
         {
-            long bitLength = (ByteCount << 3);
+            var bitLength = (ByteCount << 3);
 
             //添加字节
             Update(unchecked((byte)128));
@@ -181,7 +181,7 @@ namespace Wlniao.Crypto
         /// <param name="inOff"></param>
         internal void ProcessWord(byte[] input, int inOff)
         {
-            int n = input[inOff] << 24;
+            var n = input[inOff] << 24;
             n |= (input[++inOff] & 0xff) << 16;
             n |= (input[++inOff] & 0xff) << 8;
             n |= (input[++inOff] & 0xff);
@@ -209,9 +209,9 @@ namespace Wlniao.Crypto
         {
             int j;
 
-            int[] ww = X;
+            var ww = X;
             //64位比特串
-            int[] ww_ = new int[64];
+            var ww_ = new int[64];
 
             #region 块消息扩展
             //消息扩展16 TO 67
@@ -227,8 +227,8 @@ namespace Wlniao.Crypto
             #endregion
 
             #region 压缩函数
-            int[] vv = v;
-            int[] vv_ = v_;//A,B,C,D,E,F,G,H为字寄存器
+            var vv = v;
+            var vv_ = v_;//A,B,C,D,E,F,G,H为字寄存器
 
             Array.Copy(vv, 0, vv_, 0, IV.Length);
             //中间变量SS1,SS2,TT1,TT2
@@ -330,7 +330,7 @@ namespace Wlniao.Crypto
         public int DoFinal(byte[] output, int outOff)
         {
             Finish();
-            for (int i = 0; i < 8; i++)
+            for (var i = 0; i < 8; i++)
             {
                 IntToBigEndian(v[i], output, outOff + i * 4);
             }
@@ -346,7 +346,7 @@ namespace Wlniao.Crypto
         {
             Finish();
             var buffer = new byte[output.Length];
-            for (int i = 0; i < 8; i++)
+            for (var i = 0; i < 8; i++)
             {
                 IntToBigEndian(v[i], buffer, i * 4);
             }
@@ -374,9 +374,9 @@ namespace Wlniao.Crypto
         public byte[] Hmac(byte[] dataBytes, byte[] keyBytes)
         {
             //1.填充0至key,或者hashkey,使其长度为sm3分组长度ByteLength，64个字节,512位
-            byte[] structured_key = new byte[ByteLength];
-            byte[] IPAD = new byte[ByteLength];
-            byte[] OPAD = new byte[ByteLength];
+            var structured_key = new byte[ByteLength];
+            var IPAD = new byte[ByteLength];
+            var OPAD = new byte[ByteLength];
             if (keyBytes.Length > ByteLength)
             {
                 BlockUpdate(keyBytes, 0, keyBytes.Length);
@@ -388,23 +388,23 @@ namespace Wlniao.Crypto
                 Array.Copy(keyBytes, 0, structured_key, 0, keyBytes.Length);
             }
             //2.让处理之后的key 与ipad (分组长度的0x36)做异或运算
-            for (int i = 0; i < ByteLength; i++)
+            for (var i = 0; i < ByteLength; i++)
             {
                 IPAD[i] = 0x36;
                 OPAD[i] = 0x5c;
             }
-            byte[] ipadkey = ByteArray.Xor(structured_key, IPAD);
+            var ipadkey = ByteArray.Xor(structured_key, IPAD);
             //3.将2的结果与text拼接
-            byte[] t3 = new byte[ByteLength + dataBytes.Length];
+            var t3 = new byte[ByteLength + dataBytes.Length];
             Array.Copy(ipadkey, 0, t3, 0, ipadkey.Length);
             Array.Copy(dataBytes, 0, t3, ipadkey.Length, dataBytes.Length);
             //4.将3的结果sm3 哈希
             BlockUpdate(t3, 0, t3.Length);
             var t4 = DoFinal();
             //5.让处理之后的key 与opad(分组长度的0x5c)做异或运算
-            byte[] opadkey = ByteArray.Xor(structured_key, OPAD);
+            var opadkey = ByteArray.Xor(structured_key, OPAD);
             //6.4的结果拼接在5之后
-            byte[] t6 = new byte[ByteLength + t4.Length];
+            var t6 = new byte[ByteLength + t4.Length];
             Array.Copy(opadkey, 0, t6, 0, opadkey.Length);
             Array.Copy(t4, 0, t6, opadkey.Length, t4.Length);
             //7.对6做hash

@@ -33,14 +33,10 @@ namespace Wlniao.Swagger
         /// <param name="values"></param>
         /// <param name="routeDirection"></param>
         /// <returns></returns>
-        public bool Match(HttpContext? httpContext, IRouter? route, string routeKey, RouteValueDictionary values, RouteDirection routeDirection)
+        public bool Match(HttpContext httpContext, IRouter route, string routeKey, RouteValueDictionary values, RouteDirection routeDirection)
         {
             var value = values[routeKey].ToString();
-            if (value == "swagger")
-            {
-                return false;
-            }
-            return true;
+            return value != "swagger";
         }
     }
 

@@ -24,8 +24,8 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public static byte[] Xor(byte[] left, byte[] right)
         {
-            byte[] val = new byte[left.Length];
-            for (int i = 0; i < left.Length; i++)
+            var val = new byte[left.Length];
+            for (var i = 0; i < left.Length; i++)
             {
                 val[i] = (byte)(left[i] ^ right[i]);
             }
@@ -37,9 +37,9 @@ namespace Wlniao.Crypto
         /// <param name="arr"></param>
         public static void Reverse(byte[] arr)
         {
-            for (int i = 0; i < arr.Length / 2; i++)
+            for (var i = 0; i < arr.Length / 2; i++)
             {
-                byte tmp = arr[i];
+                var tmp = arr[i];
                 arr[i] = arr[arr.Length - i - 1];
                 arr[arr.Length - i - 1] = tmp;
             }

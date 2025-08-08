@@ -58,10 +58,10 @@ namespace Wlniao.Net.Dns
 			*/
 
             // CPU
-            string cpu = DnsTool.ReadCharacterString(reply, ref offset);
+            var cpu = DnsTool.ReadCharacterString(reply, ref offset);
 
             // OS
-            string os = DnsTool.ReadCharacterString(reply, ref offset);
+            var os = DnsTool.ReadCharacterString(reply, ref offset);
 
             return new DnsRecord_HINFO(name, cpu, os, ttl);
         }

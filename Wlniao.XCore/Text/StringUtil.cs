@@ -174,7 +174,7 @@ namespace Wlniao.Text
         // ReSharper disable once UnusedMember.Global
         public string GetHtmlTitle(string html)
         {
-            Match match = Regex.Match(html, "<title>(.*)</title>");
+            var match = Regex.Match(html, "<title>(.*)</title>");
             if (match.Groups.Count == 2) return match.Groups[1].Value;
             return "(unknown)";
         }
@@ -277,10 +277,10 @@ namespace Wlniao.Text
         public static string GetGenericTypeWithArgs(System.Type t)
         {
             //System.Collections.Generic.Dictionary`2[System.Int32,System.String]
-            string[] arr = t.ToString().Split('`');
+            var arr = t.ToString().Split('`');
 
-            string[] arrArgs = arr[1].Split('[');
-            string args = "<" + arrArgs[1].TrimEnd(']') + ">";
+            var arrArgs = arr[1].Split('[');
+            var args = "<" + arrArgs[1].TrimEnd(']') + ">";
 
             return arr[0] + args;
         }
@@ -296,8 +296,8 @@ namespace Wlniao.Text
             {
                 return false;
             }
-            char[] arrChar = str.ToCharArray();
-            foreach (char c in arrChar)
+            var arrChar = str.ToCharArray();
+            foreach (var c in arrChar)
             {
 
                 if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-".IndexOf(c) < 0)
@@ -321,7 +321,7 @@ namespace Wlniao.Text
             {
                 return false;
             }
-            for (int i = 1; i < arr.Length; i++)
+            for (var i = 1; i < arr.Length; i++)
             {
                 if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-1234567890".IndexOf(arr[i]) < 0)
                 {
@@ -342,7 +342,7 @@ namespace Wlniao.Text
                 return false;
             }
             var arr = str.ToCharArray();
-            for (int i = 1; i < arr.Length; i++)
+            for (var i = 1; i < arr.Length; i++)
             {
                 if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-1234567890".IndexOf(arr[i]) < 0)
                 {
@@ -375,10 +375,10 @@ namespace Wlniao.Text
         {
             if (IsNullOrEmpty(rawString)) return false;
 
-            char[] arrChar = rawString.ToCharArray();
+            var arrChar = rawString.ToCharArray();
             if (arrChar[0] == '_') return false;
 
-            foreach (char c in arrChar)
+            foreach (var c in arrChar)
             {
                 if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890".IndexOf(c) < 0)
                     return false;
@@ -394,8 +394,8 @@ namespace Wlniao.Text
         public static bool IsChineseLetter(string str)
         {
             if (IsNullOrEmpty(str)) return false;
-            char[] arr = str.ToCharArray();
-            for (int i = 0; i < arr.Length; i++)
+            var arr = str.ToCharArray();
+            for (var i = 0; i < arr.Length; i++)
             {
                 if (IsChineseLetter(str, i) == false) return false;
             }
@@ -410,10 +410,10 @@ namespace Wlniao.Text
         {
             if (IsNullOrEmpty(str)) return false;
 
-            char[] arr = str.ToCharArray();
+            var arr = str.ToCharArray();
             if (IsAbcAndChinese(arr[0]) == false) return false;
 
-            for (int i = 0; i < arr.Length; i++)
+            for (var i = 0; i < arr.Length; i++)
             {
                 if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890".IndexOf(arr[i]) >= 0) continue;
                 if (IsChineseLetter(str, i) == false) return false;
@@ -436,9 +436,9 @@ namespace Wlniao.Text
         private static bool IsChineseLetter(string input, int index)
         {
 
-            int chineseCharBegin = System.Convert.ToInt32(0x4e00);
-            int chineseCharEnd = System.Convert.ToInt32(0x9fff);
-            int code = char.ConvertToUtf32(input, index);
+            var chineseCharBegin = System.Convert.ToInt32(0x4e00);
+            var chineseCharEnd = System.Convert.ToInt32(0x9fff);
+            var code = char.ConvertToUtf32(input, index);
             return (code >= chineseCharBegin && code <= chineseCharEnd);
         }
 
@@ -450,11 +450,11 @@ namespace Wlniao.Text
         public static bool IsColorValue(string aColor)
         {
             if (IsNullOrEmpty(aColor)) return false;
-            string color = aColor.Trim().TrimStart('#').Trim();
+            var color = aColor.Trim().TrimStart('#').Trim();
             if (color.Length != 3 && color.Length != 6) return false;
 
-            char[] arr = color.ToCharArray();
-            foreach (char c in arr)
+            var arr = color.ToCharArray();
+            foreach (var c in arr)
             {
                 if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".IndexOf(c) < 0) return false;
             }
@@ -608,11 +608,11 @@ namespace Wlniao.Text
                 var wi = ("7,9,10,5,8,4,2,1,6,3,7,9,10,5,8,4,2").Split(',');
                 var ai = str.Remove(17).ToCharArray();
                 var sum = 0;
-                for (int i = 0; i < 17; i++)
+                for (var i = 0; i < 17; i++)
                 {
                     sum += int.Parse(wi[i]) * int.Parse(ai[i].ToString());
                 }
-                int y = -1;
+                var y = -1;
                 Math.DivRem(sum, 11, out y);
                 if (arrVarifyCode[y] != str.Substring(17, 1).ToLower())
                 {
@@ -666,11 +666,11 @@ namespace Wlniao.Text
                 encode = Encoding.GetEncoding(encoding);
             }
             var bytes = encode.GetBytes(str);
-            int num = 0;
-            int num2 = 0;
-            for (int i = 0; i < bytes.Length; i++)
+            var num = 0;
+            var num2 = 0;
+            for (var i = 0; i < bytes.Length; i++)
             {
-                char ch = (char)bytes[i];
+                var ch = (char)bytes[i];
                 if (ch == ' ')
                 {
                     num++;
@@ -682,12 +682,12 @@ namespace Wlniao.Text
             }
             if (num > 0 || num2 > 0)
             {
-                byte[] buffer = new byte[bytes.Length + (num2 * 2)];
-                int num3 = 0;
-                for (int j = 0; j < bytes.Length; j++)
+                var buffer = new byte[bytes.Length + (num2 * 2)];
+                var num3 = 0;
+                for (var j = 0; j < bytes.Length; j++)
                 {
-                    byte num6 = bytes[j];
-                    char ch2 = (char)num6;
+                    var num6 = bytes[j];
+                    var ch2 = (char)num6;
                     if (IsUrlSafeChar(ch2))
                     {
                         buffer[num3++] = num6;
@@ -699,8 +699,8 @@ namespace Wlniao.Text
                     else
                     {
                         buffer[num3++] = 0x25;
-                        int i1 = (num6 >> 4) & 15;
-                        int i2 = num6 & 15;
+                        var i1 = (num6 >> 4) & 15;
+                        var i2 = num6 & 15;
                         if (i1 >= 10)
                         {
                             buffer[num3++] = (byte)(i1 + 55);
@@ -768,12 +768,12 @@ namespace Wlniao.Text
             {
                 encode = Encoding.GetEncoding(encoding);
             }
-            int length = str.Length;
+            var length = str.Length;
             var decoder = new UrlDecoder(length, encode);
 
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
-                char ch = str[i];
+                var ch = str[i];
                 if (ch == '+')
                 {
                     ch = ' ';
@@ -782,10 +782,10 @@ namespace Wlniao.Text
                 {
                     if ((str[i + 1] == 'u') && (i < (length - 5)))
                     {
-                        int num3 = cvt.HexToInt(str[i + 2]);
-                        int num4 = cvt.HexToInt(str[i + 3]);
-                        int num5 = cvt.HexToInt(str[i + 4]);
-                        int num6 = cvt.HexToInt(str[i + 5]);
+                        var num3 = cvt.HexToInt(str[i + 2]);
+                        var num4 = cvt.HexToInt(str[i + 3]);
+                        var num5 = cvt.HexToInt(str[i + 4]);
+                        var num6 = cvt.HexToInt(str[i + 5]);
                         if (((num3 < 0) || (num4 < 0)) || ((num5 < 0) || (num6 < 0)))
                         {
                             goto Label_out;
@@ -795,11 +795,11 @@ namespace Wlniao.Text
                         decoder.AddChar(ch);
                         continue;
                     }
-                    int num7 = cvt.HexToInt(str[i + 1]);
-                    int num8 = cvt.HexToInt(str[i + 2]);
+                    var num7 = cvt.HexToInt(str[i + 1]);
+                    var num8 = cvt.HexToInt(str[i + 2]);
                     if ((num7 >= 0) && (num8 >= 0))
                     {
-                        byte b = (byte)((num7 << 4) | num8);
+                        var b = (byte)((num7 << 4) | num8);
                         i += 2;
                         decoder.AddByte(b);
                         continue;
@@ -817,8 +817,8 @@ namespace Wlniao.Text
             }
 
             str = decoder.GetString();
-            int num = -1;
-            for (int i = 0; i < str.Length; i++)
+            var num = -1;
+            for (var i = 0; i < str.Length; i++)
             {
                 if (char.IsSurrogate(str[i]))
                 {
@@ -830,10 +830,10 @@ namespace Wlniao.Text
             {
                 return str;
             }
-            char[] chArray = str.ToCharArray();
-            for (int j = num; j < chArray.Length; j++)
+            var chArray = str.ToCharArray();
+            for (var j = num; j < chArray.Length; j++)
             {
-                char c = chArray[j];
+                var c = chArray[j];
                 if (char.IsLowSurrogate(c))
                 {
                     chArray[j] = (char)0xfffd;
@@ -896,8 +896,8 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static string CreateRndStr(int length)
         {
-            string valid = "0123456789";
-            string res = "";
+            var valid = "0123456789";
+            var res = "";
             var rnd = new Random();
             while (0 < length--)
                 res += valid[rnd.Next(valid.Length)];
@@ -911,7 +911,7 @@ namespace Wlniao.Text
         public static string CreateRndStrE(int length)
         {
             const string valid = "0123456789abcdefghijklmnopqrstuvwxyz";
-            string res = "";
+            var res = "";
             var rnd = new Random();
             while (0 < length--)
                 res += valid[rnd.Next(valid.Length)];
@@ -925,11 +925,11 @@ namespace Wlniao.Text
         public static string[] Sort(string[] strS)
         {
             var temp = "";
-            for (int i = 0; i < strS.Length - 1; i++)
+            for (var i = 0; i < strS.Length - 1; i++)
             {
                 //从比i大1的值开始遍历到结束
                 //这里比较的总是比i大的值，因为之前的值已经冒泡完成
-                for (int j = i + 1; j < strS.Length; j++)
+                for (var j = i + 1; j < strS.Length; j++)
                 {
                     //如果前一个值大于后一个值，他们交换位置
                     if (strS[i].ToUpper().CompareTo(strS[j].ToUpper()) > 0)
@@ -960,8 +960,8 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static string Join(string separator, string[] strS)
         {
-            StringBuilder sb = new StringBuilder();
-            foreach (string str in strS)
+            var sb = new StringBuilder();
+            foreach (var str in strS)
             {
                 if (sb.Length > 0)
                 {
@@ -1027,7 +1027,7 @@ namespace Wlniao.Text
             html = html.Trim();
             if (count <= 0) return "";
             if (count < 20) count = 20;
-            string unclosedHtml = html.Length <= count ? html : html.Trim().Substring(0, count);
+            var unclosedHtml = html.Length <= count ? html : html.Trim().Substring(0, count);
             return CloseHtml(unclosedHtml);
         }
 
@@ -1042,17 +1042,17 @@ namespace Wlniao.Text
             if (unClosedHtml == null) return "";
             var arrTags = new[] { "strong", "b", "i", "u", "em", "font", "span", "label", "pre", "td", "th", "tr", "tbody", "table", "li", "ul", "ol", "h1", "h2", "h3", "h4", "h5", "h6", "p", "div" };
 
-            for (int i = 0; i < arrTags.Length; i++)
+            for (var i = 0; i < arrTags.Length; i++)
             {
 
                 var re = new Regex("<" + arrTags[i] + "[^>]*>", RegexOptions.IgnoreCase);
-                int openCount = re.Matches(unClosedHtml).Count;
+                var openCount = re.Matches(unClosedHtml).Count;
                 if (openCount == 0) continue;
 
                 re = new Regex("</" + arrTags[i] + ">", RegexOptions.IgnoreCase);
-                int closeCount = re.Matches(unClosedHtml).Count;
+                var closeCount = re.Matches(unClosedHtml).Count;
 
-                int unClosedCount = openCount - closeCount;
+                var unClosedCount = openCount - closeCount;
 
                 for (var k = 0; k < unClosedCount; k++)
                 {
@@ -1157,13 +1157,13 @@ namespace Wlniao.Text
         public static string ResetScript(string html)
         {
 
-            Regex reg = new Regex("<script.*?</script>", RegexOptions.Singleline);
+            var reg = new Regex("<script.*?</script>", RegexOptions.Singleline);
 
-            MatchCollection mlist = reg.Matches(html);
-            StringBuilder sb = new StringBuilder();
+            var mlist = reg.Matches(html);
+            var sb = new StringBuilder();
             sb.Append(reg.Replace(html, ""));
 
-            for (int i = 0; i < mlist.Count; i++)
+            for (var i = 0; i < mlist.Count; i++)
             {
                 sb.Append(mlist[i].Value);
             }
@@ -1179,7 +1179,7 @@ namespace Wlniao.Text
         public static List<string> SplitByNum(string str, int count)
         {
 
-            List<string> list = new List<string>();
+            var list = new List<string>();
 
             if (str == null) return list;
             if (str.Length == 0)
@@ -1194,9 +1194,9 @@ namespace Wlniao.Text
                 return list;
             }
 
-            int k = 0;
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < str.Length; i++)
+            var k = 0;
+            var sb = new StringBuilder();
+            for (var i = 0; i < str.Length; i++)
             {
 
                 if (k == count)
@@ -1227,7 +1227,7 @@ namespace Wlniao.Text
             if (val == null) return null;
             val = val.Trim();
 
-            string text = ParseHtml(val);
+            var text = ParseHtml(val);
             text = TrimHtmlBlank(text);
             if (IsNullOrEmpty(text) && HasNotImg(val) && HasNotFlash(val)) return "";
 
@@ -1277,9 +1277,9 @@ namespace Wlniao.Text
         public static int GetEndNumber(string rawString)
         {
             if (IsNullOrEmpty(rawString)) return 0;
-            char[] chArray = rawString.ToCharArray();
-            int startIndex = -1;
-            for (int i = chArray.Length - 1; i >= 0; i--)
+            var chArray = rawString.ToCharArray();
+            var startIndex = -1;
+            for (var i = chArray.Length - 1; i >= 0; i--)
             {
                 if (!char.IsDigit(chArray[i])) break;
                 startIndex = i;
@@ -1380,7 +1380,7 @@ namespace Wlniao.Text
                 throw new Exception("输入的数字过大，无法转换");
             var strResult = "";
             var strSz = new string[len];
-            for (int i = 0; i < len; i++)
+            for (var i = 0; i < len; i++)
             {
                 strSz[i] = strN.Substring(i, 1);
                 if (!Regex.IsMatch(strSz[i], "^[0-9]$"))
@@ -1393,9 +1393,9 @@ namespace Wlniao.Text
                         ch = false;
                 }
             }
-            for (int i = 0; i < len; i++)
+            for (var i = 0; i < len; i++)
             {
-                int num = len - i;
+                var num = len - i;
                 if (strSz[i] != "0")
                 {
                     strResult += strNum[System.Convert.ToInt32(strSz[i]) - 1];//将阿拉伯数字转换成中文大写数字                    
@@ -1473,11 +1473,11 @@ namespace Wlniao.Text
         public static string Ellipsis(string s, int l, string endStr)
         {
             s = s.Trim();
-            string temp = s.Substring(0, (s.Length < l + 1) ? s.Length : l + 1);
-            byte[] encodedBytes = Encoding.GetEncoding("ASCII").GetBytes(temp);
-            string outputStr = "";
-            int count = 0;
-            for (int i = 0; i < temp.Length; i++)
+            var temp = s.Substring(0, (s.Length < l + 1) ? s.Length : l + 1);
+            var encodedBytes = Encoding.GetEncoding("ASCII").GetBytes(temp);
+            var outputStr = "";
+            var count = 0;
+            for (var i = 0; i < temp.Length; i++)
             {
                 if (encodedBytes[i] == 63)
                     count += 2;
@@ -1526,7 +1526,7 @@ namespace Wlniao.Text
                     holdTags = new[] { "a", "img", "br", "strong", "b", "span", "li" };//保留的 tag 
                 }
                 // <(?!((/?\s?li\b)|(/?\s?ul\b)|(/?\s?a\b)|(/?\s?img\b)|(/?\s?br\b)|(/?\s?span\b)|(/?\s?b\b)))[^>]+> 
-                string regStr = string.Format(@"<(?!((/?\s?{0})))[^>]+>", string.Join(@"\b)|(/?\s?", holdTags));
+                var regStr = string.Format(@"<(?!((/?\s?{0})))[^>]+>", string.Join(@"\b)|(/?\s?", holdTags));
                 var reg = new Regex(regStr, RegexOptions.CultureInvariant | RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
                 return reg.Replace(html, "");
@@ -1549,9 +1549,9 @@ namespace Wlniao.Text
             var isCode = false; //是不是HTML代码
             var isHtml = false; //是不是HTML特殊字符,如&nbsp;
             var pchar = param.ToCharArray();
-            for (int i = 0; i < pchar.Length; i++)
+            for (var i = 0; i < pchar.Length; i++)
             {
-                char temp = pchar[i];
+                var temp = pchar[i];
                 if (temp == '<')
                     isCode = true;
                 else if (temp == '&')
@@ -1576,7 +1576,7 @@ namespace Wlniao.Text
                 }
             }
             //取出截取字符串中的HTML标记
-            string tempResult = result.ToString().Replace("(>)[^<>]*(<?)", "$1$2");
+            var tempResult = result.ToString().Replace("(>)[^<>]*(<?)", "$1$2");
             //去掉不需要结素标记的HTML标记
             tempResult = tempResult.Replace(@"</?(AREA|BASE|BASEFONT|BODY|BR|COL|COLGROUP|DD|DT|FRAME|HEAD|HR|HTML|IMG|INPUT|ISINDEX|LI|LINK|META|OPTION|P|PARAM|TBODY|TD|TFOOT|TH|THEAD|TR|area|base|basefont|body|br|col|colgroup|dd|dt|frame|head|hr|html|img|input|isindex|li|link|meta|option|p|param|tbody|td|tfoot|th|thead|tr)[^<>]*/?>", "");
             //去掉成对的HTML标记
@@ -1590,7 +1590,7 @@ namespace Wlniao.Text
                 endHtml.Add(mt.Result("$1"));
             }
             //补全不成对的HTML标记
-            for (int i = endHtml.Count - 1; i >= 0; i--)
+            for (var i = endHtml.Count - 1; i >= 0; i--)
             {
                 result.Append("</");
                 result.Append(endHtml[i]);
@@ -1655,8 +1655,8 @@ namespace Wlniao.Text
         /// <returns>字符</returns>
         public static string GetStringByUnicode(string strUnicode)
         {
-            string dst = "";
-            string[] src = strUnicode.Split(new[] { "\\u" }, int.MaxValue, StringSplitOptions.RemoveEmptyEntries);
+            var dst = "";
+            var src = strUnicode.Split(new[] { "\\u" }, int.MaxValue, StringSplitOptions.RemoveEmptyEntries);
             for (var i = 0; i < src.Length; i++)
             {
                 var bytes = new byte[2];
@@ -1673,11 +1673,11 @@ namespace Wlniao.Text
         /// <returns>Unicode编码</returns>
         public static string GetUnicodeByString(string strInput)
         {
-            char[] src = strInput.ToCharArray();
-            string dst = "";
-            for (int i = 0; i < src.Length; i++)
+            var src = strInput.ToCharArray();
+            var dst = "";
+            for (var i = 0; i < src.Length; i++)
             {
-                byte[] utext = Encoding.Unicode.GetBytes(src[i].ToString());
+                var utext = Encoding.Unicode.GetBytes(src[i].ToString());
                 dst += @"\u" + utext[1].ToString("x2") + utext[0].ToString("x2");
             }
             return dst;
@@ -1726,7 +1726,7 @@ namespace Wlniao.Text
             var regex = new Regex("^[\u4e00-\u9fa5]$");
             var pyString = "";
             var noWChar = chrstr.ToCharArray();
-            for (int j = 0; j < noWChar.Length; j++)
+            for (var j = 0; j < noWChar.Length; j++)
             {
                 var ch = noWChar[j].ToString();
                 // 中文字符
@@ -1756,7 +1756,7 @@ namespace Wlniao.Text
             if (!string.IsNullOrEmpty(strText))
             {
                 var len = strText.Length;
-                for (int i = 0; i < len; i++)
+                for (var i = 0; i < len; i++)
                 {
                     myStr += Chs2Pinyin(strText.Substring(i, 1)).Substring(0, 1);
                 }
@@ -1773,9 +1773,9 @@ namespace Wlniao.Text
             var myStr = "";
             if (!string.IsNullOrEmpty(strText))
             {
-                int len = strText.Length;
+                var len = strText.Length;
                 myStr = Chs2Pinyin(strText) + " ";
-                for (int i = 0; i < len; i++)
+                for (var i = 0; i < len; i++)
                 {
                     myStr += Chs2Pinyin(strText.Substring(i, 1)).Substring(0, 1);
                 }
@@ -1798,8 +1798,8 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static string GetOnlyUpper(string src)
         {
-            string temp = "";
-            foreach (char c in src)
+            var temp = "";
+            foreach (var c in src)
             {
                 int t = c;
                 if (t > 65 && t <= 90)
@@ -1818,7 +1818,7 @@ namespace Wlniao.Text
         {
             if (string.IsNullOrEmpty(str))
                 return 0;
-            Regex seperatorReg = new Regex("[,;.!?'，。？：；‘’！“”—……、《》<>{}【】]", RegexOptions.IgnorePatternWhitespace);
+            var seperatorReg = new Regex("[,;.!?'，。？：；‘’！“”—……、《》<>{}【】]", RegexOptions.IgnorePatternWhitespace);
             return seperatorReg.Matches(str).Count;
         }        
         /// <summary>
@@ -1830,9 +1830,9 @@ namespace Wlniao.Text
         {
             try
             {
-                byte[] temp = Encoding.UTF8.GetBytes(str);
-                byte[] temp1 = System.Text.Encoding.Convert(Encoding.UTF8, Encoding.GB2312, temp);
-                string result = Encoding.GB2312.GetString(temp1, 0, temp1.Length);
+                var temp = Encoding.UTF8.GetBytes(str);
+                var temp1 = System.Text.Encoding.Convert(Encoding.UTF8, Encoding.GB2312, temp);
+                var result = Encoding.GB2312.GetString(temp1, 0, temp1.Length);
                 return result;
             }
             catch
@@ -1852,8 +1852,8 @@ namespace Wlniao.Text
         {
             try
             {
-                byte[] unicodeBytes = Encoding.GB2312.GetBytes(str);
-                byte[] asciiBytes = System.Text.Encoding.Convert(Encoding.GB2312, Encoding.UTF8, unicodeBytes);
+                var unicodeBytes = Encoding.GB2312.GetBytes(str);
+                var asciiBytes = System.Text.Encoding.Convert(Encoding.GB2312, Encoding.UTF8, unicodeBytes);
                 var asciiChars = new char[Encoding.UTF8.GetCharCount(asciiBytes, 0, asciiBytes.Length)];
                 Encoding.UTF8.GetChars(asciiBytes, 0, asciiBytes.Length, asciiChars, 0);
                 var result = new string(asciiChars);
@@ -1874,10 +1874,10 @@ namespace Wlniao.Text
             if (string.IsNullOrEmpty(unicodeString))
                 return string.Empty;
 
-            string outStr = unicodeString;
+            var outStr = unicodeString;
 
-            Regex re = new Regex("\\\\u[0123456789abcdef]{4}", RegexOptions.IgnoreCase);
-            MatchCollection mc = re.Matches(unicodeString);
+            var re = new Regex("\\\\u[0123456789abcdef]{4}", RegexOptions.IgnoreCase);
+            var mc = re.Matches(unicodeString);
             foreach (Match ma in mc)
             {
                 outStr = outStr.Replace(ma.Value, ConverUnicodeStringToChar(ma.Value).ToString());
@@ -1887,7 +1887,7 @@ namespace Wlniao.Text
 
         private static char ConverUnicodeStringToChar(string str)
         {
-            char outStr = char.MinValue;
+            var outStr = char.MinValue;
             outStr = (char)int.Parse(str.Remove(0, 2), System.Globalization.NumberStyles.HexNumber);
             return outStr;
         }
@@ -2082,7 +2082,7 @@ namespace Wlniao.Text
         {
             host = "";
             main = "";
-            foreach (string suffix in beReplacedStrs)
+            foreach (var suffix in beReplacedStrs)
             {
                 if (domain.EndsWith(suffix))
                 {
@@ -2103,7 +2103,7 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static string GetDomainMain(string domain)
         {
-            foreach (string suffix in beReplacedStrs)
+            foreach (var suffix in beReplacedStrs)
             {
                 if (domain.EndsWith(suffix))
                 {
@@ -2127,7 +2127,7 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static string GetDomainHost(string domain)
         {
-            foreach (string suffix in beReplacedStrs)
+            foreach (var suffix in beReplacedStrs)
             {
                 if (domain.EndsWith(suffix))
                 {
@@ -2149,7 +2149,7 @@ namespace Wlniao.Text
         public static string GetDomainMainNoSuffix(string domain)
         {
             var tmp = "";
-            foreach (string suffix in beReplacedStrs)
+            foreach (var suffix in beReplacedStrs)
             {
                 if (domain.EndsWith(suffix))
                 {
@@ -2186,14 +2186,14 @@ namespace Wlniao.Text
             var kvs = new Dictionary<string, string>();
             if (!string.IsNullOrEmpty(queryString))
             {
-                int count = queryString.Length;
-                for (int i = 0; i < count; i++)
+                var count = queryString.Length;
+                for (var i = 0; i < count; i++)
                 {
-                    int startIndex = i;
-                    int index = -1;
+                    var startIndex = i;
+                    var index = -1;
                     while (i < count)
                     {
-                        char item = queryString[i];
+                        var item = queryString[i];
                         if (item == '=')
                         {
                             if (index < 0)

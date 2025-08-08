@@ -146,7 +146,7 @@ namespace Wlniao.Handler
                     }
                     else if (RequestBody != null)
                     {
-                        text = Json.ToString(RequestBody);
+                        text = Json.Serialize(RequestBody);
                         content = new System.Net.Http.StringContent(text, Encoding, ContentType);
                     }
                     else

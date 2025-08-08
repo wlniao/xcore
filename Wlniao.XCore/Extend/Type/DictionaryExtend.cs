@@ -232,8 +232,8 @@ namespace Wlniao
             {
                 try
                 {
-                    var json = Json.ToString(dic[key]);
-                    return Json.ToObject<T>(json);
+                    var json = Json.Serialize(dic[key]);
+                    return Json.Deserialize<T>(json);
                 }
                 catch { }
             }
@@ -414,7 +414,7 @@ namespace Wlniao
         /// <returns></returns>
         public static bool GetBoolean(this Dictionary<string, string> dic, string key, string defaultValue = "false")
         {
-            string value = dic.GetString(key, defaultValue);
+            var value = dic.GetString(key, defaultValue);
             return value.ToLower() == "true" || value == "1";
         }
         /// <summary>
@@ -426,7 +426,7 @@ namespace Wlniao
         /// <returns></returns>
         public static bool GetBoolean(this Dictionary<string, object> dic, string key, string defaultValue = "false")
         {
-            string value = dic.GetString(key, defaultValue);
+            var value = dic.GetString(key, defaultValue);
             return value.ToLower() == "true" || value == "1";
         }
 

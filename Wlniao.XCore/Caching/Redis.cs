@@ -159,7 +159,7 @@ namespace Wlniao.Caching
                 {
                     _canuse = 1;
                     var ips = arg.Split(':', StringSplitOptions.RemoveEmptyEntries);
-                    if (ips.Length == 2 && int.TryParse(ips[1], out int port))
+                    if (ips.Length == 2 && int.TryParse(ips[1], out var port))
                     {
                         instance.AddEndPoint(new DnsEndPoint(ips[0], port));
                     }

@@ -50,16 +50,16 @@ namespace Wlniao.Net.Dns
             // Priority Weight Port Target
 
             // Priority
-            int priority = reply[offset++] << 8 | reply[offset++];
+            var priority = reply[offset++] << 8 | reply[offset++];
 
             // Weight
-            int weight = reply[offset++] << 8 | reply[offset++];
+            var weight = reply[offset++] << 8 | reply[offset++];
 
             // Port
-            int port = reply[offset++] << 8 | reply[offset++];
+            var port = reply[offset++] << 8 | reply[offset++];
 
             // Target
-            string target = "";
+            var target = "";
             DnsTool.GetQName(reply, ref offset, ref target);
 
             return new DnsRecord_SRV(name, priority, weight, port, target, ttl);
