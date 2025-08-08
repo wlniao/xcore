@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Wlniao.Log;
+using Wlniao.Text;
 
 namespace Wlniao.Engine
 {
@@ -16,37 +17,37 @@ namespace Wlniao.Engine
     {
     
         /// <summary>
-        /// 
+        /// 是否初始化
         /// </summary>
         public bool Ready  { get; private set; } = false;
         
         /// <summary>
-        /// 
+        /// 当前请求会话密钥
         /// </summary>
         public string SKey { get; private set; }
         
         /// <summary>
-        /// 
+        /// 当前请求域名
         /// </summary>
         public string Host { get; private set; }
         
         /// <summary>
-        /// 
+        /// 请求输入内容
         /// </summary>
         public string Body { get; private set; }
         
         /// <summary>
-        /// 
+        /// 请求输入参数
         /// </summary>
         public Dictionary<string, string> Query { get; private set; }
         
         /// <summary>
-        /// 
+        /// 请求输入头信息
         /// </summary>
         public Dictionary<string, string> HeaderInput { get; private set;  }
         
         /// <summary>
-        /// 
+        /// 请求输出头信息
         /// </summary>
         public Dictionary<string, string> HeaderOutput { get; set; }
         
@@ -54,29 +55,80 @@ namespace Wlniao.Engine
         /// 
         /// </summary>
         private ApiResult<object?> Output { get; set; }
-        
+
         /// <summary>
-        /// 
+        /// 请求是否启用Https
+        /// </summary>
+        public bool IsHttps
+        {
+            get
+            {
+
+                if (this.HeaderInput.TryGetValue("x-forwarded-proto", out var proto) && proto.ToLower() == "https")
+                {
+                    return true;
+                }
+                if (this.HeaderInput.TryGetValue("x-client-scheme", out var scheme) && scheme.ToLower() == "https")
+                {
+                    return true;
+                }
+                if (this.HeaderInput.TryGetValue("referer", out var referer) && referer.StartsWith("https"))
+                {
+                    return true;
+                }
+                return Request.IsHttps;
+            }
+        }
+
+        /// <summary>
+        /// 请求客户端IP
+        /// </summary>
+        public string ClientIP
+        {
+            get
+            {
+                var clientIp =
+                    (Request.HttpContext.Connection.RemoteIpAddress != null &&
+                     !Request.HttpContext.Connection.RemoteIpAddress.IsIPv4MappedToIPv6)
+                        ? Request.HttpContext.Connection.RemoteIpAddress?.ToString()
+                        : Request.HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
+                if (!this.HeaderInput.TryGetValue("x-forwarded-for", out var forwardedIp) ||
+                    string.IsNullOrEmpty(forwardedIp))
+                    return clientIp ?? string.Empty;
+                // 通过代理网关部署时，获取"x-forwarded-for"传递的真实IP
+                foreach (var ip in forwardedIp.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (ip == "::1" || ip == "127.0.0.1" || !StringUtil.IsIP(ip)) continue;
+                    clientIp = ip;
+                    break;
+                }
+
+                return clientIp ?? string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// 请求身份凭据
         /// </summary>
         public string Authorization { get; private set; }
-        
+
         /// <summary>
-        /// 
+        /// 多租户系统标识
         /// </summary>
         public string ConsumerId { get; private set; }
         
         /// <summary>
-        /// 
+        /// 多租户系统安全密钥
         /// </summary>
         public string ConsumerSecretKey { get; private set; }
         
         /// <summary>
-        /// 
+        /// 多租户系统对外公钥
         /// </summary>
         public string ConsumerPublicKey { get; private set; }
     
         /// <summary>
-        /// 
+        /// 多租户系统安全私钥
         /// </summary>
         public string ConsumerPrivateKey { get; private set; }
 
@@ -150,6 +202,7 @@ namespace Wlniao.Engine
                     this.HeaderInput.TryAdd(item.Key, item.Value.FirstOrDefault()?.ToString() ?? string.Empty);
                 }
             }
+            
             this.Request = httpRequest;
             this.Response = httpRequest.HttpContext.Response;
             if (this.LoadConsumerInfo != null)

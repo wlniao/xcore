@@ -15,7 +15,7 @@ namespace Wlniao.Engine
         /// </summary>
         public bool Ready  { get; }
         /// <summary>
-        /// 当前主机名
+        /// 当前请求域名
         /// </summary>
         public string Host { get; }
         /// <summary>
@@ -35,15 +35,23 @@ namespace Wlniao.Engine
         /// </summary>
         public Dictionary<string, string> HeaderOutput { get; set; }
         /// <summary>
+        /// 请求是否启用Https
+        /// </summary>
+        public bool IsHttps { get; }
+        /// <summary>
+        /// 请求客户端IP
+        /// </summary>
+        public string ClientIP { get; }
+        /// <summary>
         /// 请求身份凭据
         /// </summary>
         public string Authorization { get; }
         /// <summary>
-        /// 当前系统用户标识
+        /// 多租户系统标识
         /// </summary>
         public string ConsumerId { get; }
         /// <summary>
-        /// 当前系统安全密钥
+        /// 多租户系统安全密钥
         /// </summary>
         public string ConsumerSecretKey { get; }
         /// <summary>
