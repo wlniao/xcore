@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
+using Wlniao.Text;
 
 namespace Wlniao.XCenter
 {
@@ -105,7 +106,7 @@ namespace Wlniao.XCenter
         /// </summary>
         /// <param name="ctx"></param>
         /// <param name="ticket"></param>
-        public XSession(Context ctx, String ticket)
+        public XSession(Context ctx, string ticket)
         {
             this.ctx = ctx;
             this.ExtData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -126,7 +127,7 @@ namespace Wlniao.XCenter
                     var data = Encryptor.SM4DecryptECBFromHex(ticket, apptoken).Split(',', StringSplitOptions.RemoveEmptyEntries);
                     if (data.Length > 4)
                     {
-                        this.ExpireTime = cvt.ToLong(data[0]);
+                        this.ExpireTime = Convert.ToLong(data[0]);
                         this.AppCode = data[1];
                         this.OwnerId = data[2];
                         this.UserSid = data[3];
@@ -145,7 +146,7 @@ namespace Wlniao.XCenter
                     }
                     if (data.Length == 5)
                     {
-                        var plain = strUtil.HexStringToUTF8(data[4]);
+                        var plain = StringUtil.HexStringToUTF8(data[4]);
                         var kvs = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(plain, new System.Text.Json.JsonSerializerOptions { });
                         if (kvs != null)
                         {
@@ -200,7 +201,7 @@ namespace Wlniao.XCenter
         /// </summary>
         /// <param name="exprie"></param>
         /// <returns></returns>
-        public String BuildTicket(int exprie = 7200)
+        public string BuildTicket(int exprie = 7200)
         {
             var plain = (DateTools.GetUnix() + exprie) + "," + (string.IsNullOrEmpty(AppCode) ? "app" : AppCode) + "," + (string.IsNullOrEmpty(OwnerId) ? "000000000" : OwnerId);
             if (!string.IsNullOrEmpty(UserSid))
@@ -226,7 +227,7 @@ namespace Wlniao.XCenter
                     }
                 }
                 var ext = System.Text.Json.JsonSerializer.Serialize(obj, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
-                plain += "," + UserSid + "," + strUtil.UTF8ToHexString(ext);
+                plain += "," + UserSid + "," + StringUtil.UTF8ToHexString(ext);
             }
             if (string.IsNullOrEmpty(apptoken))
             {

@@ -112,7 +112,7 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public byte[] Encrypt(string data)
         {
-            return Encrypt(System.Text.UTF8Encoding.UTF8.GetBytes(data));
+            return Encrypt(System.Text.Encoding.UTF8.GetBytes(data));
         }
         /// <summary>
         /// 

@@ -271,7 +271,7 @@ namespace Wlniao
             var sm3 = new Crypto.SM3();
             var keyBytes = System.Text.Encoding.UTF8.GetBytes(key);
             var dataBytes = System.Text.Encoding.UTF8.GetBytes(str);
-            return cvt.BytesToHexString(sm3.Hmac(dataBytes, keyBytes));
+            return Convert.BytesToHexString(sm3.Hmac(dataBytes, keyBytes));
         }
 
         /// <summary>
@@ -502,7 +502,7 @@ namespace Wlniao
             var sm2 = new SM2(Helper.Decode(publicKey), null, SM2Mode.C1C3C2);
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             var encryBytes = sm2.Encrypt(plainBytes);
-            return cvt.BytesToHexString(encryBytes);
+            return Convert.BytesToHexString(encryBytes);
         }
         /// <summary>
         /// 
@@ -518,7 +518,7 @@ namespace Wlniao
             }
             var sm2 = new SM2(publicKey, null, SM2Mode.C1C3C2);
             var encryBytes = sm2.Encrypt(plainBytes);
-            return cvt.BytesToHexString(encryBytes);
+            return Convert.BytesToHexString(encryBytes);
         }
         /// <summary>
         /// 
@@ -575,7 +575,7 @@ namespace Wlniao
             var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             var sm4 = new SM4();
             var encryBytes = sm4.EncryptECB(plainBytes, keyBytes, isPadding);
-            return cvt.BytesToHexString(encryBytes);
+            return Convert.BytesToHexString(encryBytes);
         }
         /// <summary>
         /// 
@@ -662,7 +662,7 @@ namespace Wlniao
                     var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
                     var sm4 = new SM4();
                     var encryBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
-                    return cvt.BytesToHexString(encryBytes);
+                    return Convert.BytesToHexString(encryBytes);
                 }
                 catch { }
             }
@@ -759,7 +759,7 @@ namespace Wlniao
             var buffer = System.Text.Encoding.UTF8.GetBytes(str);
             sm3.BlockUpdate(buffer, 0, buffer.Length);
             buffer = sm3.DoFinal();
-            return cvt.BytesToHexString(buffer);
+            return Convert.BytesToHexString(buffer);
         }
 
 

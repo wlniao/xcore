@@ -27,15 +27,15 @@ namespace Wlniao.XCenter
         /// <summary>
         /// EMI主程序地址
         /// </summary>
-        private String emihost = "";
+        private string emihost = "";
         /// <summary>
         /// 无权限提示消息
         /// </summary>
-        private String nopermissionMessage = "";
+        private string nopermissionMessage = "";
         /// <summary>
         /// 自动配置Emi相关Cookie
         /// </summary>
-        public Boolean AutoSetEmiCookie = true;
+        public bool AutoSetEmiCookie = true;
         /// <summary>
         /// 
         /// </summary>
@@ -131,7 +131,7 @@ namespace Wlniao.XCenter
             }
             else if (string.IsNullOrEmpty(emihost))
             {
-                emihost = HeaderRequest("x-domain", EmiContext.XCenterDomain);
+                emihost = HeaderRequest("x-domain", Context.XCenterDomain);
             }
             if (fail == null)
             {
@@ -259,7 +259,7 @@ namespace Wlniao.XCenter
         /// <param name="ajax"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult NoPermission(Boolean ajax = false)
+        public IActionResult NoPermission(bool ajax = false)
         {
             errorTitle = "操作未授权";
             if (string.IsNullOrEmpty(nopermissionMessage))
@@ -287,7 +287,7 @@ namespace Wlniao.XCenter
         /// <param name="fail"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult? CheckPermission(String code, Func<IActionResult> func, Func<IActionResult> fail = null)
+        public IActionResult? CheckPermission(string code, Func<IActionResult> func, Func<IActionResult> fail = null)
         {
             if (fail == null)
             {
@@ -306,7 +306,7 @@ namespace Wlniao.XCenter
             }
             else
             {
-                var rlt = ctx.EmiGet<Boolean>("app", "permission"
+                var rlt = ctx.EmiGet<bool>("app", "permission"
                     , new KeyValuePair<string, string>("sid", xsession.UserSid)
                     , new KeyValuePair<string, string>("code", code));
                 if (rlt.data)
@@ -330,7 +330,7 @@ namespace Wlniao.XCenter
         /// <param name="fail"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult? CheckPermission(String code, String organ, Func<IActionResult> func, Func<IActionResult> fail = null)
+        public IActionResult? CheckPermission(string code, string organ, Func<IActionResult> func, Func<IActionResult> fail = null)
         {
             if (fail == null)
             {
@@ -349,7 +349,7 @@ namespace Wlniao.XCenter
             }
             else
             {
-                var rlt = ctx.EmiGet<Boolean>("app", "permissionorgan"
+                var rlt = ctx.EmiGet<bool>("app", "permissionorgan"
                     , new KeyValuePair<string, string>("sid", xsession.UserSid)
                     , new KeyValuePair<string, string>("code", code)
                     , new KeyValuePair<string, string>("organ", organ));

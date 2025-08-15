@@ -23,6 +23,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using Wlniao.Text;
+
 namespace Wlniao
 {
     /// <summary>
@@ -37,7 +39,7 @@ namespace Wlniao
         /// <returns></returns>
         public static bool IsDecimal(string str)
         {
-            if (strUtil.IsNullOrEmpty(str))
+            if (StringUtil.IsNullOrEmpty(str))
                 return false;
             if (str.StartsWith("-"))
                 return isDecimal_private(str.TrimStart('-'));
@@ -60,7 +62,7 @@ namespace Wlniao
         /// <returns></returns>
         public static bool IsIdListValid(string ids)
         {
-            if (strUtil.IsNullOrEmpty(ids))
+            if (StringUtil.IsNullOrEmpty(ids))
             {
                 return false;
             }
@@ -81,7 +83,7 @@ namespace Wlniao
         /// <returns></returns>
         public static bool IsInt(string str)
         {
-            if (strUtil.IsNullOrEmpty(str))
+            if (StringUtil.IsNullOrEmpty(str))
                 return false;
             if (str.StartsWith("-"))
                 str = str.Substring(1, str.Length - 1);
@@ -114,7 +116,7 @@ namespace Wlniao
         public static bool IsBool(string str)
         {
             if (str == null) return false;
-            if (strUtil.EqualsIgnoreCase(str, "true") || strUtil.EqualsIgnoreCase(str, "false")) return true;
+            if (StringUtil.EqualsIgnoreCase(str, "true") || StringUtil.EqualsIgnoreCase(str, "false")) return true;
             return false;
         }
         /// <summary>
@@ -481,7 +483,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string IPv4ToIPv6(string ip)
         {
-            if (strUtil.IsIPv4(ip))
+            if (StringUtil.IsIPv4(ip))
             {
                 var ips = ip.SplitBy(".");
                 var low = int.Parse(ips[2]) * 256 + int.Parse(ips[3]);
@@ -740,7 +742,7 @@ namespace Wlniao
         /// <returns></returns>
         public static int[] ToIntArray(string myids)
         {
-            if (strUtil.IsNullOrEmpty(myids)) return new int[] { };
+            if (StringUtil.IsNullOrEmpty(myids)) return new int[] { };
             var arrIds = myids.Split(',');
             var Ids = new int[arrIds.Length];
             for (var i = 0; i < arrIds.Length; i++)
@@ -757,7 +759,7 @@ namespace Wlniao
         /// <returns>���ַ���ת�����Ծ��ſ�ͷ�ı�����ʽ�����������Ч����ɫֵ���򷵻�null</returns>
         public static string ToColorValue(string val)
         {
-            if (strUtil.IsColorValue(val) == false)
+            if (StringUtil.IsColorValue(val) == false)
             {
                 return null;
             }
@@ -952,7 +954,7 @@ namespace Wlniao
                 if (url.IndexOf('?') > 0)
                 {
                     url = url.Substring(url.IndexOf('?') + 1);
-                    var args = strUtil.GetQueryString(url);
+                    var args = StringUtil.GetQueryString(url);
                     if (args != null && args.Count > 0)
                     {
                         var attr = "";

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Wlniao.Text;
 
 namespace Wlniao.OpenApi
 {
@@ -29,12 +30,12 @@ namespace Wlniao.OpenApi
             {
                 var rlt = XServer.Common.Get("openapi", "push", "email"
                     , new KeyValuePair<string, string>("to", to)
-                    , new KeyValuePair<string, string>("title", strUtil.UrlEncode(title))
-                    , new KeyValuePair<string, string>("body", strUtil.UrlEncode(body))
-                    , new KeyValuePair<string, string>("from", strUtil.UrlEncode(from))
-                    , new KeyValuePair<string, string>("user", strUtil.UrlEncode(user))
-                    , new KeyValuePair<string, string>("pwd", strUtil.UrlEncode(pwd))
-                    , new KeyValuePair<string, string>("smtp", strUtil.UrlEncode(smtp))
+                    , new KeyValuePair<string, string>("title", StringUtil.UrlEncode(title))
+                    , new KeyValuePair<string, string>("body", StringUtil.UrlEncode(body))
+                    , new KeyValuePair<string, string>("from", StringUtil.UrlEncode(from))
+                    , new KeyValuePair<string, string>("user", StringUtil.UrlEncode(user))
+                    , new KeyValuePair<string, string>("pwd", StringUtil.UrlEncode(pwd))
+                    , new KeyValuePair<string, string>("smtp", StringUtil.UrlEncode(smtp))
                     );
                 return string.IsNullOrEmpty(rlt) ? false : rlt.ToLower() == "true";
             }
@@ -42,11 +43,11 @@ namespace Wlniao.OpenApi
             {
                 var rlt = XServer.Common.Post("openapi", "push", "email", body
                     , new KeyValuePair<string, string>("to", to)
-                    , new KeyValuePair<string, string>("title", strUtil.UrlEncode(title))
-                    , new KeyValuePair<string, string>("from", strUtil.UrlEncode(from))
-                    , new KeyValuePair<string, string>("user", strUtil.UrlEncode(user))
-                    , new KeyValuePair<string, string>("pwd", strUtil.UrlEncode(pwd))
-                    , new KeyValuePair<string, string>("smtp", strUtil.UrlEncode(smtp))
+                    , new KeyValuePair<string, string>("title", StringUtil.UrlEncode(title))
+                    , new KeyValuePair<string, string>("from", StringUtil.UrlEncode(from))
+                    , new KeyValuePair<string, string>("user", StringUtil.UrlEncode(user))
+                    , new KeyValuePair<string, string>("pwd", StringUtil.UrlEncode(pwd))
+                    , new KeyValuePair<string, string>("smtp", StringUtil.UrlEncode(smtp))
                     );
                 return string.IsNullOrEmpty(rlt) ? false : rlt.ToLower() == "true";
             }

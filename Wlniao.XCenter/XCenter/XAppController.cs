@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Linq;
-using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Hosting;
+using Wlniao.Mvc;
 
 namespace Wlniao.XCenter
 {
@@ -28,7 +24,7 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 会话加密密钥
         /// </summary>
-        internal String sm4key = null;
+        internal string sm4key = null;
         /// <summary>
         /// 会话加密是否初始化完成
         /// </summary>
@@ -43,7 +39,7 @@ namespace Wlniao.XCenter
         /// <param name="host"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult CheckAuth(Func<Context, IActionResult> func, Func<IActionResult> fail = null, String host = null)
+        public IActionResult CheckAuth(Func<Context, IActionResult> func, Func<IActionResult> fail = null, string host = null)
         {
             if (fail == null)
             {
@@ -83,7 +79,7 @@ namespace Wlniao.XCenter
         /// <param name="addHeader"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult CheckSession(Func<XSession, Context, IActionResult> func, Func<IActionResult> fail = null, String ticket = null, Boolean addHeader = true)
+        public IActionResult CheckSession(Func<XSession, Context, IActionResult> func, Func<IActionResult> fail = null, string ticket = null, bool addHeader = true)
         {
             if (fail == null)
             {
@@ -148,7 +144,7 @@ namespace Wlniao.XCenter
         /// <param name="ticket"></param>
         /// <returns></returns>
         [NonAction]
-        public XSession CheckSessionBack(Context? ctx, String ticket = null)
+        public XSession CheckSessionBack(Context? ctx, string ticket = null)
         {
             if (ctx == null)
             {
@@ -190,9 +186,9 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
         [NonAction]
-        public Dictionary<String, Object> InputDeserialize(String sm4key = null)
+        public Dictionary<string, object> InputDeserialize(string sm4key = null)
         {
-            var result = new Dictionary<String, Object>(StringComparer.OrdinalIgnoreCase);
+            var result = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrEmpty(sm4key))
             {
                 this.sm4key = sm4key;
@@ -255,7 +251,7 @@ namespace Wlniao.XCenter
             }
             try
             {
-                var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, Object>>(input);
+                var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(input);
                 if (obj != null)
                 {
                     foreach (var kv in obj)
@@ -274,7 +270,7 @@ namespace Wlniao.XCenter
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         [NonAction]
-        public T InputDeserialize<T>(String sm4key = null)
+        public T InputDeserialize<T>(string sm4key = null)
         {
             if (!string.IsNullOrEmpty(sm4key))
             {
@@ -361,7 +357,7 @@ namespace Wlniao.XCenter
             }
             else
             {
-                var tmp = new ApiResult<String>
+                var tmp = new ApiResult<string>
                 {
                     code = result.code,
                     node = result.node,
@@ -379,7 +375,7 @@ namespace Wlniao.XCenter
                     var json = JsonSerializer.Serialize<T>(result.data, option);
                     tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
                 }
-                output = JsonSerializer.Serialize<ApiResult<String>>(tmp, option);
+                output = JsonSerializer.Serialize<ApiResult<string>>(tmp, option);
             }
             if (result != null && !string.IsNullOrEmpty(result.debuger))
             {
@@ -398,7 +394,7 @@ namespace Wlniao.XCenter
         /// <param name="code"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult OutputMessage<T>(ApiResult<T> result, String message, String code = null)
+        public IActionResult OutputMessage<T>(ApiResult<T> result, string message, string code = null)
         {
             result.tips = true;
             result.message = message;
@@ -438,7 +434,7 @@ namespace Wlniao.XCenter
             }
             else
             {
-                var tmp = new ApiResult<String>
+                var tmp = new ApiResult<string>
                 {
                     code = result.code,
                     node = result.node,
@@ -456,7 +452,7 @@ namespace Wlniao.XCenter
                     var json = JsonSerializer.Serialize<T>(result.data, option);
                     tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
                 }
-                output = JsonSerializer.Serialize<ApiResult<String>>(tmp, option);
+                output = JsonSerializer.Serialize<ApiResult<string>>(tmp, option);
             }
             if (result != null && !string.IsNullOrEmpty(result.debuger))
             {

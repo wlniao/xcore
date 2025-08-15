@@ -61,7 +61,7 @@ namespace Wlniao.XCenter.Models
         /// <param name="key"></param>
         /// <param name="by"></param>
         /// <returns></returns>
-        public static Account Get(EmiContext ctx, String key, String by = "sid")
+        public static Account Get(EmiContext ctx, string key, string by = "sid")
         {
             if (string.IsNullOrEmpty(key) || ctx == null)
             {
@@ -80,7 +80,7 @@ namespace Wlniao.XCenter.Models
         /// <param name="ctx"></param>
         /// <param name="wxopenid"></param>
         /// <returns></returns>
-        public static Account GetByOpenId(EmiContext ctx, String wxopenid)
+        public static Account GetByOpenId(EmiContext ctx, string wxopenid)
         {
             return Get(ctx, wxopenid, "wxopenid");
         }
@@ -90,20 +90,20 @@ namespace Wlniao.XCenter.Models
         /// <param name="ctx"></param>
         /// <param name="sid"></param>
         /// <returns></returns>
-        public static String GetName(EmiContext ctx, String sid)
+        public static string GetName(EmiContext ctx, string sid)
         {
             if (string.IsNullOrEmpty(sid) || ctx == null)
             {
                 return "";
             }
-            var val = Wlniao.Cache.Get("sidname-" + ctx.owner + "-" + sid);
+            var val = Caching.Cache.Get("sidname-" + ctx.owner + "-" + sid);
             if (string.IsNullOrEmpty(val))
             {
                 var rlt = ctx.EmiGet<Account>("app", "getaccount", new KeyValuePair<string, string>("sid", sid));
                 if (rlt.success && !string.IsNullOrEmpty(rlt.data.name))
                 {
                     val = rlt.data.name;
-                    Wlniao.Cache.Set("sidname-" + ctx.owner + "-" + sid, val, 3600);
+                    Caching.Cache.Set("sidname-" + ctx.owner + "-" + sid, val, 3600);
                 }
                 else
                 {

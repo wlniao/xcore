@@ -22,6 +22,8 @@
 using System;
 using System.IO;
 using System.Text;
+using Wlniao.Text;
+using Encoding = System.Text.Encoding;
 
 namespace Wlniao.IO
 {
@@ -116,7 +118,7 @@ namespace Wlniao.IO
                 {
                     var bytes = new byte[(int)fs.Length];
                     var r = fs.Read(bytes, 0, bytes.Length);
-                    if (encoding == System.Text.UTF8Encoding.UTF8 && bytes.Length > 3)
+                    if (encoding == System.Text.Encoding.UTF8 && bytes.Length > 3)
                     {
                         var bomBuffer = new byte[] { 0xef, 0xbb, 0xbf };
                         if (bytes[0] == bomBuffer[0]
@@ -138,7 +140,7 @@ namespace Wlniao.IO
         /// <returns></returns>
         public static string ReadUTF8String(string absolutePath)
         {
-            return strUtil.GetUTF8String(ReadByte(absolutePath));
+            return StringUtil.GetUTF8String(ReadByte(absolutePath));
         }
         /// <summary>
         /// 读取文件各行内容(采用UTF8编码)，以数组形式返回

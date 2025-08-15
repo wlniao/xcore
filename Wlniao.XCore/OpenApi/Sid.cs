@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Wlniao.Text;
 
 namespace Wlniao.OpenApi
 {
@@ -37,7 +38,7 @@ namespace Wlniao.OpenApi
         /// <returns></returns>
         public static string Get(string Mobile)
         {
-            if (strUtil.IsMobile(Mobile))
+            if (StringUtil.IsMobile(Mobile))
             {
                 var _rlt = Wlniao.OpenApi.Common.Get<string>("sid", "get", new KeyValuePair<string, string>("mobile", Mobile));
                 if (_rlt.success)
@@ -47,11 +48,11 @@ namespace Wlniao.OpenApi
                 else
                 {
                     var r = new Random();
-                    var ts = cvt.ToHex(DateTools.GetUnix(), "0123456789abcdef");
-                    var ms = cvt.ToHex(long.Parse("86" + Mobile), "0123456789abcdef");
-                    var v1 = cvt.ToHex(r.Next(4096, 26214), "0123456789abcdef");
-                    var v2 = cvt.ToHex(r.Next(26214, 43690), "0123456789abcdef");
-                    var v3 = cvt.ToHex(r.Next(43690, 65535), "0123456789abcdef");
+                    var ts = Convert.ToHex(DateTools.GetUnix(), "0123456789abcdef");
+                    var ms = Convert.ToHex(long.Parse("86" + Mobile), "0123456789abcdef");
+                    var v1 = Convert.ToHex(r.Next(4096, 26214), "0123456789abcdef");
+                    var v2 = Convert.ToHex(r.Next(26214, 43690), "0123456789abcdef");
+                    var v3 = Convert.ToHex(r.Next(43690, 65535), "0123456789abcdef");
                     return ts + "-" + v1 + "-" + v2 + "-" + v3 + "-" + ms;
                 }
             }
@@ -67,8 +68,8 @@ namespace Wlniao.OpenApi
             try
             {
                 var arr = Sid.Split('-');
-                var mobile = cvt.DeHex(arr[arr.Length - 1], "0123456789abcdef").ToString().Substring(2);
-                if (strUtil.IsMobile(mobile))
+                var mobile = Convert.DeHex(arr[arr.Length - 1], "0123456789abcdef").ToString().Substring(2);
+                if (StringUtil.IsMobile(mobile))
                 {
                     return mobile;
                 }

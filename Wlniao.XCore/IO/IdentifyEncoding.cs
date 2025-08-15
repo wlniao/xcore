@@ -40,7 +40,7 @@ namespace Wlniao.IO
         {
             try
             {
-                if (File.Exists(absolutePath))
+                if (FileEx.Exists(absolutePath))
                 {
                     using (var fs = new FileStream(absolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
@@ -64,7 +64,7 @@ namespace Wlniao.IO
         /// <returns>返回编码类型("GB2312", "GBK", "HZ", "Big5", "CNS 11643", "ISO 2022CN", "UTF-8", "Unicode", "ASCII", "OTHER")</returns>
         public static string GetEncodingName(byte[] buffer)
         {
-            return GetEncodingName(cvt.ToSByteArray(buffer));
+            return GetEncodingName(Convert.ToSByteArray(buffer));
         }
 
         /// <summary>
@@ -1710,7 +1710,7 @@ namespace Wlniao.IO
                 else
                 {
                     dbchars++;
-                    if ((sbyte)cvt.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)cvt.Identity(0xF7) && (sbyte)cvt.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)cvt.Identity(0xFE))
+                    if ((sbyte)Convert.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)Convert.Identity(0xF7) && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xFE))
                     {
                         gbchars++;
                         totalfreq += 500;
@@ -1764,7 +1764,7 @@ namespace Wlniao.IO
                 else
                 {
                     dbchars++;
-                    if ((sbyte)cvt.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)cvt.Identity(0xF7) && (sbyte)cvt.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)cvt.Identity(0xFE))
+                    if ((sbyte)Convert.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)Convert.Identity(0xF7) && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xFE))
                     {
                         gbchars++;
                         totalfreq += 500;
@@ -1781,7 +1781,7 @@ namespace Wlniao.IO
                             gbfreq += 200;
                         }
                     }
-                    else if ((sbyte)cvt.Identity(0x81) <= rawtext[i] && rawtext[i] <= (sbyte)cvt.Identity(0xFE) && (((sbyte)cvt.Identity(0x80) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)cvt.Identity(0xFE)) || ((sbyte)0x40 <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)0x7E)))
+                    else if ((sbyte)Convert.Identity(0x81) <= rawtext[i] && rawtext[i] <= (sbyte)Convert.Identity(0xFE) && (((sbyte)Convert.Identity(0x80) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xFE)) || ((sbyte)0x40 <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)0x7E)))
                     {
                         gbchars++;
                         totalfreq += 500;
@@ -1944,7 +1944,7 @@ namespace Wlniao.IO
                 if (rawtext[i] < 0)
                 {
                     dbchars++;
-                    if ((sbyte)cvt.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)cvt.Identity(0xF9) && (((sbyte)0x40 <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)0x7E) || ((sbyte)cvt.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)cvt.Identity(0xFE))))
+                    if ((sbyte)Convert.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)Convert.Identity(0xF9) && (((sbyte)0x40 <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)0x7E) || ((sbyte)Convert.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xFE))))
                     {
                         bfchars++;
                         totalfreq += 500;
@@ -2005,7 +2005,7 @@ namespace Wlniao.IO
                 {
                     // high bit set
                     dbchars++;
-                    if (i + 3 < rawtextlen && (sbyte)cvt.Identity(0x8E) == rawtext[i] && (sbyte)cvt.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)cvt.Identity(0xB0) && (sbyte)cvt.Identity(0xA1) <= rawtext[i + 2] && rawtext[i + 2] <= (sbyte)cvt.Identity(0xFE) && (sbyte)cvt.Identity(0xA1) <= rawtext[i + 3] && rawtext[i + 3] <= (sbyte)cvt.Identity(0xFE))
+                    if (i + 3 < rawtextlen && (sbyte)Convert.Identity(0x8E) == rawtext[i] && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xB0) && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 2] && rawtext[i + 2] <= (sbyte)Convert.Identity(0xFE) && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 3] && rawtext[i + 3] <= (sbyte)Convert.Identity(0xFE))
                     {
                         // Planes 1 - 16
 
@@ -2014,7 +2014,7 @@ namespace Wlniao.IO
                         // These are all less frequent chars so just ignore freq
                         i += 3;
                     }
-                    else if ((sbyte)cvt.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)cvt.Identity(0xFE) && (sbyte)cvt.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)cvt.Identity(0xFE))
+                    else if ((sbyte)Convert.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)Convert.Identity(0xFE) && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xFE))
                     {
                         cnschars++;
                         totalfreq += 500;
@@ -2214,7 +2214,7 @@ namespace Wlniao.IO
             //int goodbytes = 0, asciibytes = 0;
 
 
-            if (((sbyte)cvt.Identity(0xFE) == rawtext[0] && (sbyte)cvt.Identity(0xFF) == rawtext[1]) || ((sbyte)cvt.Identity(0xFF) == rawtext[0] && (sbyte)cvt.Identity(0xFE) == rawtext[1]))
+            if (((sbyte)Convert.Identity(0xFE) == rawtext[0] && (sbyte)Convert.Identity(0xFF) == rawtext[1]) || ((sbyte)Convert.Identity(0xFF) == rawtext[0] && (sbyte)Convert.Identity(0xFE) == rawtext[1]))
             {
                 return 100;
             }

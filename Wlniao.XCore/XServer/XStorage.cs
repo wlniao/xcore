@@ -7,6 +7,8 @@ using System.Security.Cryptography;
 using System.Net.Http;
 using System.Globalization;
 using System.Runtime.Serialization;
+using Wlniao.IO;
+using Wlniao.Text;
 
 namespace Wlniao.XServer
 {
@@ -273,7 +275,7 @@ namespace Wlniao.XServer
             {
                 return "";
             }
-            DataStr = strUtil.HtmlDecode(DataStr);
+            DataStr = StringUtil.HtmlDecode(DataStr);
             DataStr = DataStr.Replace("src=\"/", "src=\"" + XStorageUrl + "/");
             if (darwing)
             {
@@ -335,9 +337,9 @@ namespace Wlniao.XServer
                             {
                                 Directory.CreateDirectory(toFilePath);
                             }
-                            else if (File.Exists(toFileName))
+                            else if (FileEx.Exists(toFileName))
                             {
-                                File.Delete(toFileName);
+                                FileEx.Delete(toFileName);
                             }
                             using (var fs = new System.IO.FileStream(toFileName, FileMode.CreateNew))
                             {
@@ -366,7 +368,7 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static bool Upload(string FileName, System.IO.Stream stream)
         {
-            var rlt = Upload(FileName, cvt.ToBytes(stream));
+            var rlt = Upload(FileName, Convert.ToBytes(stream));
             stream.Dispose();
             return rlt;
         }
@@ -491,7 +493,7 @@ namespace Wlniao.XServer
         public static byte[] Read(string FileName)
         {
             byte[] buffur = null;
-            if (File.Exists(FileName))
+            if (FileEx.Exists(FileName))
             {
                 var fs = new FileStream(FileName.StartsWith(UploadPath) ? FileName : UploadPath + FileName, FileMode.Open, FileAccess.Read);
                 try
@@ -510,7 +512,7 @@ namespace Wlniao.XServer
             }
             if (buffur == null && XStorageType == "upyun")
             {
-                buffur = cvt.ToBytes(Upyun.ReadFile(FileName));
+                buffur = Convert.ToBytes(Upyun.ReadFile(FileName));
             }
             return buffur;
         }
@@ -785,7 +787,7 @@ namespace Wlniao.XServer
                     {
                         resp.Content.ReadAsStringAsync().ContinueWith((readTask) =>
                         {
-                            return cvt.ToInt(readTask.Result);
+                            return Convert.ToInt(readTask.Result);
                         }).Wait();
                     }
                 }
@@ -908,7 +910,7 @@ namespace Wlniao.XServer
                 var stream = ReadFile(path);
                 if (stream != null)
                 {
-                    return System.Text.Encoding.UTF8.GetString(cvt.ToBytes(stream));
+                    return System.Text.Encoding.UTF8.GetString(Convert.ToBytes(stream));
                 }
                 return null;
             }
@@ -1342,11 +1344,11 @@ namespace Wlniao.XServer
                             var kv = kvs.SplitBy("=");
                             if (kv.Length == 1)
                             {
-                                kvList.Add(new KeyValuePair<string, string>(strUtil.UrlEncodeSymbol(kv[0].ToLower()), ""));
+                                kvList.Add(new KeyValuePair<string, string>(StringUtil.UrlEncodeSymbol(kv[0].ToLower()), ""));
                             }
                             else if (kv.Length == 2)
                             {
-                                kvList.Add(new KeyValuePair<string, string>(strUtil.UrlEncodeSymbol(kv[0].ToLower()), strUtil.UrlEncodeSymbol(kv[1])));
+                                kvList.Add(new KeyValuePair<string, string>(StringUtil.UrlEncodeSymbol(kv[0].ToLower()), StringUtil.UrlEncodeSymbol(kv[1])));
                             }
                         }
                     }
@@ -1355,7 +1357,7 @@ namespace Wlniao.XServer
                     var hdList = new List<KeyValuePair<string, string>>();
                     foreach (DictionaryEntry kv in headers)
                     {
-                        hdList.Add(new KeyValuePair<string, string>(strUtil.UrlEncodeSymbol(kv.Key.ToString().ToLower()), strUtil.UrlEncodeSymbol(kv.Value.ToString())));
+                        hdList.Add(new KeyValuePair<string, string>(StringUtil.UrlEncodeSymbol(kv.Key.ToString().ToLower()), StringUtil.UrlEncodeSymbol(kv.Value.ToString())));
                     }
 
 

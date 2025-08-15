@@ -21,6 +21,8 @@
 ===============================================================================*/
 using Microsoft.VisualBasic;
 using System;
+using Wlniao.Text;
+
 namespace Wlniao.Log
 {
     /// <summary>
@@ -67,7 +69,7 @@ namespace Wlniao.Log
                     {
                         logLevel = LogLevel.Critical;
                     }
-                    else if (!Enum.TryParse<LogLevel>(strUtil.GetTitleCase(level), out logLevel))
+                    else if (!Enum.TryParse<LogLevel>(StringUtil.GetTitleCase(level), out logLevel))
                     {
                         logLevel = LogLevel.Information;
                     }

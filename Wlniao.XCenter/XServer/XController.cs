@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Wlniao;
+using Wlniao.Text;
 
 namespace Wlniao.XServer
 {
@@ -12,7 +13,7 @@ namespace Wlniao.XServer
     /// </summary>
     public class XController : Controller
     {
-        private static readonly Dictionary<String, XsApp> _cache = new();
+        private static readonly Dictionary<string, XsApp> _cache = new();
         /// <summary>
         /// 当前客户端的App信息
         /// </summary>
@@ -22,7 +23,7 @@ namespace Wlniao.XServer
         /// <summary>
         /// 默认返回的ApiResult对象
         /// </summary>
-        protected ApiResult<String> _rlt = new();
+        protected ApiResult<string> _rlt = new();
         /// <summary>
         /// 
         /// </summary>
@@ -37,12 +38,12 @@ namespace Wlniao.XServer
             if (string.IsNullOrEmpty(AppId))
             {
                 _rlt.message = "xsappid is missing";
-                filterContext.Result = new ContentResult { Content = Wlniao.Json.ToString(_rlt) };
+                filterContext.Result = new ContentResult { Content = Wlniao.Json.Serialize(_rlt) };
             }
-            else if (cvt.ToLong(TimeSpan) < DateTools.GetUnix() - 3600)
+            else if (Convert.ToLong(TimeSpan) < DateTools.GetUnix() - 3600)
             {
                 _rlt.message = "request is expired";
-                filterContext.Result = new ContentResult() { Content = Wlniao.Json.ToString(_rlt) };
+                filterContext.Result = new ContentResult() { Content = Wlniao.Json.Serialize(_rlt) };
             }
             else
             {
@@ -74,7 +75,7 @@ namespace Wlniao.XServer
                             if (app.xclient && !filterContext.ActionDescriptor.FilterDescriptors.Any(a => a.Filter.ToString().Contains("Wlniao.Mvc.XClientAttribute")))
                             {
                                 _rlt.message = "not allow xclient app";
-                                filterContext.Result = new ContentResult() { Content = Wlniao.Json.ToString(_rlt) };
+                                filterContext.Result = new ContentResult() { Content = Wlniao.Json.Serialize(_rlt) };
                                 return;
                             }
 #pragma warning restore CS8602 // 解引用可能出现空引用。
@@ -84,16 +85,16 @@ namespace Wlniao.XServer
                 if (app == null || app.appid.IsNullOrEmpty())
                 {
                     _rlt.message = "xsappid is invalid";
-                    filterContext.Result = new ContentResult() { Content = Wlniao.Json.ToString(_rlt) };
+                    filterContext.Result = new ContentResult() { Content = Wlniao.Json.Serialize(_rlt) };
                 }
                 else
                 {
-                    var list = new List<KeyValuePair<String, String>>();
+                    var list = new List<KeyValuePair<string, string>>();
                     foreach (string key in Request.Query.Keys)
                     {
                         list.Add(new KeyValuePair<string, string>(key, Request.Query[key].ToString()));
                     }
-                    list.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
+                    list.Sort(delegate (KeyValuePair<string, string> small, KeyValuePair<string, string> big) { return small.Key.CompareTo(big.Key); });
                     var values = new System.Text.StringBuilder();
                     foreach (var param in list)
                     {
@@ -116,7 +117,7 @@ namespace Wlniao.XServer
                             _cache.Remove(AppId);
                         }
                         _rlt.message = "signature error";
-                        filterContext.Result = new ContentResult() { Content = Wlniao.Json.ToString(_rlt) };
+                        filterContext.Result = new ContentResult() { Content = Wlniao.Json.Serialize(_rlt) };
                     }
                     else if (!_cache.ContainsKey(AppId))
                     {
@@ -132,7 +133,7 @@ namespace Wlniao.XServer
         /// <param name="data"></param>
         /// <returns></returns>
         [NonAction]
-        public new ActionResult Json(Object data)
+        public new ActionResult Json(object data)
         {
             var jsonStr = "";
             if (data != null)
@@ -143,7 +144,7 @@ namespace Wlniao.XServer
                 }
                 else if (data != null)
                 {
-                    jsonStr = Wlniao.Json.ToString(data);
+                    jsonStr = Wlniao.Json.Serialize(data);
                 }
             }
             if (string.IsNullOrEmpty(GetRequest("callback")))
@@ -162,7 +163,7 @@ namespace Wlniao.XServer
         /// <param name="encoding"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult Json(Object data, System.Text.Encoding encoding)
+        public ActionResult Json(object data, System.Text.Encoding encoding)
         {
             var jsonStr = "";
             if (data != null)
@@ -173,7 +174,7 @@ namespace Wlniao.XServer
                 }
                 else if (data != null)
                 {
-                    jsonStr = Wlniao.Json.ToString(data);
+                    jsonStr = Wlniao.Json.Serialize(data);
                 }
             }
             if (string.IsNullOrEmpty(GetRequest("callback")))
@@ -191,7 +192,7 @@ namespace Wlniao.XServer
         /// <param name="jsonStr"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult JsonStr(String jsonStr)
+        public ActionResult JsonStr(string jsonStr)
         {
             return Content(jsonStr, "text/json", System.Text.Encoding.UTF8);
         }
@@ -202,7 +203,7 @@ namespace Wlniao.XServer
         /// <param name="encoding"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult JsonStr(String jsonStr, System.Text.Encoding encoding)
+        public ActionResult JsonStr(string jsonStr, System.Text.Encoding encoding)
         {
             return Content(jsonStr, "text/json", encoding ?? System.Text.Encoding.UTF8);
         }
@@ -214,7 +215,7 @@ namespace Wlniao.XServer
         /// <param name="Default"></param>
         /// <returns></returns>
         [NonAction]
-        protected String GetRequestNoSecurity(String Key, String Default = "")
+        protected string GetRequestNoSecurity(string Key, string Default = "")
         {
             var key = Key.ToLower();
             foreach (var item in Request.Query.Keys)
@@ -224,7 +225,7 @@ namespace Wlniao.XServer
                     Default = Request.Query[item].ToString().Trim();
                     if (!string.IsNullOrEmpty(Default) && Default.Contains('%'))
                     {
-                        Default = strUtil.UrlDecode(Default);
+                        Default = StringUtil.UrlDecode(Default);
                     }
                     return Default;
                 }
@@ -238,7 +239,7 @@ namespace Wlniao.XServer
         /// <param name="Default"></param>
         /// <returns></returns>
         [NonAction]
-        protected String GetRequest(String Key, String Default = "")
+        protected string GetRequest(string Key, string Default = "")
         {
             var key = Key.ToLower();
             foreach (var item in Request.Query.Keys)
@@ -248,7 +249,7 @@ namespace Wlniao.XServer
                     Default = Request.Query[item].ToString().Trim();
                     if (!string.IsNullOrEmpty(Default) && Default.Contains('%'))
                     {
-                        Default = strUtil.UrlDecode(Default);
+                        Default = StringUtil.UrlDecode(Default);
                     }
                     return Default.Trim();
                 }
@@ -262,7 +263,7 @@ namespace Wlniao.XServer
         /// <param name="Default"></param>
         /// <returns></returns>
         [NonAction]
-        protected String GetRequestDecode(String Key, String Default = "")
+        protected string GetRequestDecode(string Key, string Default = "")
         {
             return GetRequest(Key, Default);
         }
@@ -272,16 +273,16 @@ namespace Wlniao.XServer
         /// <param name="Key"></param>
         /// <returns></returns>
         [NonAction]
-        protected Int32 GetRequestInt(String Key)
+        protected int GetRequestInt(string Key)
         {
-            return cvt.ToInt(GetRequest(Key, "0"));
+            return Convert.ToInt(GetRequest(Key, "0"));
         }
         /// <summary>
         /// 获取Post的文本内容
         /// </summary>
         /// <returns></returns>
         [NonAction]
-        protected String GetPostString()
+        protected string GetPostString()
         {
             if (strPost == null && Request.Method == "POST" && Request.ContentLength > 0 && (Request.ContentType == null || !Request.ContentType.Contains("form")))
             {
@@ -311,7 +312,7 @@ namespace Wlniao.XServer
         /// <param name="Default"></param>
         /// <returns></returns>
         [NonAction]
-        protected String PostRequest(String Key, String Default = "")
+        protected string PostRequest(string Key, string Default = "")
         {
             var key = Key.ToLower();
             if (ctxPost == null)
@@ -364,7 +365,7 @@ namespace Wlniao.XServer
                                 }
                                 if (!string.IsNullOrEmpty(strPost))
                                 {
-                                    var tmpPost = Wlniao.Json.ToObject<Dictionary<String, String>>(strPost);
+                                    var tmpPost = Wlniao.Json.Deserialize<Dictionary<string, string>>(strPost);
                                     if (tmpPost != null)
                                     {
                                         foreach (var kv in tmpPost)
@@ -382,7 +383,7 @@ namespace Wlniao.XServer
                     {
                         foreach (var item in Request.Query.Keys)
                         {
-                            ctxPost.TryAdd(item.ToLower(), strUtil.UrlDecode(Request.Query[item].ToString().Trim()));
+                            ctxPost.TryAdd(item.ToLower(), StringUtil.UrlDecode(Request.Query[item].ToString().Trim()));
                         }
                     }
                 }
@@ -401,9 +402,9 @@ namespace Wlniao.XServer
         /// <param name="Key"></param>
         /// <returns></returns>
         [NonAction]
-        protected Int32 PostRequestInt(String Key)
+        protected int PostRequestInt(string Key)
         {
-            return cvt.ToInt(PostRequest(Key, "0"));
+            return Convert.ToInt(PostRequest(Key, "0"));
         }
     }
 }

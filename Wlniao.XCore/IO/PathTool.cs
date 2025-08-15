@@ -22,6 +22,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Wlniao.Text;
+
 namespace Wlniao.IO
 {
     /// <summary>
@@ -61,7 +63,7 @@ namespace Wlniao.IO
         /// <returns></returns>
         internal static string Map(string path)
         {
-            if (strUtil.IsNullOrEmpty(path))
+            if (StringUtil.IsNullOrEmpty(path))
             {
                 return XCore.StartupRoot;
             }

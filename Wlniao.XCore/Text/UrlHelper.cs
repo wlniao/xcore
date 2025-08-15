@@ -81,7 +81,7 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static bool UrlHasExt(string url)
         {
-            if (strUtil.IsNullOrEmpty(url)) return false;
+            if (StringUtil.IsNullOrEmpty(url)) return false;
             var arrItem = url.Split('/');
             var lastPart = arrItem[arrItem.Length - 1];
             return lastPart.IndexOf(".") >= 0;
@@ -93,13 +93,13 @@ namespace Wlniao.Text
         /// <returns>返回被剔除掉后缀名的 url</returns>
         public static string TrimUrlExt(string rawUrl)
         {
-            if (strUtil.IsNullOrEmpty(rawUrl)) return rawUrl;
+            if (StringUtil.IsNullOrEmpty(rawUrl)) return rawUrl;
             var dotIndex = rawUrl.IndexOf(".");
             if (dotIndex < 0) return rawUrl;
             var arrItem = rawUrl.Split('.');
             var ext = arrItem[arrItem.Length - 1];
             if (ext.IndexOf('/') > 0) return rawUrl;
-            return strUtil.TrimEnd(rawUrl, ext).TrimEnd('.');
+            return StringUtil.TrimEnd(rawUrl, ext).TrimEnd('.');
         }
         /// <summary>
         /// 在不考虑后缀名的情况下，比较两个网址是否相同
@@ -109,8 +109,8 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static bool CompareUrlWithoutExt(string url1, string url2)
         {
-            if (strUtil.IsNullOrEmpty(url1) && strUtil.IsNullOrEmpty(url2)) return true;
-            if (strUtil.IsNullOrEmpty(url1) || strUtil.IsNullOrEmpty(url2)) return false;
+            if (StringUtil.IsNullOrEmpty(url1) && StringUtil.IsNullOrEmpty(url2)) return true;
+            if (StringUtil.IsNullOrEmpty(url1) || StringUtil.IsNullOrEmpty(url2)) return false;
             return TrimUrlExt(url1) == TrimUrlExt(url2);
         }
     }

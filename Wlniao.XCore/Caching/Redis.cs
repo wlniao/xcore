@@ -43,7 +43,7 @@ namespace Wlniao.Caching
         /// <summary>
         /// 使用的数据库序号
         /// </summary>
-        public static int Select = cvt.ToInt(Config.GetConfigs("WLN_REDIS_DB"));
+        public static int Select = Convert.ToInt(Config.GetConfigs("WLN_REDIS_DB"));
         /// <summary>
         /// 判断Redis缓存是否可用
         /// </summary>
@@ -86,7 +86,7 @@ namespace Wlniao.Caching
                             var host = Config.GetConfigs("WLN_REDIS_HOST");
                             var pass = Config.GetEncrypt("WLN_REDIS_PASS", Config.Secret);
                             var user = Config.GetEncrypt("WLN_REDIS_USER", Config.Secret);
-                            var port = cvt.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
+                            var port = Convert.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
                             if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
                             {
                                 connstr = host + ":" + port;
@@ -245,7 +245,7 @@ namespace Wlniao.Caching
         /// <param name="expire"></param>
         public static bool Set(string key, string value, int expire)
         {
-            return Set(key, UTF8Encoding.UTF8.GetBytes(value), expire);
+            return Set(key, Encoding.UTF8.GetBytes(value), expire);
         }
         /// <summary>
         /// 

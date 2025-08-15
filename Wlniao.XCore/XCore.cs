@@ -267,7 +267,7 @@ namespace Wlniao
             {
                 if (port == 0)
                 {
-                    port = cvt.ToInt(Config.GetConfigs("WLN_LISTEN_PORT"));
+                    port = Convert.ToInt(Config.GetConfigs("WLN_LISTEN_PORT"));
                     if (port <= 0)
                     {
                         port = 5000;
