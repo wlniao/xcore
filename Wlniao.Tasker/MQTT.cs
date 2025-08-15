@@ -103,7 +103,7 @@ namespace Wlniao.Tasker
         /// <returns></returns>
         private MqttApplicationMessage BuildMessage(string topic, object data)
         {
-            var msg = Wlniao.Json.ToString(data);
+            var msg = Wlniao.Json.Serialize(data);
             var buffer = sm2.Encrypt(Encoding.UTF8.GetBytes(msg));
             var builder = new MqttApplicationMessageBuilder()
             .WithTopic(topic)
@@ -154,7 +154,7 @@ namespace Wlniao.Tasker
                 if (Normal && !string.IsNullOrEmpty(pubkey))
                 {
                     //使用普通服务器时，设置掉线遗嘱消息
-                    var buffer = sm2.Encrypt(Encoding.UTF8.GetBytes(Json.ToString(new { ClientId })));
+                    var buffer = sm2.Encrypt(Encoding.UTF8.GetBytes(Json.Serialize(new { ClientId })));
                     var willBuilder = new MqttApplicationMessageBuilder();
                     willBuilder.WithTopic("watcher/disconnected");
                     willBuilder.WithExactlyOnceQoS();
@@ -253,7 +253,7 @@ namespace Wlniao.Tasker
             {
                 var message = UTF8Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
                 Log.Loger.Debug(message);
-                var obj = Json.StringToDic(message);
+                var obj = Json.DeserializeToDic(message);
                 func(new Context
                 {
                     topic = topic,
