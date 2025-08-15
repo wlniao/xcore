@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Wlniao.Text;
 
 namespace Wlniao.OpenApi
 {
@@ -39,7 +40,7 @@ namespace Wlniao.OpenApi
         public static string GetIP()
         {
             var ip = XServer.Common.Get("openapi", "tool", "getip");
-            if (strUtil.IsIP(ip))
+            if (StringUtil.IsIP(ip))
             {
                 return ip;
             }
@@ -52,7 +53,7 @@ namespace Wlniao.OpenApi
         public static string GetIPv4()
         {
             var ip = XServer.Common.Get("openapi", "tool", "getipv4");
-            if (strUtil.IsIPv4(ip))
+            if (StringUtil.IsIPv4(ip))
             {
                 return ip;
             }
@@ -65,7 +66,7 @@ namespace Wlniao.OpenApi
         public static string GetIPv6()
         {
             var ip = XServer.Common.Get("openapi", "tool", "getipv6");
-            if (strUtil.IsIPv6(ip))
+            if (StringUtil.IsIPv6(ip))
             {
                 return ip;
             }
@@ -78,7 +79,7 @@ namespace Wlniao.OpenApi
         public static string GetIPv6Connected()
         {
             var ip = XServer.Common.Get("openapi", "tool", "getipv6");
-            if (strUtil.IsIPv6(ip))
+            if (StringUtil.IsIPv6(ip))
             {
                 var address = System.Net.IPAddress.Parse(ip);
                 if (!address.IsIPv4MappedToIPv6 && !address.IsIPv6SiteLocal && !address.IsIPv6LinkLocal && !address.IsIPv6Multicast)
@@ -124,7 +125,7 @@ namespace Wlniao.OpenApi
                 }
             }
             catch { }
-            if (strUtil.IsIPv4(ip))
+            if (StringUtil.IsIPv4(ip))
             {
                 return ip;
             }
@@ -139,7 +140,7 @@ namespace Wlniao.OpenApi
         /// <returns></returns>
         public static string GetPinyin(string str)
         {
-            return XServer.Common.Get("openapi", "tool", "getpinyin", new KeyValuePair<string, string>("str", strUtil.UrlEncode(str)));
+            return XServer.Common.Get("openapi", "tool", "getpinyin", new KeyValuePair<string, string>("str", StringUtil.UrlEncode(str)));
         }
         /// <summary>
         /// 将汉字转换成拼音并获取首字母

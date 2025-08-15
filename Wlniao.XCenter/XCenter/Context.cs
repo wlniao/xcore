@@ -1,17 +1,11 @@
-﻿using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Utilities;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
 using System.Text;
 using Wlniao.Log;
-using Wlniao.Serialization;
-using static System.Net.Mime.MediaTypeNames;
+using Wlniao.Text;
+using Encoding = System.Text.Encoding;
 
 
 namespace Wlniao.XCenter
@@ -154,7 +148,7 @@ namespace Wlniao.XCenter
         /// 
         /// </summary>
         /// <param name="ownerId"></param>
-        public static Context Load(Int32 ownerId)
+        public static Context Load(int ownerId)
         {
             //需要使用公钥从服务器上加载应用信息
             var ctx = new Context { owner = ownerId.ToString(), token = XCenterToken, app = XCenterApp };
@@ -177,7 +171,7 @@ namespace Wlniao.XCenter
                                 ctx.token = sm2token;
                             }
                         }
-                        Wlniao.Cache.Set("ctx_" + ctx.domain, ctx, 300);
+                        Caching.Cache.Set("ctx_" + ctx.domain, ctx, 300);
                     }
                     catch { }
                 }
@@ -197,7 +191,7 @@ namespace Wlniao.XCenter
         /// </summary>
         /// <param name="domain"></param>
         /// <returns>不为空</returns>
-        public static Context Load(String domain)
+        public static Context Load(string domain)
         {
             if (string.IsNullOrEmpty(domain))
             {
@@ -209,7 +203,7 @@ namespace Wlniao.XCenter
             }
             else if (string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9 || (string.IsNullOrEmpty(XCenterToken) && string.IsNullOrEmpty(XCenterAppToken)) || (string.IsNullOrEmpty(XCenterApp) && string.IsNullOrEmpty(XCenterCertSn)))
             {
-                var ctx = Wlniao.Cache.Get<Context>("ctx_" + domain);
+                var ctx = Caching.Cache.Get<Context>("ctx_" + domain);
                 if (ctx == null || string.IsNullOrEmpty(ctx.app))
                 {
                     //未缓存时，需要使用公钥从服务器上加载应用信息
@@ -247,7 +241,7 @@ namespace Wlniao.XCenter
                                 {
                                     ctx.message = "请检查“XCenterPrivkey”是否正确";
                                 }
-                                Wlniao.Cache.Set("ctx_" + ctx.domain, ctx, 300);
+                                Caching.Cache.Set("ctx_" + ctx.domain, ctx, 300);
                             }
                             else
                             {
@@ -284,7 +278,7 @@ namespace Wlniao.XCenter
         /// <param name="path"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static Wlniao.ApiResult<T> AppData<T>(String path, Object data)
+        public static Wlniao.ApiResult<T> AppData<T>(string path, object data)
         {
             if (string.IsNullOrEmpty(XCenterCertSn))
             {
@@ -297,19 +291,19 @@ namespace Wlniao.XCenter
             var now = DateTools.GetUnix();
             var rlt = new Wlniao.ApiResult<T>();
             var utime = "";
-            var msgid = strUtil.CreateLongId();
-            var token = XCenterSm4Key.Length == 16 ? XCenterSm4Key : strUtil.CreateRndStrE(16);
-            var plainData = Wlniao.Json.ToString(data);
+            var msgid = StringUtil.CreateLongId();
+            var token = XCenterSm4Key.Length == 16 ? XCenterSm4Key : StringUtil.CreateRndStrE(16);
+            var plainData = Wlniao.Json.Serialize(data);
             var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
-            var sm2token = Wlniao.Encryptor.SM2EncryptByPublicKey(ASCIIEncoding.ASCII.GetBytes(token), XCenterPublicKey);
+            var sm2token = Wlniao.Encryptor.SM2EncryptByPublicKey(Encoding.ASCII.GetBytes(token), XCenterPublicKey);
             var sign = Wlniao.Encryptor.SM3Encrypt(encdata + now + token);
             var resStr = "";
-            var reqStr = Wlniao.Json.ToString(new { sn = XCenterCertSn, token = sm2token, timestamp = now, data = encdata, sign });
+            var reqStr = Wlniao.Json.Serialize(new { sn = XCenterCertSn, token = sm2token, timestamp = now, data = encdata, sign });
             Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
             var start = DateTime.Now;
             try
             {
-                var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
+                var stream = Convert.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
                 var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
@@ -344,7 +338,7 @@ namespace Wlniao.XCenter
             var logs = $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} >>> {plainData}";
             try
             {
-                var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiResult<String>>(resStr);
+                var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiResult<string>>(resStr);
                 if (resObj != null)
                 {
                     rlt.node = resObj.node;
@@ -401,7 +395,7 @@ namespace Wlniao.XCenter
         /// <param name="path"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public Wlniao.ApiResult<T> ApiData<T>(String path, Object data)
+        public Wlniao.ApiResult<T> ApiData<T>(string path, object data)
         {
             var rlt = new Wlniao.ApiResult<T>();
             var apptoken = string.IsNullOrEmpty(app) || string.IsNullOrEmpty(token)
@@ -416,16 +410,16 @@ namespace Wlniao.XCenter
                 var now = DateTools.GetUnix();
                 var utime = "";
                 var start = DateTime.Now;
-                var msgid = strUtil.CreateLongId();
-                var plainData = Wlniao.Json.ToString(data);
+                var msgid = StringUtil.CreateLongId();
+                var plainData = Wlniao.Json.Serialize(data);
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, apptoken);
                 var sign = Wlniao.Encryptor.SM3Encrypt(owner + app + encdata + now + apptoken);
                 var resStr = "";
-                var reqStr = Wlniao.Json.ToString(new { app, oid = owner, sign, data = encdata, timestamp = now });
+                var reqStr = Wlniao.Json.Serialize(new { app, oid = owner, sign, data = encdata, timestamp = now });
                 Loger.Topic(app, $"msgid:{msgid},authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
                 try
                 {
-                    var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
+                    var stream = Convert.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
                     var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                     using (var client = new System.Net.Http.HttpClient(handler))
                     {
@@ -460,7 +454,7 @@ namespace Wlniao.XCenter
                 var logs = $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} >>> {plainData}";
                 try
                 {
-                    var resObj = Json.ToObject<Wlniao.ApiResult<String>>(resStr);
+                    var resObj = Json.Deserialize<Wlniao.ApiResult<string>>(resStr);
                     if (resObj != null)
                     {
                         rlt.node = resObj.node;
@@ -484,9 +478,9 @@ namespace Wlniao.XCenter
                                     }
                                     else
                                     {
-                                        rlt.data = Wlniao.Json.ToObject<T>(json);
+                                        rlt.data = Wlniao.Json.Deserialize<T>(json);
                                     }
-                                    logs += "\n <<< " + Wlniao.Json.ToString(rlt);
+                                    logs += "\n <<< " + Wlniao.Json.Serialize(rlt);
                                 }
                                 catch
                                 {
@@ -518,7 +512,7 @@ namespace Wlniao.XCenter
         /// </summary>
         /// <param name="mobile"></param>
         /// <returns></returns>
-        public String ApiSid(String mobile)
+        public string ApiSid(string mobile)
         {
             if (string.IsNullOrEmpty(mobile))
             {
@@ -526,7 +520,7 @@ namespace Wlniao.XCenter
             }
             else
             {
-                var res = ApiData<String>("/api/get_sid", new { mobile = mobile });
+                var res = ApiData<string>("/api/get_sid", new { mobile = mobile });
                 if (res.success)
                 {
                     return res.data;
@@ -540,13 +534,13 @@ namespace Wlniao.XCenter
         /// </summary>
         /// <param name="owner"></param>
         /// <returns></returns>
-        public String ApiOwnerName(String owner = null)
+        public string ApiOwnerName(string owner = null)
         {
             var val = "";
             if (!string.IsNullOrEmpty(owner))
             {
                 val = Wlniao.Caching.InMemory.Get("ownername_" + owner);
-                var res = ApiData<String>("/api/get_ownername", new { owner = owner });
+                var res = ApiData<string>("/api/get_ownername", new { owner = owner });
                 if (res.success)
                 {
                     val = res.data;
@@ -565,13 +559,13 @@ namespace Wlniao.XCenter
         /// </summary>
         /// <param name="point"></param>
         /// <returns></returns>
-        public String ApiPointName(String point)
+        public string ApiPointName(string point)
         {
             var val = "";
             if (!string.IsNullOrEmpty(point))
             {
                 val = Wlniao.Caching.InMemory.Get("pointname_" + point);
-                var res = ApiData<String>("/api/get_pointname", new { id = point });
+                var res = ApiData<string>("/api/get_pointname", new { id = point });
                 if (res.success)
                 {
                     val = res.data;
@@ -591,13 +585,13 @@ namespace Wlniao.XCenter
         /// <param name="point"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        public String ApiOrganCode(String point, ref String message)
+        public string ApiOrganCode(string point, ref string message)
         {
             var val = "";
             if (!string.IsNullOrEmpty(point))
             {
                 val = Wlniao.Caching.InMemory.Get("pointcode_" + point);
-                var res = ApiData<String>("/api/get_pointcode", new { id = point, app = app });
+                var res = ApiData<string>("/api/get_pointcode", new { id = point, app = app });
                 if (res.success)
                 {
                     val = res.data;
@@ -616,23 +610,23 @@ namespace Wlniao.XCenter
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        public Dictionary<String, String> ApiSetting(String key)
+        public Dictionary<string, string> ApiSetting(string key)
         {
-            Dictionary<String, String> obj = null;
+            Dictionary<string, string> obj = null;
             try
             {
                 var val = Wlniao.Caching.InMemory.Get("appsetting_" + key);
-                obj = string.IsNullOrEmpty(val) ? null : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(val);
+                obj = string.IsNullOrEmpty(val) ? null : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(val);
             }
             catch { }
             try
             {
                 if (obj == null || obj.Count == 0)
                 {
-                    var res = ApiData<String>("/api/get_setting", new { key = key });
+                    var res = ApiData<string>("/api/get_setting", new { key = key });
                     if (res.success)
                     {
-                        obj = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, String>>(res.data);
+                        obj = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(res.data);
                         if (obj != null && obj.Count > 0)
                         {
                             Wlniao.Caching.InMemory.Set("appsetting_" + key, res.data, 900);
@@ -650,14 +644,14 @@ namespace Wlniao.XCenter
         /// </summary>
         /// <param name="ticket"></param>
         /// <returns></returns>
-        public Dictionary<String, Object> ApiCheckTicket(String ticket)
+        public Dictionary<string, object> ApiCheckTicket(string ticket)
         {
-            Dictionary<String, Object> obj = null;
+            Dictionary<string, object> obj = null;
             try
             {
                 if (string.IsNullOrEmpty(XCenterToken))
                 {
-                    var res = ApiData<Dictionary<String, Object>>("/api/check_ticket", new { app = app, ticket = ticket });
+                    var res = ApiData<Dictionary<string, object>>("/api/check_ticket", new { app = app, ticket = ticket });
                     if (res.success)
                     {
                         obj = res.data;
@@ -666,7 +660,7 @@ namespace Wlniao.XCenter
                 else
                 {
                     var json = Wlniao.Encryptor.SM4DecryptECBFromHex(ticket, XCenterToken);
-                    obj = string.IsNullOrEmpty(json) ? null : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<String, Object>>(json);
+                    obj = string.IsNullOrEmpty(json) ? null : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
                 }
             }
             catch { }
@@ -674,7 +668,7 @@ namespace Wlniao.XCenter
             {
                 return obj;
             }
-            return new Dictionary<String, Object>();
+            return new Dictionary<string, object>();
         }
     
     }

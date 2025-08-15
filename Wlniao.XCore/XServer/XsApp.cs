@@ -81,9 +81,9 @@ namespace Wlniao.XServer
                 var em = _rlt.data.GetEnumerator();
                 while (em.MoveNext())
                 {
-                    if (cvt.ToInt(em.Current.Value) > 0)
+                    if (Convert.ToInt(em.Current.Value) > 0)
                     {
-                        rlt.data.Add(em.Current.Key, cvt.ToInt(em.Current.Value));
+                        rlt.data.Add(em.Current.Key, Convert.ToInt(em.Current.Value));
                     }
                 }
             }
@@ -105,9 +105,9 @@ namespace Wlniao.XServer
                 var em = _rlt.data.GetEnumerator();
                 while (em.MoveNext())
                 {
-                    if (cvt.ToInt(em.Current.Value) > 0)
+                    if (Convert.ToInt(em.Current.Value) > 0)
                     {
-                        rlt.data.Add(em.Current.Key, cvt.ToInt(em.Current.Value));
+                        rlt.data.Add(em.Current.Key, Convert.ToInt(em.Current.Value));
                     }
                 }
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Text.RegularExpressions;
+using Wlniao.Text;
 
 namespace Wlniao
 {
@@ -34,7 +35,7 @@ namespace Wlniao
         /// <returns></returns>
         public static bool IsMobile(this string input)
         {
-            return input != null && strUtil.IsNumber(input) && input.Length == 11 && input.StartsWith("1");
+            return input != null && StringUtil.IsNumber(input) && input.Length == 11 && input.StartsWith("1");
         }
         /// <summary>
         /// 是否为邮箱地址

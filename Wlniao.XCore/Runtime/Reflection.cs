@@ -23,6 +23,8 @@ using System;
 using System.Collections;
 using System.Reflection;
 using System.Collections.Generic;
+using Wlniao.Text;
+
 namespace Wlniao.Runtime
 {
     /// <summary>
@@ -104,7 +106,7 @@ namespace Wlniao.Runtime
         public static object GetPropertyValue(object currentObject, string propertyName)
         {
             if (currentObject == null) return null;
-            if (strUtil.IsNullOrEmpty(propertyName)) return null;
+            if (StringUtil.IsNullOrEmpty(propertyName)) return null;
             var p = currentObject.GetType().GetRuntimeProperty(propertyName);
             if (p == null) return null;
             return p.GetValue(currentObject, null);

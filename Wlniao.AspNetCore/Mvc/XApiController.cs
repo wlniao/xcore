@@ -1,0 +1,244 @@
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Wlniao.Mvc
+{
+    /// <summary>
+    /// XApi基础Controller
+    /// </summary>
+    public class XApiController : XCoreController
+    {
+        /// <summary>
+        /// 加密密钥
+        /// </summary>
+        protected string token = null;
+        /// <summary>
+        /// 默认返回对象
+        /// </summary>
+        protected ApiResult<object> result = new() { node = XCore.WebNode, message = "" };
+        /// <summary>
+        /// 执行请求校验
+        /// </summary>
+        /// <param name="func"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult? Check(Func<Dictionary<string, object>, IActionResult> func)
+        {
+            try
+            {
+                var sign = PostRequest("sign");
+                var data = PostRequest("data");
+                var timestamp = PostRequest("timestamp");
+                if (string.IsNullOrEmpty(token))
+                {
+                    result.data = "200";
+                    result.message = "通讯密钥未配置，请先配置token";
+                }
+                else if (string.IsNullOrEmpty(data))
+                {
+                    result.data = "202";
+                    result.message = "缺少参数，data不能为空";
+                }
+                else if (string.IsNullOrEmpty(sign))
+                {
+                    result.data = "202";
+                    result.message = "缺少参数，sign不能为空";
+                }
+                else if (string.IsNullOrEmpty(timestamp))
+                {
+                    result.data = "202";
+                    result.message = "缺少参数，timestamp不能为空";
+                }
+                else if (cvt.ToLong(timestamp) + 3600 < DateTools.GetUnix())
+                {
+                    result.code = "203";
+                    result.message = "请求已过期，请重新发起";
+                }
+                else if (Encryptor.SM3Encrypt(timestamp + data + token) != sign)
+                {
+                    result.code = "205";
+                    result.message = "请求错误，签名验证失败";
+                }
+                else
+                {
+                    var json = Encryptor.SM4DecryptECBFromHex(data, token);
+                    if (string.IsNullOrEmpty(json) && !string.IsNullOrEmpty(data))
+                    {
+                        result.code = "206";
+                        result.message = "数据解密失败，请检查通讯密钥";
+                    }
+                    else
+                    {
+                        var req = new Dictionary<string, object>();
+                        try
+                        {
+                            foreach (var kv in Wlniao.Json.DeserializeToDic(json))
+                            {
+                                req.TryAdd(kv.Key, kv.Value);
+                            }
+                        }
+                        catch { }
+                        if (req == null && !string.IsNullOrEmpty(data))
+                        {
+                            result.code = "207";
+                            result.message = "远端收到请求，但反序列化失败";
+                        }
+                        else
+                        {
+                            return func?.Invoke(req ?? new Dictionary<string, object>());
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                result.code = "401";
+                result.message = ex.Message;
+                Log.Loger.Error(ex.Message);
+            }
+            return Json(result);
+        }
+        /// <summary>
+        /// 输出数据并标记为成功
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="tips"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult OutSuccess(object obj, bool tips)
+        {
+            result.tips = tips;
+            return OutSuccess(obj);
+        }
+        /// <summary>
+        /// 输出数据并标记为成功
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult OutSuccess(object obj)
+        {
+            result.code = "0";
+            result.data = obj;
+            result.success = true;
+            var txt = string.Empty;
+            if (obj == null)
+            {
+                txt = "";
+            }
+            else if (obj is string)
+            {
+                txt = obj.ToString();
+            }
+            else
+            {
+                txt = Wlniao.Json.Serialize(obj);
+            }
+            var dic = new Dictionary<string, object>();
+            dic.Add("node", result.node);
+            dic.Add("code", result.code);
+            dic.Add("tips", result.tips);
+            dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
+            dic.Add("success", result.success);
+            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            if (!string.IsNullOrEmpty(result.debuger))
+            {
+                dic.Add("debuger", result.debuger);
+            }
+            return Json(dic);
+        }
+        /// <summary>
+        /// 输出默认result对象
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult OutSuccess(string str)
+        {
+            result.code = "0";
+            result.success = true;
+            var dic = new Dictionary<string, object>();
+            dic.Add("node", result.node);
+            dic.Add("code", result.code);
+            dic.Add("tips", result.tips);
+            dic.Add("data", Encryptor.SM4EncryptECBToHex(str, token));
+            dic.Add("success", result.success);
+            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            if (!string.IsNullOrEmpty(result.debuger))
+            {
+                dic.Add("debuger", result.debuger);
+            }
+            return Json(dic);
+        }
+
+        /// <summary>
+        /// 直接输出提示消息
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult OutMessage(string message, string code = null)
+        {
+            result.tips = true;
+            result.success = false;
+            result.message = message;
+            if (!string.IsNullOrEmpty(code))
+            {
+                result.code = code;
+            }
+            return OutDefault();
+        }
+
+        /// <summary>
+        /// 输出默认result对象
+        /// </summary>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult OutDefault()
+        {
+            var txt = string.Empty;
+            if (result.data == null)
+            {
+                txt = "";
+            }
+            else if (result.data is string)
+            {
+                txt = result.data.ToString();
+            }
+            else
+            {
+                txt = Wlniao.Json.Serialize(result.data);
+            }
+            if (string.IsNullOrEmpty(result.code))
+            {
+                result.code = "1";
+            }
+            var dic = new Dictionary<string, object>();
+            dic.Add("node", result.node);
+            dic.Add("code", result.code);
+            dic.Add("tips", result.tips);
+            dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
+            dic.Add("success", result.success);
+            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            if (!string.IsNullOrEmpty(result.debuger))
+            {
+                dic.Add("debuger", result.debuger);
+            }
+            return Json(dic);
+        }
+
+        /// <summary>
+        /// 输出默认result对象
+        /// </summary>
+        /// <param name="tips"></param>
+        /// <returns></returns>
+        [NonAction]
+        public IActionResult OutDefault(bool tips)
+        {
+            result.tips = tips;
+            return OutDefault();
+        }
+    }
+}

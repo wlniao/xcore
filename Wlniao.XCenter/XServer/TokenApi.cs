@@ -26,6 +26,7 @@ using System.Linq;
 using System.Net.Http;
 using Wlniao.Log;
 using Wlniao.OpenApi;
+using Wlniao.Text;
 
 namespace Wlniao.XServer
 {
@@ -44,7 +45,7 @@ namespace Wlniao.XServer
         /// <param name="data"></param>
         /// <param name="traceid"></param>
         /// <returns></returns>
-        public static Wlniao.ApiResult<T> Request<T>(String apinode, String url, String token, Object data, String traceid = "")
+        public static Wlniao.ApiResult<T> Request<T>(string apinode, string url, string token, object data, string traceid = "")
         {
             var now = DateTools.GetUnix().ToString();
             var rlt = new Wlniao.ApiResult<T>();
@@ -57,44 +58,42 @@ namespace Wlniao.XServer
             {
                 if (string.IsNullOrEmpty(traceid))
                 {
-                    traceid = strUtil.CreateLongId();
+                    traceid = StringUtil.CreateLongId();
                 }
                 var uri = new Uri(url);
-                var txt = data is String ? data.ToString() : Json.ToString(data);
+                var txt = data is string ? data.ToString() : Json.Serialize(data);
                 var utime = "";
                 var start = DateTime.Now;
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
                 var resStr = "";
-                var reqStr = Json.ToString(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
+                var reqStr = Json.Serialize(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
                 try
                 {
-                    var stream = cvt.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
+                    var stream = Convert.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
                     var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                    using (var client = new HttpClient(handler))
+                    using var client = new HttpClient(handler);
+                    Loger.Topic(apinode, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr, Log.LogLevel.Information, false);
+                    var request = new HttpRequestMessage(HttpMethod.Post, uri);
+                    request.Headers.Date = DateTime.Now;
+                    request.Content = new StreamContent(stream);
+                    request.Content.Headers.Add("Content-Type", "application/json");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
+                    var respose = client.Send(request);
+                    resStr = respose.Content.ReadAsStringAsync().Result;
+                    if (respose.Headers.Contains("X-Wlniao-Trace"))
                     {
-                        Loger.Topic(apinode, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr, Log.LogLevel.Information, false);
-                        var request = new HttpRequestMessage(HttpMethod.Post, uri);
-                        request.Headers.Date = DateTime.Now;
-                        request.Content = new StreamContent(stream);
-                        request.Content.Headers.Add("Content-Type", "application/json");
-                        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
-                        var respose = client.Send(request);
-                        resStr = respose.Content.ReadAsStringAsync().Result;
-                        if (respose.Headers.Contains("X-Wlniao-Trace"))
-                        {
-                            rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
-                        }
-                        if (respose.Headers.Contains("X-Wlniao-UseTime"))
-                        {
-                            utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
-                        }
-                        if (string.IsNullOrEmpty(utime))
-                        {
-                            utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
-                        }
-                        Loger.Topic(apinode, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
+                        rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
                     }
+                    if (respose.Headers.Contains("X-Wlniao-UseTime"))
+                    {
+                        utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
+                    }
+                    if (string.IsNullOrEmpty(utime))
+                    {
+                        utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    }
+                    Loger.Topic(apinode, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
                 }
                 catch (Exception ex)
                 {
@@ -116,10 +115,10 @@ namespace Wlniao.XServer
                 }
                 else
                 {
-                    Wlniao.ApiResult<String> resObj = null;
+                    Wlniao.ApiResult<string> resObj = null;
                     try
                     {
-                        resObj = Json.ToObject<Wlniao.ApiResult<String>>(resStr);
+                        resObj = Json.Deserialize<Wlniao.ApiResult<string>>(resStr);
                     }
                     catch { }
                     if (resObj == null || (string.IsNullOrEmpty(resObj.node) && string.IsNullOrEmpty(resObj.code)))
@@ -153,7 +152,7 @@ namespace Wlniao.XServer
                                 }
                                 else
                                 {
-                                    rlt.data = Json.ToObject<T>(plaintext);
+                                    rlt.data = Json.Deserialize<T>(plaintext);
                                     rlt.tips = resObj.tips;
                                 }
                             }

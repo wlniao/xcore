@@ -590,15 +590,15 @@ namespace Wlniao.Text
             {
                 return false;
             }
-            else if (cvt.ToInt(str.Substring(6, 4)) < 1900 || cvt.ToInt(str.Substring(6, 4)) > DateTime.Now.Year)
+            else if (Convert.ToInt(str.Substring(6, 4)) < 1900 || Convert.ToInt(str.Substring(6, 4)) > DateTime.Now.Year)
             {
                 return false;
             }
-            else if (cvt.ToInt(str.Substring(10, 2)) == 0 || cvt.ToInt(str.Substring(10, 2)) > 12)
+            else if (Convert.ToInt(str.Substring(10, 2)) == 0 || Convert.ToInt(str.Substring(10, 2)) > 12)
             {
                 return false;
             }
-            else if (cvt.ToInt(str.Substring(12, 2)) == 0 || cvt.ToInt(str.Substring(12, 2)) > 31)
+            else if (Convert.ToInt(str.Substring(12, 2)) == 0 || Convert.ToInt(str.Substring(12, 2)) > 31)
             {
                 return false;
             }
@@ -782,10 +782,10 @@ namespace Wlniao.Text
                 {
                     if ((str[i + 1] == 'u') && (i < (length - 5)))
                     {
-                        var num3 = cvt.HexToInt(str[i + 2]);
-                        var num4 = cvt.HexToInt(str[i + 3]);
-                        var num5 = cvt.HexToInt(str[i + 4]);
-                        var num6 = cvt.HexToInt(str[i + 5]);
+                        var num3 = Convert.HexToInt(str[i + 2]);
+                        var num4 = Convert.HexToInt(str[i + 3]);
+                        var num5 = Convert.HexToInt(str[i + 4]);
+                        var num6 = Convert.HexToInt(str[i + 5]);
                         if (((num3 < 0) || (num4 < 0)) || ((num5 < 0) || (num6 < 0)))
                         {
                             goto Label_out;
@@ -795,8 +795,8 @@ namespace Wlniao.Text
                         decoder.AddChar(ch);
                         continue;
                     }
-                    var num7 = cvt.HexToInt(str[i + 1]);
-                    var num8 = cvt.HexToInt(str[i + 2]);
+                    var num7 = Convert.HexToInt(str[i + 1]);
+                    var num8 = Convert.HexToInt(str[i + 2]);
                     if ((num7 >= 0) && (num8 >= 0))
                     {
                         var b = (byte)((num7 << 4) | num8);
@@ -1285,7 +1285,7 @@ namespace Wlniao.Text
                 startIndex = i;
             }
             if (startIndex == -1) return 0;
-            return cvt.ToInt(rawString.Substring(startIndex));
+            return Convert.ToInt(rawString.Substring(startIndex));
         }
 
         /// <summary>
@@ -1919,7 +1919,7 @@ namespace Wlniao.Text
         public static string HexStringToUTF8(string hexString)
         {
             var bytes = Wlniao.Convert.HexStringToBytes(hexString);
-            return System.Text.UTF8Encoding.UTF8.GetString(bytes);
+            return System.Text.Encoding.UTF8.GetString(bytes);
         }
 
         /// <summary>
@@ -1929,7 +1929,7 @@ namespace Wlniao.Text
         /// <returns>16进制字符串</returns>
         public static string UTF8ToHexString(string utf8String)
         {
-            var bytes = System.Text.UTF8Encoding.UTF8.GetBytes(utf8String);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(utf8String);
             return Wlniao.Convert.BytesToHexString(bytes);
         }
 

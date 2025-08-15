@@ -10,7 +10,7 @@ namespace Wlniao.Engine
     /// <summary>
     /// 
     /// </summary>
-    public class EngineController : XCoreController
+    public class EngineController : Wlniao.Mvc.XCoreController
     {
         private readonly IContext _ctx;
         /// <summary>

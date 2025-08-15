@@ -22,7 +22,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Text;
+using Wlniao.Text;
+using Encoding = System.Text.Encoding;
 
 namespace Wlniao.Net
 {
@@ -69,7 +70,7 @@ namespace Wlniao.Net
         /// <returns></returns>
         public static WlnSocket GetSocket(string host, int port, int TimeOutSeconds = 10)
         {
-            var ipaddress = strUtil.IsIP(host) ? System.Net.IPAddress.Parse(host) : new Net.Dns.DnsTool().GetIPAddressDefault(host);
+            var ipaddress = StringUtil.IsIP(host) ? System.Net.IPAddress.Parse(host) : new Net.Dns.DnsTool().GetIPAddressDefault(host);
             if (ipaddress.IsIPv4MappedToIPv6)
             {
                 ipaddress = ipaddress.MapToIPv4();
@@ -171,7 +172,7 @@ namespace Wlniao.Net
                                     if (lines[index].ToLower().StartsWith("content-length"))
                                     {
                                         ts = lines[index].Split(' ');
-                                        length = cvt.ToInt(ts[1]);
+                                        length = Convert.ToInt(ts[1]);
                                     }
                                     else if (lines[index].ToLower().StartsWith("transfer-encoding"))
                                     {
@@ -201,7 +202,7 @@ namespace Wlniao.Net
                                 index++;
                                 if (index < lines.Length)
                                 {
-                                    var tempLength = cvt.DeHex(line, "0123456789abcdef");
+                                    var tempLength = Convert.DeHex(line, "0123456789abcdef");
                                     if (tempLength > 0)
                                     {
                                         length += (int)tempLength;

@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Wlniao.IO;
 
 namespace Wlniao.Caching
 {
@@ -302,7 +303,7 @@ namespace Wlniao.Caching
             }
             try
             {
-                File.Write(CachePath + key, value);
+                FileEx.Write(CachePath + key, value);
                 return true;
             }
             catch { return false; }
@@ -321,7 +322,7 @@ namespace Wlniao.Caching
             var fileinfo = new System.IO.FileInfo(CachePath + key);
             if (fileinfo.Exists && fileinfo.LastWriteTime.AddSeconds(expireSeconds) > DateTime.Now)
             {
-                return File.Read(fileinfo.FullName);
+                return FileEx.Read(fileinfo.FullName);
             }
             return "";
         }

@@ -144,7 +144,7 @@ namespace Wlniao.Caching
                 {
                     var text = FileEx.ReadUTF8String(fs);
                     var data = text.Split('#', 2, StringSplitOptions.RemoveEmptyEntries);
-                    if (cvt.ToLong(data[0]) > DateTools.GetUnix())
+                    if (Convert.ToLong(data[0]) > DateTools.GetUnix())
                     {
                         return true;
                     }
@@ -168,7 +168,7 @@ namespace Wlniao.Caching
                 {
                     var text = FileEx.ReadUTF8String(fs);
                     var data = text.Split('#', 2, StringSplitOptions.RemoveEmptyEntries);
-                    if (cvt.ToLong(data[0]) > DateTools.GetUnix())
+                    if (Convert.ToLong(data[0]) > DateTools.GetUnix())
                     {
                         return data[1];
                     }

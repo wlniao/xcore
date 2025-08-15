@@ -27,6 +27,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
 using Wlniao.Log;
+using Wlniao.Text;
 
 namespace Wlniao.XServer
 {
@@ -335,7 +336,7 @@ namespace Wlniao.XServer
             var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
             using (var client = new System.Net.Http.HttpClient(handler))
             {
-                var stream = cvt.ToStream(string.IsNullOrEmpty(postData) ? new byte[0] : System.Text.Encoding.UTF8.GetBytes(postData));
+                var stream = Convert.ToStream(string.IsNullOrEmpty(postData) ? new byte[0] : System.Text.Encoding.UTF8.GetBytes(postData));
                 var content = new System.Net.Http.StreamContent(stream);
                 client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
                 client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", contentType);
@@ -660,7 +661,7 @@ namespace Wlniao.XServer
                     em.Current.Value.Start();
                     var encode = System.Text.Encoding.UTF8;
                     var byteArray = encode.GetBytes(postData);
-                    var stream = cvt.ToStream(byteArray);
+                    var stream = Convert.ToStream(byteArray);
                     var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                     using (var client = new System.Net.Http.HttpClient(handler))
                     {
@@ -1136,7 +1137,7 @@ namespace Wlniao.XServer
         public static ApiResult<string> CheckUrl(string url)
         {
             var rlt = new ApiResult<string>();
-            var dic = strUtil.GetQueryString(url);
+            var dic = StringUtil.GetQueryString(url);
             if (dic.ContainsKey("xsappid"))
             {
                 if (dic.ContainsKey("sig"))

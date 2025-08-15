@@ -49,7 +49,7 @@ namespace Wlniao.Net
         /// <summary>
         /// 数据处理编码
         /// </summary>
-        public Encoding Encoding = UTF8Encoding.UTF8;
+        public Encoding Encoding = Encoding.UTF8;
         /// <summary>
         /// Socket 是否正在使用 Nagle 算法。
         /// </summary>
@@ -119,7 +119,7 @@ namespace Wlniao.Net
             try
             {
                 var socket = GetSocket();
-                var byteKey = UTF8Encoding.UTF8.GetBytes(key);
+                var byteKey = Encoding.UTF8.GetBytes(key);
                 return ResToText(SendCommand(socket, RedisCommand.Get, byteKey));
             }
             catch (Exception ex)
@@ -138,7 +138,7 @@ namespace Wlniao.Net
             try
             {
                 var socket = GetSocket();
-                var byteKey = UTF8Encoding.UTF8.GetBytes(key);
+                var byteKey = Encoding.UTF8.GetBytes(key);
                 if (expire > 0)
                 {
                     return ResToBool(SetByPipeline(socket, byteKey, value, expire));
@@ -159,7 +159,7 @@ namespace Wlniao.Net
             try
             {
                 var socket = GetSocket();
-                var byteKey = UTF8Encoding.UTF8.GetBytes(key);
+                var byteKey = Encoding.UTF8.GetBytes(key);
                 return ResToBool(SendCommand(socket, RedisCommand.Del, byteKey));
             }
             catch (Exception ex)
@@ -177,7 +177,7 @@ namespace Wlniao.Net
             try
             {
                 var socket = GetSocket();
-                var byteKey = UTF8Encoding.UTF8.GetBytes(key);
+                var byteKey = Encoding.UTF8.GetBytes(key);
                 return ResToBool(SendCommand(socket, RedisCommand.Exists, byteKey));
             }
             catch (Exception ex)
@@ -465,7 +465,7 @@ namespace Wlniao.Net
                 }
                 else if (temp[0] == '$')
                 {
-                    var length = cvt.ToInt(temp.Substring(1, temp.IndexOf('\r') - 1));
+                    var length = Convert.ToInt(temp.Substring(1, temp.IndexOf('\r') - 1));
                     if (length > 0)
                     {
                         return Encoding.GetString(res, temp.IndexOf('\n') + 1, length);

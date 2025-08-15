@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>8.0.54</Version>
+		<Version>8.0.56</Version>
 		<Authors>XieChaoyi</Authors>
 		<Copyright>Copyright 2020 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -30,16 +30,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="8.0.19" />
-		<PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.3.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.19" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.3.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.3.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Core" Version="2.3.0" />
-		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.46" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.47" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -49,7 +41,7 @@
 		</None>
 		<None Include="..\wlniao.png">
 			<Pack>True</Pack>
-			<PackagePath></PackagePath>
+			<PackagePath>.</PackagePath>
 		</None>
 	</ItemGroup>
 

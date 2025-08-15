@@ -76,7 +76,7 @@ namespace Wlniao.XCenter
             return CheckAuth(ctx =>
             {
                 var key = GetRequest("key");
-                var list = new List<Object>();
+                var list = new List<object>();
                 var rlt = ctx.EmiGet<List<Dictionary<string, object>>>("app", "getenumlist", new KeyValuePair<string, string>("parent", key));
                 if (rlt.success && rlt.data != null)
                 {

@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Wlniao;
+using Wlniao.Mvc;
 
 namespace Wlniao.XServer
 {
@@ -16,19 +14,19 @@ namespace Wlniao.XServer
         /// 加密密钥
         /// </summary>
 #pragma warning disable CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
-        protected String token = null;
+        protected string token = null;
 #pragma warning restore CS8625 // 无法将 null 字面量转换为非 null 的引用类型。
         /// <summary>
         /// 默认返回对象
         /// </summary>
-        protected ApiResult<Object> result = new() { node = XCore.WebNode, message = "" };
+        protected ApiResult<object> result = new() { node = XCore.WebNode, message = "" };
         /// <summary>
         /// 执行请求校验
         /// </summary>
         /// <param name="func"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult? Check(Func<Dictionary<String, Object>, IActionResult> func)
+        public IActionResult? Check(Func<Dictionary<string, object>, IActionResult> func)
         {
             try
             {
@@ -55,7 +53,7 @@ namespace Wlniao.XServer
                     result.data = "202";
                     result.message = "缺少参数，timestamp不能为空";
                 }
-                else if (cvt.ToLong(timestamp) + 3600 < DateTools.GetUnix())
+                else if (Convert.ToLong(timestamp) + 3600 < DateTools.GetUnix())
                 {
                     result.code = "203";
                     result.message = "请求已过期，请重新发起";
@@ -75,10 +73,10 @@ namespace Wlniao.XServer
                     }
                     else
                     {
-                        var req = new Dictionary<String, Object>();
+                        var req = new Dictionary<string, object>();
                         try
                         {
-                            foreach (var kv in Wlniao.Json.ToObject<Dictionary<String, Object>>(json))
+                            foreach (var kv in Wlniao.Json.DeserializeToDic(json))
                             {
                                 req.TryAdd(kv.Key, kv.Value);
                             }
@@ -111,7 +109,7 @@ namespace Wlniao.XServer
         /// <param name="tips"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult OutSuccess(Object obj, Boolean tips)
+        public IActionResult OutSuccess(object obj, bool tips)
         {
             result.tips = tips;
             return OutSuccess(obj);
@@ -122,7 +120,7 @@ namespace Wlniao.XServer
         /// <param name="obj"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult OutSuccess(Object obj)
+        public IActionResult OutSuccess(object obj)
         {
             result.code = "0";
             result.data = obj;
@@ -138,7 +136,7 @@ namespace Wlniao.XServer
             }
             else
             {
-                txt = Wlniao.Json.ToString(obj);
+                txt = Wlniao.Json.Serialize(obj);
             }
             var dic = new Dictionary<string, object>();
             dic.Add("node", result.node);
@@ -184,7 +182,7 @@ namespace Wlniao.XServer
         /// <param name="code"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult OutMessage(String message, String code = null)
+        public IActionResult OutMessage(string message, string code = null)
         {
             result.tips = true;
             result.success = false;
@@ -214,7 +212,7 @@ namespace Wlniao.XServer
             }
             else
             {
-                txt = Wlniao.Json.ToString(result.data);
+                txt = Wlniao.Json.Serialize(result.data);
             }
             if (string.IsNullOrEmpty(result.code))
             {
@@ -240,7 +238,7 @@ namespace Wlniao.XServer
         /// <param name="tips"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult OutDefault(Boolean tips)
+        public IActionResult OutDefault(bool tips)
         {
             result.tips = tips;
             return OutDefault();
