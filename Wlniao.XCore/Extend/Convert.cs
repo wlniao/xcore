@@ -1,7 +1,7 @@
 /*==============================================================================
-    �ļ����ƣ�Convert.cs
-    ���û�����CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ������������������ת������
+    文件名称：Convert.cs
+    适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    功能描述：常用类型转换方法
 ================================================================================
  
     Copyright 2014 XieChaoyi
@@ -23,32 +23,30 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
-using Wlniao.Text;
-
 namespace Wlniao
 {
     /// <summary>
-    /// ��������ת������
+    /// 常用类型转换方法
     /// </summary>
     public class Convert
     {
         /// <summary>
-        /// �ж��ַ����Ƿ���С��������
+        /// 判断字符串是否是小数或整数
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static bool IsDecimal(string str)
+        public static Boolean IsDecimal(String str)
         {
-            if (StringUtil.IsNullOrEmpty(str))
+            if (strUtil.IsNullOrEmpty(str))
                 return false;
             if (str.StartsWith("-"))
                 return isDecimal_private(str.TrimStart('-'));
             else
                 return isDecimal_private(str);
         }
-        private static bool isDecimal_private(string str)
+        private static Boolean isDecimal_private(String str)
         {
-            foreach (var ch in str.ToCharArray())
+            foreach (char ch in str.ToCharArray())
             {
                 if (!(char.IsDigit(ch) || (ch == '.')))
                     return false;
@@ -56,18 +54,18 @@ namespace Wlniao
             return true;
         }
         /// <summary>
-        /// �ж��ַ����Ƿ��Ƕ���������б�������֮�����ͨ��Ӣ�Ķ��ŷָ�
+        /// 判断字符串是否是多个整数的列表，整数之间必须通过英文逗号分隔
         /// </summary>
         /// <param name="ids"></param>
         /// <returns></returns>
-        public static bool IsIdListValid(string ids)
+        public static Boolean IsIdListValid(String ids)
         {
-            if (StringUtil.IsNullOrEmpty(ids))
+            if (strUtil.IsNullOrEmpty(ids))
             {
                 return false;
             }
-            var strArray = ids.Split(new char[] { ',' });
-            foreach (var str in strArray)
+            String[] strArray = ids.Split(new char[] { ',' });
+            foreach (String str in strArray)
             {
                 if (!IsInt(str))
                 {
@@ -77,20 +75,20 @@ namespace Wlniao
             return true;
         }
         /// <summary>
-        /// �ж��ַ����Ƿ�������������
+        /// 判断字符串是否是整数或负整数
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static bool IsInt(string str)
+        public static Boolean IsInt(String str)
         {
-            if (StringUtil.IsNullOrEmpty(str))
+            if (strUtil.IsNullOrEmpty(str))
                 return false;
             if (str.StartsWith("-"))
                 str = str.Substring(1, str.Length - 1);
             if (str.Length > 10)
                 return false;
-            var chArray = str.ToCharArray();
-            foreach (var ch in chArray)
+            char[] chArray = str.ToCharArray();
+            foreach (char ch in chArray)
             {
                 if (!char.IsDigit(ch))
                     return false;
@@ -98,66 +96,66 @@ namespace Wlniao
             if (chArray.Length == 10)
             {
                 int charInt;
-                int.TryParse(chArray[0].ToString(), out charInt);
+                Int32.TryParse(chArray[0].ToString(), out charInt);
                 if (charInt > 2)
                     return false;
                 int charInt2;
-                int.TryParse(chArray[1].ToString(), out charInt2);
+                Int32.TryParse(chArray[1].ToString(), out charInt2);
                 if ((charInt == 2) && (charInt2 > 0))
                     return false;
             }
             return true;
         }
         /// <summary>
-        /// �ж��ַ����Ƿ���"true"��"false"(�����ִ�Сд)
+        /// 判断字符串是否是"true"或"false"(不区分大小写)
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>ֻ���ַ�����"true"��"false"(�����ִ�Сд)ʱ���ŷ���true</returns>
-        public static bool IsBool(string str)
+        /// <returns>只有字符串是"true"或"false"(不区分大小写)时，才返回true</returns>
+        public static Boolean IsBool(String str)
         {
             if (str == null) return false;
-            if (StringUtil.EqualsIgnoreCase(str, "true") || StringUtil.EqualsIgnoreCase(str, "false")) return true;
+            if (strUtil.EqualsIgnoreCase(str, "true") || strUtil.EqualsIgnoreCase(str, "false")) return true;
             return false;
         }
         /// <summary>
-        /// ������ת����Ŀ������
+        /// 将对象转换成目标类型
         /// </summary>
         /// <param name="val"></param>
         /// <param name="destinationType"></param>
         /// <returns></returns>
-        public static object To(object val, Type destinationType)
+        public static Object To(Object val, Type destinationType)
         {
             return System.Convert.ChangeType(val, destinationType);
         }
         /// <summary>
-        /// ������ת���� Boolean ���͡�ֻ�в�������1ʱ���ŷ���true
+        /// 将整数转换成 Boolean 类型。只有参数等于1时，才返回true
         /// </summary>
         /// <param name="integer"></param>
-        /// <returns>ֻ�в�������1ʱ���ŷ���true</returns>
-        public static bool ToBool(int integer)
+        /// <returns>只有参数等于1时，才返回true</returns>
+        public static Boolean ToBool(int integer)
         {
             return (integer == 1);
         }
         /// <summary>
-        /// ������ת���� Boolean ���͡�ֻ�ж�����ַ�����ʽ����1����true(�����ִ�Сд)ʱ���ŷ���true
+        /// 将对象转换成 Boolean 类型。只有对象的字符串形式等于1或者true(不区分大小写)时，才返回true
         /// </summary>
         /// <param name="objBool"></param>
-        /// <returns>ֻ�ж�����ַ�����ʽ����1����true(�����ִ�Сд)ʱ���ŷ���true</returns>
-        public static bool ToBool(object objBool)
+        /// <returns>只有对象的字符串形式等于1或者true(不区分大小写)时，才返回true</returns>
+        public static Boolean ToBool(Object objBool)
         {
             if (objBool == null)
             {
                 return false;
             }
-            var str = objBool.ToString();
+            String str = objBool.ToString();
             return (str.Equals("1") || str.ToUpper().Equals("TRUE"));
         }
         /// <summary>
-        /// ���ַ���(�����ִ�Сд)ת���� Boolean ���͡�ֻ���ַ�������1����trueʱ���ŷ���true
+        /// 将字符串(不区分大小写)转换成 Boolean 类型。只有字符串等于1或者true时，才返回true
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>ֻ���ַ�������1����trueʱ���ŷ���true</returns>
-        public static bool ToBool(string str)
+        /// <returns>只有字符串等于1或者true时，才返回true</returns>
+        public static Boolean ToBool(String str)
         {
             if (str == null)
                 return false;
@@ -168,11 +166,11 @@ namespace Wlniao
             return (str.Equals("1") || str.ToUpper().Equals("TRUE"));
         }
         /// <summary>
-        /// ���ַ���ת���� System.Decimal ���͡����str����������С��������0
+        /// 将字符串转换成 System.Decimal 类型。如果str不是整数或小数，返回0
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>���str����������С��������0</returns>
-        public static decimal ToDecimal(string str)
+        /// <returns>如果str不是整数或小数，返回0</returns>
+        public static decimal ToDecimal(String str)
         {
             if (!IsDecimal(str))
             {
@@ -181,11 +179,11 @@ namespace Wlniao
             return System.Convert.ToDecimal(str);
         }
         /// <summary>
-        /// ���ַ���ת���� System.Double ���͡����str����������С��������0
+        /// 将字符串转换成 System.Double 类型。如果str不是整数或小数，返回0
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>���str����������С��������0</returns>
-        public static double ToDouble(string str)
+        /// <returns>如果str不是整数或小数，返回0</returns>
+        public static Double ToDouble(String str)
         {
             if (!IsDecimal(str))
             {
@@ -194,12 +192,12 @@ namespace Wlniao
             return System.Convert.ToDouble(str);
         }
         /// <summary>
-        /// ���ַ���ת���� System.Decimal ���͡����str����������С�������ز��� defaultValue ָ����ֵ
+        /// 将字符串转换成 System.Decimal 类型。如果str不是整数或小数，返回参数 defaultValue 指定的值
         /// </summary>
         /// <param name="str"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        public static decimal ToDecimal(string str, decimal defaultValue)
+        public static decimal ToDecimal(String str, decimal defaultValue)
         {
             if (!IsDecimal(str))
             {
@@ -208,12 +206,12 @@ namespace Wlniao
             return System.Convert.ToDecimal(str);
         }
         /// <summary>
-        /// ���ַ���ת���� float ���͡����str����������С�������ز��� defaultValue ָ����ֵ
+        /// 将字符串转换成 float 类型。如果str不是整数或小数，返回参数 defaultValue 指定的值
         /// </summary>
         /// <param name="str"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        public static float ToFloat(string str, float defaultValue = 0)
+        public static float ToFloat(String str, float defaultValue = 0)
         {
             if (!IsDecimal(str))
             {
@@ -222,51 +220,51 @@ namespace Wlniao
             return float.Parse(str);
         }
         /// <summary>
-        /// ������ת���ɳ�������������ǳ��������򷵻�0
+        /// 将对象转换成长整数；如果不是长整数，则返回0
         /// </summary>
         /// <param name="objLong"></param>
-        /// <returns>������ǳ��������򷵻�0</returns>
-        public static long ToLong(object objLong)
+        /// <returns>如果不是长整数，则返回0</returns>
+        public static long ToLong(Object objLong)
         {
             if ((objLong != null) && IsInt(objLong.ToString()))
             {
                 long result;
-                long.TryParse(objLong.ToString(), out result);
+                Int64.TryParse(objLong.ToString(), out result);
                 return result;
             }
             return 0;
         }
         /// <summary>
-        /// ������ת���ɳ�������������ǳ��������򷵻�0
+        /// 将对象转换成长整数；如果不是长整数，则返回0
         /// </summary>
         /// <param name="strLong"></param>
-        /// <returns>������ǳ��������򷵻�0</returns>
-        public static long ToLong(string strLong)
+        /// <returns>如果不是长整数，则返回0</returns>
+        public static long ToLong(String strLong)
         {
             long result = 0;
-            long.TryParse(strLong, out result);
+            Int64.TryParse(strLong, out result);
             return result;
         }
         /// <summary>
-        /// ������ת������������������������򷵻�0
+        /// 将对象转换成整数；如果不是整数，则返回0
         /// </summary>
         /// <param name="objInt"></param>
-        /// <returns>��������������򷵻�0</returns>
-        public static int ToInt(object objInt)
+        /// <returns>如果不是整数，则返回0</returns>
+        public static int ToInt(Object objInt)
         {
             if (objInt != null)
             {
                 if (IsInt(objInt.ToString()))
                 {
                     int result;
-                    int.TryParse(objInt.ToString(), out result);
+                    Int32.TryParse(objInt.ToString(), out result);
                     return result;
                 }
             }
             return 0;
         }
         /// <summary>
-        /// �� float ת��������
+        /// 将 float 转换成整数
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
@@ -279,7 +277,7 @@ namespace Wlniao
             catch { return 0; }
         }
         /// <summary>
-        /// �� double ת��������
+        /// 将 double 转换成整数
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
@@ -292,7 +290,7 @@ namespace Wlniao
             catch { return 0; }
         }
         /// <summary>
-        /// �� decimal ת��������
+        /// 将 decimal 转换成整数
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
@@ -305,19 +303,19 @@ namespace Wlniao
             catch { return 0; }
         }
 
-        #region ����ת��
+        #region 进制转换
 
         /// <summary>
-        /// ��10��������ת��Ϊn����
+        /// 将10进制整数转换为n进制
         /// </summary>
-        /// <param name="inputNum">10��������</param>
+        /// <param name="inputNum">10进制整数</param>
         /// <param name="chars"></param>
         /// <returns></returns>
-        public static string ToHex(long inputNum, string chars)
+        public static String ToHex(Int64 inputNum, String chars)
         {
-            var cbase = chars.Length;
+            int cbase = chars.Length;
             int imod;
-            var result = "";
+            String result = "";
             while (inputNum >= cbase)
             {
                 imod = (int)(inputNum % cbase);
@@ -327,48 +325,48 @@ namespace Wlniao
             return chars[(int)inputNum] + result;
         }
         /// <summary>
-        /// ��n����ת��Ϊ10��������
+        /// 将n进制转换为10进制整数
         /// </summary>
-        /// <param name="str">��Ҫת����n������</param>
+        /// <param name="str">需要转换的n进制数</param>
         /// <param name="chars"></param>
-        /// <returns>10��������</returns>
-        public static long DeHex(string str, string chars)
+        /// <returns>10进制整数</returns>
+        public static Int64 DeHex(String str, String chars)
         {
-            var hex = chars.Length;
-            var len = str.Length;
-            long result = 0;
-            for (var i = 0; i < len; i++)
+            Int32 hex = chars.Length;
+            Int32 len = str.Length;
+            Int64 result = 0;
+            for (int i = 0; i < len; i++)
             {
                 var index = chars.IndexOf(str[i]);
                 if (index < 0)
                 {
                     return 0;
                 }
-                result += chars.IndexOf(str[i]) * (long)Math.Pow(hex, (len - i - 1));
+                result += chars.IndexOf(str[i]) * (Int64)Math.Pow(hex, (len - i - 1));
             }
             return result;
         }
 
         /// <summary>
-        /// ʮ������ת���ɶ����ˡ�ʮ��������
+        /// 十进制数转换成二、八、十六进制数
         /// </summary>
-        /// <param name="int_value">ʮ������</param>
-        /// <param name="mod">����</param>
+        /// <param name="int_value">十进制数</param>
+        /// <param name="mod">进制</param>
         /// <returns></returns>
-        public static string IntToHex(int int_value, int mod)
+        public static string IntToHex(Int32 int_value, Int32 mod)
         {
             return Int64ToHex(int_value, mod);
         }
         /// <summary>
-        /// ʮ������ת���ɶ����ˡ�ʮ��������
+        /// 十进制数转换成二、八、十六进制数
         /// </summary>
-        /// <param name="int_value">ʮ������</param>
-        /// <param name="mod">����</param>
+        /// <param name="int_value">十进制数</param>
+        /// <param name="mod">进制</param>
         /// <returns></returns>
-        public static string Int64ToHex(long int_value, int mod)
+        public static string Int64ToHex(Int64 int_value, Int32 mod)
         {
-            var hex_value = string.Empty;
-            long add_value, mod_value, temp;
+            string hex_value = string.Empty;
+            Int64 add_value, mod_value, temp;
             char char_mod_value;
             temp = int_value;
             while (temp > 0)
@@ -410,65 +408,65 @@ namespace Wlniao
             return -1;
         }
 
-        #region ��ʮ������ת��
+        #region 二十六进制转换
         /// <summary>
-        /// 10����ת����26���ƣ�26��д��ĸ��
+        /// 10进制转换成26进制（26大写字母）
         /// </summary>
         /// <param name="val"></param>
         /// <returns></returns>
-        public static string IntToHex26(long val)
+        public static string IntToHex26(Int64 val)
         {
             return ToHex(val, "abcdefghijklmnokprstuvwxyz");
         }
         /// <summary>
-        /// 26����ת����10����
+        /// 26进制转换成10进制
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static int Hex26ToInt(string str)
+        public static Int32 Hex26ToInt(string str)
         {
             if (str.ToUpper() == str)
             {
                 str = str.ToLower();
             }
-            return (int)DeHex(str, "abcdefghijklmnokprstuvwxyz");
+            return (Int32)DeHex(str, "abcdefghijklmnokprstuvwxyz");
         }
         /// <summary>
-        /// 26����ת����10����
+        /// 26进制转换成10进制
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static long Hex26ToInt64(string str)
+        public static Int64 Hex26ToInt64(string str)
         {
             return DeHex(str, "abcdefghijklmnokprstuvwxyz");
         }
         #endregion
 
-        #region ��ʮ������ת��
+        #region 五十二进制转换
         /// <summary>
-        /// 10����ת����52���ƣ�52��Ӣ����ĸ��
+        /// 10进制转换成52进制（52个英文字母）
         /// </summary>
         /// <param name="val"></param>
         /// <returns></returns>
-        public static string IntToHex52(long val)
+        public static string IntToHex52(Int64 val)
         {
             return ToHex(val, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         }
         /// <summary>
-        /// 52����ת����10����
+        /// 52进制转换成10进制
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static int Hex52ToInt(string str)
+        public static Int32 Hex52ToInt(string str)
         {
-            return (int)DeHex(str, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+            return (Int32)DeHex(str, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         }
         /// <summary>
-        /// 52����ת����10����
+        /// 52进制转换成10进制
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static long Hex52ToInt64(string str)
+        public static Int64 Hex52ToInt64(string str)
         {
             return DeHex(str, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         }
@@ -477,13 +475,13 @@ namespace Wlniao
         #endregion
 
         /// <summary>
-        /// IPv4��ַת��ΪIPv6��ʽ
+        /// IPv4地址转换为IPv6格式
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        public static string IPv4ToIPv6(string ip)
+        public static String IPv4ToIPv6(String ip)
         {
-            if (StringUtil.IsIPv4(ip))
+            if (strUtil.IsIPv4(ip))
             {
                 var ips = ip.SplitBy(".");
                 var low = int.Parse(ips[2]) * 256 + int.Parse(ips[3]);
@@ -494,11 +492,11 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// ������ת���ɷ�Null��ʽ���������Ĳ����� null���򷵻ؿ��ַ���(��""��Ҳ��string.Empty)
+        /// 将对象转换成非Null形式，如果传入的参数是 null，则返回空字符串(即""，也即string.Empty)
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>���Ϊnull���򷵻ؿ��ַ���(��""��Ҳ��string.Empty)</returns>
-        public static string ToNotNull(object str)
+        /// <returns>如果为null，则返回空字符串(即""，也即string.Empty)</returns>
+        public static String ToNotNull(Object str)
         {
             if (str == null)
             {
@@ -507,21 +505,21 @@ namespace Wlniao
             return str.ToString();
         }
         /// <summary>
-        /// ������ת���� DateTime ��ʽ����������ϸ�ʽ���򷵻ص�ǰʱ��
+        /// 将对象转换成 DateTime 形式，如果不符合格式，则返回当前时间
         /// </summary>
         /// <param name="objTime"></param>
-        /// <returns>��������ϸ�ʽ���򷵻ص�ǰʱ��</returns>
-        public static DateTime ToTime(object objTime)
+        /// <returns>如果不符合格式，则返回当前时间</returns>
+        public static DateTime ToTime(Object objTime)
         {
             return ToTime(objTime, DateTime.Now);
         }
         /// <summary>
-        /// ������ת���� DateTime ��ʽ����������ϸ�ʽ���򷵻صڶ�������ָ����ʱ��
+        /// 将对象转换成 DateTime 形式，如果不符合格式，则返回第二个参数指定的时间
         /// </summary>
         /// <param name="objTime"></param>
         /// <param name="targetTime"></param>
         /// <returns></returns>
-        public static DateTime ToTime(object objTime, DateTime targetTime)
+        public static DateTime ToTime(Object objTime, DateTime targetTime)
         {
             if (objTime == null)
             {
@@ -529,7 +527,7 @@ namespace Wlniao
             }
             try
             {
-                if (objTime.GetType() == typeof(string))
+                if (objTime.GetType() == typeof(String))
                 {
                     return DateTools.Convert(objTime.ToString());
                 }
@@ -544,21 +542,21 @@ namespace Wlniao
             }
         }
         /// <summary>
-        /// �ж�����ʱ��������Ƿ���ͬ(Ҫ��ͬ��ͬ��ͬ��)
+        /// 判断两个时间的日期是否相同(要求同年同月同日)
         /// </summary>
         /// <param name="day1"></param>
         /// <param name="day2"></param>
         /// <returns></returns>
-        public static bool IsDayEqual(DateTime day1, DateTime day2)
+        public static Boolean IsDayEqual(DateTime day1, DateTime day2)
         {
             return (day1.Year == day2.Year && day1.Month == day2.Month && day1.Day == day2.Day);
         }
         /// <summary>
-        /// ��ȡ���ڵ��ճ�������ʽ��Ҫ��������������� {���죬���죬ǰ��} ��ʾ
+        /// 获取日期的日常表达形式，要求最近三天依次用 {今天，昨天，前天} 表示
         /// </summary>
         /// <param name="day"></param>
-        /// <returns>Ҫ��������������� {���졢���졢ǰ��} ��ʾ</returns>
-        public static string ToDayString(DateTime day)
+        /// <returns>要求最近三天依次用 {今天、昨天、前天} 表示</returns>
+        public static String ToDayString(DateTime day)
         {
             var today = DateTools.GetNow();
             if (day.Kind == DateTimeKind.Utc)
@@ -585,11 +583,11 @@ namespace Wlniao
             return day.ToString("yyyy-MM-dd");
         }
         /// <summary>
-        /// ��ȡʱ����ճ�������ʽ����ʽΪ {**Сʱǰ��**����ǰ��**��ǰ}���Լ� {���죬ǰ��}
+        /// 获取时间的日常表达形式，格式为 {**小时前，**分钟前，**秒前}，以及 {昨天，前天}
         /// </summary>
         /// <param name="t"></param>
-        /// <returns>��ʽΪ {**Сʱǰ��**����ǰ��**��ǰ}���Լ� {���죬ǰ��}</returns>
-        public static string ToTimeString(DateTime t)
+        /// <returns>格式为 {**小时前，**分钟前，**秒前}，以及 {昨天，前天}</returns>
+        public static String ToTimeString(DateTime t)
         {
             var now = DateTools.GetNow();
             if (t.Kind == DateTimeKind.Utc)
@@ -641,47 +639,47 @@ namespace Wlniao
             }
         }
         /// <summary>
-        /// ��ȡʱ���Ӣ�ı�����ʽ����ʽ�� {Monday, November 12, 2012}
+        /// 获取时间的英文表达形式，格式如 {Monday, November 12, 2012}
         /// </summary>
         /// <param name="t"></param>
-        /// <returns>��ʽ�� {Monday, November 12, 2012}</returns>
-        public static string ToDateEnString(DateTime t)
+        /// <returns>格式如 {Monday, November 12, 2012}</returns>
+        public static String ToDateEnString(DateTime t)
         {
             return t.ToString("D", new System.Globalization.CultureInfo("en").DateTimeFormat);
         }
         /// <summary>
-        /// ��ȡʱ���Ӣ�ı�����ʽ����ʽ�� {Apr 07,2012}
+        /// 获取时间的英文表达形式，格式如 {Apr 07,2012}
         /// </summary>
         /// <param name="t"></param>
-        /// <returns>��ʽ�� {Apr 07,2012}</returns>
-        public static string ToDateEnShortString(DateTime t)
+        /// <returns>格式如 {Apr 07,2012}</returns>
+        public static String ToDateEnShortString(DateTime t)
         {
-            var d = t.ToString("r", new System.Globalization.CultureInfo("en").DateTimeFormat);
+            string d = t.ToString("r", new System.Globalization.CultureInfo("en").DateTimeFormat);
             d = d.Remove(d.IndexOf(':') - 2);
             return d;
         }
         /// <summary>
-        /// ��ȡʱ���Ӣ�ı�����ʽ����ʽ�� {Mon, 12 Nov 2012 00:00:00 GMT}
+        /// 获取时间的英文表达形式，格式如 {Mon, 12 Nov 2012 00:00:00 GMT}
         /// </summary>
         /// <param name="t"></param>
-        /// <returns>��ʽ�� {Mon, 12 Nov 2012 00:00:00 GMT}</returns>
-        public static string ToDateEnLongString(DateTime t)
+        /// <returns>格式如 {Mon, 12 Nov 2012 00:00:00 GMT}</returns>
+        public static String ToDateEnLongString(DateTime t)
         {
             return t.ToString("r", new System.Globalization.CultureInfo("en").DateTimeFormat);
         }
         /// <summary>
-        /// ������ת�����ַ�����ʽ���������֮����Ӣ�Ķ��ŷָ�
+        /// 将整数转换成字符串形式，多个整数之间用英文逗号分隔
         /// </summary>
         /// <param name="ids"></param>
         /// <returns></returns>
-        public static string ToString(int[] ids)
+        public static String ToString(int[] ids)
         {
             if (ids == null || ids.Length == 0)
             {
                 return "";
             }
             var builder = new StringBuilder();
-            for (var i = 0; i < ids.Length; i++)
+            for (int i = 0; i < ids.Length; i++)
             {
                 builder.Append(ids[i]);
                 if (i < ids.Length - 1) builder.Append(',');
@@ -689,26 +687,26 @@ namespace Wlniao
             return builder.ToString();
         }
         /// <summary>
-        /// ���ı�ת��Ϊ�����ֵ�
+        /// 将文本转换为数据字典
         /// </summary>
         /// <param name="doc"></param>
         /// <returns></returns>
-        public static Dictionary<string, string> ToDictionary(string doc)
+        public static Dictionary<String, String> ToDictionary(string doc)
         {
-            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var result = new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrEmpty(doc))
             {
-                var arrLine = doc.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var oneLine in arrLine)
+                String[] arrLine = doc.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (String oneLine in arrLine)
                 {
-                    //��ֵ��������
+                    //无值的行跳过
                     var tempLine = oneLine.TrimStart().TrimStart('-').TrimStart();
-                    //ע��������
+                    //注释行跳过
                     if (tempLine.StartsWith("//") || tempLine.StartsWith("#"))
                     {
                         continue;
                     }
-                    var arrPair = tempLine.Split(new char[] { '=' }, 2);
+                    String[] arrPair = tempLine.Split(new char[] { '=' }, 2);
                     if (arrPair.Length == 2)
                     {
                         var arrTrim = new char[] { '"', '\'' };
@@ -736,30 +734,30 @@ namespace Wlniao
             return result;
         }
         /// <summary>
-        /// ���ַ�����ʽ�� id �б�ת������������
+        /// 将字符串形式的 id 列表转换成整型数组
         /// </summary>
         /// <param name="myids"></param>
         /// <returns></returns>
-        public static int[] ToIntArray(string myids)
+        public static int[] ToIntArray(String myids)
         {
-            if (StringUtil.IsNullOrEmpty(myids)) return new int[] { };
-            var arrIds = myids.Split(',');
-            var Ids = new int[arrIds.Length];
-            for (var i = 0; i < arrIds.Length; i++)
+            if (strUtil.IsNullOrEmpty(myids)) return new int[] { };
+            String[] arrIds = myids.Split(',');
+            int[] Ids = new int[arrIds.Length];
+            for (int i = 0; i < arrIds.Length; i++)
             {
-                var oneID = ToInt(arrIds[i].Trim());
+                int oneID = ToInt(arrIds[i].Trim());
                 Ids[i] = oneID;
             }
             return Ids;
         }
         /// <summary>
-        /// ���ַ���ת�����Ծ��ſ�ͷ�ı�����ʽ�����������Ч����ɫֵ���򷵻�null
+        /// 将字符串转换成以井号开头的表达形式；如果不是有效的颜色值，则返回null
         /// </summary>
         /// <param name="val"></param>
-        /// <returns>���ַ���ת�����Ծ��ſ�ͷ�ı�����ʽ�����������Ч����ɫֵ���򷵻�null</returns>
-        public static string ToColorValue(string val)
+        /// <returns>将字符串转换成以井号开头的表达形式；如果不是有效的颜色值，则返回null</returns>
+        public static String ToColorValue(String val)
         {
-            if (StringUtil.IsColorValue(val) == false)
+            if (strUtil.IsColorValue(val) == false)
             {
                 return null;
             }
@@ -771,21 +769,21 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// �� Stream ת�� byte[]
+        /// 将 Stream 转成 byte[]
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
         public static byte[] ToBytes(System.IO.Stream stream)
         {
-            var bytes = new byte[stream.Length];
+            byte[] bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);
-            // ���õ�ǰ����λ��Ϊ���Ŀ�ʼ 
+            // 设置当前流的位置为流的开始 
             stream.Seek(0, System.IO.SeekOrigin.Begin);
             return bytes;
         }
 
         /// <summary>
-        /// �� byte[] ת�� Stream
+        /// 将 byte[] 转成 Stream
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
@@ -797,62 +795,62 @@ namespace Wlniao
 
 
         /// <summary>
-        /// ����ʵ���е�ָ�� <see cref="sbyte"/> �ַ�����ת���� <see cref="byte"/> �ַ����顣
+        /// 将此实例中的指定 <see cref="sbyte"/> 字符数组转换到 <see cref="byte"/> 字符数组。
         /// </summary>
-        /// <param name="sbyteArray">Ҫת���� <see cref="sbyte"/> �ַ�����</param>
-        /// <returns>����ת����� <see cref="byte"/> �ַ�����</returns>
+        /// <param name="sbyteArray">要转换的 <see cref="sbyte"/> 字符数组</param>
+        /// <returns>返回转换后的 <see cref="byte"/> 字符数组</returns>
         public static byte[] ToByteArray(sbyte[] sbyteArray)
         {
-            var byteArray = new byte[sbyteArray.Length];
-            for (var index = 0; index < sbyteArray.Length; index++)
+            byte[] byteArray = new byte[sbyteArray.Length];
+            for (int index = 0; index < sbyteArray.Length; index++)
                 byteArray[index] = (byte)sbyteArray[index];
             return byteArray;
         }
 
 
         /// <summary>
-        /// ����ʵ���е�ָ���ַ���ת���� <see cref="byte"/> �ַ����顣
+        /// 将此实例中的指定字符串转换到 <see cref="byte"/> 字符数组。
         /// </summary>
-        /// <param name="sourceString">Ҫת�����ַ���</param>
-        /// <returns>����ת����� <see cref="byte"/> �ַ�����</returns>
+        /// <param name="sourceString">要转换的字符串</param>
+        /// <returns>返回转换后的 <see cref="byte"/> 字符数组</returns>
         public static byte[] ToByteArray(string sourceString)
         {
-            var byteArray = new byte[sourceString.Length];
-            for (var index = 0; index < sourceString.Length; index++)
+            byte[] byteArray = new byte[sourceString.Length];
+            for (int index = 0; index < sourceString.Length; index++)
                 byteArray[index] = (byte)sourceString[index];
             return byteArray;
         }
 
 
         /// <summary>
-        /// ����ʵ���е�ָ�� <see cref="object"/> ����ת���� <see cref="byte"/> �ַ����顣
+        /// 将此实例中的指定 <see cref="object"/> 数组转换到 <see cref="byte"/> 字符数组。
         /// </summary>
-        /// <param name="tempObjectArray">Ҫת���� <see cref="object"/> �ַ�����</param>
-        /// <returns>����ת����� <see cref="byte"/> �ַ�����</returns>
+        /// <param name="tempObjectArray">要转换的 <see cref="object"/> 字符数组</param>
+        /// <returns>返回转换后的 <see cref="byte"/> 字符数组</returns>
         public static byte[] ToByteArray(object[] tempObjectArray)
         {
-            var byteArray = new byte[tempObjectArray.Length];
-            for (var index = 0; index < tempObjectArray.Length; index++)
+            byte[] byteArray = new byte[tempObjectArray.Length];
+            for (int index = 0; index < tempObjectArray.Length; index++)
                 byteArray[index] = (byte)tempObjectArray[index];
             return byteArray;
         }
 
         /// <summary>
-        /// ����ʵ���е�ָ�� <see cref="byte"/> �ַ�����ת���� <see cref="sbyte"/> �ַ����顣
+        /// 将此实例中的指定 <see cref="byte"/> 字符数组转换到 <see cref="sbyte"/> 字符数组。
         /// </summary>
-        /// <param name="byteArray">Ҫת���� <see cref="byte"/> �ַ�����</param>
-        /// <returns>����ת����� <see cref="sbyte"/> �ַ�����</returns>
+        /// <param name="byteArray">要转换的 <see cref="byte"/> 字符数组</param>
+        /// <returns>返回转换后的 <see cref="sbyte"/> 字符数组</returns>
         public static sbyte[] ToSByteArray(byte[] byteArray)
         {
-            var sbyteArray = new sbyte[byteArray.Length];
-            for (var index = 0; index < byteArray.Length; index++)
+            sbyte[] sbyteArray = new sbyte[byteArray.Length];
+            for (int index = 0; index < byteArray.Length; index++)
                 sbyteArray[index] = (sbyte)byteArray[index];
             return sbyteArray;
         }
 
 
         /// <summary>
-        /// �ַ���ת16�����ֽ�����
+        /// 字符串转16进制字节数组
         /// </summary>
         /// <param name="hexString"></param>
         /// <returns></returns>
@@ -870,8 +868,8 @@ namespace Wlniao
             {
                 hexString += " ";
             }
-            var returnBytes = new byte[hexString.Length / 2];
-            for (var i = 0; i < returnBytes.Length; i++)
+            byte[] returnBytes = new byte[hexString.Length / 2];
+            for (int i = 0; i < returnBytes.Length; i++)
             {
                 returnBytes[i] = System.Convert.ToByte(hexString.Substring(i * 2, 2), 16);
             }
@@ -879,16 +877,16 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// byte[]����ת16�����ַ���
+        /// byte[]数组转16进制字符串
         /// </summary>
-        /// <param name="input">byte[]����</param>
-        /// <returns>16�����ַ���</returns>
+        /// <param name="input">byte[]数组</param>
+        /// <returns>16进制字符串</returns>
         public static string BytesToHexString(byte[] input)
         {
             var hexString = new StringBuilder();
-            for (var i = 0; i < input.Length; i++)
+            for (int i = 0; i < input.Length; i++)
             {
-                hexString.Append(string.Format("{0:x2}", input[i]));
+                hexString.Append(String.Format("{0:x2}", input[i]));
             }
             return hexString.ToString();
         }
@@ -899,11 +897,11 @@ namespace Wlniao
         /// <param name="money"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public static string ToMoney(float money, string format = "")
+        public static String ToMoney(float money, string format = "")
         {
             if (string.IsNullOrEmpty(format) || !format.StartsWith("F"))
             {
-                var _str = money.ToString("F2");
+                string _str = money.ToString("F2");
                 if (_str.EndsWith("0"))
                 {
                     _str = money.ToString("F1");
@@ -925,7 +923,7 @@ namespace Wlniao
         /// <param name="money"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public static string ToMoney(double money, string format = "")
+        public static String ToMoney(double money, string format = "")
         {
             return ToMoney((float)money, format);
         }
@@ -935,16 +933,16 @@ namespace Wlniao
         /// <param name="money"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public static string ToMoney(decimal money, string format = "")
+        public static String ToMoney(decimal money, string format = "")
         {
             return ToMoney((float)money, format);
         }
         /// <summary>
-        /// ��Զ��SvgͼƬת����Svg��ʽ���ַ�������ת��Url������
+        /// 将远程Svg图片转换成Svg格式的字符串（可转换Url参数）
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public static string ToSvgStr(string url)
+        public static String ToSvgStr(String url)
         {
             var svg = XServer.Common.GetResponseString(url);
             if (!string.IsNullOrEmpty(svg))
@@ -954,14 +952,10 @@ namespace Wlniao
                 if (url.IndexOf('?') > 0)
                 {
                     url = url.Substring(url.IndexOf('?') + 1);
-                    var args = StringUtil.GetQueryString(url);
+                    var args = strUtil.GetQueryString(url);
                     if (args != null && args.Count > 0)
                     {
-                        var attr = "";
-                        foreach (var arg in args)
-                        {
-                            attr += " " + arg.Key + "=\"" + arg.Value + "\"";
-                        }
+                        var attr = args.Aggregate("", (current, arg) => current + (" " + arg.Key + "=\"" + arg.Value + "\""));
                         return svg.Substring(0, svg.IndexOf("<g") + 2) + attr + svg.Substring(svg.IndexOf("<g") + 2);
                     }
                 }
@@ -971,40 +965,40 @@ namespace Wlniao
 
         
         /// <summary>
-        /// ���ݲ�ͬ���Ƶ�д�����ض�Ӧ��ֵ
+        /// 根据不同进制的写法返回对应数值
         /// </summary>
-        /// <param name="literal">������д��</param>
-        /// <returns>��Ӧ��ֵ</returns>
+        /// <param name="literal">各进制写法</param>
+        /// <returns>对应数值</returns>
         public static long Identity(long literal)
         {
             return literal;
         }
 
         /// <summary>
-        /// ���ݲ�ͬ���Ƶ�д�����ض�Ӧ��ֵ
+        /// 根据不同进制的写法返回对应数值
         /// </summary>
-        /// <param name="literal">������д��</param>
-        /// <returns>��Ӧ��ֵ</returns>
+        /// <param name="literal">各进制写法</param>
+        /// <returns>对应数值</returns>
         public static ulong Identity(ulong literal)
         {
             return literal;
         }
 
         /// <summary>
-        /// ���ݲ�ͬ���Ƶ�д�����ض�Ӧ��ֵ
+        /// 根据不同进制的写法返回对应数值
         /// </summary>
-        /// <param name="literal">������д��</param>
-        /// <returns>��Ӧ��ֵ</returns>
+        /// <param name="literal">各进制写法</param>
+        /// <returns>对应数值</returns>
         public static float Identity(float literal)
         {
             return literal;
         }
 
         /// <summary>
-        /// ���ݲ�ͬ���Ƶ�д�����ض�Ӧ��ֵ
+        /// 根据不同进制的写法返回对应数值
         /// </summary>
-        /// <param name="literal">������д��</param>
-        /// <returns>��Ӧ��ֵ</returns>
+        /// <param name="literal">各进制写法</param>
+        /// <returns>对应数值</returns>
         public static double Identity(double literal)
         {
             return literal;

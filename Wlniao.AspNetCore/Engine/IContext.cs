@@ -103,7 +103,13 @@ namespace Wlniao.Engine
         /// </summary>
         /// <param name="data"></param>
         /// <param name="code"></param>
-        public void OutSuccess(object? data, string code = "200");
+        public void OutSuccess(object? data, int code = 200);
+        /// <summary>
+        /// 输出正确内容及状态码
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="message"></param>
+        public void OutSuccess(object? data, string message);
     
         /// <summary>
         /// 输出错误内容及状态码

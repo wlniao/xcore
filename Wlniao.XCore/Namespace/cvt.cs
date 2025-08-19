@@ -1,9 +1,9 @@
 /*==============================================================================
-    文件名称：cvt.cs
-    适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    功能描述：提供免命名空间快捷调用方法
+    鏂囦欢鍚嶇О锛歝vt.cs
+    閫傜敤鐜锛欳oreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    鍔熻兘鎻忚堪锛氭彁渚涘厤鍛藉悕绌洪棿蹇嵎璋冪敤鏂规硶
 ================================================================================
- 
+
     Copyright 2015 XieChaoyi
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,9 +22,7 @@
 namespace Wlniao
 {
     /// <summary>
-    /// 封装了反射的常用操作方法
+    /// 灏佽浜嗗弽灏勭殑甯哥敤鎿嶄綔鏂规硶
     /// </summary>
-#pragma warning disable CS8981 // 该类型名称仅包含小写 ascii 字符。此类名称可能会成为该语言的保留值。
     public class cvt : Wlniao.Convert { }
-#pragma warning restore CS8981 // 该类型名称仅包含小写 ascii 字符。此类名称可能会成为该语言的保留值。
 }

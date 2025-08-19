@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>8.0.66</Version>
+		<Version>8.0.67</Version>
 		<Authors>XieChaoyi</Authors>
 		<Copyright>Copyright 2022 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -20,7 +20,7 @@
 		<PackageUrl>https://static.wlniao.com/wlniao/logo.png</PackageUrl>
 		<PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
 		<PackageIcon>wlniao.png</PackageIcon>
-		<PackageOutputPath>E:\Package</PackageOutputPath>
+		<PackageOutputPath>$(HOMEDRIVE)$(HOMEPATH)\.nuget</PackageOutputPath>
 		<PackageProjectUrl>https://github.com/wlniao/xcore</PackageProjectUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -30,8 +30,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.55" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.47" />
+		<PackageReference Include="Wlniao.AspNetCore" Version="8.0.57" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.48" />
 	</ItemGroup>
 
 	<ItemGroup>

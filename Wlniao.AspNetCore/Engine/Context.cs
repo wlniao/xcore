@@ -413,13 +413,27 @@ namespace Wlniao.Engine
         /// </summary>
         /// <param name="data"></param>
         /// <param name="code"></param>
-        public void OutSuccess(object? data, string code = "200")
+        public void OutSuccess(object? data, int code = 200)
         {
             this.Output.data = data;
             this.Output.tips = false;
-            this.Output.code = string.IsNullOrEmpty(code) ? "200" : code;
-            this.Output.success = string.IsNullOrEmpty(code) || code == "200" ? true : false;
+            this.Output.code = code.ToString();
+            this.Output.success = code == 200 ? true : false;
             this.Output.message = "success";
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="message"></param>
+        public void OutSuccess(object? data, string message)
+        {
+            this.Output.data = data;
+            this.Output.tips = false;
+            this.Output.code = "200";
+            this.Output.success = true;
+            this.Output.message = string.IsNullOrEmpty(message) ? "success" : message;
         }
         
         /// <summary>

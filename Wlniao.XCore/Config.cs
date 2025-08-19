@@ -198,15 +198,21 @@ namespace Wlniao
             {
                 return _config[key.ToUpper()];
             }
+            else if(string.IsNullOrEmpty(defaultValue))
+            {
+                lock (XCore.Lock)
+                {
+                    _config.Add(key, defaultValue);
+                    Write(_config, FileName);
+                }
+                return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
+            }
             else
             {
-                if (!string.IsNullOrEmpty(defaultValue))
+                lock (XCore.Lock)
                 {
-                    lock (XCore.Lock)
-                    {
-                        _config.Add(key, defaultValue);
-                        try { Write(_config, FileName); } catch { }
-                    }
+                    _config.Add(key, defaultValue);
+                    Write(_config, FileName);
                 }
                 return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
             }
@@ -359,7 +365,11 @@ namespace Wlniao
                     return true;
                 }
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
+
             return false;
         }
     }
