@@ -112,7 +112,7 @@ namespace Wlniao.Engine
                             case "n":
                                 this.Name = kv.Value;
                                 break;
-                            case "u":
+                            case "a":
                                 this.Account = kv.Value;
                                 break;
                             case "d":
