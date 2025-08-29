@@ -54,7 +54,7 @@ namespace Wlniao.Engine
         /// <summary>
         /// 
         /// </summary>
-        private ApiResult<object?> Output { get; set; }
+        public ApiResult<object> Output { get; set; }
 
         /// <summary>
         /// 请求是否启用Https
@@ -152,6 +152,11 @@ namespace Wlniao.Engine
         /// </summary>
         public Func<HttpRequest, string>? SafetyCertification { get; set; }
 
+        /// <summary>
+        /// 输出内容序列化托管
+        /// </summary>
+        public Func<HttpRequest, string>? SerializeOutput { get; set; }
+
 
         /// <summary>
         /// 
@@ -173,7 +178,7 @@ namespace Wlniao.Engine
             this.Host = string.Empty;
             this.Body = string.Empty;
             this.Query = new Dictionary<string, string>();
-            this.Output = new ApiResult<object?> { code = "-1" };
+            this.Output = new ApiResult<object> { code = "-1" };
             this.HeaderInput = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             this.HeaderOutput = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             this.Authorization = string.Empty;
@@ -472,6 +477,10 @@ namespace Wlniao.Engine
         /// <returns></returns>
         public string SerializeJsonOutput()
         {
+            if (this.SerializeOutput != null)
+            {
+                return this.SerializeOutput.Invoke(this.Request);
+            }
             var output = new Dictionary<string, object> { { "code", this.Output.code ?? "" } };
             if (this.Output.data != null)
             {

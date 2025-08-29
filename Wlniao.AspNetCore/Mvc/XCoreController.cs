@@ -84,6 +84,10 @@ namespace Wlniao.Mvc
         /// <param name="context"></param>
         public override void OnActionExecuted(ActionExecutedContext context)
         {
+            if(context.HttpContext.WebSockets.IsWebSocketRequest)
+            {
+                return;
+            }
             if (Response.Headers != null)
             {
                 Response.Headers.TryAdd("X-Wlniao-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");

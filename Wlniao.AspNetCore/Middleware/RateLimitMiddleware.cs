@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -12,6 +13,45 @@ using Wlniao.Text;
 namespace Wlniao.Middleware
 {
     /// <summary>
+    /// 限流中间件配置选项
+    /// </summary>
+    public class RateLimitOptions
+    {
+        /// <summary>
+        /// 时间窗口分片数量（默认：60个）
+        /// </summary>
+        public int TZoneCount { get; set; } = 0;
+        /// <summary>
+        /// 请求时间窗口（默认：30秒）
+        /// </summary>
+        public int TimeWindow { get; set; } = Wlniao.Convert.ToInt(Wlniao.Config.GetSetting("WLN_RATE_TIME_SECONDS", "30"));
+        /// <summary>
+        /// 最大请求次数
+        /// </summary>
+        public int MaxRequests { get; set; } = Wlniao.Convert.ToInt(Wlniao.Config.GetSetting("WLN_RATE_MAX_REQUESTS", "0"));
+        /// <summary>
+        /// 是否隔离请求目录（不同目录分开限流）
+        /// </summary>
+        public bool IsolationPath { get; set; } = false;
+        /// <summary>
+        /// 限流的白名单目录列表
+        /// </summary>
+        public string[] WhitePath { get; set; } = Wlniao.Config.GetSetting("WLN_RATE_WHITEPATH", "/*").SplitBy();
+        /// <summary>
+        /// 限流的白名单标识列表
+        /// </summary>
+        public string[] WhiteKeys { get; set; } = Wlniao.Config.GetSetting("WLN_RATE_WHITEKEYS").SplitBy();
+        /// <summary>
+        /// 限流的黑名单标识列表
+        /// </summary>
+        public string[] BlackKeys { get; set; } = Wlniao.Config.GetSetting("WLN_RATE_BLACKKEYS").SplitBy();
+
+        /// <summary>
+        /// 提示消息内容，支持{ClientKey}变量
+        /// </summary>
+        public string MessageTpl { get; set; } = "{\"message\":\"访问频率超限，来自：{ClientKey} 的请求已被拒绝\"}";
+    }
+    /// <summary>
     /// 按标识符（IP、用户ID等）限流
     /// </summary>
     public class RateLimitMiddleware
@@ -19,42 +59,6 @@ namespace Wlniao.Middleware
         /// <summary>
         /// 
         /// </summary>
-        public class RateLimitOptions
-        {
-            /// <summary>
-            /// 时间窗口分片数量（默认：60个）
-            /// </summary>
-            public int TZoneCount { get; set; } = 0;
-            /// <summary>
-            /// 请求时间窗口（默认：30秒）
-            /// </summary>
-            public int TimeWindow { get; set; } = Wlniao.Convert.ToInt(Wlniao.Config.GetSetting("WLN_RATE_TIME_SECONDS", "30"));
-            /// <summary>
-            /// 最大请求次数
-            /// </summary>
-            public int MaxRequests { get; set; } = Wlniao.Convert.ToInt(Wlniao.Config.GetSetting("WLN_RATE_MAX_REQUESTS", "0"));
-            /// <summary>
-            /// 是否隔离请求目录（不同目录分开限流）
-            /// </summary>
-            public bool IsolationPath { get; set; } = false;
-            /// <summary>
-            /// 限流的白名单目录列表
-            /// </summary>
-            public string[] WhitePath { get; set; } = Wlniao.Config.GetSetting("WLN_RATE_WHITEPATH", "/*").SplitBy();
-            /// <summary>
-            /// 限流的白名单标识列表
-            /// </summary>
-            public string[] WhiteKeys { get; set; } = Wlniao.Config.GetSetting("WLN_RATE_WHITEKEYS").SplitBy();
-            /// <summary>
-            /// 限流的黑名单标识列表
-            /// </summary>
-            public string[] BlackKeys { get; set; } = Wlniao.Config.GetSetting("WLN_RATE_BLACKKEYS").SplitBy();
-
-            /// <summary>
-            /// 提示消息内容，支持{ClientKey}变量
-            /// </summary>
-            public string MessageTpl { get; set; } = "{\"message\":\"访问频率超限，来自：{ClientKey} 的请求已被拒绝\"}";
-        }
         private readonly RequestDelegate _next;
         private readonly RateLimitOptions _options;
         private static MemoryCache memoryCache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
@@ -67,7 +71,7 @@ namespace Wlniao.Middleware
         public RateLimitMiddleware(RequestDelegate next, RateLimitOptions options)
         {
             _next = next;
-            _options = options;
+            _options = options ?? new RateLimitOptions();
             if (_options.TZoneCount > 0)
             {
                 _options.TZoneCount = _options.TZoneCount < 360 ? _options.TZoneCount : 360;
@@ -201,5 +205,25 @@ namespace Wlniao.Middleware
             await _next(context);
         }
 
+    }
+    
+    
+    /// <summary>
+    /// 异常处理中间件扩展
+    /// </summary>
+    public static class RateLimitExtension
+    {
+        /// <summary>
+        /// 配置使用限流中间件
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="configureOptions"></param>
+        /// <returns></returns>
+        public static IApplicationBuilder UseRateLimit(this IApplicationBuilder app, Action<RateLimitOptions> configureOptions)
+        {
+            var options = new RateLimitOptions();
+            configureOptions(options);
+            return app.UseMiddleware<RateLimitMiddleware>(options);
+        }
     }
 }

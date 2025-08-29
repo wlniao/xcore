@@ -35,6 +35,11 @@ namespace Wlniao.Engine
         /// </summary>
         public Dictionary<string, string> HeaderOutput { get; set; }
         /// <summary>
+        /// 
+        /// </summary>
+        public ApiResult<object> Output { get; set; }
+        
+        /// <summary>
         /// 请求是否启用Https
         /// </summary>
         public bool IsHttps { get; }
@@ -73,6 +78,10 @@ namespace Wlniao.Engine
         /// 请求安全认证的回调方法，返回请求加密/解密密钥
         /// </summary>
         public Func<HttpRequest, string>? SafetyCertification { get; set; }
+        /// <summary>
+        /// 输出内容序列化托管
+        /// </summary>
+        public Func<HttpRequest, string>? SerializeOutput { get; set; }
         
         /// <summary>
         /// 通过请求初始化实例内容
