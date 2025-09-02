@@ -24,11 +24,11 @@ namespace Wlniao.Middleware
         /// <summary>
         /// 请求时间窗口（默认：30秒）
         /// </summary>
-        public int TimeWindow { get; set; } = Wlniao.Convert.ToInt(Wlniao.Config.GetSetting("WLN_RATE_TIME_SECONDS", "30"));
+        public int TimeWindow { get; set; } = Convert.ToInt(Config.GetSetting("WLN_RATE_TIME_SECONDS", "30"));
         /// <summary>
         /// 最大请求次数
         /// </summary>
-        public int MaxRequests { get; set; } = Wlniao.Convert.ToInt(Wlniao.Config.GetSetting("WLN_RATE_MAX_REQUESTS", "0"));
+        public int MaxRequests { get; set; } = Convert.ToInt(Config.GetSetting("WLN_RATE_MAX_REQUESTS", "0"));
         /// <summary>
         /// 是否隔离请求目录（不同目录分开限流）
         /// </summary>
@@ -36,15 +36,15 @@ namespace Wlniao.Middleware
         /// <summary>
         /// 限流的白名单目录列表
         /// </summary>
-        public string[] WhitePath { get; set; } = Wlniao.Config.GetSetting("WLN_RATE_WHITEPATH", "/*").SplitBy();
+        public string[] WhitePath { get; set; } = Config.GetSetting("WLN_RATE_WHITEPATH", "/*").SplitBy();
         /// <summary>
         /// 限流的白名单标识列表
         /// </summary>
-        public string[] WhiteKeys { get; set; } = Wlniao.Config.GetSetting("WLN_RATE_WHITEKEYS").SplitBy();
+        public string[] WhiteKeys { get; set; } = Config.GetSetting("WLN_RATE_WHITEKEYS").SplitBy();
         /// <summary>
         /// 限流的黑名单标识列表
         /// </summary>
-        public string[] BlackKeys { get; set; } = Wlniao.Config.GetSetting("WLN_RATE_BLACKKEYS").SplitBy();
+        public string[] BlackKeys { get; set; } = Config.GetSetting("WLN_RATE_BLACKKEYS").SplitBy();
 
         /// <summary>
         /// 提示消息内容，支持{ClientKey}变量

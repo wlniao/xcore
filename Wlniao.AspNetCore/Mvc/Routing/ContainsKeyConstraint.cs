@@ -60,7 +60,7 @@ namespace Wlniao.Mvc.Routing
                 var stringValue = values[routeKey] as string;
                 if (!string.IsNullOrEmpty(stringValue))
                 {
-                    return _keys.Contains<String>(stringValue.ToLower());
+                    return _keys.Contains<string>(stringValue.ToLower());
                 }
             }
             return false;

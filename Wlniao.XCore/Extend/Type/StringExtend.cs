@@ -55,7 +55,7 @@ namespace Wlniao
         {
             if (string.IsNullOrEmpty(input))
             {
-                return new string[0];
+                return Array.Empty<string>();
             }
             return input.SplitBy(new[] { "," });
         }
@@ -69,7 +69,7 @@ namespace Wlniao
         {
             if (string.IsNullOrEmpty(input))
             {
-                return new string[0];
+                return Array.Empty<string>();
             }
             if (separator == null || separator.Length == 0)
             {

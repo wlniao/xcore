@@ -29,6 +29,8 @@ using System.Text.RegularExpressions;
 using Wlniao.Text;
 using Wlniao.Crypto;
 using Org.BouncyCastle.Crypto.Macs;
+using Encoding = System.Text.Encoding;
+
 namespace Wlniao
 {
     /// <summary>
@@ -558,6 +560,57 @@ namespace Wlniao
             var plainBytes = sm2.Decrypt(encryBytes);
             return System.Text.Encoding.UTF8.GetString(plainBytes);
         }
+        
+        /// <summary>
+        /// 使用SM2私钥进行签名
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="privateKey"></param>
+        /// <returns></returns>
+        public static string Sm2SignWithPrivateKey(string text, byte[] privateKey)
+        {
+            var sm2 = new SM2(Array.Empty<byte>(), privateKey, SM2Mode.C1C3C2);
+            return Helper.Encode(sm2.Sign(Encoding.UTF8.GetBytes(text)));
+        }
+        
+        /// <summary>
+        /// 使用SM2私钥进行签名
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="privateKey"></param>
+        /// <returns></returns>
+        public static string Sm2SignWithPrivateKey(string text, string privateKey)
+        {
+            var sm2 = new SM2(Array.Empty<byte>(), Helper.Decode(privateKey), SM2Mode.C1C3C2);
+            return Helper.Encode(sm2.Sign(Encoding.UTF8.GetBytes(text)));
+        }
+        
+        /// <summary>
+        /// 使用SM2公钥进行签名验证
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="sign"></param>
+        /// <param name="publicKey"></param>
+        /// <returns></returns>
+        public static bool Sm2VerifyWithPublicKey(string text, string sign, byte[] publicKey)
+        {
+            var sm2 = new SM2(publicKey, Array.Empty<byte>(), SM2Mode.C1C3C2);
+            return sm2.VerifySign(Encoding.UTF8.GetBytes(text), Wlniao.Crypto.Helper.Decode(sign));
+        }
+        
+        /// <summary>
+        /// 使用SM2公钥进行签名验证
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="sign"></param>
+        /// <param name="publicKey"></param>
+        /// <returns></returns>
+        public static bool Sm2VerifyWithPublicKey(string text, string sign, string publicKey)
+        {
+            var sm2 = new SM2(Helper.Decode(publicKey), Array.Empty<byte>(), SM2Mode.C1C3C2);
+            return sm2.VerifySign(Encoding.UTF8.GetBytes(text), Wlniao.Crypto.Helper.Decode(sign));
+        }
+        
         /// <summary>
         /// 
         /// </summary>

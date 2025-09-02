@@ -55,7 +55,7 @@ namespace Wlniao
                         {
                             WebService.UseHttps = true;
                             lo.Protocols = HttpProtocols.Http1AndHttp2AndHttp3;
-                            lo.UseHttps(Wlniao.Crypto.Cert.CrtToPfx(WebService.TlsCrt, WebService.TlsKey));
+                            lo.UseHttps(Crypto.Cert.CrtToPfx(WebService.TlsCrt, WebService.TlsKey));
                         });
                     }
                     else

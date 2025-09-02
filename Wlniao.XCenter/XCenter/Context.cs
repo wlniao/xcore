@@ -24,9 +24,13 @@ namespace Wlniao.XCenter
         /// </summary>
         public string owner { get; set; }
         /// <summary>
-        /// 认证系统分配的交互密钥
+        /// 认证系统分配的租户密钥
         /// </summary>
         public string token { get; set; }
+        /// <summary>
+        /// 认证系统分配的租户应用密钥
+        /// </summary>
+        public string app_token { get; set; }
         /// <summary>
         /// 
         /// </summary>
@@ -57,7 +61,7 @@ namespace Wlniao.XCenter
         private static string _XCenterSm4Key = null;
         private static string _XCenterCertSn = null;
         private static byte[] _XCenterPrivkey = null;
-        private static byte[] _XCenterPublicKey = null;
+        private static byte[] _XCenterServerKey = null;
         /// <summary>
         /// Authify认证服务器地址
         /// </summary>
@@ -125,23 +129,20 @@ namespace Wlniao.XCenter
         /// <summary>
         /// XCenter分配的证书公钥
         /// </summary>
-        internal static byte[] XCenterPublicKey
+        internal static byte[] XCenterServerKey
         {
             get
             {
-                if (_XCenterPublicKey == null)
+                switch (_XCenterServerKey)
                 {
-                    var tmp = Wlniao.Config.GetSetting("XCenterPublicKey");
-                    if (string.IsNullOrEmpty(tmp))
+                    case null:
                     {
-                        _XCenterPublicKey = new byte[0];
+                        var tmp = Wlniao.Config.GetSetting("XCenterServerKey");
+                        return string.IsNullOrEmpty(tmp) ? [] : Wlniao.Crypto.Helper.Decode(tmp);
                     }
-                    else
-                    {
-                        _XCenterPublicKey = Wlniao.Crypto.Helper.Decode(tmp);
-                    }
+                    default:
+                        return _XCenterServerKey;
                 }
-                return _XCenterPublicKey;
             }
         }
         /// <summary>
@@ -154,7 +155,7 @@ namespace Wlniao.XCenter
             var ctx = new Context { owner = ownerId.ToString(), token = XCenterToken, app = XCenterApp };
             try
             {
-                var res = AppData<Dictionary<string, object>>("/app/getapp_byowner", new { owner = ctx.owner, app = ctx.app });
+                var res = AppData<Dictionary<string, object>>("/app/saas/get_xapp_by_suite", new { suite_id = ctx.owner, app = ctx.app });
                 if (res.success)
                 {
                     ctx.app = res.data.GetString("app");
@@ -210,37 +211,23 @@ namespace Wlniao.XCenter
                     ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };
                     try
                     {
-                        if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPrivkey == null || XCenterPrivkey.Length < 20 || XCenterPublicKey == null || XCenterPublicKey.Length < 20)
+                        if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPrivkey == null || XCenterPrivkey.Length < 20 || XCenterServerKey == null || XCenterServerKey.Length < 20)
                         {
                             ctx.message = "程序配置错误，请检查XCenter相关配置";
-                            Log.Loger.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterPrivkey/XCenterPublicKey 至少需要配置一项");
+                            Log.Loger.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterServerKey/XCenterPrivkey 至少需要配置一项");
                         }
                         else
                         {
-                            var res = AppData<Dictionary<string, object>>("/app/getapp_bydomain", new { domain = ctx.domain, app = ctx.app });
+                            var res = AppData<Dictionary<string, object>>("/app/saas/get_xapp_by_domain", new { domain = ctx.domain, app = ctx.app });
                             if (res.success)
                             {
                                 ctx.app = res.data.GetString("app", ctx.app);
                                 ctx.name = res.data.GetString("name");
                                 ctx.brand = res.data.GetString("brand");
-                                ctx.owner = res.data.GetString("owner");
-                                try
-                                {
-                                    if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
-                                    {
-                                        //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
-                                        var tokentmp = res.data.GetString("sm2token");
-                                        var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(tokentmp), XCenterPrivkey);
-                                        if (!string.IsNullOrEmpty(sm2token))
-                                        {
-                                            ctx.token = sm2token;
-                                        }
-                                    }
-                                }
-                                catch
-                                {
-                                    ctx.message = "请检查“XCenterPrivkey”是否正确";
-                                }
+                                ctx.owner = res.data.GetString("suite_id");
+                                //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
+                                ctx.token = res.data.GetString("token", ctx.token);
+                                ctx.app_token = res.data.GetString("app_token", ctx.token);
                                 Caching.Cache.Set("ctx_" + ctx.domain, ctx, 300);
                             }
                             else
@@ -284,21 +271,21 @@ namespace Wlniao.XCenter
             {
                 return new ApiResult<T> { message = "参数“XCenterCertSn”未配置，请先配置" };
             }
-            else if (XCenterPublicKey.Length == 0)
+            else if (XCenterServerKey.Length == 0)
             {
-                return new ApiResult<T> { message = "参数“XCenterPublicKey”未配置，请先配置" };
+                return new ApiResult<T> { message = "参数“XCenterServerKey”未配置，请先配置" };
             }
-            var now = DateTools.GetUnix();
             var rlt = new Wlniao.ApiResult<T>();
             var utime = "";
             var msgid = StringUtil.CreateLongId();
             var token = XCenterSm4Key.Length == 16 ? XCenterSm4Key : StringUtil.CreateRndStrE(16);
             var plainData = Wlniao.Json.Serialize(data);
+            var expireTime = DateTools.GetUnix() + 7200;
             var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
-            var sm2token = Wlniao.Encryptor.SM2EncryptByPublicKey(Encoding.ASCII.GetBytes(token), XCenterPublicKey);
-            var sign = Wlniao.Encryptor.SM3Encrypt(encdata + now + token);
+            var sm2Token = Wlniao.Encryptor.SM2EncryptByPublicKey(Encoding.ASCII.GetBytes(token), XCenterServerKey);
+            var sign = Wlniao.Encryptor.Sm2SignWithPrivateKey(expireTime + sm2Token + encdata, XCenterPrivkey);
             var resStr = "";
-            var reqStr = Wlniao.Json.Serialize(new { sn = XCenterCertSn, token = sm2token, timestamp = now, data = encdata, sign });
+            var reqStr = Wlniao.Json.Serialize(new { sn = XCenterCertSn, data = encdata, sign, token = sm2Token, expire = expireTime });
             Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
             var start = DateTime.Now;
             try
@@ -353,13 +340,13 @@ namespace Wlniao.XCenter
                             if (typeof(T) == typeof(string))
                             {
                                 rlt.data = (T)System.Convert.ChangeType(plaintext, typeof(T));
-                                rlt.tips = resObj.tips;
                             }
                             else
                             {
                                 rlt.data = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(plaintext);
-                                rlt.tips = resObj.tips;
                             }
+
+                            rlt.tips = resObj.tips;
                         }
                         catch (Exception ex)
                         {

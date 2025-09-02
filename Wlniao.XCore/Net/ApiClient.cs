@@ -95,7 +95,7 @@ namespace Wlniao.Net
             var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
             using (var client = new HttpClient(handler))
             {
-                var stream = Convert.ToStream(string.IsNullOrEmpty(postData) ? new byte[0] : Encoding.UTF8.GetBytes(postData));
+                var stream = Convert.ToStream(string.IsNullOrEmpty(postData) ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(postData));
                 var content = new StreamContent(stream);
                 client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
                 client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", contentType);

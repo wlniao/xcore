@@ -104,7 +104,7 @@ namespace Wlniao.XServer
                     {
                         if (string.IsNullOrEmpty(XStorageUrl))
                         {
-                            _XStorageUrls = new string[0];
+                            _XStorageUrls = Array.Empty<string>();
                         }
                         else if (XStorageUrl.StartsWith("//"))
                         {

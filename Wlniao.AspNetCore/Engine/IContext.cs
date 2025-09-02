@@ -11,9 +11,9 @@ namespace Wlniao.Engine
     public interface IContext
     {
         /// <summary>
-        /// 是否初始化
+        /// 是否继续执行预定义流程
         /// </summary>
-        public bool Ready  { get; }
+        public bool Continue  { get; set; }
         /// <summary>
         /// 当前请求域名
         /// </summary>
@@ -21,7 +21,7 @@ namespace Wlniao.Engine
         /// <summary>
         /// 请求输入内容
         /// </summary>
-        public string Body { get; }
+        public string Body { get; set; }
         /// <summary>
         /// 请求输入参数
         /// </summary>
@@ -60,6 +60,14 @@ namespace Wlniao.Engine
         /// </summary>
         public string ConsumerSecretKey { get; }
         /// <summary>
+        /// 多租户系统对外公钥
+        /// </summary>
+        public string ConsumerPublicKey { get; }
+        /// <summary>
+        /// 多租户系统安全私钥
+        /// </summary>
+        public string ConsumerPrivateKey { get; }
+        /// <summary>
         /// 当前登录认证信息
         /// </summary>
         public EngineSession Session { get; }
@@ -82,6 +90,10 @@ namespace Wlniao.Engine
         /// 输出内容序列化托管
         /// </summary>
         public Func<HttpRequest, string>? SerializeOutput { get; set; }
+        /// <summary>
+        /// 认证失败时的回调方法
+        /// </summary>
+        public Action<HttpRequest>? AuthFailed { get; set; }
         
         /// <summary>
         /// 通过请求初始化实例内容
@@ -92,7 +104,7 @@ namespace Wlniao.Engine
         /// <summary>
         /// 执行身份验证（未验证通过时需将Ready设置为false）
         /// </summary>
-        public bool Auth();
+        public void Auth();
     
         /// <summary>
         /// 请求内容解析

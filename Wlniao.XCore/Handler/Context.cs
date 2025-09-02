@@ -16,6 +16,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ------------------------------------------------------------------------------*/
+
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -151,7 +153,7 @@ namespace Wlniao.Handler
                     }
                     else
                     {
-                        content = new System.Net.Http.ByteArrayContent(new byte[0]);
+                        content = new System.Net.Http.ByteArrayContent(Array.Empty<byte>());
                     }
                     if (HttpRequestHeaders != null)
                     {

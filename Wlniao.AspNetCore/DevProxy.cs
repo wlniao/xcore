@@ -31,16 +31,16 @@ public class DevProxy
             ProxyWebSocketAsync(context, wst);
             return new Task<HttpResponseMessage>(null);
         }
-        var client = new System.Net.Http.HttpClient();
+        var client = new HttpClient();
         var uri = new Uri(target + request.Path.Value + context.Request.QueryString);
-        var msg = new System.Net.Http.HttpRequestMessage();
+        var msg = new HttpRequestMessage();
         client.Timeout = TimeSpan.FromSeconds(60);
-        msg.Method = new System.Net.Http.HttpMethod(request.Method);
+        msg.Method = new HttpMethod(request.Method);
         msg.RequestUri = uri;
         msg.Headers.Host = uri.Host;
         if (request.ContentLength > 0)
         {
-            msg.Content = new System.Net.Http.StreamContent(context.Request.Body);
+            msg.Content = new StreamContent(context.Request.Body);
             if (request.ContentType != null)
             {
                 msg.Content.Headers.ContentType = new MediaTypeHeaderValue(request.ContentType);
@@ -60,14 +60,12 @@ public class DevProxy
         }
 
         // 复制请求体（如果是 POST、PUT 等）
-        if (request.ContentLength > 0)
+        if (request is not { ContentLength: > 0, ContentType: not null })
         {
-            msg.Content = new StreamContent(request.Body);
-            if (request.ContentType != null)
-            {
-                msg.Content.Headers.ContentType = new MediaTypeHeaderValue(request.ContentType);
-            }
+            return client.SendAsync(msg);
         }
+        msg.Content = new StreamContent(request.Body);
+        msg.Content.Headers.ContentType = new MediaTypeHeaderValue(request.ContentType);
 
         // using (var responseMessageTask = client.SendAsync(msg, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, context.RequestAborted))
         // {
@@ -96,8 +94,8 @@ public class DevProxy
         // 检查当前请求是否是 WebSocket 请求
         if (!context.WebSockets.IsWebSocketRequest)
         {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            context.Response.WriteAsync("This endpoint requires WebSocket protocol");
+            // context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            // context.Response.WriteAsync("This endpoint requires WebSocket protocol");
             return Task.CompletedTask;
         }
 

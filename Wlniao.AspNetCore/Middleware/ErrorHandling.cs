@@ -115,13 +115,13 @@ namespace Wlniao.Middleware
 
             if (context.Request.Method == "POST" || context.Request.Query.ContainsKey("do"))
             {
-                context.Response.ContentType = "text/json";
+                // context.Response.ContentType = "text/json";
                 context.Response.StatusCode = options.StatusCode;
-                return context.Response.WriteAsync(Wlniao.Json.Serialize(new { success = false, message = "系统异常，稍后可尝试重新提交" }));
+                return context.Response.WriteAsync(Json.Serialize(new { success = false, message = "系统异常，稍后可尝试重新提交" }));
             }
             else
             {
-                context.Response.ContentType = "text/html;charset=utf-8";
+                // context.Response.ContentType = "text/html;charset=utf-8";
                 return context.Response.WriteAsync(XCoreController.ErrorHtml.Replace("{{errorTitle}}", "错误").Replace("{{errorIcon}}", XCoreController.ErrorIcon).Replace("{{errorMsg}}", "系统异常，稍后可尝试重新提交"));
             }
         }

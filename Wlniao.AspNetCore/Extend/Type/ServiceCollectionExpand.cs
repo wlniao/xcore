@@ -42,7 +42,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="service"></param>
         /// <param name="assemblyFile">要注册的DLL名称</param>
-        public static void AddBusiness(this IServiceCollection service, String? assemblyFile = null)
+        public static void AddBusiness(this IServiceCollection service, string? assemblyFile = null)
         {
             Type[]? types = null;
             if (string.IsNullOrEmpty(assemblyFile))

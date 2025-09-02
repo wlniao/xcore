@@ -12,9 +12,13 @@ namespace Wlniao.Engine
     public class EngineSession
     {
         /// <summary>
-        /// 认证是否有效
+        /// 当前会话认证有效
         /// </summary>
         public bool IsValid => ExpireTime > DateTools.GetUnix() && !string.IsNullOrEmpty(UserId);
+        /// <summary>
+        /// 当前会话认证无效
+        /// </summary>
+        public bool NotValid => ExpireTime < DateTools.GetUnix() || string.IsNullOrEmpty(UserId);
         
         /// <summary>
         /// 过期时间
@@ -57,30 +61,30 @@ namespace Wlniao.Engine
         public string Encode(string consumerSecretKey, string currentConsumerId = null, int exprieSeconds = 7200)
         {
             var extend = new Dictionary<string, string>();
-            if (!string.IsNullOrEmpty(this.Name))
+            if (!string.IsNullOrEmpty(Name))
             {
-                extend.Add("n", this.Name);
+                extend.Add("n", Name);
             }
 
-            if (!string.IsNullOrEmpty(this.Account))
+            if (!string.IsNullOrEmpty(Account))
             {
-                extend.Add("a", this.Account);
+                extend.Add("a", Account);
             }
 
-            if (!string.IsNullOrEmpty(this.DepartmentIds))
+            if (!string.IsNullOrEmpty(DepartmentIds))
             {
-                extend.Add("d", this.DepartmentIds);
+                extend.Add("d", DepartmentIds);
             }
 
-            foreach (var kv in (this.ExtData ?? new Dictionary<string, string>()))
+            foreach (var kv in (ExtData ?? new Dictionary<string, string>()))
             {
                 extend.TryAdd(kv.Key, kv.Value);
             }
 
-            this.ExpireTime = DateTools.GetUnix() + exprieSeconds;
+            ExpireTime = DateTools.GetUnix() + exprieSeconds;
             var extStr = System.Text.Json.JsonSerializer.Serialize(extend, XCore.JsonSerializerOptions);
             var extHex = StringUtil.UTF8ToHexString(extStr);
-            var plain = $"{this.ExpireTime},{this.UserId},{currentConsumerId},{extHex}".Trim(',');
+            var plain = $"{ExpireTime},{UserId},{currentConsumerId},{extHex}".Trim(',');
             return Encryptor.SM4EncryptECBToHex(plain, consumerSecretKey, true);
         }
 
@@ -99,8 +103,8 @@ namespace Wlniao.Engine
             }
             else
             {
-                this.ExpireTime = Wlniao.Convert.ToLong(data[0]);
-                this.UserId = data[1];
+                ExpireTime = Convert.ToLong(data[0]);
+                UserId = data[1];
                 if (!string.IsNullOrEmpty(data.LastOrDefault()))
                 {
                     var plain = StringUtil.HexStringToUTF8(data.LastOrDefault());
@@ -110,32 +114,32 @@ namespace Wlniao.Engine
                         switch (kv.Key)
                         {
                             case "n":
-                                this.Name = kv.Value;
+                                Name = kv.Value;
                                 break;
                             case "a":
-                                this.Account = kv.Value;
+                                Account = kv.Value;
                                 break;
                             case "d":
-                                this.DepartmentIds = kv.Value;
+                                DepartmentIds = kv.Value;
                                 break;
                             default:
-                                this.ExtData.TryAdd(kv.Key, kv.Value);
+                                ExtData.TryAdd(kv.Key, kv.Value);
                                 break;
                         }
                     }
                 }
                 
-                if (string.IsNullOrEmpty(this.Name))
+                if (string.IsNullOrEmpty(Name))
                 {
-                    this.Name = "";
+                    Name = "";
                 }
-                if (string.IsNullOrEmpty(this.Account))
+                if (string.IsNullOrEmpty(Account))
                 {
-                    this.Account = "";
+                    Account = "";
                 }
-                if (string.IsNullOrEmpty(this.UserId))
+                if (string.IsNullOrEmpty(UserId))
                 {
-                    this.ExpireTime = 0;
+                    ExpireTime = 0;
                 }
             }
             

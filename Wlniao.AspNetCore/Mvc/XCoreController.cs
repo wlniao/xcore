@@ -88,13 +88,13 @@ namespace Wlniao.Mvc
             {
                 return;
             }
-            if (Response.Headers != null)
-            {
-                Response.Headers.TryAdd("X-Wlniao-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
-            }
             if (!RequestSecurity)
             {
                 errorMsg = Config.GetConfigs("NoSecurityMessage");
+            }
+            if (!Response.HasStarted)
+            {
+                Response.Headers.TryAdd("X-Wlniao-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
             }
             if (string.IsNullOrEmpty(errorMsg))
             {
@@ -103,21 +103,22 @@ namespace Wlniao.Mvc
                 {
                     trace = Request.Headers["X-Wlniao-Trace"].ToString();
                 }
-                if (!string.IsNullOrEmpty(trace) && Response.Headers != null)
+                if (!string.IsNullOrEmpty(trace) && !Response.HasStarted)
                 {
                     Response.Headers.TryAdd("X-Wlniao-Trace", trace);
                 }
-                if (!string.IsNullOrEmpty(XCore.XServerId) && Response.Headers != null)
+                if (!string.IsNullOrEmpty(XCore.XServerId) && !Response.HasStarted)
                 {
                     Response.Headers.TryAdd("X-Wlniao-XServerId", XCore.XServerId);
                 }
             }
             else if (string.IsNullOrEmpty(method))
             {
-                var errorPage = new ContentResult();
-                errorPage.ContentType = "text/html";
-                errorPage.Content = errorHtml.Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon).Replace("{{errorMsg}}", errorMsg);
-                context.Result = errorPage;
+                context.Result = new ContentResult
+                {
+                    ContentType = "text/html",
+                    Content = errorHtml.Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon).Replace("{{errorMsg}}", errorMsg)
+                };
             }
             else
             {
@@ -141,7 +142,7 @@ namespace Wlniao.Mvc
         /// </summary>
         /// <param name="message"></param>
         [NonAction]
-        public void DebugMessage(String message)
+        public void DebugMessage(string message)
         {
             if (!string.IsNullOrEmpty(message) && !Response.Headers.ContainsKey("X-Wlniao-Debug"))
             {
@@ -155,7 +156,7 @@ namespace Wlniao.Mvc
         /// <param name="seconds"></param>
         /// <returns></returns>
         [NonAction]
-        public IActionResult RedirectWait(String url, Int32 seconds)
+        public IActionResult RedirectWait(string url, int seconds)
         {
             return Content("<html><head><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\"><meta http-equiv=\"refresh\" content=\"" + seconds + ";url=" + url + "\"></head></html>", "text/html");
         }
@@ -165,22 +166,25 @@ namespace Wlniao.Mvc
         /// <param name="data"></param>
         /// <returns></returns>
         [NonAction]
-        public new ActionResult Json(Object data)
+        public new ActionResult Json(object data)
         {
             var jsonStr = "";
-            if (data == null) return Content(jsonStr ?? "", "application/json", System.Text.Encoding.UTF8);
-            if (data is string)
+            switch (data)
             {
-                jsonStr = data.ToString();
+                case null:
+                    return Content(jsonStr ?? "", "application/json", Encoding.UTF8);
+                case string:
+                    jsonStr = data.ToString();
+                    break;
+                default:
+                    jsonStr = JsonSerializer.Serialize(data, new JsonSerializerOptions
+                    {
+                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                    });
+                    break;
             }
-            else
-            {
-                jsonStr = System.Text.Json.JsonSerializer.Serialize(data, new JsonSerializerOptions
-                {
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                });
-            }
-            return Content(jsonStr ?? "", "application/json", System.Text.Encoding.UTF8);
+
+            return Content(jsonStr ?? "", "application/json", Encoding.UTF8);
         }
         /// <summary>
         /// Object输出
@@ -189,22 +193,25 @@ namespace Wlniao.Mvc
         /// <param name="encoding"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult Json(object data, System.Text.Encoding encoding)
+        public ActionResult Json(object? data, Encoding encoding)
         {
             var jsonStr = "";
-            if (data == null) return Content(jsonStr ?? "", "application/json", encoding ?? System.Text.Encoding.UTF8);
-            if (data is string)
+            switch (data)
             {
-                jsonStr = data.ToString();
+                case null:
+                    return Content(jsonStr ?? "", "application/json", encoding ?? Encoding.UTF8);
+                case string:
+                    jsonStr = data.ToString();
+                    break;
+                default:
+                    jsonStr = JsonSerializer.Serialize(data, new JsonSerializerOptions
+                    {
+                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                    });
+                    break;
             }
-            else
-            {
-                jsonStr = System.Text.Json.JsonSerializer.Serialize(data, new JsonSerializerOptions
-                {
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                });
-            }
-            return Content(jsonStr ?? "", "application/json", encoding ?? System.Text.Encoding.UTF8);
+
+            return Content(jsonStr ?? "", "application/json", encoding ?? Encoding.UTF8);
         }
         /// <summary>
         /// Json字符串输出
@@ -216,11 +223,11 @@ namespace Wlniao.Mvc
         {
             if (string.IsNullOrEmpty(GetRequest("callback")) || jsonStr.LastIndexOf(')') > jsonStr.LastIndexOf(':'))
             {
-                return Content(jsonStr, "application/json", System.Text.Encoding.UTF8);
+                return Content(jsonStr, "application/json", Encoding.UTF8);
             }
             else
             {
-                return Content(GetRequest("callback") + "(" + jsonStr + ")", "application/json", System.Text.Encoding.UTF8);
+                return Content(GetRequest("callback") + "(" + jsonStr + ")", "application/json", Encoding.UTF8);
             }
         }
         /// <summary>
@@ -230,15 +237,15 @@ namespace Wlniao.Mvc
         /// <param name="encoding"></param>
         /// <returns></returns>
         [NonAction]
-        public ActionResult JsonStr(string jsonStr, System.Text.Encoding encoding)
+        public ActionResult JsonStr(string jsonStr, Encoding encoding)
         {
             if (string.IsNullOrEmpty(GetRequest("callback")) || jsonStr.LastIndexOf(')') > jsonStr.LastIndexOf(':'))
             {
-                return Content(jsonStr, "application/json", encoding ?? System.Text.Encoding.UTF8);
+                return Content(jsonStr, "application/json", encoding ?? Encoding.UTF8);
             }
             else
             {
-                return Content(GetRequest("callback") + "(" + jsonStr + ")", "application/json", encoding ?? System.Text.Encoding.UTF8);
+                return Content(GetRequest("callback") + "(" + jsonStr + ")", "application/json", encoding ?? Encoding.UTF8);
             }
         }
         /// <summary>
@@ -263,11 +270,11 @@ namespace Wlniao.Mvc
             }
             else if (string.IsNullOrEmpty(GetRequest("callback")))
             {
-                return Content(Wlniao.Json.Serialize(new { success = false, message = message }), "application/json", System.Text.Encoding.UTF8);
+                return Content(Wlniao.Json.Serialize(new { success = false, message = message }), "application/json", Encoding.UTF8);
             }
             else
             {
-                return Content(GetRequest("callback") + "(" + Wlniao.Json.Serialize(new { success = false, message = message }) + ")", "text/json", System.Text.Encoding.UTF8);
+                return Content(GetRequest("callback") + "(" + Wlniao.Json.Serialize(new { success = false, message = message }) + ")", "text/json", Encoding.UTF8);
             }
         }
         /// <summary>
@@ -276,18 +283,11 @@ namespace Wlniao.Mvc
         /// <param name="key"></param>
         /// <returns></returns>
         [NonAction]
-        public string GetCookies(String key)
+        public string GetCookies(string key)
         {
             key = key.ToLower();
-            if (Request.Cookies != null)
-            {
-                var item = Request.Cookies.FirstOrDefault(o => o.Key.ToLower() == key);
-                if (item.Value != null)
-                {
-                    return item.Value;
-                }
-            }
-            return "";
+            var item = Request.Cookies.FirstOrDefault(o => o.Key.ToLower() == key);
+            return item.Value ?? "";
         }
         /// <summary>
         /// 获取请求参数Get及Post
@@ -296,20 +296,21 @@ namespace Wlniao.Mvc
         /// <param name="Default"></param>
         /// <returns></returns>
         [NonAction]
-        protected String GetRequestNoSecurity(String Key, String Default = "")
+        protected string GetRequestNoSecurity(string Key, string Default = "")
         {
             var key = Key.ToLower();
             foreach (var item in Request.Query.Keys)
             {
-                if (item.ToLower() == key && !string.IsNullOrEmpty(Request.Query[key]))
+                if (item.ToLower() != key || string.IsNullOrEmpty(Request.Query[key]))
                 {
-                    Default = Request.Query[item].ToString().Trim();
-                    if (!string.IsNullOrEmpty(Default) && Default.IndexOf('%') >= 0)
-                    {
-                        Default = strUtil.UrlDecode(Default);
-                    }
-                    return Default.Trim();
+                    continue;
                 }
+                Default = Request.Query[item].ToString().Trim();
+                if (!string.IsNullOrEmpty(Default) && Default.IndexOf('%') >= 0)
+                {
+                    Default = StringUtil.UrlDecode(Default);
+                }
+                return Default.Trim();
             }
             return Default.Trim();
         }
@@ -320,7 +321,7 @@ namespace Wlniao.Mvc
         /// <param name="Default"></param>
         /// <returns></returns>
         [NonAction]
-        protected String GetRequestSecurity(String Key, String Default = "")
+        protected string GetRequestSecurity(string Key, string Default = "")
         {
             Default = GetRequestNoSecurity(Key, Default);
             var str = System.Text.RegularExpressions.Regex.Replace(Default, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\'|\.|<|>]", "").Replace("\"", "");
@@ -337,7 +338,7 @@ namespace Wlniao.Mvc
         /// <param name="Default"></param>
         /// <returns></returns>
         [NonAction]
-        protected String GetRequest(String Key, String Default = "")
+        protected string GetRequest(string Key, string Default = "")
         {
             Default = GetRequestNoSecurity(Key, Default);
             var str = System.Text.RegularExpressions.Regex.Replace(Default, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\'|\.|<|>]", "").Replace("\"", "");
@@ -354,7 +355,7 @@ namespace Wlniao.Mvc
         /// <param name="Default"></param>
         /// <returns></returns>
         [NonAction]
-        protected String GetRequestDecode(String Key, String Default = "")
+        protected string GetRequestDecode(string Key, string Default = "")
         {
             return GetRequest(Key, Default);
         }
@@ -373,7 +374,7 @@ namespace Wlniao.Mvc
         /// </summary>
         /// <returns></returns>
         [NonAction]
-        protected String GetPostString()
+        protected string GetPostString()
         {
             if (Request.Method == "OPTIONS")
             {
@@ -400,7 +401,7 @@ namespace Wlniao.Mvc
                         buffer = new byte[(int)Request.ContentLength];
                     }
                     Request.Body.Read(buffer, 0, buffer.Length);
-                    strPost = System.Text.Encoding.UTF8.GetString(buffer);
+                    strPost = Encoding.UTF8.GetString(buffer);
                 }
             }
             return strPost ?? "";
@@ -420,7 +421,7 @@ namespace Wlniao.Mvc
         /// <param name="Default"></param>
         /// <returns></returns>
         [NonAction]
-        protected String PostRequest(String Key, String Default = "")
+        protected string PostRequest(string Key, string Default = "")
         {
             if (ctxPost == null)
             {
@@ -461,14 +462,14 @@ namespace Wlniao.Mvc
                                 {
                                     try
                                     {
-                                        strPost = new System.IO.StreamReader(Request.Body).ReadToEnd();
+                                        strPost = new StreamReader(Request.Body).ReadToEnd();
                                     }
                                     catch
                                     {
                                         //strPost=Request.BodyReader.ReadAsync().Result.ToString();
                                         var buffer = new byte[(int)Request.ContentLength];
                                         Request.Body.Read(buffer, 0, buffer.Length);
-                                        strPost = System.Text.Encoding.UTF8.GetString(buffer);
+                                        strPost = Encoding.UTF8.GetString(buffer);
                                     }
                                 }
                                 if (!string.IsNullOrEmpty(strPost))
@@ -498,7 +499,7 @@ namespace Wlniao.Mvc
                     {
                         foreach (var item in Request.Query.Keys)
                         {
-                            ctxPost.TryAdd(item, strUtil.UrlDecode(Request.Query[item].ToString().Trim()));
+                            ctxPost.TryAdd(item, StringUtil.UrlDecode(Request.Query[item].ToString().Trim()));
                         }
                     }
                 }
@@ -524,7 +525,7 @@ namespace Wlniao.Mvc
         /// <param name="Key"></param>
         /// <returns></returns>
         [NonAction]
-        protected Int32 PostRequestInt(String Key)
+        protected int PostRequestInt(string Key)
         {
             return Convert.ToInt(PostRequest(Key, "0"));
         }
@@ -536,7 +537,7 @@ namespace Wlniao.Mvc
         /// <param name="Default"></param>
         /// <returns></returns>
         [NonAction]
-        protected String HeaderRequest(String Key, String Default = "")
+        protected string HeaderRequest(string Key, string Default = "")
         {
             var key = Key.ToLower();
             var value = new Microsoft.Extensions.Primitives.StringValues();
@@ -734,7 +735,7 @@ namespace Wlniao.Mvc
                     }
                     else
                     {
-                        trace = System.Guid.NewGuid().ToString().Replace('-', '\0');
+                        trace = Guid.NewGuid().ToString().Replace('-', '\0');
                     }
                 }
                 return trace;

@@ -54,7 +54,7 @@ namespace Wlniao
                 {
                     try
                     {
-                        tlsPort = System.Convert.ToInt32(System.Environment.GetEnvironmentVariable("WLN_TLS_PORT"));
+                        tlsPort = System.Convert.ToInt32(Environment.GetEnvironmentVariable("WLN_TLS_PORT"));
                     }
                     catch { }
                     if (tlsPort == 0)
@@ -144,12 +144,12 @@ namespace Wlniao
                 }
                 foreach (var endpoint in endpoints)
                 {
-                    Wlniao.Log.Loger.Console("Now listening on: " + endpoint, ConsoleColor.DarkGreen);
+                    Log.Loger.Console("Now listening on: " + endpoint, ConsoleColor.DarkGreen);
                 }
             }
             catch
             {
-                Wlniao.Log.Loger.Console("Now listening on: " + scheme + "0.0.0.0:" + port, ConsoleColor.DarkGreen);
+                Log.Loger.Console("Now listening on: " + scheme + "0.0.0.0:" + port, ConsoleColor.DarkGreen);
             }
         }
 
@@ -159,10 +159,10 @@ namespace Wlniao
         /// <param name="node"></param>
         /// <param name="code"></param>
         /// <param name="message"></param>
-        public static void ServiceStop(String node, String code = "302", String message = "服务器正在维护中 Server maintenance.")
+        public static void ServiceStop(string node, string code = "302", string message = "服务器正在维护中 Server maintenance.")
         {
-            var json = Wlniao.Json.Serialize(new { node, code, success = false, message });
-            new WebHostBuilder().UseKestrel(o => { o.Listen(System.Net.IPAddress.IPv6Any, XCore.ListenPort); }).Configure(app =>
+            var json = Json.Serialize(new { node, code, success = false, message });
+            new WebHostBuilder().UseKestrel(o => { o.Listen(IPAddress.IPv6Any, XCore.ListenPort); }).Configure(app =>
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Node " + node + " on maintenance mode: " + code);
