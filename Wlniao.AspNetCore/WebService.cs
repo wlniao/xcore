@@ -20,23 +20,23 @@
 
 ===============================================================================*/
 using System;
+using System.Linq;
 using System.Collections.Generic;
-using System.Net.Sockets;
 using System.Net;
+using System.Net.Sockets;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using System.Linq;
 namespace Wlniao
 {
     /// <summary>
     /// XCore内部运行信息及状态
     /// </summary>
-    public partial class WebService
+    public abstract class WebService
     {
-        private static int tlsPort = 0;
-        private static string tlsCrt = null;
-        private static string tlsKey = null;
+        private static int _tlsPort = 0;
+        private static string _tlsCrt = null!;
+        private static string _tlsKey = null!;
 
         /// <summary>
         /// 是否启用HTTPS服务
@@ -50,19 +50,20 @@ namespace Wlniao
         {
             get
             {
-                if (tlsPort == 0)
+                if (_tlsPort != 0)
                 {
-                    try
-                    {
-                        tlsPort = System.Convert.ToInt32(Environment.GetEnvironmentVariable("WLN_TLS_PORT"));
-                    }
-                    catch { }
-                    if (tlsPort == 0)
-                    {
-                        tlsPort = XCore.ListenPort;
-                    }
+                    return _tlsPort;
                 }
-                return tlsPort;
+                try
+                {
+                    // 从配置文件中获取TLS监听端口号，未配置时为默认端口号
+                    _tlsPort = System.Convert.ToInt32(Wlniao.Config.GetConfigs("WLN_TLS_PORT", XCore.ListenPort.ToString()));
+                }
+                catch(Exception ex)
+                {
+                    Wlniao.Log.Loger.Error($"Error Config: WLN_TLS_PORT => {ex.Message}");
+                }
+                return _tlsPort;
             }
         }
 
@@ -73,19 +74,11 @@ namespace Wlniao
         {
             get
             {
-                if (tlsCrt == null)
+                if (string.IsNullOrEmpty(_tlsCrt))
                 {
-                    try
-                    {
-                        tlsCrt = Config.GetConfigs("WLN_TLS_CRT");
-                    }
-                    catch { }
-                    if (string.IsNullOrEmpty(tlsCrt))
-                    {
-                        tlsCrt = IO.PathTool.Map("server.crt");
-                    }
+                    _tlsCrt = Config.GetConfigs("WLN_TLS_CRT", IO.PathTool.Map("xcore", "server.crt"));
                 }
-                return tlsCrt;
+                return _tlsCrt;
             }
         }
 
@@ -96,19 +89,11 @@ namespace Wlniao
         {
             get
             {
-                if (tlsKey == null)
+                if (string.IsNullOrEmpty(_tlsKey))
                 {
-                    try
-                    {
-                        tlsKey = Config.GetConfigs("WLN_TLS_KEY");
-                    }
-                    catch { }
-                    if (string.IsNullOrEmpty(tlsKey))
-                    {
-                        tlsKey = IO.PathTool.Map("server.key");
-                    }
+                    _tlsKey = Config.GetConfigs("WLN_TLS_KEY", IO.PathTool.Map("xcore", "server.key"));
                 }
-                return tlsKey;
+                return _tlsKey;
             }
         }
 
@@ -121,7 +106,7 @@ namespace Wlniao
             var scheme = UseHttps ? "https://" : "http://";
             var port = UseHttps && TlsPort > 0 ? TlsPort : XCore.ListenPort;
             var endpoints = new List<string> { scheme + "localhost:" + port };
-            if (UseHttps&& TlsPort != XCore.ListenPort)
+            if (UseHttps && TlsPort != XCore.ListenPort)
             {
                 endpoints.Insert(0, "http://localhost:" + XCore.ListenPort);
             }
@@ -129,14 +114,14 @@ namespace Wlniao
             {
                 if (Environment.GetEnvironmentVariable("MicroservicesNode") != "true" && System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
                 {
-                    foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList.OrderBy(o => o.ToString()).OrderBy(o => o.AddressFamily == AddressFamily.InterNetworkV6))
+                    foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList.OrderBy(o => o.ToString()).ThenBy(o => o.AddressFamily == AddressFamily.InterNetworkV6))
                     {
                         var ip = address.ToString();
                         if (address.AddressFamily == AddressFamily.InterNetwork && (ip.StartsWith("10.") || ip.StartsWith("172.") || ip.StartsWith("192.")))
                         {
                             endpoints.Add(scheme + ip + ":" + port);
                         }
-                        else if (address.AddressFamily == AddressFamily.InterNetworkV6 && !address.IsIPv6LinkLocal && !ip.StartsWith("fe80") && !ip.Contains("%"))
+                        else if (address is { AddressFamily: AddressFamily.InterNetworkV6, IsIPv6LinkLocal: false } && !ip.StartsWith("fe80") && !ip.Contains("%"))
                         {
                             endpoints.Add(scheme + "[" + ip + "]:" + port);
                         }

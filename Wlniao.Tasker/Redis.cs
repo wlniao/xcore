@@ -41,7 +41,7 @@ namespace Wlniao.Tasker
                             var list = new List<int>();
                             foreach (var delay in Wlniao.Config.GetSetting("WLN_TASKER_DELAYS", "10,30,60,180,600,1800").SplitBy())
                             {
-                                list.Add(cvt.ToInt(delay));
+                                list.Add(Convert.ToInt(delay));
                             }
                             delays = list.ToArray();
                         }
@@ -160,7 +160,7 @@ namespace Wlniao.Tasker
                                             var times = new List<long>();
                                             foreach (var item in db.StringGet(key).ToString().SplitBy())
                                             {
-                                                var time = cvt.ToLong(item);
+                                                var time = Convert.ToLong(item);
                                                 if (time > now)
                                                 {
                                                     times.Add(time);

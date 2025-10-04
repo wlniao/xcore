@@ -17,7 +17,7 @@ namespace Wlniao
         /// <param name="builder"></param>
         /// <param name="options"></param>
         /// <returns></returns>
-        public static IWebHostBuilder UseWlniao(this IWebHostBuilder builder, Action<KestrelServerOptions> options = null)
+        public static IWebHostBuilder UseWlniao(this IWebHostBuilder builder, Action<KestrelServerOptions>? options = null)
         {
             try
             {
@@ -62,10 +62,7 @@ namespace Wlniao
                     {
                         o.ListenAnyIP(XCore.ListenPort);
                     }
-                    if (options != null)
-                    {
-                        options(o);
-                    }
+                    options?.Invoke(o);
                     //输出监听终结点信息
                     WebService.ListenLogs();
                 });

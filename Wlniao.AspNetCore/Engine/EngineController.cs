@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -91,7 +92,7 @@ namespace Wlniao.Engine
             {
                 Response.Headers.TryAdd(kv.Key, kv.Value);
             }
-            return JsonStr(_ctx.SerializeJsonOutput());
+            return Content(_ctx.SerializeJsonOutput(), _ctx.HeaderOutput.GetString("Content-Type", "application/json"), Encoding.UTF8);
         }
 
     }

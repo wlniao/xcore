@@ -123,7 +123,7 @@ namespace Wlniao.Tasker
                 optionsBuilder.WithProtocolVersion(MQTTnet.Formatter.MqttProtocolVersion.V500);
                 optionsBuilder.WithKeepAlivePeriod(TimeSpan.FromSeconds(180));
                 optionsBuilder.WithSessionExpiryInterval(180);
-                optionsBuilder.WithTcpServer(this.Server, cvt.ToInt(this.Port)); //设置MQTT服务器地址
+                optionsBuilder.WithTcpServer(this.Server, Convert.ToInt(this.Port)); //设置MQTT服务器地址
                 if(string.IsNullOrEmpty(pubkey))
                 {
                     var key = new KeyTool();

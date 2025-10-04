@@ -600,7 +600,7 @@ namespace Wlniao
                 t = new DateTime(t.Year, t.Month, t.Day, t.Hour, t.Minute, t.Second, t.Millisecond, DateTimeKind.Unspecified).AddHours(DateTools.TimeZone);
             }
             var span = now.Subtract(t);
-            if (cvt.IsDayEqual(t, now))
+            if (Convert.IsDayEqual(t, now))
             {
                 if (span.Hours > 0)
                 {
@@ -625,11 +625,11 @@ namespace Wlniao
                     }
                 }
             }
-            if (cvt.IsDayEqual(t, now.AddDays(-1)))
+            if (Convert.IsDayEqual(t, now.AddDays(-1)))
             {
                 return Runtime.Lang.Get("yesterday");
             }
-            else if (cvt.IsDayEqual(t, now.AddDays(-2)))
+            else if (Convert.IsDayEqual(t, now.AddDays(-2)))
             {
                 return Runtime.Lang.Get("thedaybeforeyesterday");
             }

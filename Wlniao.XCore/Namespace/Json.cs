@@ -23,10 +23,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
 namespace Wlniao
 {
     /// <summary>
@@ -42,11 +39,7 @@ namespace Wlniao
         /// <returns></returns>
         public static T Deserialize<T>(string jsonString)
         {
-            return System.Text.Json.JsonSerializer.Deserialize<T>(jsonString, new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
-                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
-            });
+            return System.Text.Json.JsonSerializer.Deserialize<T>(jsonString, XCore.JsonSerializerOptions);
         }
         
         /// <summary>
@@ -56,11 +49,7 @@ namespace Wlniao
         /// <returns></returns>
         public static Dictionary<string, object> DeserializeToDic(string jsonString)
         {
-            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonString, new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
-                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
-            });
+            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonString, XCore.JsonSerializerOptions);
         }
         
         /// <summary>
@@ -71,11 +60,7 @@ namespace Wlniao
         /// <returns>返回对象列表</returns>
         public static List<T> DeserializeToList<T>(string jsonString)
         {
-            return System.Text.Json.JsonSerializer.Deserialize<List<T>>(jsonString, new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
-                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
-            });
+            return System.Text.Json.JsonSerializer.Deserialize<List<T>>(jsonString, XCore.JsonSerializerOptions);
         }
 
         /// <summary>
@@ -85,11 +70,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string Serialize<T>(T obj)
         {
-            return JsonSerializer.Serialize<T>(obj, new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
-                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
-            });
+            return JsonSerializer.Serialize<T>(obj, XCore.JsonSerializerOptions);
         }
         
         /// <summary>

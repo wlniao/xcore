@@ -63,7 +63,7 @@ namespace Wlniao.XCenter
                 host = HeaderRequest("x-domain", UrlDomain);
             }
             ctx = Context.Load(host);
-            if (ctx == null || !string.IsNullOrEmpty(ctx.message) || string.IsNullOrEmpty(ctx.owner) || (string.IsNullOrEmpty(ctx.app) && string.IsNullOrEmpty(ctx.domain)))
+            if (!string.IsNullOrEmpty(ctx.message) || string.IsNullOrEmpty(ctx.owner) || (string.IsNullOrEmpty(ctx.app) && string.IsNullOrEmpty(ctx.domain)))
             {
                 return fail.Invoke();
             }
