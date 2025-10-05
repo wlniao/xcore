@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Wlniao.Log;
 using Wlniao.Mvc;
 
 namespace Wlniao.Middleware
@@ -87,7 +88,7 @@ namespace Wlniao.Middleware
             }
             catch (Exception ex)
             {
-                Log.Loger.Error(ex.Message);
+                Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
                 await HandleExceptionAsync(context, options, ex.Message);
             }
         }

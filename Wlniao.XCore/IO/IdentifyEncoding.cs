@@ -1898,24 +1898,13 @@ namespace Wlniao.IO
                 }
             }
 
-
-            if (hzstart > 4)
+            rangeval = hzstart switch
             {
-                rangeval = 50;
-            }
-            else if (hzstart > 1)
-            {
-                rangeval = 41;
-            }
-            else if (hzstart > 0)
-            {
-                // Only 39 in case the sequence happened to occur
-                rangeval = 39; // in otherwise non-Hz text
-            }
-            else
-            {
-                rangeval = 0;
-            }
+                > 4 => 50,
+                > 1 => 41,
+                > 0 => 39,
+                _ => 0
+            };
             freqval = 50 * ((float)hzfreq / (float)totalfreq);
 
 
@@ -2185,21 +2174,14 @@ namespace Wlniao.IO
 
             score = (int)(100 * ((float)goodbytes / (float)(rawtextlen - asciibytes)));
 
-
-            // If not above 98, reduce to zero to prevent coincidental matches
-            // Allows for some (few) bad formed sequences
-            if (score > 98)
+            return score switch
             {
-                return score;
-            }
-            else if (score > 95 && goodbytes > 30)
-            {
-                return score;
-            }
-            else
-            {
-                return 0;
-            }
+                // If not above 98, reduce to zero to prevent coincidental matches
+                // Allows for some (few) bad formed sequences
+                > 98 => score,
+                > 95 when goodbytes > 30 => score,
+                _ => 0
+            };
         }
 
         /// <summary>

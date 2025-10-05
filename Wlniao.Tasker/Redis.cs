@@ -3,11 +3,6 @@ using System.Linq;
 using System.Collections.Generic;
 using StackExchange.Redis;
 using System.Threading.Tasks;
-using Wlniao;
-using Wlniao.Caching;
-using System.Security.Cryptography;
-using System.IO;
-using static System.Net.Mime.MediaTypeNames;
 using Wlniao.Log;
 
 namespace Wlniao.Tasker
@@ -20,7 +15,7 @@ namespace Wlniao.Tasker
         /// <summary>
         /// 订阅任务监视缓存
         /// </summary>
-        private static Dictionary<String, DateTime> watcher = new Dictionary<String, DateTime>();
+        private static Dictionary<string, DateTime> watcher = new Dictionary<string, DateTime>();
         /// <summary>
         /// Delays内部字段
         /// </summary>
@@ -45,7 +40,10 @@ namespace Wlniao.Tasker
                             }
                             delays = list.ToArray();
                         }
-                        catch { }
+                        catch
+                        {
+                            // ignored
+                        }
                     }
                 }
                 return delays;
@@ -103,7 +101,7 @@ namespace Wlniao.Tasker
             /// <summary>
             /// 任务标识
             /// </summary>
-            public String key { get; set; }
+            public string key { get; set; }
             /// <summary>
             /// 任务主题
             /// </summary>

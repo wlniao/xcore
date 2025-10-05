@@ -51,18 +51,12 @@ namespace Wlniao.Caching
         {
             get
             {
-                if (_canuse > 0)
+                return _canuse switch
                 {
-                    return _canuse > 0;
-                }
-                else if (_canuse == 0 && Instance == null)
-                {
-                    return _canuse > 0;
-                }
-                else
-                {
-                    return false;
-                }
+                    > 0 => _canuse > 0,
+                    0 when Instance == null => _canuse > 0,
+                    _ => false
+                };
             }
         }
         /// <summary>

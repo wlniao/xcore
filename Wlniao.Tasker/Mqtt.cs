@@ -1,27 +1,27 @@
 ﻿using MQTTnet;
-using MQTTnet.Client;
-using MQTTnet.Client.Connecting;
-using MQTTnet.Client.Disconnecting;
-using MQTTnet.Client.Options;
-using MQTTnet.Client.Receiving;
-using MQTTnet.Client.Unsubscribing;
-using MQTTnet.Server;
-using Org.BouncyCastle.Utilities.Encoders;
+using MQTTnet.Protocol;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Buffers;
 using Wlniao.Crypto;
+using Org.BouncyCastle.Utilities.Encoders;
+using Wlniao.Log;
+using Wlniao.Text;
+using Encoding = System.Text.Encoding;
 
 namespace Wlniao.Tasker
 {
     /// <summary>
     /// 
     /// </summary>
-    public class MQTT
+    public class Mqtt
     {
-        IMqttClient? client;
+        /// <summary>
+        /// 
+        /// </summary>
+        private IMqttClient? _client;
         /// <summary>
         /// 
         /// </summary>
@@ -42,15 +42,18 @@ namespace Wlniao.Tasker
         /// 
         /// </summary>
         public bool Normal = Config.GetConfigs("MQTT_NORMAL", "false") == "true";
-        private bool Connecting = false;
+        /// <summary>
+        /// 是否已连接
+        /// </summary>
+        public bool Connecting { get; private set; }
         /// <summary>
         /// SM2加密实例
         /// </summary>
-        private static SM2 sm2 = new SM2(null, null);
+        private static SM2 _sm2 = new SM2(null, null);
         /// <summary>
         /// 订阅任务缓存
         /// </summary>
-        private Dictionary<String, Action<Context>> subscribe = new Dictionary<String, Action<Context>>();
+        private Dictionary<string, Action<Context>> _subscribe = new Dictionary<string, Action<Context>>();
         /// <summary>
         /// 订阅事件
         /// </summary>
@@ -60,19 +63,18 @@ namespace Wlniao.Tasker
         {
             if (string.IsNullOrEmpty(topic))
             {
-                return;
             }
             else if (topic.IndexOf(',') >= 0 || topic.IndexOf(';') >= 0 || topic.IndexOf('#') >= 0 || topic.IndexOf('/') >= 0 || topic.IndexOf('\\') >= 0)
             {
                 throw new Exception("事件名称包含不允许的特殊字符");
             }
-            else if (subscribe.ContainsKey(topic))
+            else if (_subscribe.ContainsKey(topic))
             {
-                subscribe[topic] = func;
+                _subscribe[topic] = func;
             }
             else
             {
-                subscribe.TryAdd(topic, func);
+                _subscribe.TryAdd(topic, func);
             }
         }
         /// <summary>
@@ -83,16 +85,23 @@ namespace Wlniao.Tasker
         {
             try
             {
-                if (subscribe.ContainsKey(topic))
+                if (_subscribe.ContainsKey(topic))
                 {
-                    if (client != null && client.IsConnected)
+                    if (_client is { IsConnected: true })
                     {
-                        client.UnsubscribeAsync(new MqttClientUnsubscribeOptionsBuilder().WithTopicFilter(topic).Build()).Wait();
+                        var unsubscribeOptions = new MqttClientUnsubscribeOptionsBuilder()
+                            .WithTopicFilter(topic)
+                            .Build();
+                        _client.UnsubscribeAsync(unsubscribeOptions).Wait();
                     }
-                    return subscribe.Remove(topic);
+
+                    return _subscribe.Remove(topic);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
+            }
             return false;
         }
         /// <summary>
@@ -103,11 +112,11 @@ namespace Wlniao.Tasker
         /// <returns></returns>
         private MqttApplicationMessage BuildMessage(string topic, object data)
         {
-            var msg = Wlniao.Json.Serialize(data);
-            var buffer = sm2.Encrypt(Encoding.UTF8.GetBytes(msg));
+            var msg = Json.Serialize(data);
+            var buffer = _sm2.Encrypt(Encoding.UTF8.GetBytes(msg));
             var builder = new MqttApplicationMessageBuilder()
             .WithTopic(topic)
-            .WithExactlyOnceQoS()
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
             .WithPayload(Hex.ToHexString(buffer));
             return builder.Build();
         }
@@ -123,58 +132,61 @@ namespace Wlniao.Tasker
                 optionsBuilder.WithProtocolVersion(MQTTnet.Formatter.MqttProtocolVersion.V500);
                 optionsBuilder.WithKeepAlivePeriod(TimeSpan.FromSeconds(180));
                 optionsBuilder.WithSessionExpiryInterval(180);
-                optionsBuilder.WithTcpServer(this.Server, Convert.ToInt(this.Port)); //设置MQTT服务器地址
+                optionsBuilder.WithTcpServer(Server, int.Parse(Port)); //设置MQTT服务器地址
                 if(string.IsNullOrEmpty(pubkey))
                 {
                     var key = new KeyTool();
-                    sm2 = new SM2(key.PublicKey, key.PrivateKey, SM2Mode.C1C3C2);
+                    _sm2 = new SM2(key.PublicKey, key.PrivateKey, SM2Mode.C1C3C2);
                 }
                 else
                 {
-                    sm2 = new SM2(Helper.Decode(pubkey), new byte[0], SM2Mode.C1C3C2);
+                    _sm2 = new SM2(Helper.Decode(pubkey), new byte[0], SM2Mode.C1C3C2);
                 }
                 if (Port == "8883" || Config.GetConfigs("MQTT_SERVER_TLS", "false") == "true")
                 {
-                    optionsBuilder.WithTls(); //启用SSL加密通讯
+                    optionsBuilder.WithTlsOptions(o => o.UseTls()); //启用SSL加密通讯
                 }
-                var ClientId = Config.GetConfigs("MQTT_CLIENT_ID");
-                if (string.IsNullOrEmpty(ClientId))
+                var clientId = Config.GetConfigs("MQTT_CLIENT_ID");
+                if (string.IsNullOrEmpty(clientId))
                 {
-                    ClientId = strUtil.CreateRndStrE(8);
+                    clientId = StringUtil.CreateRndStrE(8);
                 }
-                if (!string.IsNullOrEmpty(this.UserName))
+                if (!string.IsNullOrEmpty(UserName))
                 {
-                    ClientId = this.UserName + "@" + ClientId;
-                    if (string.IsNullOrEmpty(this.Password) && !string.IsNullOrEmpty(pubkey))
+                    clientId = UserName + "@" + clientId;
+                    if (string.IsNullOrEmpty(Password) && !string.IsNullOrEmpty(pubkey))
                     {
-                        this.Password = Hex.ToHexString(sm2.Encrypt(UTF8Encoding.UTF8.GetBytes(ClientId)));
+                        Password = Hex.ToHexString(_sm2.Encrypt(Encoding.UTF8.GetBytes(clientId)));
                     }
-                    optionsBuilder.WithCredentials(this.UserName, this.Password);  // 设置鉴权参数
+                    optionsBuilder.WithCredentials(UserName, Password);  // 设置鉴权参数
                 }
                 if (Normal && !string.IsNullOrEmpty(pubkey))
                 {
                     //使用普通服务器时，设置掉线遗嘱消息
-                    var buffer = sm2.Encrypt(Encoding.UTF8.GetBytes(Json.Serialize(new { ClientId })));
+                    var buffer = _sm2.Encrypt(Encoding.UTF8.GetBytes(Json.Serialize(new { ClientId = clientId })));
                     var willBuilder = new MqttApplicationMessageBuilder();
                     willBuilder.WithTopic("watcher/disconnected");
-                    willBuilder.WithExactlyOnceQoS();
+                    willBuilder.WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce);
                     willBuilder.WithPayload(Hex.ToHexString(buffer));
-                    optionsBuilder.WithWillMessage(willBuilder.Build());
+                    optionsBuilder.WithWillTopic(willBuilder.Build().Topic)
+                        .WithWillPayload(willBuilder.Build().Payload.ToArray())
+                        .WithWillQualityOfServiceLevel(willBuilder.Build().QualityOfServiceLevel);
                 }
-                optionsBuilder.WithClientId(ClientId); //设置客户端序列号
+                optionsBuilder.WithClientId(clientId); //设置客户端序列号
                 var time = 0;
                 while (true)
                 {
                     try
                     {
-                        if (client == null || !client.IsConnected)
+                        if (_client is not { IsConnected: true })
                         {
                             time++;
-                            client = new MqttFactory().CreateMqttClient();
-                            client.ConnectedHandler = new MqttClientConnectedHandlerDelegate(OnMqttClientConnected);
-                            client.DisconnectedHandler = new MqttClientDisconnectedHandlerDelegate(OnMqttClientDisconnected);
-                            client.ApplicationMessageReceivedHandler = new MqttApplicationMessageReceivedHandlerDelegate(OnMqttClientApplicationMessageReceived);
-                            var result = client.ConnectAsync(optionsBuilder.Build(), CancellationToken.None).Result;
+                            var factory = new MqttClientFactory();
+                            _client = factory.CreateMqttClient();
+                            _client.ConnectedAsync += OnMqttClientConnected;
+                            _client.DisconnectedAsync += OnMqttClientDisconnected;
+                            _client.ApplicationMessageReceivedAsync += OnMqttClientApplicationMessageReceived;
+                            var result = _client.ConnectAsync(optionsBuilder.Build(), CancellationToken.None).Result;
                             if (result.ResultCode == MqttClientConnectResultCode.Success)
                             {
                                 time = 0;
@@ -182,18 +194,18 @@ namespace Wlniao.Tasker
                                 {
                                     Normal = false;
                                     pubkey = result.ReasonString;
-                                    sm2 = new SM2(Helper.Decode(pubkey), new byte[0], SM2Mode.C1C3C2);
+                                    _sm2 = new SM2(Helper.Decode(pubkey), new byte[0], SM2Mode.C1C3C2);
                                 }
                                 if (Normal)
                                 {
-                                    client.PublishAsync(BuildMessage("watcher/connected", new { ClientId }));
+                                    _client.PublishAsync(BuildMessage("watcher/connected", new { ClientId = clientId }));
                                 }
-                                foreach (var topic in subscribe.Keys)
+                                foreach (var topic in _subscribe.Keys)
                                 {
-                                    client.SubscribeAsync(topic, MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+                                    _client.SubscribeAsync(topic, MqttQualityOfServiceLevel.AtLeastOnce);
                                     if (Normal)
                                     {
-                                        client.PublishAsync(BuildMessage("watcher/subscribe", new { ClientId, Topic = topic }));
+                                        _client.PublishAsync(BuildMessage("watcher/subscribe", new { ClientId = clientId, Topic = topic }));
                                     }
                                 }
                             }
@@ -204,14 +216,14 @@ namespace Wlniao.Tasker
                     {
                         if (time == 1)
                         {
-                            Log.Loger.Error(ex.Message);
+                            Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
                         }
                     }
                     catch (Exception ex)
                     {
                         if (time == 1)
                         {
-                            Log.Loger.Error(ex.Message);
+                            Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
                         }
                     }
                     finally
@@ -221,38 +233,40 @@ namespace Wlniao.Tasker
                 }
             });
         }
-        private void OnMqttClientConnected(MqttClientConnectedEventArgs e)
+        private Task OnMqttClientConnected(MqttClientConnectedEventArgs e)
         {
             if (!Connecting)
             {
                 Connecting = true;
-                Log.Loger.Debug("MQ服务端已连接!!!");
+                Loger.Debug("MQ服务端已连接!!!");
             }
+            return Task.CompletedTask;
         }
-        private void OnMqttClientDisconnected(MqttClientDisconnectedEventArgs e)
+        private Task OnMqttClientDisconnected(MqttClientDisconnectedEventArgs e)
         {
             if (Connecting)
             {
                 Connecting = false;
-                Log.Loger.Debug("MQ服务端已断开!!!");
+                Loger.Debug("MQ服务端已断开!!!");
             }
+            return Task.CompletedTask;
         }
-        private void OnMqttClientApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)
+        private Task OnMqttClientApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)
         {
             var topic = e.ApplicationMessage.Topic;
-            var func = subscribe.GetValueOrDefault(topic);
+            var func = _subscribe.GetValueOrDefault(topic);
             if (func == null)
             {
-                Log.Loger.Warn($"{e.ApplicationMessage.Topic}暂未注册");
+                Loger.Warn($"{e.ApplicationMessage.Topic}暂未注册");
             }
-            else if (!sm2.VerifySign(e.ApplicationMessage.Payload, e.ApplicationMessage.CorrelationData, null))
+            else if (!_sm2.VerifySign(e.ApplicationMessage.Payload.ToArray(), e.ApplicationMessage.CorrelationData))
             {
-                Log.Loger.Warn($"{e.ApplicationMessage.Topic}数据验签失败");
+                Loger.Warn($"{e.ApplicationMessage.Topic}数据验签失败");
             }
             else
             {
-                var message = UTF8Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
-                Log.Loger.Debug(message);
+                var message = Encoding.UTF8.GetString(e.ApplicationMessage.Payload.ToArray());
+                Loger.Debug(message);
                 var obj = Json.DeserializeToDic(message);
                 func(new Context
                 {
@@ -262,6 +276,7 @@ namespace Wlniao.Tasker
                     clientid = obj.GetString("clientid")
                 });
             }
+            return Task.CompletedTask;
         }
     }
 }

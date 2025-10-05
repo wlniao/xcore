@@ -28,6 +28,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
 using Wlniao.IO;
+using Wlniao.Log;
 using Wlniao.Text;
 
 namespace Wlniao.Caching
@@ -37,27 +38,27 @@ namespace Wlniao.Caching
     /// </summary>
     public class FileCache
     {
-        private static string path = null;
+        private static string _path = null;
         /// <summary>
         /// 缓存文件目录
         /// </summary>
-        internal static string CachePath
+        private static string CachePath
         {
             get
             {
-                if (path == null)
+                if (_path == null)
                 {
-                    path = Config.GetSetting("WLN_CACHE_PATH");
-                    if (string.IsNullOrEmpty(path))
+                    _path = Config.GetSetting("WLN_CACHE_PATH");
+                    if (string.IsNullOrEmpty(_path))
                     {
-                        path = IO.PathTool.Map(XCore.StartupRoot, "caches");
+                        _path = IO.PathTool.Map(XCore.StartupRoot, XCore.FrameworkRoot, "caches");
                     }
                 }
-                if (!System.IO.Directory.Exists(path))
+                if (!System.IO.Directory.Exists(_path))
                 {
-                    System.IO.Directory.CreateDirectory(path);
+                    System.IO.Directory.CreateDirectory(_path);
                 }
-                return path;
+                return _path;
             }
         }
 
@@ -66,9 +67,9 @@ namespace Wlniao.Caching
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        internal static string GetKeyPath(string key)
+        private static string GetKeyPath(string key)
         {
-            return IO.PathTool.JoinPath(CachePath, key.Replace("\\", "_").Replace("+", "_").Replace(".", "_"));
+            return IO.PathTool.JoinPath(CachePath, key.Replace("\\", "_").Replace(":", "_").Replace("+", "_").Replace(".", "_"));
         }
 
         /// <summary>
@@ -81,16 +82,25 @@ namespace Wlniao.Caching
         {
             try
             {
+                var file = GetKeyPath(key);
                 var data = (DateTools.GetUnix() + expireSeconds) + "#" + value;
-                using (var fs = new FileStream(GetKeyPath(key), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))
+                var parent = System.IO.Path.GetDirectoryName(file);
+                if (!System.IO.Directory.Exists(parent))
                 {
-                    var writer = new StreamWriter(fs, Wlniao.Text.Encoding.UTF8);
-                    writer.Write(data);
-                    writer.Flush();
-                    return true;
+                    //创建父级目录
+                    System.IO.Directory.CreateDirectory(parent!);
                 }
+                using var fs = new FileStream(file, FileMode.Create, FileAccess.ReadWrite,FileShare.ReadWrite);
+                var writer = new StreamWriter(fs, Wlniao.Text.Encoding.UTF8);
+                writer.Write(data);
+                writer.Flush();
+                return true;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
+            }
+            return false;
         }
 
 
@@ -127,7 +137,11 @@ namespace Wlniao.Caching
                 }
                 return true;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
+            }
+            return false;
         }
 
 
@@ -151,7 +165,10 @@ namespace Wlniao.Caching
                     System.IO.File.Delete(fs);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
+            }
             return false;
         }
 
@@ -175,7 +192,10 @@ namespace Wlniao.Caching
                     System.IO.File.Delete(fs);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
+            }
             return null;
         }
         /// <summary>

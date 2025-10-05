@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Wlniao.IO;
+using Wlniao.Log;
 
 namespace Wlniao.Caching
 {
@@ -114,18 +115,12 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static bool Set(string key, string value, int expireSeconds = 86400)
         {
-            if (cType == CacheType.Redis)
+            return cType switch
             {
-                return Redis.Set(key, value, expireSeconds);
-            }
-            else if (cType == CacheType.InFile)
-            {
-                return FileCache.Set(key, value, expireSeconds);
-            }
-            else
-            {
-                return InMemory.Set(key, value, expireSeconds);
-            }
+                CacheType.Redis => Redis.Set(key, value, expireSeconds),
+                CacheType.InFile => FileCache.Set(key, value, expireSeconds),
+                _ => InMemory.Set(key, value, expireSeconds)
+            };
         }
 
         /// <summary>
@@ -138,18 +133,12 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static bool Set<T>(string key, T obj, int expireSeconds = 86400)
         {
-            if (cType == CacheType.Redis)
+            return cType switch
             {
-                return Redis.Set<T>(key, obj, expireSeconds);
-            }
-            else if (cType == CacheType.InFile)
-            {
-                return FileCache.Set<T>(key, obj, expireSeconds);
-            }
-            else
-            {
-                return InMemory.Set<T>(key, obj, expireSeconds);
-            }
+                CacheType.Redis => Redis.Set<T>(key, obj, expireSeconds),
+                CacheType.InFile => FileCache.Set<T>(key, obj, expireSeconds),
+                _ => InMemory.Set<T>(key, obj, expireSeconds)
+            };
         }
 
         /// <summary>
@@ -158,18 +147,12 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static bool Del(string key)
         {
-            if (cType == CacheType.Redis)
+            return cType switch
             {
-                return Redis.KeyDelete(key);
-            }
-            else if (cType == CacheType.InFile)
-            {
-                return FileCache.Del(key);
-            }
-            else
-            {
-                return InMemory.Del(key);
-            }
+                CacheType.Redis => Redis.KeyDelete(key),
+                CacheType.InFile => FileCache.Del(key),
+                _ => InMemory.Del(key)
+            };
         }
 
         /// <summary>
@@ -178,18 +161,12 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static bool Exists(string key)
         {
-            if (cType == CacheType.Redis)
+            return cType switch
             {
-                return Redis.KeyExists(key);
-            }
-            else if (cType == CacheType.InFile)
-            {
-                return FileCache.Exists(key);
-            }
-            else
-            {
-                return InMemory.Exists(key);
-            }
+                CacheType.Redis => Redis.KeyExists(key),
+                CacheType.InFile => FileCache.Exists(key),
+                _ => InMemory.Exists(key)
+            };
         }
 
         /// <summary>
@@ -198,18 +175,12 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static string Get(string key)
         {
-            if (cType == CacheType.Redis)
+            return cType switch
             {
-                return Redis.Get(key);
-            }
-            else if (cType == CacheType.InFile)
-            {
-                return FileCache.Get(key);
-            }
-            else
-            {
-                return InMemory.Get(key);
-            }
+                CacheType.Redis => Redis.Get(key),
+                CacheType.InFile => FileCache.Get(key),
+                _ => InMemory.Get(key)
+            };
         }
         /// <summary>
         /// 获取一个缓存项（允许null）
@@ -217,18 +188,12 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static string GetAllowNull(string key)
         {
-            if (cType == CacheType.Redis)
+            return cType switch
             {
-                return Redis.Get(key);
-            }
-            else if (cType == CacheType.InFile)
-            {
-                return FileCache.Get(key);
-            }
-            else
-            {
-                return InMemory.GetAllowNull(key);
-            }
+                CacheType.Redis => Redis.Get(key),
+                CacheType.InFile => FileCache.Get(key),
+                _ => InMemory.GetAllowNull(key)
+            };
         }
         /// <summary>
         /// 获取一个缓存项
@@ -238,38 +203,29 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static T Get<T>(string key)
         {
-            if (cType == CacheType.Redis)
+            return cType switch
             {
-                return Redis.Get<T>(key);
-            }
-            else if (cType == CacheType.InFile)
-            {
-                return FileCache.Get<T>(key);
-            }
-            else
-            {
-                return InMemory.Get<T>(key);
-            }
+                CacheType.Redis => Redis.Get<T>(key),
+                CacheType.InFile => FileCache.Get<T>(key),
+                _ => InMemory.Get<T>(key)
+            };
         }
 
 
-        private static string cachePath = null;
+        private static string _cachePath = null;
         /// <summary>
         /// 
         /// </summary>
         public static string CachePath
         {
-            get
-            {
-                return cachePath;
-            }
+            get => _cachePath;
             set
             {
-                cachePath = IO.PathTool.Map(value.TrimEnd('/').TrimEnd('\\') + "/");
-                if (System.IO.Directory.Exists(cachePath))
+                _cachePath = IO.PathTool.Map(value.TrimEnd('/').TrimEnd('\\') + "/");
+                if (System.IO.Directory.Exists(_cachePath))
                 {
                     var t = DateTime.Now.AddDays(-1);
-                    foreach (var path in System.IO.Directory.GetFiles(cachePath))
+                    foreach (var path in System.IO.Directory.GetFiles(_cachePath))
                     {
                         try
                         {
@@ -279,12 +235,15 @@ namespace Wlniao.Caching
                                 fi.Delete();
                             }
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
+                        }
                     }
                 }
                 else
                 {
-                    System.IO.Directory.CreateDirectory(cachePath);
+                    System.IO.Directory.CreateDirectory(_cachePath);
                 }
             }
         }
@@ -297,7 +256,7 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static bool LocalSet(string key, string value)
         {
-            if (cachePath == null)
+            if (_cachePath == null)
             {
                 return false;
             }
@@ -315,14 +274,14 @@ namespace Wlniao.Caching
         /// <param name="expireSeconds">缓存过期时间（秒）</param>
         public static string LocalGet(string key, int expireSeconds = 86400)
         {
-            if (cachePath == null)
+            if (_cachePath == null)
             {
                 throw new Exception("");
             }
-            var fileinfo = new System.IO.FileInfo(CachePath + key);
-            if (fileinfo.Exists && fileinfo.LastWriteTime.AddSeconds(expireSeconds) > DateTime.Now)
+            var fileInfo = new System.IO.FileInfo(CachePath + key);
+            if (fileInfo.Exists && fileInfo.LastWriteTime.AddSeconds(expireSeconds) > DateTime.Now)
             {
-                return FileEx.Read(fileinfo.FullName);
+                return FileEx.Read(fileInfo.FullName);
             }
             return "";
         }

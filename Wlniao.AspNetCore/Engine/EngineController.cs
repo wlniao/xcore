@@ -40,9 +40,9 @@ namespace Wlniao.Engine
             {
                 _ctx.Init(Request);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Loger.Error($"Init Context: {e.Message}");
+                Loger.Error($"Init Context: {ex.Message}{Environment.NewLine}{ex.StackTrace}");
                 throw;
             }
 
@@ -92,7 +92,7 @@ namespace Wlniao.Engine
             {
                 Response.Headers.TryAdd(kv.Key, kv.Value);
             }
-            return Content(_ctx.SerializeJsonOutput(), _ctx.HeaderOutput.GetString("Content-Type", "application/json"), Encoding.UTF8);
+            return Content(_ctx.SerializeJsonOutput(), _ctx.HeaderOutput.GetString("Content-Type", "application/json"));
         }
 
     }

@@ -5,6 +5,7 @@
 *.log
 *.user
 *.dev.config
+*.DotSettings
 *.DotSettings.user
 **.vs
 **.idea
@@ -12,4 +13,3 @@
 **/bin
 **/obj
 **/Properties
-/Wlniao.XCore.Test2

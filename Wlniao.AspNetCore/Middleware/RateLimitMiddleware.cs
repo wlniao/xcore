@@ -109,15 +109,16 @@ namespace Wlniao.Middleware
         public async Task InvokeAsync(HttpContext context)
         {
             var clientKey = (context.Connection.RemoteIpAddress != null && !context.Connection.RemoteIpAddress.IsIPv4MappedToIPv6) ? context.Connection.RemoteIpAddress?.ToString() : context.Connection.RemoteIpAddress?.MapToIPv4().ToString();
-            if (context.Request.Headers.TryGetValue("x-forwarded-for", out StringValues value))
+            if (context.Request.Headers.TryGetValue("x-forwarded-for", out var value))
             {
-                foreach (string ip in value.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
+                foreach (var ip in value.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
                 {
-                    if (ip != "::1" && ip != "127.0.0.1" && StringUtil.IsIP(ip))
+                    if (ip == "::1" || ip == "127.0.0.1" || !StringUtil.IsIP(ip))
                     {
-                        clientKey = ip;
-                        break;
+                        continue;
                     }
+                    clientKey = ip;
+                    break;
                 }
             }
             if (string.IsNullOrEmpty(clientKey) || _options.WhiteKeys.Contains(clientKey))
@@ -148,11 +149,12 @@ namespace Wlniao.Middleware
                 // 判断当前请求是否非限流目录
                 if (item.EndsWith('*'))
                 {
-                    if (path.StartsWith(item.TrimEnd('*')))
+                    if (!path.StartsWith(item.TrimEnd('*')))
                     {
-                        await _next(context);
-                        return;
+                        continue;
                     }
+                    await _next(context);
+                    return;
                 }
                 else if (path == item)
                 {

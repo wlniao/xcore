@@ -637,7 +637,7 @@ namespace Wlniao.Mvc
             get
             {
                 var clientIp = (Request.HttpContext.Connection.RemoteIpAddress != null && !Request.HttpContext.Connection.RemoteIpAddress.IsIPv4MappedToIPv6) ? Request.HttpContext.Connection.RemoteIpAddress?.ToString() : Request.HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
-                if (Request.Headers.TryGetValue("x-forwarded-for", out Microsoft.Extensions.Primitives.StringValues forwardedIP))
+                if (Request.Headers.TryGetValue("x-forwarded-for", out var forwardedIP))
                 {
                     // 通过代理网关部署时，获取"x-forwarded-for"传递的真实IP
                     foreach (var ip in forwardedIP.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))

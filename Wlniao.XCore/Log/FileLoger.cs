@@ -156,27 +156,15 @@ namespace Wlniao.Log
             Write(topic, message);
             if (consoleLocal && Level <= logLevel && Loger.LogLocal == "console")
             {
-                var color = ConsoleColor.DarkGray;
-                if (logLevel == LogLevel.Information)
+                var color = logLevel switch
                 {
-                    color = ConsoleColor.Gray;
-                }
-                else if (logLevel == LogLevel.Debug)
-                {
-                    color = ConsoleColor.White;
-                }
-                else if (logLevel == LogLevel.Error)
-                {
-                    color = ConsoleColor.Red;
-                }
-                else if (logLevel == LogLevel.Warning)
-                {
-                    color = ConsoleColor.DarkYellow;
-                }
-                else if (logLevel == LogLevel.Critical)
-                {
-                    color = ConsoleColor.Magenta;
-                }
+                    LogLevel.Information => ConsoleColor.Gray,
+                    LogLevel.Debug => ConsoleColor.White,
+                    LogLevel.Error => ConsoleColor.Red,
+                    LogLevel.Warning => ConsoleColor.DarkYellow,
+                    LogLevel.Critical => ConsoleColor.Magenta,
+                    _ => ConsoleColor.DarkGray
+                };
                 Loger.Console(string.Format("[{0}]{1} => {2}", topic, DateTools.Format(), message), color);
             }
         }

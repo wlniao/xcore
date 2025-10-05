@@ -159,11 +159,12 @@ namespace Wlniao
         {
             if (str == null)
                 return false;
-            if (str.ToUpper().Equals("TRUE"))
-                return true;
-            if (str.ToUpper().Equals("FALSE"))
-                return false;
-            return (str.Equals("1") || str.ToUpper().Equals("TRUE"));
+            return str.ToUpper() switch
+            {
+                "TRUE" => true,
+                "FALSE" => false,
+                _ => (str.Equals("1") || str.ToUpper().Equals("TRUE"))
+            };
         }
         /// <summary>
         /// 将字符串转换成 System.Decimal 类型。如果str不是整数或小数，返回0
@@ -393,19 +394,13 @@ namespace Wlniao
         /// <returns></returns>
         public static int HexToInt(char h)
         {
-            if ((h >= '0') && (h <= '9'))
+            return h switch
             {
-                return (h - '0');
-            }
-            if ((h >= 'a') && (h <= 'f'))
-            {
-                return ((h - 'a') + 10);
-            }
-            if ((h >= 'A') && (h <= 'F'))
-            {
-                return ((h - 'A') + 10);
-            }
-            return -1;
+                >= '0' and <= '9' => (h - '0'),
+                >= 'a' and <= 'f' => ((h - 'a') + 10),
+                >= 'A' and <= 'F' => ((h - 'A') + 10),
+                _ => -1
+            };
         }
 
         #region 二十六进制转换

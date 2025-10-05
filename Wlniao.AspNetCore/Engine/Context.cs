@@ -285,9 +285,9 @@ namespace Wlniao.Engine
                     ConsumerPublicKey = consumer.PublicKey;
                     ConsumerPrivateKey = consumer.PrivateKey;
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Loger.Error($"LoadConsumerInfo: {e.Message}");
+                    Loger.Error($"LoadConsumerInfo: {ex.Message}{Environment.NewLine}{ex.StackTrace}");
                     this.Continue = false;
                     throw;
                 }
@@ -307,9 +307,9 @@ namespace Wlniao.Engine
                     {
                         SKey = SafetyCertification(Request) ?? string.Empty;
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
-                        Loger.Error($"SafetyCertification: {e.Message}");
+                        Loger.Error($"SafetyCertification: {ex.Message}{Environment.NewLine}{ex.StackTrace}");
                         this.Continue = false;
                         throw;
                     }
@@ -321,9 +321,9 @@ namespace Wlniao.Engine
                     {
                         SKey = Encryptor.SM2DecryptByPrivateKey(sm2Token, ConsumerPrivateKey);
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
-                        Loger.Error($"Default SafetyCertification: {e.Message}");
+                        Loger.Error($"Default SafetyCertification: {ex.Message}{Environment.NewLine}{ex.StackTrace}");
                         this.Continue = false;
                         throw;
                     }
@@ -348,9 +348,9 @@ namespace Wlniao.Engine
 
                     Session.Decode(Authorization, ConsumerSecretKey, ConsumerId);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Loger.Error($"EngineSession.Decode: {e.Message}[${ConsumerId}]");
+                    Loger.Error($"EngineSession.Decode: {ex.Message}[${ConsumerId}]{Environment.NewLine}{ex.StackTrace}");
                 }
             }
             else if (IdentityAuthentication != null)
@@ -360,9 +360,9 @@ namespace Wlniao.Engine
                 {
                     Session = IdentityAuthentication.Invoke(Request) ?? new EngineSession();
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Loger.Error($"IdentityAuthentication: {e.Message}[${ConsumerId}]");
+                    Loger.Error($"IdentityAuthentication: {ex.Message}[${ConsumerId}]{Environment.NewLine}{ex.StackTrace}");
                 }
             }
         }

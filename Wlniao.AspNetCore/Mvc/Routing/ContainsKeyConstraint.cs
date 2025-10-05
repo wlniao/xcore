@@ -39,7 +39,7 @@ namespace Wlniao.Mvc.Routing
         public ContainsKeyConstraint(params string[] keys)
         {
             _keys = keys;
-            for(int i = 0; i < _keys.Length; i++)
+            for(var i = 0; i < _keys.Length; i++)
             {
                 _keys[i] = _keys[i].ToLower();
             }

@@ -7,6 +7,7 @@ using System.Net.WebSockets;
 using System.Net.Http.Headers;
 using System.Threading;
 using Microsoft.AspNetCore.Http;
+using Wlniao.Log;
 
 namespace Wlniao;
 
@@ -122,9 +123,9 @@ public class DevProxy
             // 等待任意一个任务完成（连接关闭）
             return Task.WhenAny(clientToTarget, targetToClient);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            Console.WriteLine("WebSocket proxy error");
+            Loger.Error($"WebSocket proxy error => {ex.Message}{Environment.NewLine}{ex.StackTrace}");
         }
         finally
         {

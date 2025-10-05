@@ -297,13 +297,7 @@ namespace Wlniao
         /// <summary>
         /// 是否为开发测试环境
         /// </summary>
-        public static bool IsDevTest
-        {
-            get
-            {
-                return Config.GetConfigs("WLN_DEVTEST").ToLower() == "true";
-            }
-        }
+        public static bool IsDevTest => Config.GetConfigs("WLN_DEVTEST").ToLower() == "true";
 
         /// <summary>
         /// 是否微服务运行节点
@@ -312,16 +306,17 @@ namespace Wlniao
         {
             get
             {
-                if (microNode == 0)
+                if (microNode != 0)
                 {
-                    if (Environment.GetEnvironmentVariable("MicroservicesNode") == "true")
-                    {
-                        microNode = 1;
-                    }
-                    else
-                    {
-                        microNode = -1;
-                    }
+                    return microNode > 0;
+                }
+                if (Environment.GetEnvironmentVariable("MicroservicesNode") == "true")
+                {
+                    microNode = 1;
+                }
+                else
+                {
+                    microNode = -1;
                 }
                 return microNode > 0;
             }
@@ -334,10 +329,7 @@ namespace Wlniao
         {
             get
             {
-                if (_XServerId == null)
-                {
-                    _XServerId = Config.GetConfigs("XServerId");
-                }
+                _XServerId ??= Config.GetConfigs("XServerId");
                 return _XServerId;
             }
         }
@@ -363,11 +355,7 @@ namespace Wlniao
             get
             {
                 var attributes = System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), true);
-                if (attributes != null && attributes.Length > 0)
-                {
-                    return ((System.Reflection.AssemblyInformationalVersionAttribute)attributes[0]).InformationalVersion;
-                }
-                return "";
+                return attributes is { Length: > 0 } ? ((System.Reflection.AssemblyInformationalVersionAttribute)attributes[0]).InformationalVersion : "";
             }
         }
         /// <summary>
@@ -377,12 +365,8 @@ namespace Wlniao
         {
             get
             {
-                var attributes = System.Reflection.Assembly.GetEntryAssembly().GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), true);
-                if (attributes != null && attributes.Length > 0)
-                {
-                    return ((System.Reflection.AssemblyInformationalVersionAttribute)attributes[0]).InformationalVersion;
-                }
-                return "";
+                var attributes = System.Reflection.Assembly.GetEntryAssembly()?.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), true);
+                return attributes is { Length: > 0 } ? ((System.Reflection.AssemblyInformationalVersionAttribute)attributes[0]).InformationalVersion : "";
             }
         }
         /// <summary>
@@ -393,11 +377,7 @@ namespace Wlniao
             get
             {
                 var files = System.Reflection.Assembly.GetEntryAssembly();
-                if (files != null)
-                {
-                    return DateTools.GetUnix(new System.IO.FileInfo(files.Location).LastWriteTime);
-                }
-                return 0;
+                return files != null ? DateTools.GetUnix(new System.IO.FileInfo(files.Location).LastWriteTime) : 0;
             }
         }
 
@@ -408,10 +388,7 @@ namespace Wlniao
         {
             get
             {
-                if (_WebNode == null)
-                {
-                    _WebNode = Config.GetConfigs("WLN_NODE", "xcore");
-                }
+                _WebNode ??= Config.GetConfigs("WLN_NODE", "xcore");
                 return _WebNode;
             }
         }
@@ -422,10 +399,7 @@ namespace Wlniao
         {
             get
             {
-                if (_WebHost == null)
-                {
-                    _WebHost = Config.GetConfigs("WLN_HOST", "http://127.0.0.1:" + ListenPort);
-                }
+                _WebHost ??= Config.GetConfigs("WLN_HOST", "http://127.0.0.1:" + ListenPort);
                 return _WebHost;
             }
         }
@@ -436,10 +410,7 @@ namespace Wlniao
         {
             get
             {
-                if (_Webroxy == null)
-                {
-                    _Webroxy = Config.GetConfigs("Webroxy");
-                }
+                _Webroxy ??= Config.GetConfigs("Webroxy");
                 return _Webroxy;
             }
         }
@@ -450,13 +421,14 @@ namespace Wlniao
         {
             get
             {
-                if (sessionEncryptKey == null)
+                if (sessionEncryptKey != null)
                 {
-                    sessionEncryptKey = Config.GetConfigs("SessionEncryptKey");
-                    if (string.IsNullOrEmpty(sessionEncryptKey))
-                    {
-                        sessionEncryptKey = Encryptor.Md5Encryptor16(WebNode + WebHost + DbConnectInfo.WLN_CONNSTR_TYPE + DbConnectInfo.WLN_CONNSTR_NAME).ToLower();
-                    }
+                    return sessionEncryptKey;
+                }
+                sessionEncryptKey = Config.GetConfigs("SessionEncryptKey");
+                if (string.IsNullOrEmpty(sessionEncryptKey))
+                {
+                    sessionEncryptKey = Encryptor.Md5Encryptor16(WebNode + WebHost + DbConnectInfo.WLN_CONNSTR_TYPE + DbConnectInfo.WLN_CONNSTR_NAME).ToLower();
                 }
                 return sessionEncryptKey;
             }
