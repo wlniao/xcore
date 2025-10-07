@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Wlniao
+﻿namespace Wlniao
 {
     /// <summary>
     /// 数据库链接信息

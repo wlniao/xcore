@@ -20,7 +20,6 @@
 
 ===============================================================================*/
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -363,7 +362,7 @@ namespace Wlniao.Text
                 return false;
             }
             var s = (rawString.IndexOf('?') > 0 ? rawString.Substring(0, rawString.IndexOf('?')) : rawString).Split(new[] { "://", "/" }, StringSplitOptions.RemoveEmptyEntries);
-            var temp = rawString.IndexOf("://") > 0 ? (s[0] + "://" + strUtil.Join("/", s.Skip(1).ToArray()) + "/") : (strUtil.Join("/", s) + "/");
+            var temp = rawString.IndexOf("://", StringComparison.Ordinal) > 0 ? (s[0] + "://" + strUtil.Join("/", s.Skip(1).ToArray()) + "/") : (strUtil.Join("/", s) + "/");
             return temp.StartsWith(rawString);
         }
         /// <summary>
@@ -528,11 +527,11 @@ namespace Wlniao.Text
                 return false;
             }
             var tmp = ip.ToLower();
-            if (tmp.LastIndexOf("::") > ip.IndexOf("::"))
+            if (tmp.LastIndexOf("::") > ip.IndexOf("::", StringComparison.Ordinal))
             {
                 return false;
             }
-            else if (tmp.IndexOf("::") < 0)
+            else if (tmp.IndexOf("::", StringComparison.Ordinal) < 0)
             {
                 return Regex.IsMatch(tmp.ToLower(), @"^([\da-f]{1,4}:){7}[\da-f]{1,4}$");
             }
@@ -660,10 +659,10 @@ namespace Wlniao.Text
         /// <returns>编码结果</returns>
         public static string UrlEncode(string str, string encoding)
         {
-            var encode = Encoding.UTF8;
+            var encode = Encodings.UTF8;
             if (!string.IsNullOrEmpty(encoding))
             {
-                encode = Encoding.GetEncoding(encoding);
+                encode = Encodings.GetEncoding(encoding);
             }
             var bytes = encode.GetBytes(str);
             var num = 0;
@@ -763,10 +762,10 @@ namespace Wlniao.Text
             {
                 return "";
             }
-            var encode = Encoding.UTF8;
+            var encode = Encodings.UTF8;
             if (!string.IsNullOrEmpty(encoding))
             {
-                encode = Encoding.GetEncoding(encoding);
+                encode = Encodings.GetEncoding(encoding);
             }
             var length = str.Length;
             var decoder = new UrlDecoder(length, encode);
@@ -1474,7 +1473,7 @@ namespace Wlniao.Text
         {
             s = s.Trim();
             var temp = s.Substring(0, (s.Length < l + 1) ? s.Length : l + 1);
-            var encodedBytes = Encoding.GetEncoding("ASCII").GetBytes(temp);
+            var encodedBytes = Encodings.GetEncoding("ASCII").GetBytes(temp);
             var outputStr = "";
             var count = 0;
             for (var i = 0; i < temp.Length; i++)
@@ -1565,7 +1564,7 @@ namespace Wlniao.Text
                 if (!isCode && !isHtml)
                 {
                     n = n + 1;
-                    if (Encoding.Unicode.GetBytes(temp + "").Length > 1)
+                    if (Encodings.Unicode.GetBytes(temp + "").Length > 1)
                         n = n + 1;//UNICODE码字符占两个字节 
                 }
                 result.Append(temp);
@@ -1610,9 +1609,9 @@ namespace Wlniao.Text
                 return "";
             }
             var encoding = Wlniao.IO.IdentifyEncoding.GetEncodingName(buffer);
-            var asciiBytes = encoding == "UTF-8" ? buffer : System.Text.Encoding.Convert(Encoding.GetEncoding(encoding), Encoding.UTF8, buffer);
+            var asciiBytes = encoding == "UTF-8" ? buffer : System.Text.Encoding.Convert(Encodings.GetEncoding(encoding), Encodings.UTF8, buffer);
             var asciiChars = new char[System.Text.Encoding.UTF8.GetCharCount(asciiBytes, 0, asciiBytes.Length)];
-            Encoding.UTF8.GetChars(asciiBytes, 0, asciiBytes.Length, asciiChars, 0);
+            Encodings.UTF8.GetChars(asciiBytes, 0, asciiBytes.Length, asciiChars, 0);
             if (asciiChars[0] == 65279)
             {
                 return new string(asciiChars.Skip(1).ToArray());
@@ -1636,9 +1635,9 @@ namespace Wlniao.Text
                 return "";
             }
             var encoding = IO.IdentifyEncoding.GetEncodingName(buffer);
-            var asciiBytes = encoding == "UTF-8" ? buffer : System.Text.Encoding.Convert(Encoding.GetEncoding(encoding), Encoding.UTF8, buffer, index, count);
+            var asciiBytes = encoding == "UTF-8" ? buffer : System.Text.Encoding.Convert(Encodings.GetEncoding(encoding), Encodings.UTF8, buffer, index, count);
             var asciiChars = new char[System.Text.Encoding.UTF8.GetCharCount(asciiBytes, 0, asciiBytes.Length)];
-            Encoding.UTF8.GetChars(asciiBytes, 0, asciiBytes.Length, asciiChars, 0);
+            Encodings.UTF8.GetChars(asciiBytes, 0, asciiBytes.Length, asciiChars, 0);
             if (asciiChars[0] == 65279)
             {
                 return new string(asciiChars.Skip(1).ToArray());
@@ -1662,7 +1661,7 @@ namespace Wlniao.Text
                 var bytes = new byte[2];
                 bytes[1] = byte.Parse(int.Parse(src[i].Substring(0, 2), NumberStyles.HexNumber).ToString(CultureInfo.InvariantCulture));
                 bytes[0] = byte.Parse(int.Parse(src[i].Substring(2, 2), NumberStyles.HexNumber).ToString(CultureInfo.InvariantCulture));
-                dst += Encoding.Unicode.GetString(bytes, 0, bytes.Length);
+                dst += Encodings.Unicode.GetString(bytes, 0, bytes.Length);
             }
             return dst;
         }
@@ -1677,7 +1676,7 @@ namespace Wlniao.Text
             var dst = "";
             for (var i = 0; i < src.Length; i++)
             {
-                var utext = Encoding.Unicode.GetBytes(src[i].ToString());
+                var utext = Encodings.Unicode.GetBytes(src[i].ToString());
                 dst += @"\u" + utext[1].ToString("x2") + utext[0].ToString("x2");
             }
             return dst;
@@ -1789,7 +1788,7 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static byte[] GetByteByStr(string strText)
         {
-            return Encoding.UTF8.GetBytes(strText);
+            return Encodings.UTF8.GetBytes(strText);
         }
         /// <summary>
         /// 取字符串中的大写字母
@@ -1830,9 +1829,9 @@ namespace Wlniao.Text
         {
             try
             {
-                var temp = Encoding.UTF8.GetBytes(str);
-                var temp1 = System.Text.Encoding.Convert(Encoding.UTF8, Encoding.GB2312, temp);
-                var result = Encoding.GB2312.GetString(temp1, 0, temp1.Length);
+                var temp = Encodings.UTF8.GetBytes(str);
+                var temp1 = System.Text.Encoding.Convert(Encodings.UTF8, Encodings.GB2312, temp);
+                var result = Encodings.GB2312.GetString(temp1, 0, temp1.Length);
                 return result;
             }
             catch
@@ -1852,10 +1851,10 @@ namespace Wlniao.Text
         {
             try
             {
-                var unicodeBytes = Encoding.GB2312.GetBytes(str);
-                var asciiBytes = System.Text.Encoding.Convert(Encoding.GB2312, Encoding.UTF8, unicodeBytes);
-                var asciiChars = new char[Encoding.UTF8.GetCharCount(asciiBytes, 0, asciiBytes.Length)];
-                Encoding.UTF8.GetChars(asciiBytes, 0, asciiBytes.Length, asciiChars, 0);
+                var unicodeBytes = Encodings.GB2312.GetBytes(str);
+                var asciiBytes = System.Text.Encoding.Convert(Encodings.GB2312, Encodings.UTF8, unicodeBytes);
+                var asciiChars = new char[Encodings.UTF8.GetCharCount(asciiBytes, 0, asciiBytes.Length)];
+                Encodings.UTF8.GetChars(asciiBytes, 0, asciiBytes.Length, asciiChars, 0);
                 var result = new string(asciiChars);
                 return result;
             }

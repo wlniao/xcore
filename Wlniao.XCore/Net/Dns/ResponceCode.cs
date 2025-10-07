@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Wlniao.Net.Dns
+﻿namespace Wlniao.Net.Dns
 {
     /// <summary>
     /// This class holds DNS server responce code. Defined in RFC 1035.

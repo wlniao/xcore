@@ -297,7 +297,7 @@ namespace Wlniao.OpenApi
                 }
                 try
                 {
-                    if (_response.IndexOf("access_token") > 0)
+                    if (_response.IndexOf("access_token", StringComparison.Ordinal) > 0)
                     {
                         //var obj = Json.ToObject<Wlniao.OpenApi.Wx.AccessToken>(_response);
                         var obj = Json.Deserialize<Dictionary<string, object>>(_response);

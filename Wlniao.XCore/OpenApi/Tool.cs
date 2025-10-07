@@ -21,9 +21,7 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
-using System.Threading.Tasks;
 using Wlniao.Text;
 
 namespace Wlniao.OpenApi
@@ -111,7 +109,7 @@ namespace Wlniao.OpenApi
                     var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, apiurl);
                     if (!string.IsNullOrEmpty(webroxy))
                     {
-                        host = host.Substring(host.IndexOf("://") + 3).Trim('/').Trim();
+                        host = host.Substring(host.IndexOf("://", StringComparison.Ordinal) + 3).Trim('/').Trim();
                         request.Headers.TryAddWithoutValidation("X-Webroxy", host);
                     }
                     client.SendAsync(request).ContinueWith((requestTask) =>

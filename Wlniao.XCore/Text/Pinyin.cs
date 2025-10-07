@@ -577,7 +577,7 @@ namespace Wlniao.Text
             // 非中文字符            
             if (ch < '\x4E00' || ch > '\x9FA5') return ch.ToString();
 
-            var arr = Encoding.GetEncoding("gb2312").GetBytes(ch.ToString());
+            var arr = Encodings.GetEncoding("gb2312").GetBytes(ch.ToString());
             //Encoding.Default默认在中文环境里虽是GB2312，但在多变的环境可能是其它
             //var arr = Encoding.Default.GetBytes(ch.ToString()); 
             var chr = (short)arr[0] * 256 + (short)arr[1] - 65536;

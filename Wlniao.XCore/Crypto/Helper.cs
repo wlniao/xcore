@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Org.BouncyCastle.Utilities.Encoders;
 namespace Wlniao.Crypto
 {
@@ -60,17 +57,28 @@ namespace Wlniao.Crypto
             return URShift(number, (int)bits);
         }
 
-		/// <summary>
-		/// 对Hex及Base64密钥自动编码
-		/// </summary>
-		/// <param name="data"></param>
-		/// <returns></returns>
-		public static byte[] Decode(string data)
+        /// <summary>
+        /// 对Hex及Base64密钥自动编码
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static byte[] Decode(string data)
         {
-            return string.IsNullOrEmpty(data) ? null : Regex.IsMatch(data, "^[0-9a-f]+$", RegexOptions.IgnoreCase) ? Hex.Decode(data) : System.Convert.FromBase64String(data);
+            if (string.IsNullOrEmpty(data))
+            {
+                return null;
+            }
+            else if (Regex.IsMatch(data, "^[0-9a-f]+$", RegexOptions.IgnoreCase))
+            {
+                return Hex.Decode(data);
+            }
+            else
+            {
+                return System.Convert.FromBase64String(data);
+            }
         }
 
-		/// <summary>
+        /// <summary>
 		/// 对Hex及Base64密钥自动编码
 		/// </summary>
 		/// <param name="data"></param>

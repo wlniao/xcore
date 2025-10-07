@@ -6,7 +6,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Net.Http;
 using System.Globalization;
-using System.Runtime.Serialization;
 using Wlniao.IO;
 using Wlniao.Text;
 
@@ -78,7 +77,7 @@ namespace Wlniao.XServer
                     {
                         _XStorageUrl = "";
                     }
-                    else if (temp.IndexOf("//") >= 0)
+                    else if (temp.IndexOf("//", StringComparison.Ordinal) >= 0)
                     {
                         _XStorageUrl = temp.TrimEnd('/');
                     }
@@ -143,9 +142,9 @@ namespace Wlniao.XServer
             {
                 SourceUrl = "";
             }
-            else if (SourceUrl.IndexOf("//") >= 0)
+            else if (SourceUrl.IndexOf("//", StringComparison.Ordinal) >= 0)
             {
-                SourceUrl = SourceUrl.Substring(SourceUrl.IndexOf("//") + 2);
+                SourceUrl = SourceUrl.Substring(SourceUrl.IndexOf("//", StringComparison.Ordinal) + 2);
                 SourceUrl = SourceUrl.Substring(SourceUrl.IndexOf('/'));
             }
             else if (SourceUrl.IndexOf('/') != 0)
@@ -220,7 +219,7 @@ namespace Wlniao.XServer
             {
                 return "";
             }
-            else if (SourceUrl.IndexOf("//") < 0)
+            else if (SourceUrl.IndexOf("//", StringComparison.Ordinal) < 0)
             {
                 SourceUrl = ConvertUrlToStorage(SourceUrl);
                 SourceUrl = XStorageUrl + SourceUrl;
@@ -1017,9 +1016,9 @@ namespace Wlniao.XServer
                 if (!string.IsNullOrEmpty(ossdomain))
                 {
                     ossdomain = ossdomain.Trim().Trim('/');
-                    if (ossdomain.IndexOf("://") > 0)
+                    if (ossdomain.IndexOf("://", StringComparison.Ordinal) > 0)
                     {
-                        ossdomain = ossdomain.Substring(ossdomain.IndexOf("://") + 3);
+                        ossdomain = ossdomain.Substring(ossdomain.IndexOf("://", StringComparison.Ordinal) + 3);
                     }
                     var tos = ossdomain.Split('.');
                     var region = tos.Where(o => o.StartsWith("oss-")).FirstOrDefault();
@@ -1186,10 +1185,10 @@ namespace Wlniao.XServer
                     }
                     var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"]]}";
                     var policy = Encryptor.Base64Encrypt(json);
-                    var bytesPolicy = Wlniao.Text.Encoding.UTF8.GetBytes(policy);
-                    var bytesSecret = Wlniao.Text.Encoding.UTF8.GetBytes(ossaccesskeySecret);
+                    var bytesPolicy = Wlniao.Text.Encodings.UTF8.GetBytes(policy);
+                    var bytesSecret = Wlniao.Text.Encodings.UTF8.GetBytes(ossaccesskeySecret);
                     var signature = System.Convert.ToBase64String(Encryptor.HmacSHA1(bytesPolicy, bytesSecret));
-                    var host = ossdomain.IndexOf("://") < 0 ? "//" + ossdomain : ossdomain;
+                    var host = ossdomain.IndexOf("://", StringComparison.Ordinal) < 0 ? "//" + ossdomain : ossdomain;
                     return Json.Serialize(new { to = "oss", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
                 }
                 return "";
@@ -1317,7 +1316,7 @@ namespace Wlniao.XServer
             {
                 using (var client = new HttpClient())
                 {
-                    var host = cosdomain.IndexOf("://") < 0 ? "https://" + cosdomain : cosdomain;
+                    var host = cosdomain.IndexOf("://", StringComparison.Ordinal) < 0 ? "https://" + cosdomain : cosdomain;
                     var request = new HttpRequestMessage(new HttpMethod(method), host + path);
                     if (postData != null)
                     {
@@ -1479,7 +1478,7 @@ namespace Wlniao.XServer
                     var stringToSign = Encryptor.Sha1(json).ToLower();
                     var signKey = Encryptor.HmacSHA1(keytime, cosaccesskeySecret);
                     var signature = Encryptor.HmacSHA1(stringToSign, signKey);
-                    var host = cosdomain.IndexOf("://") < 0 ? "//" + cosdomain : cosdomain;
+                    var host = cosdomain.IndexOf("://", StringComparison.Ordinal) < 0 ? "//" + cosdomain : cosdomain;
                     return Json.Serialize(new { to = "cos", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, domain = host, keytime = keytime, secretid = cosaccesskeyid, dir, max, policy, signature });
                 }
                 return "";

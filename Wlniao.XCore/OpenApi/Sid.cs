@@ -21,8 +21,7 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Wlniao.Log;
 using Wlniao.Text;
 
 namespace Wlniao.OpenApi
@@ -36,45 +35,49 @@ namespace Wlniao.OpenApi
         /// 根据手机号生成Sid
         /// </summary>
         /// <returns></returns>
-        public static string Get(string Mobile)
+        public static string Get(string mobile)
         {
-            if (StringUtil.IsMobile(Mobile))
+            if (!StringUtil.IsMobile(mobile))
             {
-                var _rlt = Wlniao.OpenApi.Common.Get<string>("sid", "get", new KeyValuePair<string, string>("mobile", Mobile));
-                if (_rlt.success)
-                {
-                    return _rlt.data;
-                }
-                else
-                {
-                    var r = new Random();
-                    var ts = Convert.ToHex(DateTools.GetUnix(), "0123456789abcdef");
-                    var ms = Convert.ToHex(long.Parse("86" + Mobile), "0123456789abcdef");
-                    var v1 = Convert.ToHex(r.Next(4096, 26214), "0123456789abcdef");
-                    var v2 = Convert.ToHex(r.Next(26214, 43690), "0123456789abcdef");
-                    var v3 = Convert.ToHex(r.Next(43690, 65535), "0123456789abcdef");
-                    return ts + "-" + v1 + "-" + v2 + "-" + v3 + "-" + ms;
-                }
+                return System.Guid.NewGuid().ToString();
             }
-            return System.Guid.NewGuid().ToString();
+            var rlt = Wlniao.OpenApi.Common.Get<string>("sid", "get", new KeyValuePair<string, string>("mobile", mobile));
+            if (rlt.success)
+            {
+                return rlt.data;
+            }
+            else
+            {
+                var r = new Random();
+                var ts = Convert.ToHex(DateTools.GetUnix(), "0123456789abcdef");
+                var ms = Convert.ToHex(long.Parse("86" + mobile), "0123456789abcdef");
+                var v1 = Convert.ToHex(r.Next(4096, 26214), "0123456789abcdef");
+                var v2 = Convert.ToHex(r.Next(26214, 43690), "0123456789abcdef");
+                var v3 = Convert.ToHex(r.Next(43690, 65535), "0123456789abcdef");
+                return ts + "-" + v1 + "-" + v2 + "-" + v3 + "-" + ms;
+            }
         }
         /// <summary>
         /// 根据Sid解析手机号
         /// </summary>
-        /// <param name="Sid"></param>
+        /// <param name="sid"></param>
         /// <returns></returns>
-        public static string GetMobile(string Sid)
+        public static string GetMobile(string sid)
         {
             try
             {
-                var arr = Sid.Split('-');
+                var arr = sid.Split('-');
                 var mobile = Convert.DeHex(arr[arr.Length - 1], "0123456789abcdef").ToString().Substring(2);
                 if (StringUtil.IsMobile(mobile))
                 {
                     return mobile;
                 }
             }
-            catch { }
+            catch(Exception e)
+            {
+                Loger.Debug($"sid: {sid} decode to mobile error => {e.Message}");
+            }
+
             return "";
         }
     }

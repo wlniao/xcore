@@ -62,7 +62,7 @@ namespace Wlniao.Caching
         /// <summary>
         /// 下次尝试链接时间
         /// </summary>
-        private static DateTime nextconnect = DateTime.MinValue;
+        private static DateTime _nextConnect = DateTime.MinValue;
         /// <summary>
         /// Redis链接字符串
         /// </summary>
@@ -72,30 +72,31 @@ namespace Wlniao.Caching
             {
                 lock (_lock)
                 {
-                    if (_connstr == null)
+                    if (_connstr != null)
                     {
-                        var connstr = Config.GetConfigs("WLN_REDIS");
-                        if (string.IsNullOrEmpty(connstr))
+                        return _connstr;
+                    }
+                    var connstr = Config.GetConfigs("WLN_REDIS");
+                    if (string.IsNullOrEmpty(connstr))
+                    {
+                        var host = Config.GetConfigs("WLN_REDIS_HOST");
+                        var pass = Config.GetEncrypt("WLN_REDIS_PASS", Config.Secret);
+                        var user = Config.GetEncrypt("WLN_REDIS_USER", Config.Secret);
+                        var port = Convert.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
+                        if (port is > 0 and < 65535 && !string.IsNullOrEmpty(host))
                         {
-                            var host = Config.GetConfigs("WLN_REDIS_HOST");
-                            var pass = Config.GetEncrypt("WLN_REDIS_PASS", Config.Secret);
-                            var user = Config.GetEncrypt("WLN_REDIS_USER", Config.Secret);
-                            var port = Convert.ToInt(Config.GetConfigs("WLN_REDIS_PORT", "6379"));
-                            if (port > 0 && port < 65535 && !string.IsNullOrEmpty(host))
+                            connstr = host + ":" + port;
+                            if (!string.IsNullOrEmpty(pass))
                             {
-                                connstr = host + ":" + port;
-                                if (!string.IsNullOrEmpty(pass))
-                                {
-                                    connstr += ",password=" + pass;
-                                }
-                                if (!string.IsNullOrEmpty(user))
-                                {
-                                    connstr += ",username=" + user;
-                                }
+                                connstr += ",password=" + pass;
+                            }
+                            if (!string.IsNullOrEmpty(user))
+                            {
+                                connstr += ",username=" + user;
                             }
                         }
-                        _connstr = connstr ?? "";
                     }
+                    _connstr = connstr ?? "";
                 }
                 return _connstr;
             }
@@ -107,16 +108,17 @@ namespace Wlniao.Caching
         {
             get
             {
-                if(_instance == null)
+                if (_instance != null)
                 {
-                    try
-                    {
-                        _instance = UseConnStr(ConnStr);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Redis connection configuration error: " + ex.Message);
-                    }
+                    return _instance;
+                }
+                try
+                {
+                    _instance = UseConnStr(ConnStr);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("Redis connection configuration error: " + ex.Message);
                 }
                 return _instance;
             }
@@ -175,18 +177,11 @@ namespace Wlniao.Caching
         {
             try
             {
-                if (usePool)
-                {
-                    return Instance.Get(key);
-                }
-                else
-                {
-                    return UseConnStr(ConnStr).Get(key);
-                }
+                return usePool ? Instance.Get(key) : UseConnStr(ConnStr).Get(key);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Loger.Topic("xcore", "Caching.Redis.Get => " + ex.Message, Log.LogLevel.Error);
+                Loger.Topic("xcore", "Caching.Redis.Get => " + e.Message, Log.LogLevel.Error);
             }
             return "";
         }
@@ -221,13 +216,13 @@ namespace Wlniao.Caching
             {
                 return Instance.Set(key, value, expire);
             }
-            catch (XCoreException ex)
+            catch (XCoreException e)
             {
-                Loger.Topic("xcore", ex.Message, Log.LogLevel.Error);
+                Loger.Topic("xcore", e.Message, Log.LogLevel.Error);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Loger.Topic("xcore", "Caching.Redis.Set => " + ex.Message, Log.LogLevel.Error);
+                Loger.Topic("xcore", "Caching.Redis.Set => " + e.Message, Log.LogLevel.Error);
             }
             return false;
         }
@@ -267,13 +262,13 @@ namespace Wlniao.Caching
             {
                 return Instance.KeyDelete(key);
             }
-            catch (XCoreException ex)
+            catch (XCoreException e)
             {
-                Loger.Topic("xcore", ex.Message, Log.LogLevel.Error);
+                Loger.Topic("xcore", e.Message, Log.LogLevel.Error);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Loger.Topic("xcore", "Caching.Redis.KeyDelete => " + ex.Message, Log.LogLevel.Error);
+                Loger.Topic("xcore", "Caching.Redis.KeyDelete => " + e.Message, Log.LogLevel.Error);
             }
             return false;
         }
@@ -288,13 +283,13 @@ namespace Wlniao.Caching
             {
                 return Instance.KeyExists(key);
             }
-            catch (XCoreException ex)
+            catch (XCoreException e)
             {
-                Loger.Topic("xcore", ex.Message, Log.LogLevel.Error);
+                Loger.Topic("xcore", e.Message, Log.LogLevel.Error);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Loger.Topic("xcore", "Caching.Redis.KeyExists => " + ex.Message, Log.LogLevel.Error);
+                Loger.Topic("xcore", "Caching.Redis.KeyExists => " + e.Message, Log.LogLevel.Error);
             }
             return false;
 

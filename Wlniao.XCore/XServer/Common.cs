@@ -23,9 +23,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Security;
-using System.Net.Sockets;
-using System.Text;
 using Wlniao.Log;
 using Wlniao.Text;
 
@@ -203,7 +200,7 @@ namespace Wlniao.XServer
                 }
                 if (!string.IsNullOrEmpty(HostAddress))
                 {
-                    if (HostAddress.IndexOf("://") < 0)
+                    if (HostAddress.IndexOf("://", StringComparison.Ordinal) < 0)
                     {
                         HostAddress = "http://" + HostAddress.ToLower();
                     }
@@ -543,13 +540,13 @@ namespace Wlniao.XServer
             try
             {
                 var temp = json;
-                if (temp.IndexOf("data:") > 0)
+                if (temp.IndexOf("data:", StringComparison.Ordinal) > 0)
                 {
-                    temp = temp[(temp.IndexOf("data:") + 5)..];
+                    temp = temp[(temp.IndexOf("data:", StringComparison.Ordinal) + 5)..];
                 }
-                else if (temp.IndexOf("data\":") > 0)
+                else if (temp.IndexOf("data\":", StringComparison.Ordinal) > 0)
                 {
-                    temp = temp[(temp.IndexOf("data\":") + 6)..];
+                    temp = temp[(temp.IndexOf("data\":", StringComparison.Ordinal) + 6)..];
                 }
                 //if (temp.IndexOf(",logs:[") > 0)
                 //{
@@ -1013,7 +1010,7 @@ namespace Wlniao.XServer
             var em = GetInstances(app).Instances.GetEnumerator();
             while (em.MoveNext())
             {
-                if (em.Current.Key.IndexOf("://") > 0)
+                if (em.Current.Key.IndexOf("://", StringComparison.Ordinal) > 0)
                 {
                     return em.Current.Key;
                 }
@@ -1116,7 +1113,7 @@ namespace Wlniao.XServer
             {
                 return "";
             }
-            else if (host.IndexOf("://") < 0)
+            else if (host.IndexOf("://", StringComparison.Ordinal) < 0)
             {
                 host = "http://" + host;
             }

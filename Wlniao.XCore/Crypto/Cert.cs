@@ -95,8 +95,7 @@ namespace Wlniao.Crypto
                 return str;
             }
 
-            var res = new List<string>();
-            res.Add("-----BEGIN RSA PRIVATE KEY-----");
+            var res = new List<string> { "-----BEGIN RSA PRIVATE KEY-----" };
 
             var pos = 0;
 
@@ -138,8 +137,7 @@ namespace Wlniao.Crypto
             {
                 return str;
             }
-            var res = new List<string>();
-            res.Add("-----BEGIN PRIVATE KEY-----");
+            var res = new List<string> { "-----BEGIN PRIVATE KEY-----" };
 
             var pos = 0;
 
@@ -179,8 +177,8 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public static byte[] GetBytesFromPemFile(string pemString, string headerPEM)
         {
-            var header = string.Format("-----BEGIN {0}-----", headerPEM);
-            var footer = string.Format("-----END {0}-----", headerPEM);
+            var header = $"-----BEGIN {headerPEM}-----";
+            var footer = $"-----END {headerPEM}-----";
             var start = pemString.IndexOf(header, StringComparison.Ordinal) + header.Length;
             var end = pemString.IndexOf(footer, start, StringComparison.Ordinal) - start;
             if (start < 0 || end < 0)
@@ -201,9 +199,9 @@ namespace Wlniao.Crypto
                 privateKey = PrivateKeyPkcs8ToPkcs1(privateKey);
             }
             var rsa = new RSACryptoServiceProvider();
-            var Buffer = GetBytesFromPemFile(privateKey, "RSA PRIVATE KEY");
+            var buffer = GetBytesFromPemFile(privateKey, "RSA PRIVATE KEY");
             var rsaParam = rsa.ExportParameters(false);
-            rsaParam.Modulus = Buffer;
+            rsaParam.Modulus = buffer;
             rsa.ImportParameters(rsaParam);
             return rsa;
         }

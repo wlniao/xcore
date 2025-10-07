@@ -20,16 +20,12 @@
 
 ===============================================================================*/
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Net.Sockets;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
 using Wlniao.IO;
 using Wlniao.Log;
-using Wlniao.Text;
 
 namespace Wlniao.Caching
 {
@@ -91,7 +87,7 @@ namespace Wlniao.Caching
                     System.IO.Directory.CreateDirectory(parent!);
                 }
                 using var fs = new FileStream(file, FileMode.Create, FileAccess.ReadWrite,FileShare.ReadWrite);
-                var writer = new StreamWriter(fs, Wlniao.Text.Encoding.UTF8);
+                var writer = new StreamWriter(fs, Wlniao.Text.Encodings.UTF8);
                 writer.Write(data);
                 writer.Flush();
                 return true;

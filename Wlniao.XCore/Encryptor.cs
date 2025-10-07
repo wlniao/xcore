@@ -19,24 +19,21 @@
     limitations under the License.
 
 ===============================================================================*/
-using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using Wlniao.Text;
 using Wlniao.Crypto;
-using Org.BouncyCastle.Crypto.Macs;
-using Encoding = System.Text.Encoding;
+using Wlniao.Log;
 
 namespace Wlniao
 {
     /// <summary>
     /// HASH算法加密工具类
     /// </summary>
-    public class Encryptor
+    public static class Encryptor
     {
         /// <summary>
         /// 32位MD5算法加密（多次加密）
@@ -61,7 +58,7 @@ namespace Wlniao
         public static string Md5Encryptor32(string str)
         {
             var password = "";
-            var s = MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(str ?? ""));
+            var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str ?? ""));
             foreach (var b in s)
             {
                 password += b.ToString("X2");
@@ -75,7 +72,7 @@ namespace Wlniao
         /// <returns>加密后的字符串</returns>
         public static string Md5Encryptor16(string str)
         {
-            var s = MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(str ?? ""));
+            var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str ?? ""));
             return BitConverter.ToString(s, 4, 8).Replace("-", "");
         }
 
@@ -83,37 +80,34 @@ namespace Wlniao
         /// 使用RSA私钥解密
         /// </summary>
         /// <param name="data">要解密的数据（Base64格式）</param>
-        /// <param name="private_key">RSA私钥，查看方式：openssl pkcs12 -in cert.pfx -nocerts -nodes</param>
+        /// <param name="privateKey">RSA私钥，查看方式：openssl pkcs12 -in cert.pfx -nocerts -nodes</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
-        public static string RsaDecryptWithPrivate(string data, string private_key, System.Text.Encoding encoding = null)
+        public static string RsaDecryptWithPrivate(string data, string privateKey, Encoding encoding = null)
         {
+            encoding ??= Encoding.UTF8;
             var sData = System.Convert.FromBase64String(data);
-            if (encoding == null)
-            {
-                encoding = System.Text.Encoding.UTF8;
-            }
-            if (private_key.Contains("BEGIN RSA PRIVATE KEY") && !private_key.Contains("BEGIN PRIVATE KEY"))
+            if (privateKey.Contains("BEGIN RSA PRIVATE KEY") && !privateKey.Contains("BEGIN PRIVATE KEY"))
             {
                 //RSA 格式私钥处理
-                if (!private_key.Contains("----"))
+                if (!privateKey.Contains("----"))
                 {
-                    private_key = "-----BEGIN RSA PRIVATE KEY-----" + private_key + "-----END RSA PRIVATE KEY-----";
+                    privateKey = "-----BEGIN RSA PRIVATE KEY-----" + privateKey + "-----END RSA PRIVATE KEY-----";
                 }
-                var pemReader = new Org.BouncyCastle.OpenSsl.PemReader(new System.IO.StringReader(private_key));
+                var pemReader = new Org.BouncyCastle.OpenSsl.PemReader(new StringReader(privateKey));
                 var keyParameter = ((Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair)pemReader.ReadObject()).Private;
 
-                var cipher = Org.BouncyCastle.Security.CipherUtilities.GetCipher("SHA1withRSA");
+                var cipher = CipherUtilities.GetCipher("SHA1withRSA");
                 cipher.Init(false, keyParameter);
                 return encoding.GetString(cipher.DoFinal(sData));
             }
             else
             {
-                private_key = private_key.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "").Replace("\n", "").Replace("\r", "").Trim();
-                var privateBytes = System.Convert.FromBase64String(private_key);
-                var keyParameter = Org.BouncyCastle.Security.PrivateKeyFactory.CreateKey(privateBytes);
+                privateKey = privateKey.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "").Replace("\n", "").Replace("\r", "").Trim();
+                var privateBytes = System.Convert.FromBase64String(privateKey);
+                var keyParameter = PrivateKeyFactory.CreateKey(privateBytes);
 
-                var cipher = Org.BouncyCastle.Security.CipherUtilities.GetCipher("RSA/ECB/NoPadding");
+                var cipher = CipherUtilities.GetCipher("RSA/ECB/NoPadding");
                 cipher.Init(false, keyParameter);
                 return encoding.GetString(cipher.DoFinal(sData));
             }
@@ -123,22 +117,19 @@ namespace Wlniao
         /// 使用RSA公钥加密
         /// </summary>
         /// <param name="data">加密的数据</param>
-        /// <param name="public_key">RSA公钥，查看方式：openssl x509 -in send.crt -pubkey</param>
+        /// <param name="publicKey">RSA公钥，查看方式：openssl x509 -in send.crt -pubkey</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
-        public static string RsaEncryptWithPublic(string data, string public_key, System.Text.Encoding encoding = null)
+        public static string RsaEncryptWithPublic(string data, string publicKey, Encoding encoding = null)
         {
-            if (encoding == null)
+            encoding ??= Encoding.UTF8;
+            if (publicKey.Contains("BEGIN CERTIFICATE"))
             {
-                encoding = System.Text.Encoding.UTF8;
+                publicKey = publicKey.Replace("-----BEGIN CERTIFICATE-----", "").Replace("-----END CERTIFICATE-----", "").Replace("\n", "").Replace("\r", "").Trim();
             }
-            if (public_key.Contains("BEGIN CERTIFICATE"))
-            {
-                public_key = public_key.Replace("-----BEGIN CERTIFICATE-----", "").Replace("-----END CERTIFICATE-----", "").Replace("\n", "").Replace("\r", "").Trim();
-            }
-            var certBytes = System.Convert.FromBase64String(public_key);
-            var pubKey = Org.BouncyCastle.Security.PublicKeyFactory.CreateKey(certBytes);
-            var cipher = Org.BouncyCastle.Security.CipherUtilities.GetCipher("RSA/ECB/NoPadding");
+            var certBytes = System.Convert.FromBase64String(publicKey);
+            var pubKey = PublicKeyFactory.CreateKey(certBytes);
+            var cipher = CipherUtilities.GetCipher("RSA/ECB/NoPadding");
             cipher.Init(true, pubKey);
             var sData = encoding.GetBytes(data);
             return System.Convert.ToBase64String(cipher.DoFinal(sData));
@@ -148,44 +139,41 @@ namespace Wlniao
         /// 使用RSA公钥签名
         /// </summary>
         /// <param name="data">要签名的数据</param>
-        /// <param name="private_key">RSA私钥，查看方式：openssl pkcs12 -in cert.pfx -nocerts -nodes</param>
+        /// <param name="privateKey">RSA私钥，查看方式：openssl pkcs12 -in cert.pfx -nocerts -nodes</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
-        public static string RsaSignWithPrivate(string data, string private_key, System.Text.Encoding encoding = null)
+        public static string RsaSignWithPrivate(string data, string privateKey, Encoding encoding = null)
         {
-            if (encoding == null)
-            {
-                encoding = System.Text.Encoding.UTF8;
-            }
+            encoding ??= Encoding.UTF8;
             var sData = encoding.GetBytes(data);
-            if (private_key.Contains("BEGIN RSA PRIVATE KEY") && !private_key.Contains("BEGIN PRIVATE KEY"))
+            if (privateKey.Contains("BEGIN RSA PRIVATE KEY") && !privateKey.Contains("BEGIN PRIVATE KEY"))
             {
                 //RSA 格式私钥处理
-                if (!private_key.Contains("----"))
+                if (!privateKey.Contains("----"))
                 {
-                    private_key = "-----BEGIN RSA PRIVATE KEY-----" + private_key + "-----END RSA PRIVATE KEY-----";
+                    privateKey = "-----BEGIN RSA PRIVATE KEY-----" + privateKey + "-----END RSA PRIVATE KEY-----";
                 }
-                var pemReader = new Org.BouncyCastle.OpenSsl.PemReader(new System.IO.StringReader(private_key));
+                var pemReader = new Org.BouncyCastle.OpenSsl.PemReader(new StringReader(privateKey));
                 var keyParameter = ((Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair)pemReader.ReadObject()).Private;
 
-                var signer = Org.BouncyCastle.Security.SignerUtilities.GetSigner("SHA1withRSA");
+                var signer = SignerUtilities.GetSigner("SHA1withRSA");
                 signer.Init(true, keyParameter);
                 signer.BlockUpdate(sData, 0, sData.Length);
                 sData = signer.GenerateSignature();
-                return System.Convert.ToBase64String(sData);
             }
             else
             {
-                private_key = private_key.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "").Replace("\n", "").Replace("\r", "").Trim();
-                var privateBytes = System.Convert.FromBase64String(private_key);
-                var keyParameter = Org.BouncyCastle.Security.PrivateKeyFactory.CreateKey(privateBytes);
+                privateKey = privateKey.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "").Replace("\n", "").Replace("\r", "").Trim();
+                var privateBytes = System.Convert.FromBase64String(privateKey);
+                var keyParameter = PrivateKeyFactory.CreateKey(privateBytes);
 
-                var signer = Org.BouncyCastle.Security.SignerUtilities.GetSigner("SHA1withRSA");
+                var signer = SignerUtilities.GetSigner("SHA1withRSA");
                 signer.Init(true, keyParameter);
                 signer.BlockUpdate(sData, 0, sData.Length);
                 sData = signer.GenerateSignature();
-                return System.Convert.ToBase64String(sData);
             }
+
+            return System.Convert.ToBase64String(sData);
         }
 
         /// <summary>
@@ -193,23 +181,20 @@ namespace Wlniao
         /// </summary>
         /// <param name="data">要验签的数据</param>
         /// <param name="sign">要验证的签名</param>
-        /// <param name="public_key">RSA公钥，查看方式：openssl x509 -in send.crt -pubkey</param>
+        /// <param name="publicKey">RSA公钥，查看方式：openssl x509 -in send.crt -pubkey</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
-        public static bool RsaVerifyWithPublic(string data, string sign, string public_key, System.Text.Encoding encoding = null)
+        public static bool RsaVerifyWithPublicKey(string data, string sign, string publicKey, Encoding encoding = null)
         {
+            encoding ??= Encoding.UTF8;
             var sData = encoding.GetBytes(data);
-            if (encoding == null)
+            if (publicKey.Contains("BEGIN CERTIFICATE"))
             {
-                encoding = System.Text.Encoding.UTF8;
+                publicKey = publicKey.Replace("-----BEGIN CERTIFICATE-----", "").Replace("-----END CERTIFICATE-----", "").Replace("\n", "").Replace("\r", "").Trim();
             }
-            if (public_key.Contains("BEGIN CERTIFICATE"))
-            {
-                public_key = public_key.Replace("-----BEGIN CERTIFICATE-----", "").Replace("-----END CERTIFICATE-----", "").Replace("\n", "").Replace("\r", "").Trim();
-            }
-            var certBytes = System.Convert.FromBase64String(public_key);
-            var pubKey = Org.BouncyCastle.Security.PublicKeyFactory.CreateKey(certBytes);
-            var signer = Org.BouncyCastle.Security.SignerUtilities.GetSigner("SHA1withRSA");
+            var certBytes = System.Convert.FromBase64String(publicKey);
+            var pubKey = PublicKeyFactory.CreateKey(certBytes);
+            var signer = SignerUtilities.GetSigner("SHA1withRSA");
             signer.Init(false, pubKey);
             signer.BlockUpdate(sData, 0, sData.Length);
             var expectedSig = System.Convert.FromBase64String(sign);
@@ -227,7 +212,7 @@ namespace Wlniao
             {
                 return "";
             }
-            var dataToHash = System.Text.Encoding.ASCII.GetBytes(str); //将str转换成byte[]
+            var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
             var dataHashed = SHA1.Create().ComputeHash(dataToHash);//Hash运算
             return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
         }
@@ -242,7 +227,7 @@ namespace Wlniao
             {
                 return "";
             }
-            var dataToHash = System.Text.Encoding.ASCII.GetBytes(str); //将str转换成byte[]
+            var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
             var dataHashed = SHA256.Create().ComputeHash(dataToHash);
             return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
         }
@@ -257,7 +242,7 @@ namespace Wlniao
             {
                 return "";
             }
-            var dataToHash = System.Text.Encoding.ASCII.GetBytes(str); //将str转换成byte[]
+            var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
             var dataHashed = SHA512.Create().ComputeHash(dataToHash);
             return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
         }
@@ -270,9 +255,9 @@ namespace Wlniao
         /// <returns></returns>
         public static string HmacSM3(string str, string key)
         {
-            var sm3 = new Crypto.SM3();
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes(key);
-            var dataBytes = System.Text.Encoding.UTF8.GetBytes(str);
+            var sm3 = new SM3();
+            var keyBytes = Encoding.UTF8.GetBytes(key);
+            var dataBytes = Encoding.UTF8.GetBytes(str);
             return Convert.BytesToHexString(sm3.Hmac(dataBytes, keyBytes));
         }
 
@@ -285,14 +270,15 @@ namespace Wlniao
         public static string HmacSHA1(string str, string key)
         {
             var enText = "";
-            if (!string.IsNullOrEmpty(str))
+            if (string.IsNullOrEmpty(str))
             {
-                var keyBytes = System.Text.Encoding.UTF8.GetBytes(key);
-                var dataBytes = System.Text.Encoding.UTF8.GetBytes(str);
-                foreach (var b in HmacSHA1(dataBytes, keyBytes))
-                {
-                    enText += b.ToString("x2");
-                }
+                return enText;
+            }
+            var keyBytes = Encoding.UTF8.GetBytes(key);
+            var dataBytes = Encoding.UTF8.GetBytes(str);
+            foreach (var b in HmacSHA1(dataBytes, keyBytes))
+            {
+                enText += b.ToString("x2");
             }
             return enText;
         }
@@ -329,8 +315,8 @@ namespace Wlniao
         /// <returns></returns>
         public static string HmacSHA256Hex(string str, string key)
         {
-            var hashAlgorithm = new HMACSHA256(System.Text.Encoding.UTF8.GetBytes(key));
-            var bytes = hashAlgorithm.ComputeHash(System.Text.Encoding.UTF8.GetBytes(str));
+            var hashAlgorithm = new HMACSHA256(Encoding.UTF8.GetBytes(key));
+            var bytes = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(str));
             return System.Convert.ToHexString(bytes).ToLower();
         }
 
@@ -341,7 +327,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string Base64Encrypt(string str)
         {
-            return IO.Base64Encoder.Encoder.GetEncoded(System.Text.Encoding.UTF8.GetBytes(str ?? ""));
+            return IO.Base64Encoder.Encoder.GetEncoded(Encoding.UTF8.GetBytes(str ?? ""));
         }
         /// <summary>
         /// Base64解码
@@ -350,8 +336,9 @@ namespace Wlniao
         /// <returns></returns>
         public static string Base64Decrypt(string str)
         {
-            return System.Text.Encoding.UTF8.GetString(IO.Base64Decoder.Decoder.GetDecoded(str ?? ""));
+            return Encoding.UTF8.GetString(IO.Base64Decoder.Decoder.GetDecoded(str ?? ""));
         }
+
         /// <summary>
         /// 逐字编码查询条件
         /// </summary>
@@ -361,12 +348,9 @@ namespace Wlniao
         public static string VerbatimQuery(string txt, int crypt = 6338)
         {
             var code = VerbatimEncrypt(txt);
-            if (code.EndsWith('='))
-            {
-                code = code.Substring(0, code.Length - 3);
-            }
-            return code;
+            return code.EndsWith('=') ? code[..^3] : code; // code.Substring(0, code.Length - 3);
         }
+
         /// <summary>
         /// 逐字编码文本内容
         /// </summary>
@@ -375,16 +359,16 @@ namespace Wlniao
         /// <returns></returns>
         public static string VerbatimEncrypt(string txt, int crypt = 6338)
         {
-            if (!string.IsNullOrEmpty(txt))
+            if (string.IsNullOrEmpty(txt))
             {
-                var buffer = System.Text.Encoding.UTF8.GetBytes(txt);
-                for (var i = 0; i < buffer.Length; i++)
-                {
-                    buffer[i] = (byte)((uint)buffer[i] + crypt);
-                }
-                return System.Convert.ToBase64String(buffer);
+                return "";
             }
-            return "";
+            var buffer = Encoding.UTF8.GetBytes(txt);
+            for (var i = 0; i < buffer.Length; i++)
+            {
+                buffer[i] = (byte)((uint)buffer[i] + crypt);
+            }
+            return System.Convert.ToBase64String(buffer);
         }
         /// <summary>
         /// 逐字解码文本内容
@@ -394,56 +378,59 @@ namespace Wlniao
         /// <returns></returns>
         public static string VerbatimDecrypt(string txt, int crypt = 6338)
         {
-            if (!string.IsNullOrEmpty(txt))
+            if (string.IsNullOrEmpty(txt))
             {
-                var buffer = System.Convert.FromBase64String(txt);
-                for (var i = 0; i < buffer.Length; i++)
-                {
-                    buffer[i] = (byte)((uint)buffer[i] - crypt);
-                }
-                return System.Text.Encoding.UTF8.GetString(buffer);
+                return txt;
             }
-            return txt;
+            var buffer = System.Convert.FromBase64String(txt);
+            for (var i = 0; i < buffer.Length; i++)
+            {
+                buffer[i] = (byte)((uint)buffer[i] - crypt);
+            }
+            return Encoding.UTF8.GetString(buffer);
         }
         /// <summary>
         /// 加密函数
         /// </summary>
         /// <param name="pToEncrypt">需要加密的字符串</param>
         /// <param name="sKey">加密密钥</param>
-        /// <param name="sIV">偏移量</param>
+        /// <param name="IV">偏移量</param>
         /// <returns>返回加密后的密文</returns>
-        public static string AesEncrypt(string pToEncrypt, string sKey, string sIV = "")
+        public static string AesEncrypt(string pToEncrypt, string sKey, string IV = "")
         {
-            if (!string.IsNullOrEmpty(pToEncrypt))
+            if (string.IsNullOrEmpty(pToEncrypt))
             {
-                try
+                return "";
+            }
+
+            try
+            {
+                var aes = Aes.Create();
+                var key = new char[32];
+                for (var i = 0; i < key.Length && i < sKey.Length; i++)
                 {
-                    var aes = Aes.Create();
-                    var key = new char[32];
-                    for (var i = 0; i < key.Length && i < sKey.Length; i++)
-                    {
-                        key[i] = sKey[i];
-                    }
-                    aes.Key = System.Text.Encoding.ASCII.GetBytes(key);
-                    var iv = new char[16];
-                    for (var i = 0; i < iv.Length && i < sIV.Length; i++)
-                    {
-                        iv[i] = sIV[i];
-                    }
-                    aes.IV = System.Text.Encoding.ASCII.GetBytes(iv);
-                    aes.Padding = PaddingMode.PKCS7;
-                    var inputByteArray = System.Text.Encoding.UTF8.GetBytes(pToEncrypt);
-                    using (var ms = new MemoryStream())
-                    {
-                        using (var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                        {
-                            cs.Write(inputByteArray, 0, inputByteArray.Length);
-                            cs.FlushFinalBlock();
-                            return System.Convert.ToBase64String(ms.ToArray());
-                        }
-                    }
+                    key[i] = sKey[i];
                 }
-                catch { }
+
+                aes.Key = Encoding.ASCII.GetBytes(key);
+                var iv = new char[16];
+                for (var i = 0; i < iv.Length && i < IV.Length; i++)
+                {
+                    iv[i] = IV[i];
+                }
+
+                aes.IV = Encoding.ASCII.GetBytes(iv);
+                aes.Padding = PaddingMode.PKCS7;
+                var inputByteArray = Encoding.UTF8.GetBytes(pToEncrypt);
+                using var ms = new MemoryStream();
+                using var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
+                cs.Write(inputByteArray, 0, inputByteArray.Length);
+                cs.FlushFinalBlock();
+                return System.Convert.ToBase64String(ms.ToArray());
+            }
+            catch (Exception e)
+            {
+                Loger.Debug($"{e.Message}{Environment.NewLine}{e.StackTrace}");
             }
             return "";
         }
@@ -456,36 +443,36 @@ namespace Wlniao
         /// <returns>返回加密前的明文</returns>
         public static string AesDecrypt(string pToDecrypt, string sKey, string sIV = "")
         {
-            if (!string.IsNullOrEmpty(pToDecrypt))
+            if (string.IsNullOrEmpty(pToDecrypt))
             {
-                try
+                return "";
+            }
+            try
+            {
+                var aes = Aes.Create();
+                var key = new char[32];
+                for (var i = 0; i < key.Length && i < sKey.Length; i++)
                 {
-                    var aes = Aes.Create();
-                    var key = new char[32];
-                    for (var i = 0; i < key.Length && i < sKey.Length; i++)
-                    {
-                        key[i] = sKey[i];
-                    }
-                    aes.Key = System.Text.Encoding.ASCII.GetBytes(key);
-                    var iv = new char[16];
-                    for (var i = 0; i < iv.Length && i < sIV.Length; i++)
-                    {
-                        iv[i] = sIV[i];
-                    }
-                    aes.IV = System.Text.Encoding.ASCII.GetBytes(iv);
-                    aes.Padding = PaddingMode.PKCS7;
-                    var inputByteArray = System.Convert.FromBase64String(pToDecrypt);
-                    using (var ms = new MemoryStream())
-                    {
-                        using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
-                        {
-                            cs.Write(inputByteArray, 0, inputByteArray.Length);
-                            cs.FlushFinalBlock();
-                            return System.Text.Encoding.UTF8.GetString(ms.ToArray());
-                        }
-                    }
+                    key[i] = sKey[i];
                 }
-                catch { }
+                aes.Key = Encoding.ASCII.GetBytes(key);
+                var iv = new char[16];
+                for (var i = 0; i < iv.Length && i < sIV.Length; i++)
+                {
+                    iv[i] = sIV[i];
+                }
+                aes.IV = Encoding.ASCII.GetBytes(iv);
+                aes.Padding = PaddingMode.PKCS7;
+                var inputByteArray = System.Convert.FromBase64String(pToDecrypt);
+                using var ms = new MemoryStream();
+                using var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write);
+                cs.Write(inputByteArray, 0, inputByteArray.Length);
+                cs.FlushFinalBlock();
+                return Encoding.UTF8.GetString(ms.ToArray());
+            }
+            catch (Exception e)
+            {
+                Loger.Debug($"{e.Message}{Environment.NewLine}{e.StackTrace}");
             }
             return "";
         }
@@ -502,9 +489,9 @@ namespace Wlniao
                 return "";
             }
             var sm2 = new SM2(Helper.Decode(publicKey), null, SM2Mode.C1C3C2);
-            var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-            var encryBytes = sm2.Encrypt(plainBytes);
-            return Convert.BytesToHexString(encryBytes);
+            var plainBytes = Encoding.UTF8.GetBytes(plainText);
+            var encBytes = sm2.Encrypt(plainBytes);
+            return Convert.BytesToHexString(encBytes);
         }
         /// <summary>
         /// 
@@ -519,46 +506,46 @@ namespace Wlniao
                 return "";
             }
             var sm2 = new SM2(publicKey, null, SM2Mode.C1C3C2);
-            var encryBytes = sm2.Encrypt(plainBytes);
-            return Convert.BytesToHexString(encryBytes);
+            var encBytes = sm2.Encrypt(plainBytes);
+            return Convert.BytesToHexString(encBytes);
         }
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="encryText"></param>
+        /// <param name="encText"></param>
         /// <param name="privateKey"></param>
         /// <returns></returns>
-        public static string SM2DecryptByPrivateKey(string encryText, string privateKey)
+        public static string SM2DecryptByPrivateKey(string encText, string privateKey)
         {
-            if (string.IsNullOrEmpty(encryText))
+            if (string.IsNullOrEmpty(encText))
             {
                 return "";
             }
-            else if (encryText[0] != '0' && encryText[1] != '4' && Regex.IsMatch(encryText, "^[0-9a-f]+$", RegexOptions.IgnoreCase))
+            else if (encText[0] != '0' && encText[1] != '4' && Regex.IsMatch(encText, "^[0-9a-f]+$", RegexOptions.IgnoreCase))
             {
-                encryText = "04" + encryText;
+                encText = "04" + encText;
             }
             var pks = Helper.Decode(privateKey);
             var sm2 = new SM2(null, pks, SM2Mode.C1C3C2);
-            var encryBytes = Helper.Decode(encryText);
-            var plainBytes = sm2.Decrypt(encryBytes);
-            return System.Text.Encoding.UTF8.GetString(plainBytes);
+            var encBytes = Helper.Decode(encText);
+            var plainBytes = sm2.Decrypt(encBytes);
+            return Encoding.UTF8.GetString(plainBytes);
         }
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="encryBytes"></param>
+        /// <param name="encBytes"></param>
         /// <param name="privateKey"></param>
         /// <returns></returns>
-        public static string SM2DecryptByPrivateKey(byte[] encryBytes, byte[] privateKey)
+        public static string SM2DecryptByPrivateKey(byte[] encBytes, byte[] privateKey)
         {
-            if (encryBytes == null || privateKey == null)
+            if (encBytes == null || privateKey == null)
             {
                 return "";
             }
             var sm2 = new SM2(null, privateKey, SM2Mode.C1C3C2);
-            var plainBytes = sm2.Decrypt(encryBytes);
-            return System.Text.Encoding.UTF8.GetString(plainBytes);
+            var plainBytes = sm2.Decrypt(encBytes);
+            return Encoding.UTF8.GetString(plainBytes);
         }
         
         /// <summary>
@@ -594,8 +581,16 @@ namespace Wlniao
         /// <returns></returns>
         public static bool Sm2VerifyWithPublicKey(string text, string sign, byte[] publicKey)
         {
-            var sm2 = new SM2(publicKey, Array.Empty<byte>(), SM2Mode.C1C3C2);
-            return sm2.VerifySign(Encoding.UTF8.GetBytes(text), Wlniao.Crypto.Helper.Decode(sign));
+            try
+            {
+                var sm2 = new SM2(publicKey, Array.Empty<byte>(), SM2Mode.C1C3C2);
+                return sm2.VerifySign(Encoding.UTF8.GetBytes(text), Helper.Decode(sign));
+            }
+            catch (Exception e)
+            {
+                Loger.Debug($"{e.Message}{Environment.NewLine}{e.StackTrace}");
+                return false;
+            }
         }
         
         /// <summary>
@@ -607,8 +602,20 @@ namespace Wlniao
         /// <returns></returns>
         public static bool Sm2VerifyWithPublicKey(string text, string sign, string publicKey)
         {
-            var sm2 = new SM2(Helper.Decode(publicKey), Array.Empty<byte>(), SM2Mode.C1C3C2);
-            return sm2.VerifySign(Encoding.UTF8.GetBytes(text), Wlniao.Crypto.Helper.Decode(sign));
+            try
+            {
+                if(publicKey.Length == 128 && Regex.IsMatch(publicKey, "^[0-9a-f]+$", RegexOptions.IgnoreCase))
+                {
+                    publicKey = "04" + publicKey; //未压缩的公钥，补齐前缀：04-未压缩 02-已压缩 03-已压缩
+                }
+                var sm2 = new SM2(Helper.Decode(publicKey), Array.Empty<byte>(), SM2Mode.C1C3C2);
+                return sm2.VerifySign(Encoding.UTF8.GetBytes(text), Helper.Decode(sign));
+            }
+            catch (Exception e)
+            {
+                Loger.Debug($"{e.Message}{Environment.NewLine}{e.StackTrace}");
+                return false;
+            }
         }
         
         /// <summary>
@@ -624,11 +631,10 @@ namespace Wlniao
             {
                 return "";
             }
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
-            var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-            var sm4 = new SM4();
-            var encryBytes = sm4.EncryptECB(plainBytes, keyBytes, isPadding);
-            return Convert.BytesToHexString(encryBytes);
+            var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+            var plainBytes = Encoding.UTF8.GetBytes(plainText);
+            var encBytes = new SM4().EncryptECB(plainBytes, keyBytes, isPadding);
+            return Convert.BytesToHexString(encBytes);
         }
         /// <summary>
         /// 
@@ -643,55 +649,61 @@ namespace Wlniao
             {
                 return "";
             }
-            var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
-            var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-            var sm4 = new SM4();
-            var encryBytes = sm4.EncryptECB(plainBytes, keyBytes, isPadding);
-            return System.Convert.ToBase64String(encryBytes);
+            var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+            var plainBytes = Encoding.UTF8.GetBytes(plainText);
+            var encBytes = new SM4().EncryptECB(plainBytes, keyBytes, isPadding);
+            return System.Convert.ToBase64String(encBytes);
         }
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="encryText"></param>
+        /// <param name="encText"></param>
         /// <param name="secretKey"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4DecryptECBFromHex(string encryText, string secretKey, bool isPadding = true)
+        public static string SM4DecryptECBFromHex(string encText, string secretKey, bool isPadding = true)
         {
-            if (!string.IsNullOrEmpty(encryText))
+            if (string.IsNullOrEmpty(encText))
             {
-                try
-                {
-                    var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
-                    var encryBytes = Helper.Decode(encryText);
-                    var sm4 = new SM4();
-                    var plainBytes = sm4.DecryptECB(encryBytes, keyBytes, isPadding);
-                    return System.Text.Encoding.UTF8.GetString(plainBytes);
-                }
-                catch { }
+                return "";
+            }
+            try
+            {
+                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var encBytes = Helper.Decode(encText);
+                var plainBytes = new SM4().DecryptECB(encBytes, keyBytes, isPadding);
+                return Encoding.UTF8.GetString(plainBytes);
+            }
+            catch (Exception e)
+            {
+                Loger.Debug($"{e.Message}{Environment.NewLine}{e.StackTrace}");
             }
             return "";
         }
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="encryText"></param>
+        /// <param name="encText"></param>
         /// <param name="secretKey"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4DecryptECBFromBase64(string encryText, string secretKey, bool isPadding = true)
+        public static string SM4DecryptECBFromBase64(string encText, string secretKey, bool isPadding = true)
         {
-            if (!string.IsNullOrEmpty(encryText))
+            if (string.IsNullOrEmpty(encText))
             {
-                try
-                {
-                    var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
-                    var encryBytes = Helper.Decode(encryText);
-                    var sm4 = new SM4();
-                    var plainBytes = sm4.DecryptECB(encryBytes, keyBytes, isPadding);
-                    return System.Text.Encoding.UTF8.GetString(plainBytes);
-                }
-                catch { }
+                return "";
+            }
+            try
+            {
+                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var encBytes = Helper.Decode(encText);
+                var sm4 = new SM4();
+                var plainBytes = sm4.DecryptECB(encBytes, keyBytes, isPadding);
+                return Encoding.UTF8.GetString(plainBytes);
+            }
+            catch (Exception e)
+            {
+                Loger.Debug($"{e.Message}{Environment.NewLine}{e.StackTrace}");
             }
             return "";
         }
@@ -706,18 +718,22 @@ namespace Wlniao
         /// <returns></returns>
         public static string SM4EncryptCBCToHex(string plainText, string secretKey, string iv, bool isPadding = true)
         {
-            if (!string.IsNullOrEmpty(plainText))
+            if (string.IsNullOrEmpty(plainText))
             {
-                try
-                {
-                    var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
-                    var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
-                    var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-                    var sm4 = new SM4();
-                    var encryBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
-                    return Convert.BytesToHexString(encryBytes);
-                }
-                catch { }
+                return "";
+            }
+            try
+            {
+                var ivBytes = Encoding.UTF8.GetBytes((iv + "0000000000000000")[..16]);
+                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var plainBytes = Encoding.UTF8.GetBytes(plainText);
+                var sm4 = new SM4();
+                var encBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
+                return Convert.BytesToHexString(encBytes);
+            }
+            catch (Exception e)
+            {
+                Loger.Debug($"{e.Message}{Environment.NewLine}{e.StackTrace}");
             }
             return "";
         }
@@ -731,68 +747,80 @@ namespace Wlniao
         /// <returns></returns>
         public static string SM4EncryptCBCToBase64(string plainText, string secretKey, string iv, bool isPadding = true)
         {
-            if (!string.IsNullOrEmpty(plainText))
+            if (string.IsNullOrEmpty(plainText))
             {
-                try
-                {
-                    var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
-                    var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
-                    var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-                    var sm4 = new SM4();
-                    var encryBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
-                    return System.Convert.ToBase64String(encryBytes);
-                }
-                catch { }
+                return "";
+            }
+            try
+            {
+                var ivBytes = Encoding.UTF8.GetBytes((iv + "0000000000000000")[..16]);
+                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var plainBytes = Encoding.UTF8.GetBytes(plainText);
+                var sm4 = new SM4();
+                var encBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
+                return System.Convert.ToBase64String(encBytes);
+            }
+            catch (Exception e)
+            {
+                Loger.Debug($"{e.Message}{Environment.NewLine}{e.StackTrace}");
             }
             return "";
         }
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="encryText"></param>
+        /// <param name="encText"></param>
         /// <param name="secretKey"></param>
         /// <param name="iv"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4DecryptCBCFromHex(string encryText, string secretKey, string iv, bool isPadding = true)
+        public static string SM4DecryptCBCFromHex(string encText, string secretKey, string iv, bool isPadding = true)
         {
-            if (!string.IsNullOrEmpty(encryText))
+            if (string.IsNullOrEmpty(encText))
             {
-                try
-                {
-                    var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
-                    var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
-                    var encryBytes = Helper.Decode(encryText);
-                    var sm4 = new SM4();
-                    var plainBytes = sm4.DecryptCBC(encryBytes, keyBytes, ivBytes, isPadding);
-                    return System.Text.Encoding.UTF8.GetString(plainBytes);
-                }
-                catch { }
+                return "";
+            }
+            try
+            {
+                var ivBytes = Encoding.UTF8.GetBytes((iv + "0000000000000000")[..16]);
+                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var encBytes = Helper.Decode(encText);
+                var sm4 = new SM4();
+                var plainBytes = sm4.DecryptCBC(encBytes, keyBytes, ivBytes, isPadding);
+                return Encoding.UTF8.GetString(plainBytes);
+            }
+            catch (Exception e)
+            {
+                Loger.Debug($"{e.Message}{Environment.NewLine}{e.StackTrace}");
             }
             return "";
         }
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="encryText"></param>
+        /// <param name="encText"></param>
         /// <param name="secretKey"></param>
         /// <param name="iv"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4DecryptCBCFromBase64(string encryText, string secretKey, string iv, bool isPadding = true)
+        public static string SM4DecryptCBCFromBase64(string encText, string secretKey, string iv, bool isPadding = true)
         {
-            if (!string.IsNullOrEmpty(encryText))
+            if (string.IsNullOrEmpty(encText))
             {
-                try
-                {
-                    var ivBytes = System.Text.Encoding.UTF8.GetBytes((iv + "0000000000000000").Substring(0, 16));
-                    var keyBytes = System.Text.Encoding.UTF8.GetBytes((secretKey + "0000000000000000").Substring(0, 16));
-                    var encryBytes = Helper.Decode(encryText);
-                    var sm4 = new SM4();
-                    var plainBytes = sm4.DecryptCBC(encryBytes, keyBytes, ivBytes, isPadding);
-                    return System.Text.Encoding.UTF8.GetString(plainBytes);
-                }
-                catch { }
+                return "";
+            }
+            try
+            {
+                var ivBytes = Encoding.UTF8.GetBytes((iv + "0000000000000000")[..16]);
+                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var encBytes = Helper.Decode(encText);
+                var sm4 = new SM4();
+                var plainBytes = sm4.DecryptCBC(encBytes, keyBytes, ivBytes, isPadding);
+                return Encoding.UTF8.GetString(plainBytes);
+            }
+            catch (Exception e)
+            {
+                Loger.Debug($"{e.Message}{Environment.NewLine}{e.StackTrace}");
             }
             return "";
         }
@@ -808,8 +836,8 @@ namespace Wlniao
             {
                 return "";
             }
-            var sm3 = new Crypto.SM3();
-            var buffer = System.Text.Encoding.UTF8.GetBytes(str);
+            var sm3 = new SM3();
+            var buffer = Encoding.UTF8.GetBytes(str);
             sm3.BlockUpdate(buffer, 0, buffer.Length);
             buffer = sm3.DoFinal();
             return Convert.BytesToHexString(buffer);

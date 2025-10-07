@@ -19,7 +19,7 @@
     limitations under the License.
 
 ===============================================================================*/
-using System;
+
 namespace Wlniao.Log
 {
     /// <summary>

@@ -19,59 +19,65 @@
     limitations under the License.
 
 ===============================================================================*/
-using Microsoft.VisualBasic;
+
 using System;
 using Wlniao.Text;
 
 namespace Wlniao.Log
 {
     /// <summary>
-    /// ͨ����־���������
+    /// 日志输出工具
     /// </summary>
     public class Loger
     {
         /// <summary>
-        /// ��ǰ��־����ȼ���NoneΪδ�趨������������ļ����г�ʼ��
+        /// 为None时表示未初始化，将在初始化后可用
         /// </summary>
         internal static LogLevel logLevel = LogLevel.None;
         /// <summary>
-        /// ��ǰ��־�������
+        /// 
         /// </summary>
-        private static ILogProvider logProvider = null;
+        private static ILogProvider _logProvider = null;
         /// <summary>
-        /// �ļ���־�������
+        /// 
         /// </summary>
-		private static ILogProvider fileProvider = new FileLoger(LogLevel);
+		private static ILogProvider _fileProvider = new FileLoger(LogLevel);
         /// <summary>
-        /// ������־�����ʽ
+        /// 
         /// </summary>
-        private static string logLocal = null;
+        private static string _logLocal = null;
 
         /// <summary>
-        /// ��ǰ��־����ȼ�
+        /// 当前日志输出级别
         /// </summary>
         public static LogLevel LogLevel
         {
             get
             {
-                if (logLevel == LogLevel.None)
+                if (logLevel != LogLevel.None)
                 {
-                    var level = Config.GetConfigs("WLN_LOG_LEVEL").ToLower();
-                    if (level == "info")
-                    {
+                    return logLevel;
+                }
+                var level = Config.GetConfigs("WLN_LOG_LEVEL").ToLower();
+                switch (level)
+                {
+                    case "info":
                         logLevel = LogLevel.Information;
-                    }
-                    else if (level == "warn")
-                    {
+                        break;
+                    case "warn":
                         logLevel = LogLevel.Warning;
-                    }
-                    else if (level == "fatal")
-                    {
+                        break;
+                    case "fatal":
                         logLevel = LogLevel.Critical;
-                    }
-                    else if (!Enum.TryParse<LogLevel>(StringUtil.GetTitleCase(level), out logLevel))
+                        break;
+                    default:
                     {
-                        logLevel = LogLevel.Information;
+                        if (!Enum.TryParse<LogLevel>(StringUtil.GetTitleCase(level), out logLevel))
+                        {
+                            logLevel = LogLevel.Information;
+                        }
+
+                        break;
                     }
                 }
                 return logLevel;
@@ -79,64 +85,66 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// ��ǰ��־�������
+        /// 当前日志输出提供程序
         /// </summary>
         /// <returns></returns>
         public static ILogProvider LogProvider
         {
             get
             {
-                if (logProvider == null)
+                if (_logProvider != null)
                 {
-                    var type = Config.GetConfigs("WLN_LOG_TYPE").ToLower();
-                    var server = Config.GetConfigs("WLN_LOG_SERVER").ToLower();
-                    if (type == "loki" || (string.IsNullOrEmpty(type) && !string.IsNullOrEmpty(server)))
-                    {
-                        logProvider = new LokiLoger(LogLevel, server);
-                    }
-                    else if (type == "file")
-                    {
-                        logProvider = new FileLoger(LogLevel);
-                    }
-                    else
-                    {
-                        logProvider = new ConsoleLoger(LogLevel);
-                    }
+                    return _logProvider;
                 }
-                return logProvider;
+                var type = Config.GetConfigs("WLN_LOG_TYPE").ToLower();
+                var server = Config.GetConfigs("WLN_LOG_SERVER").ToLower();
+                if (type == "loki" || (string.IsNullOrEmpty(type) && !string.IsNullOrEmpty(server)))
+                {
+                    _logProvider = new LokiLoger(LogLevel, server);
+                }
+                else if (type == "file")
+                {
+                    _logProvider = new FileLoger(LogLevel);
+                }
+                else
+                {
+                    _logProvider = new ConsoleLoger(LogLevel);
+                }
+                return _logProvider;
             }
         }
 
         /// <summary>
-        /// ������־�����ʽ
+        /// 本地日志输出路径
         /// </summary>
         public static string LogLocal
         {
             get
             {
-                if (string.IsNullOrEmpty(logLocal))
+                if (!string.IsNullOrEmpty(_logLocal))
                 {
-                    logLocal = Config.GetConfigs("WLN_LOG_LOCAL").ToLower();
-                    if (string.IsNullOrEmpty(logLocal))
-                    {
-                        logLocal = "console";
-                    }
+                    return _logLocal;
                 }
-                return logLocal;
+                _logLocal = Config.GetConfigs("WLN_LOG_LOCAL").ToLower();
+                if (string.IsNullOrEmpty(_logLocal))
+                {
+                    _logLocal = "console";
+                }
+                return _logLocal;
             }
         }
 
         /// <summary>
-        /// ������־�ṩ����
+        /// 设置日志响应程序
         /// </summary>
         /// <param name="provider"></param>
         public static void SetLogger(ILogProvider provider)
         {
-            logProvider = provider;
+            _logProvider = provider;
         }
 
         /// <summary>
-        /// ֱ���ڿ���̨��ӡ����
+        /// 输出日志到控制台
         /// </summary>
         /// <param name="message"></param>
         /// <param name="color"></param>
@@ -148,18 +156,18 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// ֱ�����ļ�������̨�������־
+        /// ֱ输出日志到日志文件
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>
         /// <param name="color"></param>
         public static void File(string topic, string message, ConsoleColor color = ConsoleColor.White)
         {
-            fileProvider.Topic(topic, message, LogLevel.Information);
+            _fileProvider.Topic(topic, message, LogLevel.Information);
         }
 
         /// <summary>
-        /// ���Debug�������־
+        /// 输出开发调试日志
         /// </summary>
         /// <param name="message"></param>
         public static void Debug(string message)
@@ -167,7 +175,7 @@ namespace Wlniao.Log
             LogProvider.Debug(message);
         }
         /// <summary>
-        /// ���Info�������־
+        /// 输出普通信息日志
         /// </summary>
         /// <param name="message"></param>
         public static void Info(string message)
@@ -175,7 +183,7 @@ namespace Wlniao.Log
             LogProvider.Info(message);
         }
         /// <summary>
-        /// ���Warn�������־
+        /// 输出系统警告日志
         /// </summary>
         /// <param name="message"></param>
         public static void Warn(string message)
@@ -183,7 +191,7 @@ namespace Wlniao.Log
             LogProvider.Warn(message);
         }
         /// <summary>
-        /// ���Error�������־
+        /// 输出系统错误日志
         /// </summary>
         /// <param name="message"></param>
         public static void Error(string message)
@@ -191,7 +199,7 @@ namespace Wlniao.Log
             LogProvider.Error(message);
         }
         /// <summary>
-        /// ���Fatal�������־
+        /// 系统崩溃日志输出
         /// </summary>
         /// <param name="message"></param>
         public static void Fatal(string message)
@@ -199,7 +207,7 @@ namespace Wlniao.Log
             LogProvider.Fatal(message);
         }
         /// <summary>
-        /// ����Զ����������־
+        /// 按主题输出日志
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="message"></param>

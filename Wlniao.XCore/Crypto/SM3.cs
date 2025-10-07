@@ -36,11 +36,13 @@ namespace Wlniao.Crypto
         /// <summary>
         /// 0到15的Tj常量
         /// </summary>
-        private readonly int TOne = 0x79cc4519;
+        private const int _one = 0x79cc4519;
+
         /// <summary>
         /// 16到63的Tj常量
         /// </summary>
-        private readonly int TSecond = 0x7a879d8a;
+        private const int TSecond = 0x7a879d8a;
+
         /// <summary>
         /// 消息摘要
         /// </summary>
@@ -205,7 +207,7 @@ namespace Wlniao.Crypto
         /// <summary>
         /// 迭代压缩
         /// </summary>
-        internal void ProcessBlock()
+        private void ProcessBlock()
         {
             int j;
 
@@ -238,7 +240,7 @@ namespace Wlniao.Crypto
             for (j = 0; j < 16; j++)
             {
                 aaa = Rotate(vv_[0], 12);
-                SS1 = aaa + vv_[4] + Rotate(TOne, j);
+                SS1 = aaa + vv_[4] + Rotate(_one, j);
                 SS1 = Rotate(SS1, 7);
                 SS2 = SS1 ^ aaa;
 
@@ -293,13 +295,8 @@ namespace Wlniao.Crypto
         /// <summary>
         /// 算法名称
         /// </summary>
-        public string AlgorithmName
-        {
-            get
-            {
-                return "SM3";
-            }
-        }
+        public string AlgorithmName => "SM3";
+
         /// <summary>
         /// 消息摘要生成的摘要的大小
         /// </summary>
@@ -374,18 +371,18 @@ namespace Wlniao.Crypto
         public byte[] Hmac(byte[] dataBytes, byte[] keyBytes)
         {
             //1.填充0至key,或者hashkey,使其长度为sm3分组长度ByteLength，64个字节,512位
-            var structured_key = new byte[ByteLength];
+            var structuredKey = new byte[ByteLength];
             var IPAD = new byte[ByteLength];
             var OPAD = new byte[ByteLength];
             if (keyBytes.Length > ByteLength)
             {
                 BlockUpdate(keyBytes, 0, keyBytes.Length);
                 var keyHash = DoFinal();
-                Array.Copy(keyHash, 0, structured_key, 0, keyHash.Length);
+                Array.Copy(keyHash, 0, structuredKey, 0, keyHash.Length);
             }
             else
             {
-                Array.Copy(keyBytes, 0, structured_key, 0, keyBytes.Length);
+                Array.Copy(keyBytes, 0, structuredKey, 0, keyBytes.Length);
             }
             //2.让处理之后的key 与ipad (分组长度的0x36)做异或运算
             for (var i = 0; i < ByteLength; i++)
@@ -393,7 +390,7 @@ namespace Wlniao.Crypto
                 IPAD[i] = 0x36;
                 OPAD[i] = 0x5c;
             }
-            var ipadkey = ByteArray.Xor(structured_key, IPAD);
+            var ipadkey = ByteArray.Xor(structuredKey, IPAD);
             //3.将2的结果与text拼接
             var t3 = new byte[ByteLength + dataBytes.Length];
             Array.Copy(ipadkey, 0, t3, 0, ipadkey.Length);
@@ -402,7 +399,7 @@ namespace Wlniao.Crypto
             BlockUpdate(t3, 0, t3.Length);
             var t4 = DoFinal();
             //5.让处理之后的key 与opad(分组长度的0x5c)做异或运算
-            var opadkey = ByteArray.Xor(structured_key, OPAD);
+            var opadkey = ByteArray.Xor(structuredKey, OPAD);
             //6.4的结果拼接在5之后
             var t6 = new byte[ByteLength + t4.Length];
             Array.Copy(opadkey, 0, t6, 0, opadkey.Length);

@@ -27,7 +27,7 @@ namespace Wlniao
         /// </summary>
         public class Context
         {
-            private string contentType = "text/plain; charset=utf-8";
+            private string _contentType = "text/plain; charset=utf-8";
             /// <summary>  
             /// 请求时间
             /// </summary>  
@@ -72,11 +72,11 @@ namespace Wlniao
             {
                 get
                 {
-                    return contentType;
+                    return _contentType;
                 }
                 set
                 {
-                    contentType = string.IsNullOrEmpty(value) ? "application/json; charset=utf-8" : value;
+                    _contentType = string.IsNullOrEmpty(value) ? "application/json; charset=utf-8" : value;
                 }
             }
         }
@@ -118,7 +118,7 @@ namespace Wlniao
                                 var msg = encoding.GetString(request, 0, receiveNumber);
                                 var ctx = new Context() { Path = "/", Query = "", Request = "", ClientIP = ((IPEndPoint)socket.RemoteEndPoint).Address.MapToIPv4().ToString(), StatusCode = 200, Time = start.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks / 10000000 };
                                 var req = msg.Substring(0, msg.IndexOf('\n')).Trim('\r').Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                                var idx = msg.IndexOf("\r\n\r\n");
+                                var idx = msg.IndexOf("\r\n\r\n", StringComparison.Ordinal);
                                 if (req.Length == 3)
                                 {
                                     ctx.Method = req[0].ToUpper();
@@ -133,10 +133,10 @@ namespace Wlniao
                                         ctx.Query = tos[1];
                                     }
                                 }
-                                if (msg.IndexOf("\r\nToken: ") > 0)
+                                if (msg.IndexOf("\r\nToken: ", StringComparison.Ordinal) > 0)
                                 {
-                                    var txt = msg.Substring(msg.IndexOf("\r\nToken: ") + 9);
-                                    ctx.AuthToken = txt.Substring(0, txt.IndexOf("\r\n"));
+                                    var txt = msg.Substring(msg.IndexOf("\r\nToken: ", StringComparison.Ordinal) + 9);
+                                    ctx.AuthToken = txt.Substring(0, txt.IndexOf("\r\n", StringComparison.Ordinal));
                                 }
                                 if (ctx.Method == "POST" && idx > 0 && idx + 4 < msg.Length)
                                 {

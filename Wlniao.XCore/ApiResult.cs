@@ -19,10 +19,9 @@
     limitations under the License.
 
 ===============================================================================*/
-using System;
+
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Text;
 using System.Text.Json.Serialization;
 namespace Wlniao
 {
@@ -86,14 +85,8 @@ namespace Wlniao
         /// </summary>
         public T data
         {
-            get
-            {
-                return _data;
-            }
-            set
-            {
-                _data = value;
-            }
+            get => _data;
+            set => _data = value;
         }
 
         /// <summary>

@@ -24,6 +24,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using Wlniao.IO;
+using Wlniao.Log;
 
 namespace Wlniao
 {
@@ -59,16 +60,17 @@ namespace Wlniao
         {
             get
             {
-                if (_file == null)
+                if (_file != null)
                 {
-                    if (FileEx.Exists(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.dev.config")))
-                    {
-                        _file = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.dev.config");
-                    }
-                    else
-                    {
-                        _file = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config");
-                    }
+                    return _file;
+                }
+                if (FileEx.Exists(IO.PathTool.Map(XCore.FrameworkRoot, "xcore.dev.config")))
+                {
+                    _file = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.dev.config");
+                }
+                else
+                {
+                    _file = IO.PathTool.Map(XCore.FrameworkRoot, "xcore.config");
                 }
                 return _file;
             }
@@ -156,11 +158,11 @@ namespace Wlniao
                 {
                     Read(FileName);
                 }
-                if (_config.ContainsKey(key))
+                if (_config != null && _config.TryGetValue(key, out var configs))
                 {
-                    return _config[key];
+                    return configs;
                 }
-                else if (_config.ContainsKey(key.ToUpper()))
+                else if (_config != null && _config.ContainsKey(key.ToUpper()))
                 {
                     return _config[key.ToUpper()];
                 }
@@ -190,11 +192,11 @@ namespace Wlniao
             {
                 Read(FileName);
             }
-            if (_config.ContainsKey(key))
+            if (_config != null && _config.TryGetValue(key, out var write))
             {
-                return _config[key];
+                return write;
             }
-            else if (_config.ContainsKey(key.ToUpper()))
+            else if (_config != null && _config.ContainsKey(key.ToUpper()))
             {
                 return _config[key.ToUpper()];
             }
@@ -202,6 +204,10 @@ namespace Wlniao
             {
                 lock (XCore.Lock)
                 {
+                    if (_config == null)
+                    {
+                        return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
+                    }
                     _config.Add(key, defaultValue);
                     Write(_config, FileName);
                 }
@@ -237,14 +243,8 @@ namespace Wlniao
                     }
                 }
             }
-            if (_env.ContainsKey(key))
-            {
-                return _env[key];
-            }
-            else
-            {
-                return defaultValue;
-            }
+
+            return _env.GetValueOrDefault(key, defaultValue);
         }
         /// <summary>
         /// 设置 xcore.config 中某项的值
@@ -289,15 +289,17 @@ namespace Wlniao
 		/// <returns>返回结果</returns>
 		public static bool Remove(string key)
         {
-            if (_config != null)
+            if (_config == null)
             {
-                var tmpKey = _config.Keys.Where(o => o.ToUpper() == key.ToUpper()).FirstOrDefault();
-                if (!string.IsNullOrEmpty(tmpKey))
-                {
-                    _config.Remove(tmpKey);
-                    Write(_config, FileName);
-                }
+                return true;
             }
+            var tmpKey = _config.Keys.FirstOrDefault(o => string.Equals(o, key, StringComparison.CurrentCultureIgnoreCase));
+            if (string.IsNullOrEmpty(tmpKey))
+            {
+                return true;
+            }
+            _config.Remove(tmpKey);
+            Write(_config, FileName);
             return true;
         }
         /// <summary>
@@ -309,14 +311,7 @@ namespace Wlniao
         {
             lock (XCore.Lock)
             {
-                if (FileEx.Exists(path))
-                {
-                    _config = Convert.ToDictionary(FileEx.Read(path));
-				}
-                else
-				{
-					_config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-				}
+                _config = FileEx.Exists(path) ? Convert.ToDictionary(FileEx.Read(path)) : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             }
         }
 
@@ -365,9 +360,9 @@ namespace Wlniao
                     return true;
                 }
             }
-            catch
+            catch(Exception ex)
             {
-                // ignored
+                Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
             }
 
             return false;

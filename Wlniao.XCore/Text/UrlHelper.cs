@@ -20,7 +20,6 @@
 
 ===============================================================================*/
 using System;
-using System.Collections;
 using System.Collections.Generic;
 namespace Wlniao.Text
 {
@@ -42,27 +41,49 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static bool IsFullUrl(string url)
         {
-            if (StringUtil.IsNullOrEmpty(url)) return false;
-            if (url.Trim().StartsWith("/")) return false;
-            if (url.Trim().StartsWith("http://")) return true;
+            if (StringUtil.IsNullOrEmpty(url))
+            {
+                return false;
+            }
+            if (url.Trim().StartsWith("/"))
+            {
+                return false;
+            }
+            if (url.Trim().StartsWith("http://"))
+            {
+                return true;
+            }
+            if (url.Trim().StartsWith("https://"))
+            {
+                return true;
+            }
             var arrItem = url.Split('/');
-            if (arrItem.Length < 1) return false;
-            var dotIndex = arrItem[0].IndexOf(".");
-            if (dotIndex <= 0) return false;
-            return hasCommonExt(arrItem[0]) == false;
+            if (arrItem.Length < 1)
+            {
+                return false;
+            }
+            var dotIndex = arrItem[0].IndexOf(".", StringComparison.Ordinal);
+            if (dotIndex <= 0)
+            {
+                return false;
+            }
+            return !hasCommonExt(arrItem[0]);
         }
-        private static readonly List<string> extList = getExtList();
+        private static readonly List<string> ExtList = getExtList();
+
         private static List<string> getExtList()
         {
-            string[] exts = { "htm", "html", "xhtml", "txt", "json",
-                                "jpg", "gif", "png", "jpg", "jpeg", "bmp",
-                                "doc", "docx", "ppt", "pptx", "xls", "xlsx", "chm", "pdf",
-                                "zip", "7z", "rar", "exe", "dll",
-                                "mov", "wav", "mp3", "rm", "rmvb", "mkv", "avi",
-                                "asp", "aspx", "php", "jsp"
-                            };
-            return new List<string>(exts);
+            return new List<string>
+            {
+                "htm", "html", "xhtml", "txt", "json",
+                "jpg", "gif", "png", "jpg", "jpeg", "bmp",
+                "doc", "docx", "ppt", "pptx", "xls", "xlsx", "chm", "pdf",
+                "zip", "7z", "rar", "exe", "dll",
+                "mov", "wav", "mp3", "rm", "rmvb", "mkv", "avi",
+                "asp", "aspx", "php", "jsp"
+            };
         }
+
         /// <summary>
         /// 判断网址是否包含常见后缀名，比如 .htm/.html/.aspx/.jpg/.doc/.avi 等
         /// </summary>
@@ -70,9 +91,9 @@ namespace Wlniao.Text
         /// <returns></returns>
         private static bool hasCommonExt(string str)
         {
-            var dotIndex = str.LastIndexOf(".");
+            var dotIndex = str.LastIndexOf(".", StringComparison.Ordinal);
             var ext = str.Substring(dotIndex + 1, str.Length - dotIndex - 1);
-            return extList.Contains(ext);
+            return ExtList.Contains(ext);
         }
         /// <summary>
         /// 判断网址是否包含后缀名，比如 xyzz/ab.htm 包含，my/xyz/dfae3 则不包含
@@ -81,10 +102,13 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static bool UrlHasExt(string url)
         {
-            if (StringUtil.IsNullOrEmpty(url)) return false;
+            if (StringUtil.IsNullOrEmpty(url))
+            {
+                return false;
+            }
             var arrItem = url.Split('/');
-            var lastPart = arrItem[arrItem.Length - 1];
-            return lastPart.IndexOf(".") >= 0;
+            var lastPart = arrItem[^1]; //arrItem[arrItem.Length - 1]
+            return lastPart.IndexOf(".", StringComparison.Ordinal) >= 0;
         }
         /// <summary>
         /// 剔除掉 url 的后缀名
@@ -93,13 +117,18 @@ namespace Wlniao.Text
         /// <returns>返回被剔除掉后缀名的 url</returns>
         public static string TrimUrlExt(string rawUrl)
         {
-            if (StringUtil.IsNullOrEmpty(rawUrl)) return rawUrl;
-            var dotIndex = rawUrl.IndexOf(".");
-            if (dotIndex < 0) return rawUrl;
+            if (StringUtil.IsNullOrEmpty(rawUrl))
+            {
+                return rawUrl;
+            }
+            var dotIndex = rawUrl.IndexOf(".", StringComparison.Ordinal);
+            if (dotIndex < 0)
+            {
+                return rawUrl;
+            }
             var arrItem = rawUrl.Split('.');
-            var ext = arrItem[arrItem.Length - 1];
-            if (ext.IndexOf('/') > 0) return rawUrl;
-            return StringUtil.TrimEnd(rawUrl, ext).TrimEnd('.');
+            var ext = arrItem[^1]; //arrItem[arrItem.Length - 1]
+            return ext.IndexOf('/') > 0 ? rawUrl : StringUtil.TrimEnd(rawUrl, ext).TrimEnd('.');
         }
         /// <summary>
         /// 在不考虑后缀名的情况下，比较两个网址是否相同
@@ -109,8 +138,15 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static bool CompareUrlWithoutExt(string url1, string url2)
         {
-            if (StringUtil.IsNullOrEmpty(url1) && StringUtil.IsNullOrEmpty(url2)) return true;
-            if (StringUtil.IsNullOrEmpty(url1) || StringUtil.IsNullOrEmpty(url2)) return false;
+            if (StringUtil.IsNullOrEmpty(url1) && StringUtil.IsNullOrEmpty(url2))
+            {
+                return true;
+            }
+
+            if (StringUtil.IsNullOrEmpty(url1) || StringUtil.IsNullOrEmpty(url2))
+            {
+                return false;
+            }
             return TrimUrlExt(url1) == TrimUrlExt(url2);
         }
     }

@@ -75,10 +75,7 @@ namespace Wlniao.Tasker
                 }
                 return instance;
             }
-            set
-            {
-                instance = value;
-            }
+            set => instance = value;
         }
         /// <summary>
         /// 下次尝试链接时间
@@ -132,61 +129,65 @@ namespace Wlniao.Tasker
 				while (true)
 				{
 					try
-					{
-						if (Instance != null && instance.IsConnected)
-						{
-							var db = Instance.GetDatabase(Caching.Redis.Select);
-							var now = DateTools.GetUnix();
-							var tran = db.CreateTransaction();
-							foreach (var s in db.SortedSetRangeByRankWithScores(index, 0, maxqueue, Order.Ascending))
-							{
-                                if (s.Score < begin)
+                    {
+                        if (Instance == null || !instance.IsConnected)
+                        {
+                            continue;
+                        }
+                        var db = Instance.GetDatabase(Caching.Redis.Select);
+                        var now = DateTools.GetUnix();
+                        var tran = db.CreateTransaction();
+                        foreach (var s in db.SortedSetRangeByRankWithScores(index, 0, maxqueue, Order.Ascending))
+                        {
+                            if (s.Score < begin)
+                            {
+                                tran.SortedSetRemoveAsync(index, s.Element);
+                            }
+                            else if (s.Score <= now)
+                            {
+                                try
                                 {
-                                    tran.SortedSetRemoveAsync(index, s.Element);
-                                }
-                                else if (s.Score <= now)
-                                {
-                                    try
+                                    if (s.Score > begin)
                                     {
-                                        if (s.Score > begin)
+                                        db.PublishAsync(new RedisChannel(index, RedisChannel.PatternMode.Auto), s.Element, CommandFlags.None);
+                                    }
+                                    var key = "tasker_tl" + topic + "_" + s.Element.ToString();
+                                    if (db.KeyExists(key))
+                                    {
+                                        var times = new List<long>();
+                                        foreach (var item in db.StringGet(key).ToString().SplitBy())
                                         {
-                                            db.PublishAsync(new RedisChannel(index, RedisChannel.PatternMode.Auto), s.Element, CommandFlags.None);
+                                            var time = Convert.ToLong(item);
+                                            if (time > now)
+                                            {
+                                                times.Add(time);
+                                            }
                                         }
-                                        var key = "tasker_tl" + topic + "_" + s.Element.ToString();
-                                        if (db.KeyExists(key))
+                                        if (times.Count > 0)
                                         {
-                                            var times = new List<long>();
-                                            foreach (var item in db.StringGet(key).ToString().SplitBy())
-                                            {
-                                                var time = Convert.ToLong(item);
-                                                if (time > now)
-                                                {
-                                                    times.Add(time);
-                                                }
-                                            }
-                                            if (times.Count > 0)
-                                            {
-                                                var value = string.Join(",", times.OrderBy(o => o).ToArray());
-                                                tran.StringSetAsync(key, value, TimeSpan.FromSeconds(times.LastOrDefault() + 1));
-                                                tran.SortedSetAddAsync(index, s.Element, times[0]);
-                                            }
-                                            else
-                                            {
-                                                tran.KeyDeleteAsync(key);
-                                                tran.SortedSetRemoveAsync(index, s.Element);
-                                            }
+                                            var value = string.Join(",", times.OrderBy(o => o).ToArray());
+                                            tran.StringSetAsync(key, value, TimeSpan.FromSeconds(times.LastOrDefault() + 1));
+                                            tran.SortedSetAddAsync(index, s.Element, times[0]);
                                         }
                                         else
                                         {
+                                            tran.KeyDeleteAsync(key);
                                             tran.SortedSetRemoveAsync(index, s.Element);
                                         }
                                     }
-                                    catch { }
+                                    else
+                                    {
+                                        tran.SortedSetRemoveAsync(index, s.Element);
+                                    }
                                 }
-							}
-							tran.Execute();
-						}
-					}
+                                catch
+                                {
+                                    // ignored
+                                }
+                            }
+                        }
+                        tran.Execute();
+                    }
 					catch (Exception ex)
 					{
 						Loger.Topic("Tasker", ex.Message);
@@ -262,15 +263,17 @@ namespace Wlniao.Tasker
                     }
                     Task.Delay(3000).Wait();
                 }
-                if (subscriber != null)
+
+                if (subscriber == null)
                 {
-                    if (subscriber.IsConnected(channel))
-                    {
-                        subscriber.Unsubscribe(channel);
-                    }
-                    subscriber = null;
-                    Loger.Topic("Tasker", "Tasker subscribe " + topic + " stop.", Log.LogLevel.Debug, true);
+                    return;
                 }
+                if (subscriber.IsConnected(channel))
+                {
+                    subscriber.Unsubscribe(channel);
+                }
+                subscriber = null;
+                Loger.Topic("Tasker", "Tasker subscribe " + topic + " stop.", Log.LogLevel.Debug, true);
             });
         }
         /// <summary>
@@ -279,11 +282,7 @@ namespace Wlniao.Tasker
         /// <param name="topic"></param>
         public static bool UnSubscribe(string topic)
         {
-            if (watcher.ContainsKey(topic))
-            {
-                return watcher.Remove(topic);
-            }
-            return false;
+            return watcher.ContainsKey(topic) && watcher.Remove(topic);
         }
         /// <summary>
         /// 删除任务
@@ -300,7 +299,7 @@ namespace Wlniao.Tasker
             try
             {
                 Loger.Topic("Tasker", "Tasker removed " + jobId + "[" + topics + "]", Log.LogLevel.Debug, true);
-                if (Instance != null && instance.IsConnected)
+                if (Instance != null && instance!.IsConnected)
                 {
                     var db = Instance.GetDatabase(Caching.Redis.Select);
                     var tran = db.CreateTransaction();

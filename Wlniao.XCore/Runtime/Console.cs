@@ -20,7 +20,7 @@
 
 ===============================================================================*/
 using System;
-using System.IO;
+
 namespace Wlniao.Runtime
 {
     /// <summary>

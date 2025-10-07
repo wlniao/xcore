@@ -20,7 +20,6 @@
 
 ===============================================================================*/
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Security;
@@ -228,9 +227,9 @@ namespace Wlniao
                     startupRoot = Config.GetEnvironment("WLN_STARTUP_ROOT", System.IO.Directory.GetCurrentDirectory());
                     if (startupRoot.IndexOf('/') >= 0)
                     {
-                        if (startupRoot.IndexOf("/bin") > 0)
+                        if (startupRoot.IndexOf("/bin", StringComparison.Ordinal) > 0)
                         {
-                            startupRoot = startupRoot.Substring(0, startupRoot.IndexOf("/bin") + 1);
+                            startupRoot = startupRoot.Substring(0, startupRoot.IndexOf("/bin", StringComparison.Ordinal) + 1);
                         }
                         else if (!startupRoot.EndsWith("/"))
                         {
@@ -239,9 +238,9 @@ namespace Wlniao
                     }
                     else
                     {
-                        if (startupRoot.IndexOf("\\bin") > 0)
+                        if (startupRoot.IndexOf("\\bin", StringComparison.Ordinal) > 0)
                         {
-                            startupRoot = startupRoot.Substring(0, startupRoot.IndexOf("\\bin") + 1);
+                            startupRoot = startupRoot.Substring(0, startupRoot.IndexOf("\\bin", StringComparison.Ordinal) + 1);
                         }
                         else if (!startupRoot.EndsWith("\\"))
                         {

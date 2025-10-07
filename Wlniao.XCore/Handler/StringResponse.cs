@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-namespace Wlniao.Handler
+﻿namespace Wlniao.Handler
 {
     /// <summary>
     /// 文本输出内容

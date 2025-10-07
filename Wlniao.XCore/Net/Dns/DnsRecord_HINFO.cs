@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
-using System.Net;
-using System.Net.Sockets;
-namespace Wlniao.Net.Dns
+﻿namespace Wlniao.Net.Dns
 {
     /// <summary>
     /// HINFO record class.

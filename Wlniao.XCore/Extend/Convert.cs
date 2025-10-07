@@ -942,7 +942,7 @@ namespace Wlniao
             var svg = XServer.Common.GetResponseString(url);
             if (!string.IsNullOrEmpty(svg))
             {
-                svg = svg.Substring(svg.IndexOf("<svg"));
+                svg = svg.Substring(svg.IndexOf("<svg", StringComparison.Ordinal));
                 svg = System.Text.RegularExpressions.Regex.Replace(svg, "<!--.*?-->", string.Empty);
                 if (url.IndexOf('?') > 0)
                 {
@@ -951,7 +951,7 @@ namespace Wlniao
                     if (args != null && args.Count > 0)
                     {
                         var attr = args.Aggregate("", (current, arg) => current + (" " + arg.Key + "=\"" + arg.Value + "\""));
-                        return svg.Substring(0, svg.IndexOf("<g") + 2) + attr + svg.Substring(svg.IndexOf("<g") + 2);
+                        return svg.Substring(0, svg.IndexOf("<g", StringComparison.Ordinal) + 2) + attr + svg.Substring(svg.IndexOf("<g", StringComparison.Ordinal) + 2);
                     }
                 }
             }

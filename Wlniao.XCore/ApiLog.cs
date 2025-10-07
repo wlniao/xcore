@@ -177,7 +177,7 @@ namespace Wlniao
             if (ex is System.Net.Http.HttpRequestException)
             {
                 var _ex = ex as System.Net.Http.HttpRequestException;
-                if (_ex.Message.ToLower().IndexOf("timeout") >= 0)
+                if (_ex.Message.ToLower().IndexOf("timeout", StringComparison.Ordinal) >= 0)
                 {
                     _message = "timeout";
                 }

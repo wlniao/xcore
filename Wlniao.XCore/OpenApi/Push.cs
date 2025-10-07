@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Wlniao.Text;
 
 namespace Wlniao.OpenApi
@@ -37,7 +34,7 @@ namespace Wlniao.OpenApi
                     , new KeyValuePair<string, string>("pwd", StringUtil.UrlEncode(pwd))
                     , new KeyValuePair<string, string>("smtp", StringUtil.UrlEncode(smtp))
                     );
-                return string.IsNullOrEmpty(rlt) ? false : rlt.ToLower() == "true";
+                return !string.IsNullOrEmpty(rlt) && rlt.ToLower() == "true";
             }
             else
             {
@@ -49,7 +46,7 @@ namespace Wlniao.OpenApi
                     , new KeyValuePair<string, string>("pwd", StringUtil.UrlEncode(pwd))
                     , new KeyValuePair<string, string>("smtp", StringUtil.UrlEncode(smtp))
                     );
-                return string.IsNullOrEmpty(rlt) ? false : rlt.ToLower() == "true";
+                return !string.IsNullOrEmpty(rlt) && rlt.ToLower() == "true";
             }
         }
     }

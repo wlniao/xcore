@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Wlniao;
+﻿using System.Collections.Generic;
 
 namespace Wlniao.OpenApi
 {

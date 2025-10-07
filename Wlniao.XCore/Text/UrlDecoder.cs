@@ -19,10 +19,7 @@
     limitations under the License.
 
 ===============================================================================*/
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 namespace Wlniao.Text
 {
     /// <summary>
@@ -48,10 +45,7 @@ namespace Wlniao.Text
 
         internal void AddByte(byte b)
         {
-            if (this._byteBuffer == null)
-            {
-                this._byteBuffer = new byte[this._bufferSize];
-            }
+            this._byteBuffer ??= new byte[this._bufferSize];
             var index = this._numBytes;
             this._numBytes = index + 1;
             this._byteBuffer[index] = b;
@@ -70,11 +64,12 @@ namespace Wlniao.Text
 
         private void FlushBytes()
         {
-            if (this._numBytes > 0)
+            if (this._numBytes <= 0)
             {
-                this._numChars += this._encoding.GetChars(this._byteBuffer, 0, this._numBytes, this._charBuffer, this._numChars);
-                this._numBytes = 0;
+                return;
             }
+            this._numChars += this._encoding.GetChars(this._byteBuffer, 0, this._numBytes, this._charBuffer, this._numChars);
+            this._numBytes = 0;
         }
 
         internal string GetString()
@@ -83,11 +78,7 @@ namespace Wlniao.Text
             {
                 this.FlushBytes();
             }
-            if (this._numChars > 0)
-            {
-                return new string(this._charBuffer, 0, this._numChars);
-            }
-            return string.Empty;
+            return this._numChars > 0 ? new string(this._charBuffer, 0, this._numChars) : string.Empty;
         }
     }
 }
