@@ -99,6 +99,7 @@ namespace Wlniao
             }
             return val;
         }
+
         /// <summary>
         /// 获取 ConfigFile 中某项的值
         /// </summary>
@@ -109,13 +110,18 @@ namespace Wlniao
         public static string GetEncrypt(string key, string secret, string defaultValue = null)
         {
             var val = GetEnvironment(key.ToUpper());
-            if (string.IsNullOrEmpty(val))
+            if (string.IsNullOrEmpty(secret))
+            {
+                return string.IsNullOrEmpty(val) ? GetConfigs(key, defaultValue) : val;
+            }
+            else if (string.IsNullOrEmpty(val))
             {
                 val = GetConfigs(key);
                 if (string.IsNullOrEmpty(val))
                 {
                     return defaultValue;
                 }
+
                 if (string.IsNullOrEmpty(secret))
                 {
                     return val;
@@ -134,15 +140,17 @@ namespace Wlniao
                 }
             }
             else
-			{
-				var tmp = Encryptor.SM4DecryptECBFromHex(val, secret);
-				if (!string.IsNullOrEmpty(tmp))
-				{
-					val = tmp;
-				}
-			}
-			return val;
+            {
+                var tmp = Encryptor.SM4DecryptECBFromHex(val, secret);
+                if (!string.IsNullOrEmpty(tmp))
+                {
+                    val = tmp;
+                }
+            }
+
+            return val;
         }
+
         /// <summary>
         /// 获取 ConfigFile 中某项的值
         /// </summary>
