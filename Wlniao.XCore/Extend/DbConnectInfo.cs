@@ -22,14 +22,19 @@
 				{
 					connstr_rw = Wlniao.Config.GetConfigs("WLN_CONNSTR");
 				}
-                if (WLN_CONNSTR_TYPE == "mysql")
-                {
-                    connstr_rw = WLN_CONNSTR_MYSQL;
-                }
-                else
-                {
-                    connstr_rw = WLN_CONNSTR_SQLITE;
-                }
+
+				if (!string.IsNullOrEmpty(connstr_rw))
+				{
+					return connstr_rw;
+				}
+				if (WLN_CONNSTR_TYPE == "mysql")
+				{
+					connstr_rw = WLN_CONNSTR_MYSQL;
+				}
+				else
+				{
+					connstr_rw = WLN_CONNSTR_SQLITE;
+				}
 				return connstr_rw;
 			}
 		}
@@ -40,24 +45,26 @@
 		{
             get
             {
-                if (string.IsNullOrEmpty(connstr_type))
+	            if (!string.IsNullOrEmpty(connstr_type))
+	            {
+		            return connstr_type;
+	            }
+	            connstr_type = Wlniao.Config.GetConfigs("WLN_CONNSTR_TYPE");
+	            if (!string.IsNullOrEmpty(connstr_type))
+	            {
+		            return connstr_type;
+	            }
+	            if (!string.IsNullOrEmpty(WLN_CONNSTR_MYSQL))
                 {
-                    connstr_type = Wlniao.Config.GetConfigs("WLN_CONNSTR_TYPE");
-                    if (string.IsNullOrEmpty(connstr_type))
-                    {
-                        if (!string.IsNullOrEmpty(WLN_CONNSTR_MYSQL))
-                        {
-                            connstr_type = "mysql";
-                        }
-                        else if (!string.IsNullOrEmpty(WLN_CONNSTR_SQLSERVER))
-                        {
-                            connstr_type = "sqlserver";
-                        }
-                        else
-                        {
-                            connstr_type = "sqlite";
-                        }
-                    }
+	                connstr_type = "mysql";
+                }
+                else if (!string.IsNullOrEmpty(WLN_CONNSTR_SQLSERVER))
+                {
+	                connstr_type = "sqlserver";
+                }
+                else
+                {
+	                connstr_type = "sqlite";
                 }
                 return connstr_type;
             }
@@ -65,23 +72,12 @@
 		/// <summary>
 		/// 连接的数据库服务器地址（默认为127.0.0.1）
 		/// </summary>
-		public static string WLN_CONNSTR_HOST
-        {
-            get
-            {
-                return Wlniao.Config.GetSetting("WLN_CONNSTR_HOST", "127.0.0.1");
-            }
-        }
-        /// <summary>
-        /// 连接的数据库名称
-        /// </summary>
-        public static string WLN_CONNSTR_NAME
-        {
-            get
-            {
-                return Wlniao.Config.GetSetting("WLN_CONNSTR_NAME");
-            }
-        }
+		public static string WLN_CONNSTR_HOST => Wlniao.Config.GetSetting("WLN_CONNSTR_HOST", "127.0.0.1");
+
+		/// <summary>
+		/// 连接的数据库名称
+		/// </summary>
+		public static string WLN_CONNSTR_NAME => Wlniao.Config.GetSetting("WLN_CONNSTR_NAME");
         /// <summary>
         /// 连接数据库的用户账号
         /// </summary>
