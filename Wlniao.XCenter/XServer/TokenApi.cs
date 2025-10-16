@@ -20,12 +20,9 @@
 
 ===============================================================================*/
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using Wlniao.Log;
-using Wlniao.OpenApi;
 using Wlniao.Text;
 
 namespace Wlniao.XServer
@@ -64,9 +61,9 @@ namespace Wlniao.XServer
                 var txt = data is string ? data.ToString() : Json.Serialize(data);
                 var utime = "";
                 var start = DateTime.Now;
-                var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
+                var encdata = Wlniao.Encryptor.Sm4EncryptEcbToHex(txt, token);
                 var resStr = "";
-                var reqStr = Json.Serialize(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
+                var reqStr = Json.Serialize(new { sign = Encryptor.Sm3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
                 try
                 {
                     var stream = Convert.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
@@ -140,7 +137,7 @@ namespace Wlniao.XServer
                         {
                             rlt.traceid = resObj.traceid;
                         }
-                        var plaintext = string.IsNullOrEmpty(resObj.data) ? "" : Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                        var plaintext = string.IsNullOrEmpty(resObj.data) ? "" : Wlniao.Encryptor.Sm4DecryptEcbFromHex(resObj.data, token);
                         if (!string.IsNullOrEmpty(plaintext))
                         {
                             try

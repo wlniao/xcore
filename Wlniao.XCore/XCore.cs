@@ -166,7 +166,7 @@ namespace Wlniao
             {
                 return true;
             }
-            if (chain != null && chain.ChainPolicy != null && chain.ChainPolicy.ExtraStore != null && chain.ChainPolicy.ExtraStore.Count > 0)
+            if (chain is { ChainPolicy.ExtraStore.Count: > 0 })
             {
                 var print = chain?.ChainPolicy?.ExtraStore?.LastOrDefault()?.Thumbprint.ToLower();
                 if (print == "ff32d07177d55d328a1307595ca21331e1b8149f" || print == "c7a791caaf68b5b46bde11175463f11071fa8675")
@@ -264,13 +264,14 @@ namespace Wlniao
         {
             get
             {
-                if (port == 0)
+                if (port != 0)
                 {
-                    port = Convert.ToInt(Config.GetConfigs("WLN_LISTEN_PORT"));
-                    if (port <= 0)
-                    {
-                        port = 5000;
-                    }
+                    return port;
+                }
+                port = Convert.ToInt(Config.GetConfigs("WLN_LISTEN_PORT"));
+                if (port <= 0)
+                {
+                    port = 5000;
                 }
                 return port;
             }

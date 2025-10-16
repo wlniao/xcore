@@ -16,11 +16,11 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 主平台接口访问工具
         /// </summary>
-        protected Context ctx = null;
+        protected Context? ctx = null;
         /// <summary>
         /// 主平台登录会话状态
         /// </summary>
-        protected XSession xsession = null;
+        protected XSession? xsession = null;
         /// <summary>
         /// 会话加密密钥
         /// </summary>
@@ -41,23 +41,21 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult CheckAuth(Func<Context, IActionResult> func, Func<IActionResult> fail = null, string host = null)
         {
-            if (fail == null)
+            fail ??= new Func<IActionResult>(() =>
             {
-                fail = new Func<IActionResult>(() =>
+                if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                 {
-                    if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
-                    {
-                        return OutputSerialize(new ApiResult<string> { message = ctx?.message });
-                    }
-                    else
-                    {
-                        var errorPage = new ContentResult();
-                        errorPage.ContentType = "text/html;charset=utf-8";
-                        errorPage.Content = errorHtml.Replace("{{errorMsg}}", ctx?.message).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-                        return errorPage;
-                    }
-                });
-            }
+                    return OutputSerialize(new ApiResult<string> { message = ctx?.message });
+                }
+                else
+                {
+                    var errorPage = new ContentResult();
+                    errorPage.ContentType = "text/html;charset=utf-8";
+                    errorPage.Content = errorHtml.Replace("{{errorMsg}}", ctx?.message).Replace("{{errorTitle}}", errorTitle)
+                        .Replace("{{errorIcon}}", errorIcon);
+                    return errorPage;
+                }
+            });
             if (string.IsNullOrEmpty(host) && string.IsNullOrEmpty(Context.XCenterDomain))
             {
                 host = HeaderRequest("x-domain", UrlDomain);
@@ -81,27 +79,25 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult CheckSession(Func<XSession, Context, IActionResult> func, Func<IActionResult> fail = null, string ticket = null, bool addHeader = true)
         {
-            if (fail == null)
+            fail ??= new Func<IActionResult>(() =>
             {
-                fail = new Func<IActionResult>(() =>
+                // Authify平台授权加载失败时执行
+                if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                 {
-                    // Authify平台授权加载失败时执行
-                    if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
-                    {
-                        var err = new ApiResult<string> { message = errorMsg };
-                        errorMsg = "";
-                        return OutputSerialize(err);
-                    }
-                    else
-                    {
-                        var errorPage = new ContentResult();
-                        errorPage.ContentType = "text/html;charset=utf-8";
-                        errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-                        errorMsg = "";
-                        return errorPage;
-                    }
-                });
-            }
+                    var err = new ApiResult<string> { message = errorMsg };
+                    errorMsg = "";
+                    return OutputSerialize(err);
+                }
+                else
+                {
+                    var errorPage = new ContentResult();
+                    errorPage.ContentType = "text/html;charset=utf-8";
+                    errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle)
+                        .Replace("{{errorIcon}}", errorIcon);
+                    errorMsg = "";
+                    return errorPage;
+                }
+            });
             return CheckAuth((ctx) =>
             {
                 if (string.IsNullOrEmpty(ticket))
@@ -203,7 +199,7 @@ namespace Wlniao.XCenter
                         result.TryAdd(item.Key, item.Value);
                     }
                 }
-                if (Request.Form != null && Request.Form.Count > 0)
+                if (Request.Form is { Count: > 0 })
                 {
                     foreach (var item in Request.Form)
                     {
@@ -224,28 +220,28 @@ namespace Wlniao.XCenter
                 {
                     try
                     {
-                        if (Context.XCenterPrivkey == null || Context.XCenterPrivkey.Length == 0)
+                        if (Context.XCenterPrivkey?.Length == 0)
                         {
-                            DebugMessage("Server privkey not config!!");
+                            DebugMessage("Server private key not config!!");
                         }
                         else
                         {
-                            this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                            this.sm4key = Wlniao.Encryptor.Sm2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
                             this.sm4ready = true;
                         }
                     }
                     catch
                     {
-                        DebugMessage("Request sm2token decrypt faild!!");
+                        DebugMessage("Request sm2token decrypt fail!!");
                     }
                 }
             }
             if (!string.IsNullOrEmpty(this.sm4key))
             {
-                input = Wlniao.Encryptor.SM4DecryptECBFromHex(input, this.sm4key, true);
+                input = Wlniao.Encryptor.Sm4DecryptEcbFromHex(input, this.sm4key, true);
                 if (string.IsNullOrEmpty(input))
                 {
-                    DebugMessage("Request message decrypt faild!!");
+                    DebugMessage("Request message decrypt fail!!");
                     throw new Exception("请求内容解密失败");
                 }
             }
@@ -291,26 +287,26 @@ namespace Wlniao.XCenter
                     {
                         if (Context.XCenterPrivkey == null || Context.XCenterPrivkey.Length == 0)
                         {
-                            DebugMessage("Server privkey not config!!");
+                            DebugMessage("Server private key not config!!");
                         }
                         else
                         {
-                            this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                            this.sm4key = Wlniao.Encryptor.Sm2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
                             this.sm4ready = true;
                         }
                     }
                     catch
                     {
-                        DebugMessage("Request sm2token decrypt faild!!");
+                        DebugMessage("Request sm2token decrypt fail!!");
                     }
                 }
             }
             if (!string.IsNullOrEmpty(this.sm4key))
             {
-                input = Wlniao.Encryptor.SM4DecryptECBFromHex(input, this.sm4key, true);
+                input = Wlniao.Encryptor.Sm4DecryptEcbFromHex(input, this.sm4key, true);
                 if (string.IsNullOrEmpty(input))
                 {
-                    DebugMessage("Request message decrypt faild!!");
+                    DebugMessage("Request message decrypt fail!!");
                     throw new Exception("请求内容解密失败");
                 }
             }
@@ -337,17 +333,17 @@ namespace Wlniao.XCenter
                     {
                         if (Context.XCenterPrivkey == null || Context.XCenterPrivkey.Length == 0)
                         {
-                            DebugMessage("Server privkey not config!!");
+                            DebugMessage("Server private key not config!!");
                         }
                         else
                         {
-                            this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                            this.sm4key = Wlniao.Encryptor.Sm2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
                             this.sm4ready = true;
                         }
                     }
                     catch
                     {
-                        DebugMessage("Request sm2token decrypt faild!!");
+                        DebugMessage("Request sm2token decrypt fail!!");
                     }
                 }
             }
@@ -368,12 +364,12 @@ namespace Wlniao.XCenter
                 };
                 if (result.data is string)
                 {
-                    tmp.data = Encryptor.SM4EncryptECBToHex(result.data.ToString(), this.sm4key, true);
+                    tmp.data = Encryptor.Sm4EncryptEcbToHex(result.data.ToString(), this.sm4key, true);
                 }
                 else if (result.data != null)
                 {
                     var json = JsonSerializer.Serialize<T>(result.data, option);
-                    tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
+                    tmp.data = Encryptor.Sm4EncryptEcbToHex(json, this.sm4key, true);
                 }
                 output = JsonSerializer.Serialize<ApiResult<string>>(tmp, option);
             }
@@ -412,19 +408,19 @@ namespace Wlniao.XCenter
                 {
                     try
                     {
-                        if (Context.XCenterPrivkey == null || Context.XCenterPrivkey.Length == 0)
+                        if (Context.XCenterPrivkey?.Length == 0)
                         {
-                            DebugMessage("Server privkey not config!!");
+                            DebugMessage("Server private key not config!!");
                         }
                         else
                         {
-                            this.sm4key = Wlniao.Encryptor.SM2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
+                            this.sm4key = Wlniao.Encryptor.Sm2DecryptByPrivateKey(Crypto.Helper.Decode(sm2token), Context.XCenterPrivkey);
                             this.sm4ready = true;
                         }
                     }
                     catch
                     {
-                        DebugMessage("Request sm2token decrypt faild!!");
+                        DebugMessage("Request sm2token decrypt fail!!");
                     }
                 }
             }
@@ -445,12 +441,12 @@ namespace Wlniao.XCenter
                 };
                 if (result.data is string)
                 {
-                    tmp.data = Encryptor.SM4EncryptECBToHex(result.data.ToString(), this.sm4key, true);
+                    tmp.data = Encryptor.Sm4EncryptEcbToHex(result.data.ToString(), this.sm4key, true);
                 }
                 else if (result.data != null)
                 {
                     var json = JsonSerializer.Serialize<T>(result.data, option);
-                    tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
+                    tmp.data = Encryptor.Sm4EncryptEcbToHex(json, this.sm4key, true);
                 }
                 output = JsonSerializer.Serialize<ApiResult<string>>(tmp, option);
             }

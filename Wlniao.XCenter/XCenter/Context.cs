@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using Wlniao.Log;
 using Wlniao.Text;
 using Encoding = System.Text.Encoding;
@@ -166,7 +165,7 @@ namespace Wlniao.XCenter
                     {
                         if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
                         {
-                            var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
+                            var sm2token = Wlniao.Encryptor.Sm2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
                             if (!string.IsNullOrEmpty(sm2token))
                             {
                                 ctx.token = sm2token;
@@ -281,8 +280,8 @@ namespace Wlniao.XCenter
             var token = XCenterSm4Key.Length == 16 ? XCenterSm4Key : StringUtil.CreateRndStrE(16);
             var plainData = Wlniao.Json.Serialize(data);
             var expireTime = DateTools.GetUnix() + 7200;
-            var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
-            var sm2Token = Wlniao.Encryptor.SM2EncryptByPublicKey(Encoding.ASCII.GetBytes(token), XCenterServerKey);
+            var encdata = Wlniao.Encryptor.Sm4EncryptEcbToHex(plainData, token);
+            var sm2Token = Wlniao.Encryptor.Sm2EncryptByPublicKey(Encoding.ASCII.GetBytes(token), XCenterServerKey);
             var sign = Wlniao.Encryptor.Sm2SignWithPrivateKey(expireTime + sm2Token + encdata, XCenterPrivkey);
             var resStr = "";
             var reqStr = Wlniao.Json.Serialize(new { sn = XCenterCertSn, data = encdata, sign, token = sm2Token, expire = expireTime });
@@ -332,7 +331,7 @@ namespace Wlniao.XCenter
                     rlt.code = resObj.code;
                     rlt.message = resObj.message;
                     rlt.success = resObj.success;
-                    var plaintext = string.IsNullOrEmpty(resObj.data) ? "" : Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                    var plaintext = string.IsNullOrEmpty(resObj.data) ? "" : Encryptor.Sm4DecryptEcbFromHex(resObj.data, token);
                     if (!string.IsNullOrEmpty(plaintext))
                     {
                         try
@@ -399,8 +398,8 @@ namespace Wlniao.XCenter
                 var start = DateTime.Now;
                 var msgid = StringUtil.CreateLongId();
                 var plainData = Wlniao.Json.Serialize(data);
-                var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, apptoken);
-                var sign = Wlniao.Encryptor.SM3Encrypt(owner + app + encdata + now + apptoken);
+                var encdata = Wlniao.Encryptor.Sm4EncryptEcbToHex(plainData, apptoken);
+                var sign = Wlniao.Encryptor.Sm3Encrypt(owner + app + encdata + now + apptoken);
                 var resStr = "";
                 var reqStr = Wlniao.Json.Serialize(new { app, oid = owner, sign, data = encdata, timestamp = now });
                 Loger.Topic(app, $"msgid:{msgid},authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
@@ -450,7 +449,7 @@ namespace Wlniao.XCenter
                         rlt.success = resObj.success;
                         if (resObj.success)
                         {
-                            var json = Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, apptoken);
+                            var json = Wlniao.Encryptor.Sm4DecryptEcbFromHex(resObj.data, apptoken);
                             if (string.IsNullOrEmpty(json))
                             {
                                 logs += "\n <<< RESPONSE EMPTY";
@@ -646,7 +645,7 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
-                    var json = Wlniao.Encryptor.SM4DecryptECBFromHex(ticket, XCenterToken);
+                    var json = Wlniao.Encryptor.Sm4DecryptEcbFromHex(ticket, XCenterToken);
                     obj = string.IsNullOrEmpty(json) ? null : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
                 }
             }

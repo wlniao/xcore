@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Wlniao.XCenter.Models
+﻿namespace Wlniao.XCenter.Models
 {
     /// <summary>
     /// 

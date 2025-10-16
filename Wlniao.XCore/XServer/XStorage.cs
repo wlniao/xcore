@@ -1100,8 +1100,8 @@ namespace Wlniao.XServer
                     var stringToSign = string.Format("OSS4-HMAC-SHA256\n{0}\n{1}\n{2}", date, scope, Encryptor.Sha256(canonicalRequest).ToLower());
 
                     // 步骤3：计算Signature
-                    var SigningKey = Encryptor.HmacSHA256(System.Text.Encoding.UTF8.GetBytes("aliyun_v4_request"), Encryptor.HmacSHA256(System.Text.Encoding.UTF8.GetBytes("oss"), Encryptor.HmacSHA256(System.Text.Encoding.UTF8.GetBytes(ossregion), Encryptor.HmacSHA256(System.Text.Encoding.UTF8.GetBytes(days), System.Text.Encoding.UTF8.GetBytes("aliyun_v4" + ossaccesskeySecret)))));
-                    var Signature = System.Convert.ToHexString(Encryptor.HmacSHA256(System.Text.Encoding.UTF8.GetBytes(stringToSign), SigningKey)).ToLower();
+                    var SigningKey = Encryptor.HmacSha256(System.Text.Encoding.UTF8.GetBytes("aliyun_v4_request"), Encryptor.HmacSha256(System.Text.Encoding.UTF8.GetBytes("oss"), Encryptor.HmacSha256(System.Text.Encoding.UTF8.GetBytes(ossregion), Encryptor.HmacSha256(System.Text.Encoding.UTF8.GetBytes(days), System.Text.Encoding.UTF8.GetBytes("aliyun_v4" + ossaccesskeySecret)))));
+                    var Signature = System.Convert.ToHexString(Encryptor.HmacSha256(System.Text.Encoding.UTF8.GetBytes(stringToSign), SigningKey)).ToLower();
 
                     // 步骤4：拼接Authorization
                     var Authorization = "OSS4-HMAC-SHA256 Credential=" + ossaccesskeyid + "/" + scope + ",AdditionalHeaders=host,Signature=" + Signature;
@@ -1187,7 +1187,7 @@ namespace Wlniao.XServer
                     var policy = Encryptor.Base64Encrypt(json);
                     var bytesPolicy = Wlniao.Text.Encodings.UTF8.GetBytes(policy);
                     var bytesSecret = Wlniao.Text.Encodings.UTF8.GetBytes(ossaccesskeySecret);
-                    var signature = System.Convert.ToBase64String(Encryptor.HmacSHA1(bytesPolicy, bytesSecret));
+                    var signature = System.Convert.ToBase64String(Encryptor.HmacSha1(bytesPolicy, bytesSecret));
                     var host = ossdomain.IndexOf("://", StringComparison.Ordinal) < 0 ? "//" + ossdomain : ossdomain;
                     return Json.Serialize(new { to = "oss", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
                 }
@@ -1394,11 +1394,11 @@ namespace Wlniao.XServer
 
 
                     var keytime = (DateTools.GetUnix() - 10) + ";" + (DateTools.GetUnix() + 3590);
-                    var signKey = Encryptor.HmacSHA1(keytime, cosaccesskeySecret);
+                    var signKey = Encryptor.HmacSha1(keytime, cosaccesskeySecret);
                     var contentMd5 = System.Convert.ToBase64String(request.Content.Headers.ContentMD5);
                     var httpString = method.ToLower() + '\n' + path + '\n' + httpParameters + '\n' + httpHeaders + '\n';
                     var stringToSign = "sha1\n" + keytime + '\n' + Encryptor.Sha1(httpString).ToLower() + '\n';
-                    var signature = Encryptor.HmacSHA1(stringToSign, signKey);
+                    var signature = Encryptor.HmacSha1(stringToSign, signKey);
                     var authorization = "q-sign-algorithm=sha1"
                         + "&q-ak=" + cosaccesskeyid
                         + "&q-sign-time=" + keytime
@@ -1476,8 +1476,8 @@ namespace Wlniao.XServer
                     var json = "{\"expiration\":\"" + DateTime.UtcNow.AddSeconds(expire).ToString("yyyy-MM-ddTHH:mm:ssZ") + "\",\"conditions\":[[\"content-length-range\", 0, " + max + "],[\"starts-with\",\"$key\",\"" + dir + "\"],{\"q-sign-algorithm\":\"sha1\"},{\"q-ak\":\"" + cosaccesskeyid + "\"},{\"q-sign-time\":\"" + keytime + "\"}]}";
                     var policy = Encryptor.Base64Encrypt(json);
                     var stringToSign = Encryptor.Sha1(json).ToLower();
-                    var signKey = Encryptor.HmacSHA1(keytime, cosaccesskeySecret);
-                    var signature = Encryptor.HmacSHA1(stringToSign, signKey);
+                    var signKey = Encryptor.HmacSha1(keytime, cosaccesskeySecret);
+                    var signature = Encryptor.HmacSha1(stringToSign, signKey);
                     var host = cosdomain.IndexOf("://", StringComparison.Ordinal) < 0 ? "//" + cosdomain : cosdomain;
                     return Json.Serialize(new { to = "cos", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, domain = host, keytime = keytime, secretid = cosaccesskeyid, dir, max, policy, signature });
                 }

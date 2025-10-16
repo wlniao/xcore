@@ -54,7 +54,6 @@ namespace Wlniao
                         o.ListenAnyIP(WebService.TlsPort, lo =>
                         {
                             WebService.UseHttps = true;
-                            lo.Protocols = HttpProtocols.Http1AndHttp2AndHttp3;
                             lo.UseHttps(Crypto.Cert.CrtToPfx(WebService.TlsCrt, WebService.TlsKey));
                         });
                     }

@@ -15,7 +15,7 @@ namespace Wlniao.Mvc
     /// <summary>
     /// XCore扩展的Controller
     /// </summary>
-    public class XCoreController : Controller
+    public class XCoreController : ControllerBase
     {
         /// <summary>
         /// 请求是否为Https
@@ -69,74 +69,74 @@ namespace Wlniao.Mvc
         /// 错误提醒页面模板
         /// </summary>
         internal const string ErrorHtml = "<html><head><title>{{errorTitle}}</title><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\" /><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"user-scalable=no,width=device-width,initial-scale=1.0\"/></head><body onselectstart=\"return false\" style=\"text-align:center;background:#f9f9f9\"><div><img src=\"{{errorIcon}}\" style=\"width:9rem;margin-top:9rem;\"></div><div style=\"color:#999999;font-family:Segoe UI, Segoe UI Midlevel, Segoe WP, Arial, Sans-Serif;padding:1rem\">{{errorMsg}}</div></body></html>";
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="filterContext"></param>
-        public override void OnActionExecuting(ActionExecutingContext filterContext)
-        {
-            method = Request.Query.ContainsKey("do") ? Request.Query["do"].ToString() : "";
-            base.OnActionExecuting(filterContext);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="context"></param>
-        public override void OnActionExecuted(ActionExecutedContext context)
-        {
-            if(context.HttpContext.WebSockets.IsWebSocketRequest)
-            {
-                return;
-            }
-            if (!RequestSecurity)
-            {
-                errorMsg = Config.GetConfigs("NoSecurityMessage");
-            }
-            if (!Response.HasStarted)
-            {
-                Response.Headers.TryAdd("X-Wlniao-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
-            }
-            if (string.IsNullOrEmpty(errorMsg))
-            {
-                base.OnActionExecuted(context);
-                if (string.IsNullOrEmpty(trace) && Request.Headers.ContainsKey("X-Wlniao-Trace"))
-                {
-                    trace = Request.Headers["X-Wlniao-Trace"].ToString();
-                }
-                if (!string.IsNullOrEmpty(trace) && !Response.HasStarted)
-                {
-                    Response.Headers.TryAdd("X-Wlniao-Trace", trace);
-                }
-                if (!string.IsNullOrEmpty(XCore.XServerId) && !Response.HasStarted)
-                {
-                    Response.Headers.TryAdd("X-Wlniao-XServerId", XCore.XServerId);
-                }
-            }
-            else if (string.IsNullOrEmpty(method))
-            {
-                context.Result = new ContentResult
-                {
-                    ContentType = "text/html",
-                    Content = errorHtml.Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon).Replace("{{errorMsg}}", errorMsg)
-                };
-            }
-            else
-            {
-                var jsonStr = Wlniao.Json.Serialize(new { success = false, message = errorMsg, data = "" });
-                var errorPage = new ContentResult();
-                if (string.IsNullOrEmpty(GetRequest("callback")))
-                {
-                    errorPage.ContentType = "text/json";
-                    errorPage.Content = jsonStr;
-                }
-                else
-                {
-                    errorPage.ContentType = "text/javascript";
-                    errorPage.Content = GetRequest("callback") + "(" + jsonStr + ")";
-                }
-                context.Result = errorPage;
-            }
-        }
+        // /// <summary>
+        // /// 
+        // /// </summary>
+        // /// <param name="filterContext"></param>
+        // public override void OnActionExecuting(ActionExecutingContext filterContext)
+        // {
+        //     method = Request.Query.ContainsKey("do") ? Request.Query["do"].ToString() : "";
+        //     base.OnActionExecuting(filterContext);
+        // }
+        // /// <summary>
+        // /// 
+        // /// </summary>
+        // /// <param name="context"></param>
+        // public override void OnActionExecuted(ActionExecutedContext context)
+        // {
+        //     if(context.HttpContext.WebSockets.IsWebSocketRequest)
+        //     {
+        //         return;
+        //     }
+        //     if (!RequestSecurity)
+        //     {
+        //         errorMsg = Config.GetConfigs("NoSecurityMessage");
+        //     }
+        //     if (!Response.HasStarted)
+        //     {
+        //         Response.Headers.TryAdd("X-Wlniao-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
+        //     }
+        //     if (string.IsNullOrEmpty(errorMsg))
+        //     {
+        //         base.OnActionExecuted(context);
+        //         if (string.IsNullOrEmpty(trace) && Request.Headers.ContainsKey("X-Wlniao-Trace"))
+        //         {
+        //             trace = Request.Headers["X-Wlniao-Trace"].ToString();
+        //         }
+        //         if (!string.IsNullOrEmpty(trace) && !Response.HasStarted)
+        //         {
+        //             Response.Headers.TryAdd("X-Wlniao-Trace", trace);
+        //         }
+        //         if (!string.IsNullOrEmpty(XCore.XServerId) && !Response.HasStarted)
+        //         {
+        //             Response.Headers.TryAdd("X-Wlniao-XServerId", XCore.XServerId);
+        //         }
+        //     }
+        //     else if (string.IsNullOrEmpty(method))
+        //     {
+        //         context.Result = new ContentResult
+        //         {
+        //             ContentType = "text/html",
+        //             Content = errorHtml.Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon).Replace("{{errorMsg}}", errorMsg)
+        //         };
+        //     }
+        //     else
+        //     {
+        //         var jsonStr = Wlniao.Json.Serialize(new { success = false, message = errorMsg, data = "" });
+        //         var errorPage = new ContentResult();
+        //         if (string.IsNullOrEmpty(GetRequest("callback")))
+        //         {
+        //             errorPage.ContentType = "text/json";
+        //             errorPage.Content = jsonStr;
+        //         }
+        //         else
+        //         {
+        //             errorPage.ContentType = "text/javascript";
+        //             errorPage.Content = GetRequest("callback") + "(" + jsonStr + ")";
+        //         }
+        //         context.Result = errorPage;
+        //     }
+        // }
         /// <summary>
         /// 输出调试消息
         /// </summary>
@@ -166,7 +166,7 @@ namespace Wlniao.Mvc
         /// <param name="data"></param>
         /// <returns></returns>
         [NonAction]
-        public new ActionResult Json(object data)
+        public ActionResult Json(object data)
         {
             var jsonStr = "";
             switch (data)
@@ -380,54 +380,52 @@ namespace Wlniao.Mvc
             {
                 return string.Empty;
             }
-            else if (strPost == null && Request.Method == "POST" && Request.BodyReader != null)
+            else if (_strPost == null && Request.Method == "POST" && Request.Body != null)
             {
                 try
                 {
-                    strPost = new StreamReader(Request.Body).ReadToEnd();
-                    if (string.IsNullOrEmpty(strPost))
+                    _strPost = new StreamReader(Request.Body).ReadToEnd();
+                    if (string.IsNullOrEmpty(_strPost))
                     {
-                        using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
-                        {
-                            strPost = reader.ReadToEnd();
-                        }
+                        using var reader = new StreamReader(Request.Body, Encoding.UTF8);
+                        _strPost = reader.ReadToEnd();
                     }
                 }
                 catch
                 {
-                    var buffer = new byte[0];
+                    var buffer = Array.Empty<byte>();
                     if (Request != null && Request.ContentLength > 0)
                     {
                         buffer = new byte[(int)Request.ContentLength];
                     }
                     Request.Body.Read(buffer, 0, buffer.Length);
-                    strPost = Encoding.UTF8.GetString(buffer);
+                    _strPost = Encoding.UTF8.GetString(buffer);
                 }
             }
-            return strPost ?? "";
+            return _strPost ?? "";
         }
         /// <summary>
         /// 
         /// </summary>
-        private string strPost = null;
+        private string? _strPost = null;
         /// <summary>
         /// 
         /// </summary>
-        private Dictionary<string, object> ctxPost = null;
+        private Dictionary<string, object>? _ctxPost = null;
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
         /// </summary>
-        /// <param name="Key"></param>
-        /// <param name="Default"></param>
+        /// <param name="key"></param>
+        /// <param name="default"></param>
         /// <returns></returns>
         [NonAction]
-        protected string PostRequest(string Key, string Default = "")
+        protected string PostRequest(string key, string @default = "")
         {
-            if (ctxPost == null)
+            if (_ctxPost == null)
             {
                 try
                 {
-                    ctxPost = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                    _ctxPost = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
                     if (Request.Method == "POST")
                     {
                         try
@@ -437,9 +435,9 @@ namespace Wlniao.Mvc
                                 #region 请求为表单
                                 foreach (var item in Request.Form.Keys)
                                 {
-                                    ctxPost.Add(item.ToLower(), Request.Form[item].ToString().Trim());
+                                    _ctxPost.Add(item.ToLower(), Request.Form[item].ToString().Trim());
                                 }
-                                strPost = "";
+                                _strPost = "";
                                 #endregion 请求为表单
                             }
                             else if (Request.ContentType != null && Request.ContentType.Contains("multipart/form-data"))
@@ -449,32 +447,32 @@ namespace Wlniao.Mvc
                                 {
                                     foreach (var item in Request.Form.Keys)
                                     {
-                                        ctxPost.Add(item.ToLower(), Request.Form[item].ToString().Trim());
+                                        _ctxPost.Add(item.ToLower(), Request.Form[item].ToString().Trim());
                                     }
                                 }
-                                strPost = "";
+                                _strPost = "";
                                 #endregion 请求为文件上传
                             }
                             else if (Request.ContentLength > 0)
                             {
                                 #region 请求为其它类型
-                                if (strPost == null)
+                                if (_strPost == null)
                                 {
                                     try
                                     {
-                                        strPost = new StreamReader(Request.Body).ReadToEnd();
+                                        _strPost = new StreamReader(Request.Body).ReadToEnd();
                                     }
                                     catch
                                     {
                                         //strPost=Request.BodyReader.ReadAsync().Result.ToString();
                                         var buffer = new byte[(int)Request.ContentLength];
                                         Request.Body.Read(buffer, 0, buffer.Length);
-                                        strPost = Encoding.UTF8.GetString(buffer);
+                                        _strPost = Encoding.UTF8.GetString(buffer);
                                     }
                                 }
-                                if (!string.IsNullOrEmpty(strPost))
+                                if (!string.IsNullOrEmpty(_strPost))
                                 {
-                                    var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(strPost);
+                                    var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(_strPost);
                                     if (tmpPost != null)
                                     {
                                         foreach (var kv in tmpPost)
@@ -485,7 +483,7 @@ namespace Wlniao.Mvc
                                             }
                                             else
                                             {
-                                                ctxPost.TryAdd(kv.Key, kv.Value);
+                                                _ctxPost.TryAdd(kv.Key, kv.Value);
                                             }
                                         }
                                     }
@@ -499,23 +497,23 @@ namespace Wlniao.Mvc
                     {
                         foreach (var item in Request.Query.Keys)
                         {
-                            ctxPost.TryAdd(item, StringUtil.UrlDecode(Request.Query[item].ToString().Trim()));
+                            _ctxPost.TryAdd(item, StringUtil.UrlDecode(Request.Query[item].ToString().Trim()));
                         }
                     }
                 }
                 catch { }
             }
-            if (ctxPost != null)
+            if (_ctxPost != null)
             {
-                return ctxPost.GetString(Key, Default);
+                return _ctxPost.GetString(key, @default);
             }
-            else if (string.IsNullOrEmpty(Default))
+            else if (string.IsNullOrEmpty(@default))
             {
                 return "";
             }
             else
             {
-                return Default.Trim();
+                return @default.Trim();
             }
         }
 

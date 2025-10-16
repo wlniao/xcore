@@ -85,7 +85,7 @@ namespace Wlniao.Engine
             var extStr = System.Text.Json.JsonSerializer.Serialize(extend, XCore.JsonSerializerOptions);
             var extHex = StringUtil.UTF8ToHexString(extStr);
             var plain = $"{ExpireTime},{UserId},{currentConsumerId},{extHex}".Trim(',');
-            return Encryptor.SM4EncryptECBToHex(plain, consumerSecretKey, true);
+            return Encryptor.Sm4EncryptEcbToHex(plain, consumerSecretKey, true);
         }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace Wlniao.Engine
         /// <param name="currentConsumerId"></param>
         public void Decode(string authorization, string consumerSecretKey, string currentConsumerId = null)
         {
-            var data = Encryptor.SM4DecryptECBFromHex(authorization, consumerSecretKey).Split(',');
+            var data = Encryptor.Sm4DecryptEcbFromHex(authorization, consumerSecretKey).Split(',');
             if (data.Length < 4 || string.IsNullOrEmpty(data[1]) || (!string.IsNullOrEmpty(data[2]) && !string.IsNullOrEmpty(currentConsumerId) && data[2] != currentConsumerId))
             {
                 throw new Exception("Authorization error");

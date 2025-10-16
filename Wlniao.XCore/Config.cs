@@ -128,7 +128,7 @@ namespace Wlniao
                 }
                 else
                 {
-                    var tmp = Encryptor.SM4DecryptECBFromHex(val, secret);
+                    var tmp = Encryptor.Sm4DecryptEcbFromHex(val, secret);
                     if (!string.IsNullOrEmpty(tmp))
                     {
                         val = tmp;
@@ -141,7 +141,7 @@ namespace Wlniao
             }
             else
             {
-                var tmp = Encryptor.SM4DecryptECBFromHex(val, secret);
+                var tmp = Encryptor.Sm4DecryptEcbFromHex(val, secret);
                 if (!string.IsNullOrEmpty(tmp))
                 {
                     val = tmp;
@@ -284,7 +284,7 @@ namespace Wlniao
             }
             if (!string.IsNullOrEmpty(secret))
             {
-                value = Wlniao.Encryptor.SM4EncryptECBToHex(value, secret, true);
+                value = Wlniao.Encryptor.Sm4EncryptEcbToHex(value, secret, true);
             }
             _config.PutValue(key, value);
             return Write(_config, FileName);

@@ -253,7 +253,7 @@ namespace Wlniao
         /// <param name="str"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static string HmacSM3(string str, string key)
+        public static string HmacSm3(string str, string key)
         {
             var sm3 = new SM3();
             var keyBytes = Encoding.UTF8.GetBytes(key);
@@ -267,7 +267,7 @@ namespace Wlniao
         /// <param name="str"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static string HmacSHA1(string str, string key)
+        public static string HmacSha1(string str, string key)
         {
             var enText = "";
             if (string.IsNullOrEmpty(str))
@@ -276,7 +276,7 @@ namespace Wlniao
             }
             var keyBytes = Encoding.UTF8.GetBytes(key);
             var dataBytes = Encoding.UTF8.GetBytes(str);
-            foreach (var b in HmacSHA1(dataBytes, keyBytes))
+            foreach (var b in HmacSha1(dataBytes, keyBytes))
             {
                 enText += b.ToString("x2");
             }
@@ -289,7 +289,7 @@ namespace Wlniao
         /// <param name="dataBytes"></param>
         /// <param name="keyBytes"></param>
         /// <returns></returns>
-        public static byte[] HmacSHA1(byte[] dataBytes, byte[] keyBytes)
+        public static byte[] HmacSha1(byte[] dataBytes, byte[] keyBytes)
         {
             var hashAlgorithm = new HMACSHA1(keyBytes);
             return hashAlgorithm.ComputeHash(dataBytes);
@@ -301,7 +301,7 @@ namespace Wlniao
         /// <param name="data"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static byte[] HmacSHA256(byte[] data, byte[] key)
+        public static byte[] HmacSha256(byte[] data, byte[] key)
         {
             var hashAlgorithm = new HMACSHA256(key);
             var bytes = hashAlgorithm.ComputeHash(data);
@@ -313,7 +313,7 @@ namespace Wlniao
         /// <param name="str"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static string HmacSHA256Hex(string str, string key)
+        public static string HmacSha256Hex(string str, string key)
         {
             var hashAlgorithm = new HMACSHA256(Encoding.UTF8.GetBytes(key));
             var bytes = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(str));
@@ -357,6 +357,7 @@ namespace Wlniao
         /// <param name="txt"></param>
         /// <param name="crypt"></param>
         /// <returns></returns>
+        // ReSharper disable once MemberCanBePrivate.Global
         public static string VerbatimEncrypt(string txt, int crypt = 6338)
         {
             if (string.IsNullOrEmpty(txt))
@@ -370,6 +371,7 @@ namespace Wlniao
             }
             return System.Convert.ToBase64String(buffer);
         }
+        
         /// <summary>
         /// 逐字解码文本内容
         /// </summary>
@@ -389,14 +391,15 @@ namespace Wlniao
             }
             return Encoding.UTF8.GetString(buffer);
         }
+        
         /// <summary>
         /// 加密函数
         /// </summary>
         /// <param name="pToEncrypt">需要加密的字符串</param>
         /// <param name="sKey">加密密钥</param>
-        /// <param name="IV">偏移量</param>
+        /// <param name="iv">偏移量</param>
         /// <returns>返回加密后的密文</returns>
-        public static string AesEncrypt(string pToEncrypt, string sKey, string IV = "")
+        public static string AesEncrypt(string pToEncrypt, string sKey, string iv = "")
         {
             if (string.IsNullOrEmpty(pToEncrypt))
             {
@@ -413,13 +416,13 @@ namespace Wlniao
                 }
 
                 aes.Key = Encoding.ASCII.GetBytes(key);
-                var iv = new char[16];
-                for (var i = 0; i < iv.Length && i < IV.Length; i++)
+                var byteIv = new char[16];
+                for (var i = 0; i < iv.Length && i < iv.Length; i++)
                 {
-                    iv[i] = IV[i];
+                    byteIv[i] = iv[i];
                 }
 
-                aes.IV = Encoding.ASCII.GetBytes(iv);
+                aes.IV = Encoding.ASCII.GetBytes(byteIv);
                 aes.Padding = PaddingMode.PKCS7;
                 var inputByteArray = Encoding.UTF8.GetBytes(pToEncrypt);
                 using var ms = new MemoryStream();
@@ -434,14 +437,15 @@ namespace Wlniao
             }
             return "";
         }
+        
         /// <summary>
         /// 解密函数
         /// </summary>
         /// <param name="pToDecrypt">需要解密的字符串</param>
         /// <param name="sKey">加密密钥</param>
-        /// <param name="sIV">偏移量</param>
+        /// <param name="sIv">偏移量</param>
         /// <returns>返回加密前的明文</returns>
-        public static string AesDecrypt(string pToDecrypt, string sKey, string sIV = "")
+        public static string AesDecrypt(string pToDecrypt, string sKey, string sIv = "")
         {
             if (string.IsNullOrEmpty(pToDecrypt))
             {
@@ -457,9 +461,9 @@ namespace Wlniao
                 }
                 aes.Key = Encoding.ASCII.GetBytes(key);
                 var iv = new char[16];
-                for (var i = 0; i < iv.Length && i < sIV.Length; i++)
+                for (var i = 0; i < iv.Length && i < sIv.Length; i++)
                 {
-                    iv[i] = sIV[i];
+                    iv[i] = sIv[i];
                 }
                 aes.IV = Encoding.ASCII.GetBytes(iv);
                 aes.Padding = PaddingMode.PKCS7;
@@ -476,13 +480,14 @@ namespace Wlniao
             }
             return "";
         }
+        
         /// <summary>
         /// 
         /// </summary>
         /// <param name="plainText"></param>
         /// <param name="publicKey"></param>
         /// <returns></returns>
-        public static string SM2EncryptByPublicKey(string plainText, string publicKey)
+        public static string Sm2EncryptByPublicKey(string plainText, string publicKey)
         {
             if (string.IsNullOrEmpty(plainText))
             {
@@ -499,7 +504,7 @@ namespace Wlniao
         /// <param name="plainBytes"></param>
         /// <param name="publicKey"></param>
         /// <returns></returns>
-        public static string SM2EncryptByPublicKey(byte[] plainBytes, byte[] publicKey)
+        public static string Sm2EncryptByPublicKey(byte[] plainBytes, byte[] publicKey)
         {
             if (plainBytes == null || publicKey == null)
             {
@@ -515,7 +520,7 @@ namespace Wlniao
         /// <param name="encText"></param>
         /// <param name="privateKey"></param>
         /// <returns></returns>
-        public static string SM2DecryptByPrivateKey(string encText, string privateKey)
+        public static string Sm2DecryptByPrivateKey(string encText, string privateKey)
         {
             if (string.IsNullOrEmpty(encText))
             {
@@ -537,7 +542,7 @@ namespace Wlniao
         /// <param name="encBytes"></param>
         /// <param name="privateKey"></param>
         /// <returns></returns>
-        public static string SM2DecryptByPrivateKey(byte[] encBytes, byte[] privateKey)
+        public static string Sm2DecryptByPrivateKey(byte[] encBytes, byte[] privateKey)
         {
             if (encBytes == null || privateKey == null)
             {
@@ -625,7 +630,7 @@ namespace Wlniao
         /// <param name="secretKey"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4EncryptECBToHex(string plainText, string secretKey, bool isPadding = true)
+        public static string Sm4EncryptEcbToHex(string plainText, string secretKey, bool isPadding = true)
         {
             if (string.IsNullOrEmpty(plainText))
             {
@@ -643,7 +648,7 @@ namespace Wlniao
         /// <param name="secretKey"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4EncryptECBToBase64(string plainText, string secretKey, bool isPadding = true)
+        public static string Sm4EncryptEcbToBase64(string plainText, string secretKey, bool isPadding = true)
         {
             if (string.IsNullOrEmpty(plainText))
             {
@@ -661,7 +666,7 @@ namespace Wlniao
         /// <param name="secretKey"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4DecryptECBFromHex(string encText, string secretKey, bool isPadding = true)
+        public static string Sm4DecryptEcbFromHex(string encText, string secretKey, bool isPadding = true)
         {
             if (string.IsNullOrEmpty(encText))
             {
@@ -687,7 +692,7 @@ namespace Wlniao
         /// <param name="secretKey"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4DecryptECBFromBase64(string encText, string secretKey, bool isPadding = true)
+        public static string Sm4DecryptEcbFromBase64(string encText, string secretKey, bool isPadding = true)
         {
             if (string.IsNullOrEmpty(encText))
             {
@@ -716,7 +721,7 @@ namespace Wlniao
         /// <param name="iv"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4EncryptCBCToHex(string plainText, string secretKey, string iv, bool isPadding = true)
+        public static string Sm4EncryptCbcToHex(string plainText, string secretKey, string iv, bool isPadding = true)
         {
             if (string.IsNullOrEmpty(plainText))
             {
@@ -745,7 +750,7 @@ namespace Wlniao
         /// <param name="iv"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4EncryptCBCToBase64(string plainText, string secretKey, string iv, bool isPadding = true)
+        public static string Sm4EncryptCbcToBase64(string plainText, string secretKey, string iv, bool isPadding = true)
         {
             if (string.IsNullOrEmpty(plainText))
             {
@@ -774,7 +779,7 @@ namespace Wlniao
         /// <param name="iv"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4DecryptCBCFromHex(string encText, string secretKey, string iv, bool isPadding = true)
+        public static string Sm4DecryptCbcFromHex(string encText, string secretKey, string iv, bool isPadding = true)
         {
             if (string.IsNullOrEmpty(encText))
             {
@@ -803,7 +808,7 @@ namespace Wlniao
         /// <param name="iv"></param>
         /// <param name="isPadding"></param>
         /// <returns></returns>
-        public static string SM4DecryptCBCFromBase64(string encText, string secretKey, string iv, bool isPadding = true)
+        public static string Sm4DecryptCbcFromBase64(string encText, string secretKey, string iv, bool isPadding = true)
         {
             if (string.IsNullOrEmpty(encText))
             {
@@ -830,7 +835,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="str">需要加密的字符串</param>
         /// <returns>加密后的字符串</returns>
-        public static string SM3Encrypt(string str)
+        public static string Sm3Encrypt(string str)
         {
             if (string.IsNullOrEmpty(str))
             {

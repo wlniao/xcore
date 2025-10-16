@@ -55,14 +55,14 @@ namespace Wlniao.Mvc
                     result.code = "203";
                     result.message = "请求已过期，请重新发起";
                 }
-                else if (Encryptor.SM3Encrypt(timestamp + data + token) != sign)
+                else if (Encryptor.Sm3Encrypt(timestamp + data + token) != sign)
                 {
                     result.code = "205";
                     result.message = "请求错误，签名验证失败";
                 }
                 else
                 {
-                    var json = Encryptor.SM4DecryptECBFromHex(data, token);
+                    var json = Encryptor.Sm4DecryptEcbFromHex(data, token);
                     if (string.IsNullOrEmpty(json) && !string.IsNullOrEmpty(data))
                     {
                         result.code = "206";
@@ -139,7 +139,7 @@ namespace Wlniao.Mvc
             dic.Add("node", result.node);
             dic.Add("code", result.code);
             dic.Add("tips", result.tips);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
+            dic.Add("data", Encryptor.Sm4EncryptEcbToHex(txt, token));
             dic.Add("success", result.success);
             dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
             if (!string.IsNullOrEmpty(result.debuger))
@@ -162,7 +162,7 @@ namespace Wlniao.Mvc
             dic.Add("node", result.node);
             dic.Add("code", result.code);
             dic.Add("tips", result.tips);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(str, token));
+            dic.Add("data", Encryptor.Sm4EncryptEcbToHex(str, token));
             dic.Add("success", result.success);
             dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
             if (!string.IsNullOrEmpty(result.debuger))
@@ -219,7 +219,7 @@ namespace Wlniao.Mvc
             dic.Add("node", result.node);
             dic.Add("code", result.code);
             dic.Add("tips", result.tips);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
+            dic.Add("data", Encryptor.Sm4EncryptEcbToHex(txt, token));
             dic.Add("success", result.success);
             dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
             if (!string.IsNullOrEmpty(result.debuger))

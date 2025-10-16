@@ -1,65 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Unicode;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Wlniao;
-using Wlniao.XServer;
 
 namespace Wlniao.XCenter
 {
     /// <summary>
     /// Emi应用基础Controller
     /// </summary>
-    public partial class EmiController : XAppController
+    public class EmiController : XAppController
     {
         /// <summary>
         /// EMI主程序接口访问工具
         /// </summary>
-        internal new EmiContext ctx = null;
+        internal new EmiContext? ctx;
         /// <summary>
         /// EMI主程序地址
         /// </summary>
-        private string emihost = "";
+        private string _emihost = "";
         /// <summary>
         /// 无权限提示消息
         /// </summary>
-        private string nopermissionMessage = "";
+        private string _nopermissionMessage = "";
         /// <summary>
         /// 自动配置Emi相关Cookie
         /// </summary>
-        public bool AutoSetEmiCookie = true;
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="context"></param>
-        public override void OnActionExecuted(ActionExecutedContext context)
-        {
-            if (ctx != null)
-            {
-                var ehost = string.IsNullOrEmpty(emihost) ? ctx?.EmiHost : (ctx.https ? "https://" : "//") + emihost;
-                if (string.IsNullOrEmpty(ViewBag.eHost))
-                {
-                    ViewBag.eHost = ehost;
-                }
-                if (string.IsNullOrEmpty(ViewBag.EmiHost))
-                {
-                    ViewBag.EmiHost = ehost;
-                }
-                if (string.IsNullOrEmpty(ViewBag.CdnHost))
-                {
-                    ViewBag.CdnHost = ctx?.CdnPrefix;
-                }
-            }
-            base.OnActionExecuted(context);
-        }
+        public readonly bool AutoSetEmiCookie = true;
+        // /// <summary>
+        // /// 
+        // /// </summary>
+        // /// <param name="context"></param>
+        // public override void OnActionExecuted(ActionExecutedContext context)
+        // {
+        //     if (ctx != null)
+        //     {
+        //         var ehost = string.IsNullOrEmpty(emihost) ? ctx?.EmiHost : (ctx.https ? "https://" : "//") + emihost;
+        //         if (string.IsNullOrEmpty(ViewBag.eHost))
+        //         {
+        //             ViewBag.eHost = ehost;
+        //         }
+        //         if (string.IsNullOrEmpty(ViewBag.EmiHost))
+        //         {
+        //             ViewBag.EmiHost = ehost;
+        //         }
+        //         if (string.IsNullOrEmpty(ViewBag.CdnHost))
+        //         {
+        //             ViewBag.CdnHost = ctx?.CdnPrefix;
+        //         }
+        //     }
+        //     base.OnActionExecuted(context);
+        // }
 
         /// <summary>
         /// Authx认证服务
@@ -72,15 +63,7 @@ namespace Wlniao.XCenter
             var xsession = GetRequest("xsession");
             if (string.IsNullOrEmpty(ehost) || string.IsNullOrEmpty(xsession))
             {
-                return CheckAuth((ctx) =>
-                {
-                    var host = UrlReferer;
-                    if (string.IsNullOrEmpty(host))
-                    {
-                        host = UrlHost;
-                    }
-                    return Content("<html><head><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\"><script>location.href='" + ctx.EmiHost + "/app/" + ctx.app + "?back=' + location.origin + '" + Request.Path.Value + "'</script></head></html>", "text/html");
-                });
+                return CheckAuth((_) => Content("<html><head><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\"><script>location.href='" + ctx?.EmiHost + "/app/" + ctx?.app + "?back=' + location.origin + '" + Request.Path.Value + "'</script></head></html>", "text/html"));
             }
             else
             {
@@ -120,18 +103,18 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult CheckAuth(Func<EmiContext, IActionResult> func, Func<IActionResult> fail = null)
         {
-            emihost = GetCookies("ehost");
+            _emihost = GetCookies("ehost");
             if (Request.Query.Keys.Contains("ehost"))
             {
-                emihost = GetRequestNoSecurity("ehost");
+                _emihost = GetRequestNoSecurity("ehost");
                 if (AutoSetEmiCookie)
                 {
-                    Response.Cookies.Append("ehost", emihost, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
+                    Response.Cookies.Append("ehost", _emihost, IsHttps ? new CookieOptions { Secure = true, SameSite = SameSiteMode.None } : new CookieOptions { });
                 }
             }
-            else if (string.IsNullOrEmpty(emihost))
+            else if (string.IsNullOrEmpty(_emihost))
             {
-                emihost = HeaderRequest("x-domain", Context.XCenterDomain);
+                _emihost = HeaderRequest("x-domain", Context.XCenterDomain);
             }
             if (fail == null)
             {
@@ -175,7 +158,7 @@ namespace Wlniao.XCenter
                     errorMsg = ctx.message;
                     return fail.Invoke();
                 }
-            }, fail, emihost);
+            }, fail, _emihost);
         }
 
         /// <summary>
@@ -262,19 +245,19 @@ namespace Wlniao.XCenter
         public IActionResult NoPermission(bool ajax = false)
         {
             errorTitle = "操作未授权";
-            if (string.IsNullOrEmpty(nopermissionMessage))
+            if (string.IsNullOrEmpty(_nopermissionMessage))
             {
-                nopermissionMessage = "您暂无执行当前操作的权限";
+                _nopermissionMessage = "您暂无执行当前操作的权限";
             }
             if (ajax || Request.Method == "POST" || !string.IsNullOrEmpty(method))
             {
-                return OutputSerialize(new ApiResult<string> { message = nopermissionMessage });
+                return OutputSerialize(new ApiResult<string> { message = _nopermissionMessage });
             }
             else
             {
                 var errorPage = new ContentResult();
                 errorPage.ContentType = "text/html;charset=utf-8";
-                errorPage.Content = errorHtml.Replace("{{errorMsg}}", nopermissionMessage).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
+                errorPage.Content = errorHtml.Replace("{{errorMsg}}", _nopermissionMessage).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
                 return errorPage;
             }
         }
@@ -298,11 +281,11 @@ namespace Wlniao.XCenter
             }
             if (ctx == null || xsession == null)
             {
-                nopermissionMessage = "请先调用“CheckSession”后再进行权限验证";
+                _nopermissionMessage = "请先调用“CheckSession”后再进行权限验证";
             }
             else if (string.IsNullOrEmpty(code))
             {
-                nopermissionMessage = "要验证的权限无效，请检查权限编码是否正确";
+                _nopermissionMessage = "要验证的权限无效，请检查权限编码是否正确";
             }
             else
             {
@@ -315,7 +298,7 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
-                    nopermissionMessage = rlt.message;
+                    _nopermissionMessage = rlt.message;
                 }
             }
             return fail?.Invoke();
@@ -332,20 +315,14 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult? CheckPermission(string code, string organ, Func<IActionResult> func, Func<IActionResult> fail = null)
         {
-            if (fail == null)
-            {
-                fail = new Func<IActionResult>(() =>
-                {
-                    return NoPermission();
-                });
-            }
+            fail ??= new Func<IActionResult>(() => { return NoPermission(); });
             if (ctx == null || xsession == null)
             {
-                nopermissionMessage = "请先调用“CheckSession”后再进行权限验证";
+                _nopermissionMessage = "请先调用“CheckSession”后再进行权限验证";
             }
             else if (string.IsNullOrEmpty(code))
             {
-                nopermissionMessage = "要验证的权限无效，请检查权限编码是否正确";
+                _nopermissionMessage = "要验证的权限无效，请检查权限编码是否正确";
             }
             else
             {
@@ -359,7 +336,7 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
-                    nopermissionMessage = rlt.message;
+                    _nopermissionMessage = rlt.message;
                 }
             }
             return fail?.Invoke();

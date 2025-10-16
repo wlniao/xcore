@@ -319,7 +319,7 @@ namespace Wlniao.Engine
                     // 执行加载安全认证的回调方法
                     try
                     {
-                        SKey = Encryptor.SM2DecryptByPrivateKey(sm2Token, ConsumerPrivateKey);
+                        SKey = Encryptor.Sm2DecryptByPrivateKey(sm2Token, ConsumerPrivateKey);
                     }
                     catch (Exception ex)
                     {
@@ -386,7 +386,7 @@ namespace Wlniao.Engine
             }
             else
             {
-                var json = Encryptor.SM4DecryptECBFromHex(Body, SKey, true);
+                var json = Encryptor.Sm4DecryptEcbFromHex(Body, SKey, true);
                 return System.Text.Json.JsonSerializer.Deserialize<T>(string.IsNullOrEmpty(json) ? Body: json, XCore.JsonSerializerOptions) ??
                        Activator.CreateInstance<T>();
             }

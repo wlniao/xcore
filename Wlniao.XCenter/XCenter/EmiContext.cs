@@ -348,7 +348,7 @@ namespace Wlniao.XCenter
                 var url = this.EmiHost + "/upload";
                 if (string.IsNullOrEmpty(ticket))
                 {
-                    url += ("?ticket=" + Encryptor.SM4EncryptECBToHex((DateTools.GetUnix() + 300).ToString(), this.apptoken));
+                    url += ("?ticket=" + Encryptor.Sm4EncryptEcbToHex((DateTools.GetUnix() + 300).ToString(), this.apptoken));
                 }
                 else
                 {

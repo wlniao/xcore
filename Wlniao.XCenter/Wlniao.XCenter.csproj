@@ -48,7 +48,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Wlniao.AspNetCore" Version="8.0.68" />
-	  <PackageReference Include="Wlniao.XCore" Version="8.0.54" />
+	  <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
+	  <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Wlniao.AspNetCore\Wlniao.AspNetCore.csproj" />
+	  <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
 	</ItemGroup>
 </Project>

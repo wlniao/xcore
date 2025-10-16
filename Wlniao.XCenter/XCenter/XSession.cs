@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
@@ -124,7 +122,7 @@ namespace Wlniao.XCenter
                     {
                         apptoken = Encryptor.Md5Encryptor16(ctx.app + ":" + ctx.token).ToLower();
                     }
-                    var data = Encryptor.SM4DecryptECBFromHex(ticket, apptoken).Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var data = Encryptor.Sm4DecryptEcbFromHex(ticket, apptoken).Split(',', StringSplitOptions.RemoveEmptyEntries);
                     if (data.Length > 4)
                     {
                         this.ExpireTime = Convert.ToLong(data[0]);
@@ -235,7 +233,7 @@ namespace Wlniao.XCenter
                    ? Context.XCenterAppToken + ""
                    : Encryptor.Md5Encryptor16(ctx.app + ":" + ctx.token).ToLower();
             }
-            return Encryptor.SM4EncryptECBToHex(plain, apptoken);
+            return Encryptor.Sm4EncryptEcbToHex(plain, apptoken);
         }
     }
 }
