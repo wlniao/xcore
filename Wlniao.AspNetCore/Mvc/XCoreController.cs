@@ -32,7 +32,7 @@ namespace Wlniao.Mvc
         /// <summary>
         /// 链路追踪ID
         /// </summary>
-        private string trace = null;
+        private string? trace = null;
         /// <summary>
         /// 当前请求开始时间
         /// </summary>
@@ -380,23 +380,35 @@ namespace Wlniao.Mvc
             {
                 return string.Empty;
             }
-            else if (strPost == null && Request.Method == "POST" && Request.BodyReader != null)
+            else if (strPost == null && Request.Method == "POST")
             {
                 try
                 {
-                    strPost = new StreamReader(Request.Body).ReadToEnd();
-                    if (string.IsNullOrEmpty(strPost))
+                    if (Request.ContentType?.StartsWith("application/x-www-form-urlencoded") ?? false)
                     {
-                        using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
+                        var input = "";
+                        foreach(var kv in Request.Form)
                         {
-                            strPost = reader.ReadToEnd();
+                            input += "&" + kv.Key + "=" + kv.Value;
+                        }
+                        strPost = input.TrimStart('&');
+                    }
+                    else
+                    {
+                        strPost = new StreamReader(Request.Body).ReadToEnd();
+                        if (string.IsNullOrEmpty(strPost))
+                        {
+                            using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
+                            {
+                                strPost = reader.ReadToEnd();
+                            }
                         }
                     }
                 }
                 catch
                 {
                     var buffer = new byte[0];
-                    if (Request != null && Request.ContentLength > 0)
+                    if (Request.ContentLength > 0)
                     {
                         buffer = new byte[(int)Request.ContentLength];
                     }
@@ -409,11 +421,11 @@ namespace Wlniao.Mvc
         /// <summary>
         /// 
         /// </summary>
-        private string strPost = null;
+        private string? strPost = null;
         /// <summary>
         /// 
         /// </summary>
-        private Dictionary<string, object> ctxPost = null;
+        private Dictionary<string, object>? ctxPost = null;
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
         /// </summary>

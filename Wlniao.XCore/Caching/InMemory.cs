@@ -72,25 +72,20 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static bool Set<T>(string key, T obj, int expireSeconds = 86400)
         {
-            if (Cache.ContainsKey(key))
-            {
-                Cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
-                Cache[key].Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
-                {
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                });
-            }
-            else
-            {
-                var data = new CacheData
+            if (Cache.ContainsKey(key) || !Cache.TryAdd(key, new CacheData
                 {
                     Expire = DateTime.Now.AddSeconds(expireSeconds),
                     Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
                     {
                         Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
                     })
-                };
-                Cache.Add(key, data);
+                }))
+            {
+                Cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
+                Cache[key].Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+                {
+                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                });
             }
             return true;
         }

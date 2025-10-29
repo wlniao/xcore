@@ -5,12 +5,12 @@
     /// </summary>
     public partial class DbConnectInfo
     {
-        private static string connstr_rw = null;  //读写链接
-        private static string connstr_ro = null;  //只读链接
-		private static string connstr_type = null;
-		private static string connstr_mysql = null;
-		private static string connstr_sqlite = null;
-        private static string connstr_sqlsqlver = null;
+        private static string _connstrRw = null;  //读写链接
+        private static string _connstrRo = null;  //只读链接
+		private static string _connstrType = null;
+		private static string _connstrMysql = null;
+		private static string _connstrSqlite = null;
+        private static string _connstrSqlsqlver = null;
 		/// <summary>
 		/// 数据库连接字符串
 		/// </summary>
@@ -18,24 +18,14 @@
 		{
 			get
 			{
-				if (connstr_rw == null)
-				{
-					connstr_rw = Wlniao.Config.GetConfigs("WLN_CONNSTR");
-				}
+				_connstrRw ??= Wlniao.Config.GetConfigs("WLN_CONNSTR");
 
-				if (!string.IsNullOrEmpty(connstr_rw))
+				if (!string.IsNullOrEmpty(_connstrRw))
 				{
-					return connstr_rw;
+					return _connstrRw;
 				}
-				if (WLN_CONNSTR_TYPE == "mysql")
-				{
-					connstr_rw = WLN_CONNSTR_MYSQL;
-				}
-				else
-				{
-					connstr_rw = WLN_CONNSTR_SQLITE;
-				}
-				return connstr_rw;
+				_connstrRw = WLN_CONNSTR_TYPE == "mysql" ? WLN_CONNSTR_MYSQL : WLN_CONNSTR_SQLITE;
+				return _connstrRw;
 			}
 		}
 		/// <summary>
@@ -45,28 +35,28 @@
 		{
             get
             {
-	            if (!string.IsNullOrEmpty(connstr_type))
+	            if (!string.IsNullOrEmpty(_connstrType))
 	            {
-		            return connstr_type;
+		            return _connstrType;
 	            }
-	            connstr_type = Wlniao.Config.GetConfigs("WLN_CONNSTR_TYPE");
-	            if (!string.IsNullOrEmpty(connstr_type))
+	            _connstrType = Wlniao.Config.GetConfigs("WLN_CONNSTR_TYPE");
+	            if (!string.IsNullOrEmpty(_connstrType))
 	            {
-		            return connstr_type;
+		            return _connstrType;
 	            }
 	            if (!string.IsNullOrEmpty(WLN_CONNSTR_MYSQL))
                 {
-	                connstr_type = "mysql";
+	                _connstrType = "mysql";
                 }
                 else if (!string.IsNullOrEmpty(WLN_CONNSTR_SQLSERVER))
                 {
-	                connstr_type = "sqlserver";
+	                _connstrType = "sqlserver";
                 }
                 else
                 {
-	                connstr_type = "sqlite";
+	                _connstrType = "sqlite";
                 }
-                return connstr_type;
+                return _connstrType;
             }
 		}
 		/// <summary>
@@ -81,23 +71,13 @@
         /// <summary>
         /// 连接数据库的用户账号
         /// </summary>
-        public static string WLN_CONNSTR_UID
-        {
-            get
-            {
-                return Wlniao.Config.GetEncrypt("WLN_CONNSTR_UID", Config.Secret);
-            }
-        }
+        public static string WLN_CONNSTR_UID => Wlniao.Config.GetEncrypt("WLN_CONNSTR_UID", Config.Secret);
+
         /// <summary>
         /// 连接数据库的用户密码
         /// </summary>
-        public static string WLN_CONNSTR_PWD
-        {
-            get
-            {
-                return Wlniao.Config.GetEncrypt("WLN_CONNSTR_PWD", Config.Secret);
-            }
-        }
+        public static string WLN_CONNSTR_PWD => Wlniao.Config.GetEncrypt("WLN_CONNSTR_PWD", Config.Secret);
+
         /// <summary>
         /// MySql数据库连接字符串
         /// </summary>
@@ -105,15 +85,12 @@
         {
             get
             {
-                if (connstr_ro == null)
+                _connstrRo ??= Wlniao.Config.GetConfigs("WLN_CONNSTR_READONLY");
+                if (string.IsNullOrEmpty(_connstrRo))
                 {
-                    connstr_ro = Wlniao.Config.GetConfigs("WLN_CONNSTR_READONLY");
+                    _connstrRo = WLN_CONNSTR;
                 }
-                if (string.IsNullOrEmpty(connstr_ro))
-                {
-                    connstr_ro = WLN_CONNSTR;
-                }
-                return connstr_ro;
+                return _connstrRo;
             }
         }
         /// <summary>
@@ -123,24 +100,20 @@
         {
             get
             {
-                if (connstr_mysql == null)
+	            if (_connstrMysql != null) return _connstrMysql;
+	            _connstrMysql = Wlniao.Config.GetConfigs("WLN_CONNSTR_MYSQL");
+	            if (!string.IsNullOrEmpty(_connstrMysql)) return _connstrMysql;
+	            var wlnMysqlSsl = Wlniao.Config.GetConfigs("WLN_MYSQL_SSL", "none");
+                var wlnMysqlPort = Wlniao.Config.GetConfigs("WLN_MYSQL_PORT", "3306");
+                var wlnMysqlHost = Wlniao.Config.GetConfigs("WLN_MYSQL_HOST", WLN_CONNSTR_HOST);
+                var wlnMysqlName = Wlniao.Config.GetConfigs("WLN_MYSQL_NAME", WLN_CONNSTR_NAME);
+                var wlnMysqlUid = Wlniao.Config.GetEncrypt("WLN_MYSQL_UID", Config.Secret, WLN_CONNSTR_UID);
+                var wlnMysqlPwd = Wlniao.Config.GetEncrypt("WLN_MYSQL_PWD", Config.Secret, WLN_CONNSTR_PWD);
+                if (!string.IsNullOrEmpty(wlnMysqlHost) && !string.IsNullOrEmpty(wlnMysqlUid) && !string.IsNullOrEmpty(wlnMysqlPwd))
                 {
-                    connstr_mysql = Wlniao.Config.GetConfigs("WLN_CONNSTR_MYSQL");
-                    if (string.IsNullOrEmpty(connstr_mysql))
-                    {
-                        var WLN_MYSQL_PORT = Wlniao.Config.GetConfigs("WLN_MYSQL_PORT", "3306");
-                        var WLN_MYSQL_HOST = Wlniao.Config.GetConfigs("WLN_MYSQL_HOST", WLN_CONNSTR_HOST);
-                        var WLN_MYSQL_NAME = Wlniao.Config.GetConfigs("WLN_MYSQL_NAME", WLN_CONNSTR_NAME);
-                        var WLN_MYSQL_UID = Wlniao.Config.GetEncrypt("WLN_MYSQL_UID", Config.Secret, WLN_CONNSTR_UID);
-                        var WLN_MYSQL_PWD = Wlniao.Config.GetEncrypt("WLN_MYSQL_PWD", Config.Secret, WLN_CONNSTR_PWD);
-                        if (!string.IsNullOrEmpty(WLN_MYSQL_HOST) && !string.IsNullOrEmpty(WLN_MYSQL_UID) && !string.IsNullOrEmpty(WLN_MYSQL_PWD))
-						{
-							connstr_mysql = string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8;SslMode=none;"
-								, WLN_MYSQL_HOST, WLN_MYSQL_PORT, WLN_MYSQL_NAME, WLN_MYSQL_UID, WLN_MYSQL_PWD);
-						}
-                    }
+	                _connstrMysql = $"Server={wlnMysqlHost};Port={wlnMysqlPort};Database={wlnMysqlName};Uid={wlnMysqlUid};Pwd={wlnMysqlPwd};CharSet=utf8;SslMode={wlnMysqlSsl};";
                 }
-                return connstr_mysql;
+                return _connstrMysql;
             }
         }
 
@@ -151,15 +124,29 @@
 		{
 			get
 			{
-				if (connstr_sqlite == null)
+				if (_connstrSqlite != null) return _connstrSqlite;
+				var connStr = Wlniao.Config.GetSetting("WLN_CONNSTR_SQLITE");
+				if (string.IsNullOrEmpty(connStr))
 				{
-					connstr_sqlite = Wlniao.Config.GetSetting("WLN_CONNSTR_SQLITE");
-					if (string.IsNullOrEmpty(connstr_sqlite))
-					{
-						connstr_sqlite = "Data Source=" + Wlniao.IO.PathTool.Map(Wlniao.XCore.StartupRoot, XCore.FrameworkRoot, "xcore.db");
-					}
+					_connstrSqlite = "Data Source=" + Wlniao.IO.PathTool.Map(Wlniao.XCore.StartupRoot, XCore.FrameworkRoot, "xcore.db");
 				}
-				return connstr_sqlite;
+				else if(connStr.IndexOf('=') < 0)
+				{
+					var file = Wlniao.IO.PathTool.Map(connStr);
+					var folder = System.IO.Path.GetDirectoryName(file);
+					if (!string.IsNullOrEmpty(folder) && (folder.LastIndexOf('/') > 0 || folder.LastIndexOf('\\') > 0) && !System.IO.Directory.Exists(folder))
+					{
+						// 数据库文件所在目录不存在时自动创建目录
+						System.IO.Directory.CreateDirectory(folder);
+					}
+					_connstrSqlite = "Data Source=" + file;
+				}
+				else
+				{
+					_connstrSqlite = connStr;
+				}
+
+				return _connstrSqlite;
 			}
 		}
 
@@ -170,24 +157,21 @@
         {
             get
             {
-                if (connstr_sqlsqlver == null)
+	            if (_connstrSqlsqlver != null) return _connstrSqlsqlver;
+	            _connstrSqlsqlver = Wlniao.Config.GetConfigs("WLN_CONNSTR_SQLSERVER");
+	            if (!string.IsNullOrEmpty(_connstrSqlsqlver)) return _connstrSqlsqlver;
+	            var wlnMssqlHost = Wlniao.Config.GetConfigs("WLN_MSSQL_HOST", WLN_CONNSTR_HOST);
+                var wlnMssqlName = Wlniao.Config.GetConfigs("WLN_MSSQL_NAME", WLN_CONNSTR_NAME);
+                var wlnMssqlUid = Wlniao.Config.GetEncrypt("WLN_MSSQL_UID", Config.Secret, WLN_CONNSTR_UID);
+                var wlnMssqlPwd = Wlniao.Config.GetEncrypt("WLN_MSSQL_PWD", Config.Secret, WLN_CONNSTR_PWD);
+                if (string.IsNullOrEmpty(wlnMssqlName) || string.IsNullOrEmpty(wlnMssqlUid) || string.IsNullOrEmpty(wlnMssqlPwd))
                 {
-                    connstr_sqlsqlver = Wlniao.Config.GetConfigs("WLN_CONNSTR_SQLSERVER");
-                    if (string.IsNullOrEmpty(connstr_sqlsqlver))
-                    {
-                        var WLN_MSSQL_HOST = Wlniao.Config.GetConfigs("WLN_MSSQL_HOST", WLN_CONNSTR_HOST);
-                        var WLN_MSSQL_NAME = Wlniao.Config.GetConfigs("WLN_MSSQL_NAME", WLN_CONNSTR_NAME);
-                        var WLN_MSSQL_UID = Wlniao.Config.GetEncrypt("WLN_MSSQL_UID", Config.Secret, WLN_CONNSTR_UID);
-                        var WLN_MSSQL_PWD = Wlniao.Config.GetEncrypt("WLN_MSSQL_PWD", Config.Secret, WLN_CONNSTR_PWD);
-                        if (!string.IsNullOrEmpty(WLN_MSSQL_NAME) && !string.IsNullOrEmpty(WLN_MSSQL_UID) && !string.IsNullOrEmpty(WLN_MSSQL_PWD))
-						{
-							var WLN_MSSQL_PORT = Wlniao.Config.GetConfigs("WLN_MSSQL_PORT", "1433");
-							connstr_sqlsqlver = string.Format("Server={0},{1};Database={2};User Id={3};Password={4};TrustServerCertificate=true;"
-								, WLN_MSSQL_HOST, WLN_MSSQL_PORT, WLN_MSSQL_NAME, WLN_MSSQL_UID, WLN_MSSQL_PWD);
-						}
-                    }
+	                _connstrSqlsqlver = "";
+	                return _connstrSqlsqlver;
                 }
-                return connstr_sqlsqlver;
+                var wlnMssqlPort = Wlniao.Config.GetConfigs("WLN_MSSQL_PORT", "1433");
+                _connstrSqlsqlver = $"Server={wlnMssqlHost},{wlnMssqlPort};Database={wlnMssqlName};User Id={wlnMssqlUid};Password={wlnMssqlPwd};TrustServerCertificate=true;";
+                return _connstrSqlsqlver;
             }
         }
 

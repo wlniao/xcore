@@ -71,7 +71,7 @@ namespace Wlniao
         {
             hash = hash.ToLower();
 
-            var lastChr = hash[hash.Length - 1];
+            var lastChr = hash[^1];
             var type = hash.Length % 2;
             var dir = (int)direction;
             var nHash = hash.Substring(0, hash.Length - 1);
@@ -148,7 +148,7 @@ namespace Wlniao
             double[] lat = { -90.0, 90.0 };
             double[] lon = { -180.0, 180.0 };
 
-            if (precision < 1 || precision > 20) precision = 12;
+            if (precision is < 1 or > 20) precision = 12;
 
             while (geohash.Length < precision)
             {

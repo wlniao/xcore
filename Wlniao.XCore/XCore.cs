@@ -391,6 +391,7 @@ namespace Wlniao
                 return _WebNode;
             }
         }
+        
         /// <summary>
         /// 当前程序Web服务地址(通过WLN_HOST进行设置)
         /// </summary>
@@ -402,6 +403,7 @@ namespace Wlniao
                 return _WebHost;
             }
         }
+        
         /// <summary>
         /// Webroxy代理服务器地址
         /// </summary>
@@ -413,6 +415,7 @@ namespace Wlniao
                 return _Webroxy;
             }
         }
+        
         /// <summary>
         /// 根据配置信息计算得出相对固定的加密密钥
         /// </summary>

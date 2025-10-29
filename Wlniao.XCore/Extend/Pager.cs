@@ -51,23 +51,17 @@ namespace Wlniao
         {
             get
             {
-                if (string.IsNullOrEmpty(_message))
+                if (!string.IsNullOrEmpty(_message)) return _message;
+                if (rows is { Count: > 0 })
                 {
-                    if (rows != null && rows.Count > 0)
-                    {
-                        return string.Format(Runtime.Lang.Get("", "findtotal", "{0} records found"), rows.Count);
-                    }
-                    else
-                    {
-                        return Runtime.Lang.Get("", "empty", "without data");
-                    }
+                    return string.Format(Runtime.Lang.Get("", "findtotal", "{0} records found"), rows.Count);
                 }
-                return _message;
+                else
+                {
+                    return Runtime.Lang.Get("", "empty", "without data");
+                }
             }
-            set
-            {
-                _message = value;
-            }
+            set => _message = value;
         }
         /// <summary>
         /// 结果总数
@@ -76,20 +70,15 @@ namespace Wlniao
         {
             get
             {
-                if (_total < 0)
+                if (_total >= 0) return _total;
+                if (_data == null)
                 {
-                    if (_data == null)
-                    {
-                        return 0;
-                    }
-                    _total = _data.Count;
+                    return 0;
                 }
+                _total = _data.Count;
                 return _total;
             }
-            set
-            {
-                _total = value;
-            }
+            set => _total = value;
         }
 
         /// <summary>
@@ -98,17 +87,12 @@ namespace Wlniao
         [DefaultValue(10)]
         public int size
         {
-            get
-            {
-                return _size > 0 ? _size : 10;
-            }
+            get => _size > 0 ? _size : 10;
             set
             {
-                if (value != _size)
-                {
-                    _size = value;
-                    _list = null;
-                }
+                if (value == _size) return;
+                _size = value;
+                _list = null;
             }
         }
 
@@ -118,17 +102,12 @@ namespace Wlniao
         [DefaultValue(1)]
         public int page
         {
-            get
-            {
-                return _page;
-            }
+            get => _page;
             set
             {
-                if (value > 0)
-                {
-                    _page = value;
-                    _list = null;
-                }
+                if (value <= 0) return;
+                _page = value;
+                _list = null;
             }
         }
 
@@ -136,13 +115,8 @@ namespace Wlniao
         /// 跳过的记录数量
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
-        public int skip
-        {
-            get
-            {
-                return (page - 1) * size;
-            }
-        }
+        public int skip => (page - 1) * size;
+
         /// <summary>
         /// 结果集（当前页）
         /// </summary>
@@ -150,35 +124,26 @@ namespace Wlniao
         {
             get
             {
-                if (_list == null)
+                if (_list != null) return _list;
+                if (_data == null)
                 {
-                    if (_data == null)
+                    _list = new List<T>();
+                }
+                else
+                {
+                    //分页
+                    if (_data.Count <= size)
                     {
-                        _list = new List<T>();
+                        _list = _data;
+                        _page = 1;
+                    }
+                    else if (_data.Count > size * (_page - 1))
+                    {
+                        _list = _data.Count > size * _page ? _data.Skip((_page - 1) * size).Take(size).ToList() : _data.Skip((_page - 1) * size).ToList();
                     }
                     else
                     {
-                        //分页
-                        if (_data.Count <= size)
-                        {
-                            _list = _data;
-                            _page = 1;
-                        }
-                        else if (_data.Count > size * (_page - 1))
-                        {
-                            if (_data.Count > size * _page)
-                            {
-                                _list = _data.Skip((_page - 1) * size).Take(size).ToList();
-                            }
-                            else
-                            {
-                                _list = _data.Skip((_page - 1) * size).ToList();
-                            }
-                        }
-                        else
-                        {
-                            return new List<T>();
-                        }
+                        return new List<T>();
                     }
                 }
                 return _list;
@@ -213,19 +178,20 @@ namespace Wlniao
         /// <summary>
         /// 将数据转为分页格式
         /// </summary>
-        /// <param name="Data"></param>
-        /// <param name="Total"></param>
-        /// <param name="Page"></param>
-        /// <param name="Size"></param>
+        /// <param name="data"></param>
+        /// <param name="total"></param>
+        /// <param name="page"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
-        public static Pager<T> Format(List<T> Data, int Total, int Page, int Size = 0)
+        public static Pager<T> Format(List<T> data, int total, int page, int size = 0)
         {
-            var pager = new Pager<T>();
-            pager.page = Page < 1 ? 1 : Page;
-            pager.size = Size < Data.Count ? Data.Count : Size;
-            pager.total = Total < Data.Count ? Data.Count : Total;
-            pager.rows = Data;
-            return pager;
+            return new Pager<T>
+            {
+                page = page < 1 ? 1 : page,
+                size = size < data.Count ? data.Count : size,
+                total = total < data.Count ? data.Count : total,
+                rows = data
+            };
         }
     }
 }
