@@ -191,31 +191,59 @@ namespace Wlniao.Crypto
 		{
 			if (input == null)
 			{
-				return null;
+				throw new ArgumentNullException(nameof(input), "sm4 padding input can't null");
+			}
+			if (input.Length == 0)
+			{
+				return mode == SM4_DECRYPT ? throw new ArgumentException("sm4 dec padding input can't empty") : input; // 加密时空输入无需填充（但会被处理为16字节填充）
 			}
 
-			var ret = (byte[])null;
 			if (mode == SM4_ENCRYPT)
 			{
 				var p = 16 - input.Length % 16;
-				ret = new byte[input.Length + p];
+				// 当p=0时，填充16字节（0x10）,PKCS#7 填充标准：当输入长度为分组长度的整数倍时，必须填充一个完整的分组（16 字节，每个字节为0x10）
+				p = p == 0 ? 16 : p; 
+				var ret = new byte[input.Length + p];
 				Array.Copy(input, 0, ret, 0, input.Length);
 				for (var i = 0; i < p; i++)
 				{
 					ret[input.Length + i] = (byte)p;
 				}
+				return ret;
 			}
 			else
 			{
-				int p = input[input.Length - 1];
-				ret = new byte[input.Length - p];
+				var p = input[^1];
+				// 校验填充有效性：p必须在1~16之间，且最后p个字节均为p
+				if (p < 1 || p > 16)
+				{
+					throw new ArgumentException("sm4 padding input error");
+				}
+				// 校验输入长度是否足够容纳填充（避免越界）
+				if (input.Length < p)
+				{
+					throw new ArgumentException("sm4 padding input error");
+				}
+				for (var i = input.Length - p; i < input.Length; i++)
+				{
+					if (input[i] != p)
+					{
+						throw new ArgumentException("sm4 padding input error");
+					}
+				}
+				var ret = new byte[input.Length - p];
 				Array.Copy(input, 0, ret, 0, input.Length - p);
+				return ret;
 			}
-			return ret;
 		}
 
 		private byte[] sm4_crypt_ecb(int mode, bool isPadding, long[] sk, byte[] input)
 		{
+			// 非填充模式下，输入长度必须是16的倍数
+			if (!isPadding && input.Length % 16 != 0)
+			{
+				throw new ArgumentException("sm4 padding input error", nameof(input));
+			}
 			if (isPadding && mode == SM4_ENCRYPT)
 			{
 				input = padding(input, SM4_ENCRYPT);
@@ -243,67 +271,69 @@ namespace Wlniao.Crypto
 
 		private byte[] sm4_crypt_cbc(int mode, bool isPadding, long[] sk, byte[] iv, byte[] input)
 		{
+			// 复制IV副本，避免修改原始IV
+			var ivCopy = (byte[])iv.Clone();
+			
 			if (isPadding && mode == SM4_ENCRYPT)
 			{
 				input = padding(input, SM4_ENCRYPT);
 			}
 
-			var i = 0;
+			var blockIndex = 0; // 独立变量，用于计算块的起始索引
 			var length = input.Length;
-			var bins = new byte[length];
-			Array.Copy(input, 0, bins, 0, length);
-			byte[] bous = null;
+			var bins = (byte[])input.Clone(); // 直接克隆输入，避免额外复制
 			var bousList = new List<byte>();
 			if (mode == SM4_ENCRYPT)
 			{
-				for (var j = 0; length > 0; length -= 16, j++)
+				for (; length > 0; length -= 16, blockIndex++)
 				{
 					var inBytes = new byte[16];
 					var outBytes = new byte[16];
 					var out1 = new byte[16];
 
-					Array.Copy(bins, i * 16, inBytes, 0, length > 16 ? 16 : length);
-					for (i = 0; i < 16; i++)
+					// 复制当前块（确保只复制有效长度）
+					var copyLen = Math.Min(16, length);
+					Array.Copy(bins, blockIndex * 16, inBytes, 0, copyLen);
+
+					// 与IV副本异或
+					for (var i = 0; i < 16; i++)
 					{
-						outBytes[i] = ((byte)(inBytes[i] ^ iv[i]));
+						outBytes[i] = (byte)(inBytes[i] ^ ivCopy[i]);
 					}
+
 					sm4_one_round(sk, outBytes, out1);
-					Array.Copy(out1, 0, iv, 0, 16);
-					for (var k = 0; k < 16; k++)
-					{
-						bousList.Add(out1[k]);
-					}
+					ivCopy = (byte[])out1.Clone(); // 更新IV副本
+					bousList.AddRange(out1);
 				}
 			}
 			else
 			{
-				var temp = new byte[16];
-				for (var j = 0; length > 0; length -= 16, j++)
+				for (; length > 0; length -= 16, blockIndex++)
 				{
 					var inBytes = new byte[16];
 					var outBytes = new byte[16];
 					var out1 = new byte[16];
 
-					Array.Copy(bins, i * 16, inBytes, 0, length > 16 ? 16 : length);
-					Array.Copy(inBytes, 0, temp, 0, 16);
-					sm4_one_round(sk, inBytes, outBytes);
-					for (i = 0; i < 16; i++)
-					{
-						out1[i] = ((byte)(outBytes[i] ^ iv[i]));
-					}
-					Array.Copy(temp, 0, iv, 0, 16);
-					for (var k = 0; k < 16; k++)
-					{
-						bousList.Add(out1[k]);
-					}
-				}
+					int copyLen = Math.Min(16, length);
+					Array.Copy(bins, blockIndex * 16, inBytes, 0, copyLen);
+					byte[] temp = (byte[])inBytes.Clone(); // 复制当前密文块
 
+					sm4_one_round(sk, inBytes, outBytes);
+
+					// 与IV副本异或
+					for (var i = 0; i < 16; i++)
+					{
+						out1[i] = (byte)(outBytes[i] ^ ivCopy[i]);
+					}
+
+					ivCopy = temp; // 更新IV副本为当前密文块
+					bousList.AddRange(out1);
+				}
 			}
 
 			if (isPadding && mode == SM4_DECRYPT)
 			{
-				bous = padding(bousList.ToArray(), SM4_DECRYPT);
-				return bous;
+				return padding(bousList.ToArray(), SM4_DECRYPT);
 			}
 			else
 			{
@@ -336,6 +366,8 @@ namespace Wlniao.Crypto
 		{
 			var skBytes = new long[32];
 			sm4_setkey(skBytes, keyBytes);
+			// // 将子密钥数组完全反向（sk[31], sk[30], ..., sk[0]）
+			// Array.Reverse(skBytes);
 			for (var i = 0; i < 16; i++)
 			{
 				SWAP(skBytes, i);

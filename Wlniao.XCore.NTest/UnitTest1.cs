@@ -29,15 +29,28 @@ namespace Wlniao.XCore.NTest
         public void TestSm4()
         {
             var sm4 = new Wlniao.Crypto.SM4();
-            var key = "1qabgw9qd2aoqevl";
-            var txt = "41DBB8F77C87EBD3639B8000D587E4D5BD1A2E00043F0DC0EFC1D6215096D41CEF682AFD694687453FFB23969E3260B3F169D23077FAEE69644611D64A5D0FD613C5B3B5298A1B95B071396D4025EE29ECEB9459A09959DE75BC76B8B532FBB795AABDF949BB4424FA0205EAEDAEE1";
+            var txt = "qwdgewosdgewtewe";
+            var ecb = "BB528C338D6E23686397C35E2B5B4EC0BD5DF75A39F0E8AAD05626BD185019C5";
+            var cbc = "BB528C338D6E23686397C35E2B5B4EC07149C2740F614ECC6CAD1469CC41518C";
 
-            var data = Hex.Decode(txt);
-            var keys = System.Text.Encoding.ASCII.GetBytes(key);
-            var swap = sm4.DecryptECB(data, keys, true);
+            //var keys = Hex.Decode("0123456789abcdeffedcba9876543210");
+            var keys = System.Text.Encoding.ASCII.GetBytes("1qabgw9qd2aoqevl");
+            var ecbenc = sm4.EncryptECB(System.Text.Encoding.ASCII.GetBytes(txt), keys, false);
+            var ecbdec = sm4.DecryptECB(Hex.Decode(ecb), keys, false);
+            var secbenc = Hex.ToHexString(ecbenc);
+            var secbdec = System.Text.Encoding.ASCII.GetString(ecbdec);
+            
+            var cbcenc = sm4.EncryptCBC(System.Text.Encoding.ASCII.GetBytes(txt), keys, new byte[16], false);
+            var cbcdec = sm4.DecryptCBC(Hex.Decode(cbc), keys, new byte[16], false);
+            var scbcenc = Hex.ToHexString(cbcenc);
+            var scbcdec = System.Text.Encoding.ASCII.GetString(cbcdec);
+            
+            if (ecb == secbenc || txt == secbdec || cbc == scbcenc || txt == scbcdec)
+            {
+                
+            }
 
-            var rlt = Hex.ToHexString(swap);
-            Assert.Pass(rlt);
+            Assert.Pass(Hex.ToHexString(cbcenc));
         }
         [Test]
         public void TestSm2Sign()
