@@ -166,10 +166,21 @@ namespace Wlniao
             {
                 return true;
             }
-            if (chain != null && chain.ChainPolicy != null && chain.ChainPolicy.ExtraStore != null && chain.ChainPolicy.ExtraStore.Count > 0)
+            // 证书链空白时，直接返回异常
+            if (chain == null || chain.ChainPolicy.ExtraStore.Count == 0)
             {
-                var print = chain?.ChainPolicy?.ExtraStore?.LastOrDefault()?.Thumbprint.ToLower();
-                if (print == "ff32d07177d55d328a1307595ca21331e1b8149f" || print == "c7a791caaf68b5b46bde11175463f11071fa8675")
+                return false;
+            }
+            // 证书链大于0（包含根证书、中间 CA 等）遍历证书链查找受信任证书
+            foreach (var cert in chain.ChainElements.Select(chainElement => chainElement.Certificate))
+            {
+                // 根证书是自签名的（颁发者与主题相同），判断CA证书的指纹是否受信任
+                if (cert.Issuer == cert.Subject && cert.Thumbprint?.ToLower() is "ff32d07177d55d328a1307595ca21331e1b8149f")
+                {
+                    return true;
+                }
+                // 中间证书，判断是否长效期的二级CA
+                if(cert.Thumbprint?.ToLower() is "202a1b4447e29152d34a08e5821961ea3a4b16ed" or "c7a791caaf68b5b46bde11175463f11071fa8675")
                 {
                     return true;
                 }

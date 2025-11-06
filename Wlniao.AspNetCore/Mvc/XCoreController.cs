@@ -676,10 +676,13 @@ namespace Wlniao.Mvc
                     host = Config.GetConfigs("WLN_HOST");
                     if (string.IsNullOrEmpty(host))
                     {
-                        var webroxy = new Microsoft.Extensions.Primitives.StringValues();
-                        if (Request.Headers.TryGetValue("X-Webroxy", out webroxy))
+                        if (base.Request.Headers.TryGetValue("X-Webroxy", out var webroxyValue))
                         {
-                            host = webroxy.ToString();
+                            host = webroxyValue.ToString();
+                        }
+                        if (string.IsNullOrEmpty(host) && base.Request.Headers.TryGetValue("Host", out var hostValue))
+                        {
+                            host = hostValue.ToString();
                         }
                         if (string.IsNullOrEmpty(host))
                         {

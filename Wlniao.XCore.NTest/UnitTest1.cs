@@ -14,6 +14,8 @@ namespace Wlniao.XCore.NTest
         [Test]
         public void TestOrg()
         {
+            Wlniao.XServer.XApi.Request<string>("utest", "https://xcr.xiechaoyi.com/invoke", "0000000000000000",
+                new Dictionary<string, object>());
             Wlniao.Config.SetConfigs("WLN_LOG_ORGID", "2");
             Wlniao.Log.Loger.Debug(strUtil.CreateRndStrE(50));
             Wlniao.Log.Loger.Info(strUtil.CreateRndStrE(50));
@@ -37,12 +39,12 @@ namespace Wlniao.XCore.NTest
             var keys = System.Text.Encoding.ASCII.GetBytes("1qabgw9qd2aoqevl");
             var ecbenc = sm4.EncryptECB(System.Text.Encoding.ASCII.GetBytes(txt), keys, false);
             var ecbdec = sm4.DecryptECB(Hex.Decode(ecb), keys, false);
-            var secbenc = Hex.ToHexString(ecbenc);
+            var secbenc = Wlniao.Crypto.Helper.Encode(ecbenc);
             var secbdec = System.Text.Encoding.ASCII.GetString(ecbdec);
             
             var cbcenc = sm4.EncryptCBC(System.Text.Encoding.ASCII.GetBytes(txt), keys, new byte[16], false);
             var cbcdec = sm4.DecryptCBC(Hex.Decode(cbc), keys, new byte[16], false);
-            var scbcenc = Hex.ToHexString(cbcenc);
+            var scbcenc = Wlniao.Crypto.Helper.Encode(cbcenc);
             var scbcdec = System.Text.Encoding.ASCII.GetString(cbcdec);
             
             if (ecb == secbenc || txt == secbdec || cbc == scbcenc || txt == scbcdec)

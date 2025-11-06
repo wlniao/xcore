@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Version>8.0.58</Version>
+        <Version>8.0.59</Version>
         <Authors>XieChaoyi</Authors>
         <Copyright>Copyright 2020 XieChaoyi</Copyright>
         <Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -49,13 +49,13 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
-    </ItemGroup>
-
-    <ItemGroup>
         <None Update="license.txt">
             <Pack>True</Pack>
             <PackagePath>\</PackagePath>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
     </ItemGroup>
 </Project>

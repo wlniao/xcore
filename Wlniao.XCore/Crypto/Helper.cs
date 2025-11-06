@@ -1,5 +1,4 @@
 ﻿using System.Text.RegularExpressions;
-using Org.BouncyCastle.Utilities.Encoders;
 namespace Wlniao.Crypto
 {
     /// <summary>
@@ -70,7 +69,7 @@ namespace Wlniao.Crypto
             }
             else if (Regex.IsMatch(data, "^[0-9a-f]+$", RegexOptions.IgnoreCase))
             {
-                return Hex.Decode(data);
+                return System.Convert.FromHexString(data);
             }
             else
             {
@@ -81,11 +80,21 @@ namespace Wlniao.Crypto
         /// <summary>
 		/// 对Hex及Base64密钥自动编码
 		/// </summary>
-		/// <param name="data"></param>
+		/// <param name="bytes"></param>
 		/// <returns></returns>
-		public static string Encode(byte[] data)
+		public static string Encode(byte[] bytes)
         {
-            return Hex.ToHexString(data);
+            if (bytes == null || bytes.Length == 0)
+            {
+                return string.Empty;
+            }
+            var sb = new System.Text.StringBuilder(bytes.Length * 2);
+            foreach (var b in bytes)
+            {
+                // 格式化为两位十六进制，不足补0（如0x1→"01"，0xAB→"AB"）
+                sb.Append($"{b:x2}");
+            }
+            return sb.ToString();
         }
     }
 }
