@@ -671,28 +671,29 @@ namespace Wlniao.Mvc
         {
             get
             {
+                if (!string.IsNullOrEmpty(host))
+                {
+                    return host;
+                }
+                host = Config.GetConfigs("WLN_HOST");
                 if (string.IsNullOrEmpty(host))
                 {
-                    host = Config.GetConfigs("WLN_HOST");
+                    if (base.Request.Headers.TryGetValue("X-Webroxy", out var webroxyValue))
+                    {
+                        host = webroxyValue.ToString();
+                    }
+                    if (string.IsNullOrEmpty(host) && base.Request.Headers.TryGetValue("Host", out var hostValue))
+                    {
+                        host = hostValue.ToString();
+                    }
                     if (string.IsNullOrEmpty(host))
                     {
-                        if (base.Request.Headers.TryGetValue("X-Webroxy", out var webroxyValue))
-                        {
-                            host = webroxyValue.ToString();
-                        }
-                        if (string.IsNullOrEmpty(host) && base.Request.Headers.TryGetValue("Host", out var hostValue))
-                        {
-                            host = hostValue.ToString();
-                        }
-                        if (string.IsNullOrEmpty(host))
-                        {
-                            host = Request.Host.Value;
-                        }
+                        host = Request.Host.Value;
                     }
-                    if (host.IndexOf("://") < 0)
-                    {
-                        host = (IsHttps ? "https://" : "http://") + host;
-                    }
+                }
+                if (host.IndexOf("://", StringComparison.Ordinal) < 0)
+                {
+                    host = (XCore.IsUseHttps || IsHttps ? "https://" : "http://") + host;
                 }
                 return host;
             }

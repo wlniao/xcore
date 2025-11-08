@@ -310,6 +310,11 @@ namespace Wlniao
         public static bool IsDevTest => Config.GetConfigs("WLN_DEVTEST").ToLower() == "true";
 
         /// <summary>
+        /// 程序访问是否通过HTTPS
+        /// </summary>
+        public static bool IsUseHttps { get; set; } = true;
+        
+        /// <summary>
         /// 是否微服务运行节点
         /// </summary>
         public static bool IsMicroservicesNode

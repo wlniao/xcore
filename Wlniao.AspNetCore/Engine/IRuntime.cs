@@ -8,5 +8,5 @@ public interface IRuntime
     /// <summary>
     /// 启动时初始化处理
     /// </summary>
-    public void InitStart();
+    public bool InitStart();
 }
