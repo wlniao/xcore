@@ -15,16 +15,17 @@ namespace Wlniao.Engine
         /// 当前会话认证有效
         /// </summary>
         public bool IsValid => ExpireTime > DateTools.GetUnix() && !string.IsNullOrEmpty(UserId);
+
         /// <summary>
         /// 当前会话认证无效
         /// </summary>
         public bool NotValid => ExpireTime < DateTools.GetUnix() || string.IsNullOrEmpty(UserId);
-        
+
         /// <summary>
         /// 过期时间
         /// </summary>
         public long ExpireTime { get; set; }
-        
+
         /// <summary>
         /// 用户标识
         /// </summary>
@@ -34,7 +35,7 @@ namespace Wlniao.Engine
         /// 用户姓名
         /// </summary>
         public string? Name { get; set; }
-        
+
         /// <summary>
         /// 登录账号
         /// </summary>
@@ -56,9 +57,11 @@ namespace Wlniao.Engine
         /// </summary>
         /// <param name="consumerSecretKey"></param>
         /// <param name="currentConsumerId"></param>
-        /// <param name="exprieSeconds"></param>
+        /// <param name="expireSeconds"></param>
+        /// <param name="base64"></param>
         /// <returns></returns>
-        public string Encode(string consumerSecretKey, string currentConsumerId = null, int exprieSeconds = 7200)
+        public string Encode(string consumerSecretKey, string currentConsumerId = null, int expireSeconds = 7200,
+            bool base64 = false)
         {
             var extend = new Dictionary<string, string>();
             if (!string.IsNullOrEmpty(Name))
@@ -81,11 +84,17 @@ namespace Wlniao.Engine
                 extend.TryAdd(kv.Key, kv.Value);
             }
 
-            ExpireTime = DateTools.GetUnix() + exprieSeconds;
+            if (expireSeconds > 0)
+            {
+                ExpireTime = DateTools.GetUnix() + expireSeconds;
+            }
+
             var extStr = System.Text.Json.JsonSerializer.Serialize(extend, XCore.JsonSerializerOptions);
             var extHex = StringUtil.UTF8ToHexString(extStr);
             var plain = $"{ExpireTime},{UserId},{currentConsumerId},{extHex}".Trim(',');
-            return Encryptor.SM4EncryptECBToHex(plain, consumerSecretKey, true);
+            return base64
+                ? Encryptor.SM4EncryptECBToBase64(plain, consumerSecretKey, true)
+                : Encryptor.SM4EncryptECBToHex(plain, consumerSecretKey, true);
         }
 
         /// <summary>
@@ -96,53 +105,67 @@ namespace Wlniao.Engine
         /// <param name="currentConsumerId"></param>
         public void Decode(string authorization, string consumerSecretKey, string currentConsumerId = null)
         {
-            var data = Encryptor.SM4DecryptECBFromHex(authorization, consumerSecretKey).Split(',');
-            if (data.Length < 4 || string.IsNullOrEmpty(data[1]) || (!string.IsNullOrEmpty(data[2]) && !string.IsNullOrEmpty(currentConsumerId) && data[2] != currentConsumerId))
+            try
+            {
+                var sm4 = new Wlniao.Crypto.SM4();
+                var btxt = Wlniao.Crypto.Helper.Decode(authorization);
+                var bkey = System.Text.Encoding.UTF8.GetBytes((consumerSecretKey + "0000000000000000")[..16]);
+                var data = System.Text.Encoding.UTF8.GetString(sm4.DecryptECB(btxt, bkey, true)).Split(',');
+                if (data.Length < 4 || string.IsNullOrEmpty(data[1]) || (!string.IsNullOrEmpty(data[2]) &&
+                                                                         !string.IsNullOrEmpty(currentConsumerId) &&
+                                                                         data[2] != currentConsumerId))
+                {
+                    throw new Exception("Authorization error");
+                }
+                else
+                {
+                    ExpireTime = Convert.ToLong(data[0]);
+                    UserId = data[1];
+                    if (!string.IsNullOrEmpty(data.LastOrDefault()))
+                    {
+                        var plain = StringUtil.HexStringToUTF8(data.LastOrDefault());
+                        var kvs = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(plain,
+                            XCore.JsonSerializerOptions);
+                        foreach (var kv in kvs ?? new Dictionary<string, string>())
+                        {
+                            switch (kv.Key)
+                            {
+                                case "n":
+                                    Name = kv.Value;
+                                    break;
+                                case "a":
+                                    Account = kv.Value;
+                                    break;
+                                case "d":
+                                    DepartmentIds = kv.Value;
+                                    break;
+                                default:
+                                    ExtData.TryAdd(kv.Key, kv.Value);
+                                    break;
+                            }
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(Name))
+                    {
+                        Name = "";
+                    }
+
+                    if (string.IsNullOrEmpty(Account))
+                    {
+                        Account = "";
+                    }
+
+                    if (string.IsNullOrEmpty(UserId))
+                    {
+                        ExpireTime = 0;
+                    }
+                }
+            }
+            catch
             {
                 throw new Exception("Authorization error");
             }
-            else
-            {
-                ExpireTime = Convert.ToLong(data[0]);
-                UserId = data[1];
-                if (!string.IsNullOrEmpty(data.LastOrDefault()))
-                {
-                    var plain = StringUtil.HexStringToUTF8(data.LastOrDefault());
-                    var kvs = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(plain, XCore.JsonSerializerOptions);
-                    foreach (var kv in kvs ?? new Dictionary<string, string>())
-                    {
-                        switch (kv.Key)
-                        {
-                            case "n":
-                                Name = kv.Value;
-                                break;
-                            case "a":
-                                Account = kv.Value;
-                                break;
-                            case "d":
-                                DepartmentIds = kv.Value;
-                                break;
-                            default:
-                                ExtData.TryAdd(kv.Key, kv.Value);
-                                break;
-                        }
-                    }
-                }
-                
-                if (string.IsNullOrEmpty(Name))
-                {
-                    Name = "";
-                }
-                if (string.IsNullOrEmpty(Account))
-                {
-                    Account = "";
-                }
-                if (string.IsNullOrEmpty(UserId))
-                {
-                    ExpireTime = 0;
-                }
-            }
-            
         }
 
     }

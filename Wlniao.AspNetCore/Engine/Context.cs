@@ -256,7 +256,7 @@ namespace Wlniao.Engine
             // 取出身份验证令牌
             if (HeaderInput.TryGetValue("authorization", out var authorization) && !string.IsNullOrEmpty(authorization))
             {
-                Authorization = authorization;
+                Authorization = authorization.StartsWith("Bearer ") ? authorization[7..] : authorization;
             }
             else if (HeaderInput.TryGetValue("x-auth-token", out var xAuthToken) && !string.IsNullOrEmpty(xAuthToken))
             {

@@ -56,48 +56,47 @@ namespace Wlniao
                 if (asms.Length > 0)
                 {
                     types = Assembly.LoadFrom(asms[0]).GetTypes();
-                    Log.Loger.Info("Find business component from: " + asms[0]);
+                    Log.Loger.Debug("Find business component from: " + asms[0]);
                 }
                 else
                 {
-                    Log.Loger.Error("Business component registration failed: the '" + assemblyFile +
-                                    "' file was not found");
+                    Log.Loger.Error($"Business component registration failed: the '{assemblyFile}' file was not found");
                 }
             }
 
-            if (types != null && types.Length > 0)
+            if (types is not { Length: > 0 })
             {
-                types = types.Where(t => t.GetCustomAttributes(typeof(BusinessServiceAttribute), false).Any())
-                    .ToArray();
-                if (types.Length > 0)
+                return;
+            }
+            types = types.Where(t => t.GetCustomAttributes(typeof(BusinessServiceAttribute), false).Any()).ToArray();
+            if (types.Length > 0)
+            {
+                foreach (var impl in types)
                 {
-                    foreach (var impl in types)
-                    {
-                        var lifetime = impl.GetCustomAttribute<BusinessServiceAttribute>().LifeTime; //获取该类注入的生命周期
+                    var lifetime = impl.GetCustomAttribute<BusinessServiceAttribute>().LifeTime; //获取该类注入的生命周期
 
-                        // 获取该类所继承的所有接口并循环注入
-                        impl.GetInterfaces().ToList().ForEach(i =>
+                    // 获取该类所继承的所有接口并循环注入
+                    impl.GetInterfaces().ToList().ForEach(i =>
+                    {
+                        switch (lifetime)
                         {
-                            switch (lifetime)
-                            {
-                                case ServiceLifetime.Transient:
-                                    service.AddTransient(i, impl); //每次服务提供请求，ServiceProvider总会创建一个新的对象
-                                    break;
-                                case ServiceLifetime.Singleton:
-                                    service.AddSingleton(i, impl); //以“单例”的方式管理服务实例的生命周期
-                                    break;
-                                case ServiceLifetime.Scoped:
-                                    service.AddScoped(i, impl); //每次服务提供请求，ServiceProvider总会创建一个新的对象，在同一个Request里是一样的
-                                    break;
-                            }
-                        });
-                    }
+                            case ServiceLifetime.Transient:
+                                service.AddTransient(i, impl); //每次服务提供请求，ServiceProvider总会创建一个新的对象
+                                break;
+                            case ServiceLifetime.Singleton:
+                                service.AddSingleton(i, impl); //以“单例”的方式管理服务实例的生命周期
+                                break;
+                            case ServiceLifetime.Scoped:
+                            default:
+                                service.AddScoped(i, impl); //每次服务提供请求，ServiceProvider总会创建一个新的对象，在同一个Request里是一样的
+                                break;
+                        }
+                    });
                 }
-                else
-                {
-                    Log.Loger.Error(
-                        "Business component registration failed: Please check BusinessService attribute is registered");
-                }
+            }
+            else
+            {
+                Log.Loger.Error("Business component registration failed: Please check BusinessService attribute is registered");
             }
         }
 
