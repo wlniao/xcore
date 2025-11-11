@@ -348,9 +348,9 @@ namespace Wlniao.Engine
 
                     Session.Decode(Authorization, ConsumerSecretKey, ConsumerId);
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    Loger.Error($"EngineSession.Decode: {ex.Message}[${ConsumerId}]{Environment.NewLine}{ex.StackTrace}");
+                    Loger.Debug($"EngineSession.Decode: {e.Message}[{ConsumerId}]");
                 }
             }
             else if (IdentityAuthentication != null)
@@ -360,9 +360,9 @@ namespace Wlniao.Engine
                 {
                     Session = IdentityAuthentication.Invoke(Request) ?? new EngineSession();
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    Loger.Error($"IdentityAuthentication: {ex.Message}[${ConsumerId}]{Environment.NewLine}{ex.StackTrace}");
+                    Loger.Debug($"IdentityAuthentication: {e.Message}[{ConsumerId}]");
                 }
             }
         }

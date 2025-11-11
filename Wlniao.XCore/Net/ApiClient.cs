@@ -39,33 +39,47 @@ namespace Wlniao.Net
         /// <returns></returns>
         public static string Get(string url, string webroxy = null)
         {
-            var res = "";
-            var uri = new Uri(url);
-            if (string.IsNullOrEmpty(webroxy))
+            try
             {
-                webroxy = XCore.Webroxy;
-            }
-            if (!string.IsNullOrEmpty(webroxy))
-            {
-                url = webroxy + uri.PathAndQuery;
-            }
-            var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-            using var client = new System.Net.Http.HttpClient(handler);
-            var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
-            if (!string.IsNullOrEmpty(webroxy))
-            {
-                request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
-            }
-            client.SendAsync(request).ContinueWith((requestTask) =>
-            {
-                var response = requestTask.Result;
-                response.Content.ReadAsStringAsync().ContinueWith((readTask) =>
+
+                var res = "";
+                var uri = new Uri(url);
+                if (string.IsNullOrEmpty(webroxy))
                 {
-                    res = readTask.Result;
+                    webroxy = XCore.Webroxy;
+                }
+
+                if (!string.IsNullOrEmpty(webroxy))
+                {
+                    url = webroxy + uri.PathAndQuery;
+                }
+
+                var handler = new HttpClientHandler
+                    { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                using var client = new System.Net.Http.HttpClient(handler);
+                var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
+                if (!string.IsNullOrEmpty(webroxy))
+                {
+                    request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
+                }
+
+                client.SendAsync(request).ContinueWith((requestTask) =>
+                {
+                    var response = requestTask.Result;
+                    response.Content.ReadAsStringAsync().ContinueWith((readTask) => { res = readTask.Result; }).Wait();
                 }).Wait();
-            }).Wait();
-            return res;
+                return res;
+            }
+            catch (AggregateException e)
+            {
+                throw e.InnerException!;
+            }
+            catch
+            {
+                throw;
+            }
         }
+
         /// <summary>
         /// 发起Post请求
         /// </summary>
@@ -76,29 +90,40 @@ namespace Wlniao.Net
         /// <returns></returns>
         public static string Post(string url, string postData, string contentType = "application/json", string webroxy = null)
         {
-            var uri = new Uri(url);
-            if (string.IsNullOrEmpty(webroxy))
+            try
             {
-                webroxy = XCore.Webroxy;
+                var uri = new Uri(url);
+                if (string.IsNullOrEmpty(webroxy))
+                {
+                    webroxy = XCore.Webroxy;
+                }
+                if (!string.IsNullOrEmpty(webroxy))
+                {
+                    url = webroxy + uri.PathAndQuery;
+                }
+                var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                using var client = new HttpClient(handler);
+                var stream = Convert.ToStream(string.IsNullOrEmpty(postData) ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(postData));
+                var content = new StreamContent(stream);
+                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", contentType);
+                if (!string.IsNullOrEmpty(webroxy))
+                {
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Webroxy", uri.Host);
+                }
+                var response = client.PostAsync(url, content).GetAwaiter().GetResult();
+                return response.StatusCode == System.Net.HttpStatusCode.OK 
+                    ? response.Content.ReadAsStringAsync().GetAwaiter().GetResult() 
+                    : throw new Exception("StatusCode:" + response.StatusCode + " " + response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
             }
-            if (!string.IsNullOrEmpty(webroxy))
+            catch (AggregateException e)
             {
-                url = webroxy + uri.PathAndQuery;
+                throw e.InnerException!;
             }
-            var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-            using var client = new HttpClient(handler);
-            var stream = Convert.ToStream(string.IsNullOrEmpty(postData) ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(postData));
-            var content = new StreamContent(stream);
-            client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-            client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", contentType);
-            if (!string.IsNullOrEmpty(webroxy))
+            catch
             {
-                client.DefaultRequestHeaders.TryAddWithoutValidation("X-Webroxy", uri.Host);
+                throw;
             }
-            var response = client.PostAsync(url, content).GetAwaiter().GetResult();
-            return response.StatusCode == System.Net.HttpStatusCode.OK 
-                ? response.Content.ReadAsStringAsync().GetAwaiter().GetResult() 
-                : throw new Exception("StatusCode:" + response.StatusCode + " " + response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
         }
         /// <summary>
         /// 
@@ -109,52 +134,63 @@ namespace Wlniao.Net
         /// <returns></returns>
         public static string Post(string url, System.IO.Stream stream, string webroxy = null)
         {
-            var str = "";
-            var err = "";
-            var uri = new Uri(url);
-            if (string.IsNullOrEmpty(webroxy))
+            try
             {
-                webroxy = XCore.Webroxy;
-            }
-            if (!string.IsNullOrEmpty(webroxy))
-            {
-                url = webroxy + uri.PathAndQuery;
-            }
-            var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-            using var client = new HttpClient(handler);
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Date = DateTime.UtcNow;
-            request.Headers.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Wlniao-XCore-XServer", "beta"));
-            if (!string.IsNullOrEmpty(webroxy))
-            {
-                request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
-            }
-            if (stream is { Length: > 0 })
-            {
-                request.Content = new StreamContent(stream);
-            }
-            client.SendAsync(request).ContinueWith((requestTask) =>
-            {
-                try
+                var str = "";
+                var err = "";
+                var uri = new Uri(url);
+                if (string.IsNullOrEmpty(webroxy))
                 {
-                    requestTask.Result.Content.ReadAsStringAsync().ContinueWith((readTask) =>
-                    {
-                        str = readTask.Result;
-                    }).Wait();
+                    webroxy = XCore.Webroxy;
                 }
-                catch (AggregateException aex)
+                if (!string.IsNullOrEmpty(webroxy))
                 {
-                    if (aex.InnerException != null)
-                    {
-                        err = aex.InnerException.InnerException != null ? aex.InnerException.InnerException.Message : aex.InnerException.Message;
-                    }
-                    else
-                    {
-                        err = aex.Message;
-                    }
+                    url = webroxy + uri.PathAndQuery;
                 }
-            }).Wait();
-            return str;
+                var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                using var client = new HttpClient(handler);
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Headers.Date = DateTime.UtcNow;
+                request.Headers.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Wlniao-XCore-XServer", "beta"));
+                if (!string.IsNullOrEmpty(webroxy))
+                {
+                    request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
+                }
+                if (stream is { Length: > 0 })
+                {
+                    request.Content = new StreamContent(stream);
+                }
+                client.SendAsync(request).ContinueWith((requestTask) =>
+                {
+                    try
+                    {
+                        requestTask.Result.Content.ReadAsStringAsync().ContinueWith((readTask) =>
+                        {
+                            str = readTask.Result;
+                        }).Wait();
+                    }
+                    catch (AggregateException aex)
+                    {
+                        if (aex.InnerException != null)
+                        {
+                            err = aex.InnerException.InnerException != null ? aex.InnerException.InnerException.Message : aex.InnerException.Message;
+                        }
+                        else
+                        {
+                            err = aex.Message;
+                        }
+                    }
+                }).Wait();
+                return str;
+            }
+            catch (AggregateException e)
+            {
+                throw e.InnerException!;
+            }
+            catch
+            {
+                throw;
+            }
         }
 
     }

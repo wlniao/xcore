@@ -113,7 +113,11 @@ namespace Wlniao.Log
                 return _logProvider;
             }
         }
-
+        
+        /// <summary>
+        /// 是否允许输出Debug日志
+        /// </summary>
+        public static bool AllowDebug = true;
         /// <summary>
         /// 本地日志输出路径
         /// </summary>
@@ -172,7 +176,10 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public static void Debug(string message)
         {
-            LogProvider.Debug(message);
+            if (AllowDebug)
+            {
+                LogProvider.Debug(message);
+            }
         }
         /// <summary>
         /// 输出普通信息日志

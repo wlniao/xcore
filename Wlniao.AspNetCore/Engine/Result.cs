@@ -25,12 +25,14 @@ namespace Wlniao.Engine
         /// 是否存在错误情况
         /// </summary>
         /// <returns></returns>
+        [System.Text.Json.Serialization.JsonIgnore]
         public bool Success => StatusCode == 200;
 
         /// <summary>
         /// 是否存在错误情况
         /// </summary>
         /// <returns></returns>
+        [System.Text.Json.Serialization.JsonIgnore]
         public bool HasError => StatusCode != 200;
         
         /// <summary>

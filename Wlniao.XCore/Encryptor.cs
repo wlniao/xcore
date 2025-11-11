@@ -476,30 +476,36 @@ namespace Wlniao
             }
             return "";
         }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="plainText"></param>
         /// <param name="publicKey"></param>
+        /// <param name="base64"></param>
         /// <returns></returns>
-        public static string SM2EncryptByPublicKey(string plainText, string publicKey)
+        public static string SM2EncryptByPublicKey(string plainText, string publicKey, bool base64 = false)
         {
             if (string.IsNullOrEmpty(plainText))
             {
                 return "";
             }
+
             var sm2 = new SM2(Helper.Decode(publicKey), null, SM2Mode.C1C3C2);
             var plainBytes = Encoding.UTF8.GetBytes(plainText);
             var encBytes = sm2.Encrypt(plainBytes);
-            return Convert.BytesToHexString(encBytes);
+            return base64 ? System.Convert.ToBase64String(encBytes) : Convert.BytesToHexString(encBytes);
         }
+        
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="plainBytes"></param>
         /// <param name="publicKey"></param>
+        /// <param name="base64"></param>
         /// <returns></returns>
-        public static string SM2EncryptByPublicKey(byte[] plainBytes, byte[] publicKey)
+        public static string SM2EncryptByPublicKey(byte[] plainBytes, byte[] publicKey, bool base64 = false)
         {
             if (plainBytes == null || publicKey == null)
             {
@@ -507,7 +513,7 @@ namespace Wlniao
             }
             var sm2 = new SM2(publicKey, null, SM2Mode.C1C3C2);
             var encBytes = sm2.Encrypt(plainBytes);
-            return Convert.BytesToHexString(encBytes);
+            return base64 ? System.Convert.ToBase64String(encBytes) : Convert.BytesToHexString(encBytes);
         }
         /// <summary>
         /// 
