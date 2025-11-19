@@ -1,3 +1,6 @@
+using System.Text.Json.Serialization;
+using Newtonsoft.Json;
+
 namespace Wlniao.Engine
 {
     /// <summary>
@@ -6,34 +9,42 @@ namespace Wlniao.Engine
     /// <typeparam name="T"></typeparam>
     public class Result<T>
     {
-        /// <summary>
-        /// 返回的数据
-        /// </summary>
-        public T? Data { get; set; }
-        
-        /// <summary>
-        /// 返回的消息内容
-        /// </summary>
-        public string Message { get; set; } = string.Empty;
         
         /// <summary>
         /// 返回状态码（200表示成功）
         /// </summary>
-        public int StatusCode { get; set; } = 0;
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        // ReSharper disable once MemberCanBePrivate.Global
+        public int Code { get; set; } = 0;
+        
+        /// <summary>
+        /// 返回的数据
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public T? Data { get; set; } = default;
+        
+        /// <summary>
+        /// 返回的消息内容
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string Message { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 是否存在错误情况
+        /// </summary>
+        /// <returns></returns>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool Success => Code == 200;
 
         /// <summary>
         /// 是否存在错误情况
         /// </summary>
         /// <returns></returns>
         [System.Text.Json.Serialization.JsonIgnore]
-        public bool Success => StatusCode == 200;
-
-        /// <summary>
-        /// 是否存在错误情况
-        /// </summary>
-        /// <returns></returns>
-        [System.Text.Json.Serialization.JsonIgnore]
-        public bool HasError => StatusCode != 200;
+        public bool HasError => Code != 200;
         
         /// <summary>
         /// 设置返回内容
@@ -64,8 +75,8 @@ namespace Wlniao.Engine
         /// <returns></returns>
         public Result<T> SetMessage(string message, int statusCode)
         {
+            this.Code = statusCode;
             this.Message = message;
-            this.StatusCode = statusCode;
             return this;
         }
         
@@ -76,7 +87,7 @@ namespace Wlniao.Engine
         /// <returns></returns>
         public Result<T> SetStatusCode(int statusCode)
         {
-            this.StatusCode = statusCode;
+            this.Code = statusCode;
             return this;
         }
 
@@ -88,7 +99,7 @@ namespace Wlniao.Engine
         /// <returns></returns>
         public static Result<T> OutSuccess(T data, int statusCode = 200)
         {
-            return new Result<T> { Data = data, Message = "success", StatusCode = statusCode };
+            return new Result<T> { Code = statusCode, Data = data, Message = "success" };
         }
         
         /// <summary>
@@ -99,7 +110,7 @@ namespace Wlniao.Engine
         /// <returns></returns>
         public static Result<T> OutSuccess(string message, T data)
         {
-            return new Result<T> { Data = data, Message = message, StatusCode = 200 };
+            return new Result<T> { Code = 200, Data = data, Message = message };
         }
         
         /// <summary>
@@ -111,7 +122,7 @@ namespace Wlniao.Engine
         /// <returns></returns>
         public static Result<T> OutMessage(string message, int statusCode, T data = default(T)!)
         {
-            return new Result<T> { Data = data, Message = message, StatusCode = statusCode };
+            return new Result<T> { Code = statusCode, Data = data, Message = message };
         }
     }
 }

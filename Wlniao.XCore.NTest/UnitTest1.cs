@@ -1,4 +1,5 @@
 using Org.BouncyCastle.Utilities.Encoders;
+using Wlniao.Text;
 
 namespace Wlniao.XCore.NTest
 {
@@ -17,11 +18,11 @@ namespace Wlniao.XCore.NTest
             Wlniao.XServer.XApi.Request<string>("utest", "https://xcr.xiechaoyi.com/invoke", "0000000000000000",
                 new Dictionary<string, object>());
             Wlniao.Config.SetConfigs("WLN_LOG_ORGID", "2");
-            Wlniao.Log.Loger.Debug(strUtil.CreateRndStrE(50));
-            Wlniao.Log.Loger.Info(strUtil.CreateRndStrE(50));
-            Wlniao.Log.Loger.Warn(strUtil.CreateRndStrE(50));
-            Wlniao.Log.Loger.Error(strUtil.CreateRndStrE(50));
-            Wlniao.Log.Loger.Fatal(strUtil.CreateRndStrE(50));
+            Wlniao.Log.Loger.Debug(StringUtil.CreateRndStrE(50));
+            Wlniao.Log.Loger.Info(StringUtil.CreateRndStrE(50));
+            Wlniao.Log.Loger.Warn(StringUtil.CreateRndStrE(50));
+            Wlniao.Log.Loger.Error(StringUtil.CreateRndStrE(50));
+            Wlniao.Log.Loger.Fatal(StringUtil.CreateRndStrE(50));
             System.Threading.Thread.Sleep(8000);
             //Assert.Fail("Fail");
             Assert.Pass("Success");

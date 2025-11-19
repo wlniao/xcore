@@ -51,8 +51,9 @@ namespace Wlniao
             }
             else
             {
-                var asms = System.IO.Directory.GetFiles(XCore.StartupRoot, assemblyFile,
-                    System.IO.SearchOption.AllDirectories);
+                var asms = assemblyFile.IndexOf('/') < 0 && assemblyFile.IndexOf(':') < 0
+                    ? System.IO.Directory.GetFiles(XCore.StartupRoot, assemblyFile, System.IO.SearchOption.AllDirectories)
+                    : System.IO.File.Exists(assemblyFile) ? new [] { assemblyFile } : new string[] { };
                 if (asms.Length > 0)
                 {
                     types = Assembly.LoadFrom(asms[0]).GetTypes();
@@ -61,6 +62,7 @@ namespace Wlniao
                 else
                 {
                     Log.Loger.Error($"Business component registration failed: the '{assemblyFile}' file was not found");
+                    return;
                 }
             }
 

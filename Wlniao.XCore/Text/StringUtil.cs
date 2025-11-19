@@ -31,7 +31,7 @@ namespace Wlniao.Text
     /// <summary>
     /// 字符串操作工具类
     /// </summary>
-    public class StringUtil
+    public abstract class StringUtil
     {
         private static readonly Regex HtmlReg = new Regex("<[^>]*>");
         /// <summary>
@@ -132,7 +132,7 @@ namespace Wlniao.Text
             }
             if (str.Length > length)
             {
-                return string.Format("{0}...", str.Substring(0, length));
+                return string.Format("{0}...", str[..length]);
             }
             return str;
         }
@@ -201,7 +201,7 @@ namespace Wlniao.Text
             {
                 return str;
             }
-            return str[0].ToString().ToUpper() + str.Substring(1);
+            return str[0].ToString().ToUpper() + str[1..];
         }
 
         /// <summary>
@@ -215,7 +215,7 @@ namespace Wlniao.Text
             {
                 return str;
             }
-            return str[0].ToString().ToLower() + str.Substring(1);
+            return str[0].ToString().ToLower() + str[1..];
         }
 
 
@@ -361,8 +361,8 @@ namespace Wlniao.Text
             {
                 return false;
             }
-            var s = (rawString.IndexOf('?') > 0 ? rawString.Substring(0, rawString.IndexOf('?')) : rawString).Split(new[] { "://", "/" }, StringSplitOptions.RemoveEmptyEntries);
-            var temp = rawString.IndexOf("://", StringComparison.Ordinal) > 0 ? (s[0] + "://" + strUtil.Join("/", s.Skip(1).ToArray()) + "/") : (strUtil.Join("/", s) + "/");
+            var s = (rawString.IndexOf('?') > 0 ? rawString[..rawString.IndexOf('?')] : rawString).Split(new[] { "://", "/" }, StringSplitOptions.RemoveEmptyEntries);
+            var temp = rawString.IndexOf("://", StringComparison.Ordinal) > 0 ? (s[0] + "://" + Join("/", s.Skip(1).ToArray()) + "/") : (Join("/", s) + "/");
             return temp.StartsWith(rawString);
         }
         /// <summary>
@@ -585,7 +585,7 @@ namespace Wlniao.Text
             {
                 return false;
             }
-            else if (!strUtil.IsNumber(str.Substring(0, 17)) || !(strUtil.IsNumber(str.Substring(17)) || str.Substring(17).ToUpper() == "X"))
+            else if (!IsNumber(str[..17]) || !(IsNumber(str[17..]) || str[17..].ToUpper() == "X"))
             {
                 return false;
             }
@@ -1026,7 +1026,7 @@ namespace Wlniao.Text
             html = html.Trim();
             if (count <= 0) return "";
             if (count < 20) count = 20;
-            var unclosedHtml = html.Length <= count ? html : html.Trim().Substring(0, count);
+            var unclosedHtml = html.Length <= count ? html : html.Trim()[..count];
             return CloseHtml(unclosedHtml);
         }
 
@@ -1096,7 +1096,7 @@ namespace Wlniao.Text
         public static string SubString(string str, int length)
         {
             if (str == null) return null;
-            if (str.Length > length) return str.Substring(0, length);
+            if (str.Length > length) return str[..length];
             return str;
         }
 
@@ -1130,7 +1130,7 @@ namespace Wlniao.Text
             if (IsNullOrEmpty(trimString)) return srcString;
             if (srcString.EndsWith(trimString) == false) return srcString;
             if (srcString.Equals(trimString)) return "";
-            return srcString.Substring(0, srcString.Length - trimString.Length);
+            return srcString[..^trimString.Length];
         }
 
         /// <summary>
@@ -1145,7 +1145,7 @@ namespace Wlniao.Text
             if (trimString == null) return srcString;
             if (IsNullOrEmpty(srcString)) return string.Empty;
             if (srcString.StartsWith(trimString) == false) return srcString;
-            return srcString.Substring(trimString.Length);
+            return srcString[trimString.Length..];
         }
 
         /// <summary>
@@ -1284,7 +1284,7 @@ namespace Wlniao.Text
                 startIndex = i;
             }
             if (startIndex == -1) return 0;
-            return Convert.ToInt(rawString.Substring(startIndex));
+            return Convert.ToInt(rawString[startIndex..]);
         }
 
         /// <summary>
@@ -1450,7 +1450,7 @@ namespace Wlniao.Text
                 }
             }
             if (type && strResult.IndexOf("一十", StringComparison.Ordinal) == 0)
-                strResult = strResult.Substring(1);
+                strResult = strResult[1..];
             return strResult;
         }
         /// <summary>
@@ -1472,7 +1472,7 @@ namespace Wlniao.Text
         public static string Ellipsis(string s, int l, string endStr)
         {
             s = s.Trim();
-            var temp = s.Substring(0, (s.Length < l + 1) ? s.Length : l + 1);
+            var temp = s[..((s.Length < l + 1) ? s.Length : l + 1)];
             var encodedBytes = Encodings.GetEncoding("ASCII").GetBytes(temp);
             var outputStr = "";
             var count = 0;
@@ -1659,7 +1659,7 @@ namespace Wlniao.Text
             for (var i = 0; i < src.Length; i++)
             {
                 var bytes = new byte[2];
-                bytes[1] = byte.Parse(int.Parse(src[i].Substring(0, 2), NumberStyles.HexNumber).ToString(CultureInfo.InvariantCulture));
+                bytes[1] = byte.Parse(int.Parse(src[i][..2], NumberStyles.HexNumber).ToString(CultureInfo.InvariantCulture));
                 bytes[0] = byte.Parse(int.Parse(src[i].Substring(2, 2), NumberStyles.HexNumber).ToString(CultureInfo.InvariantCulture));
                 dst += Encodings.Unicode.GetString(bytes, 0, bytes.Length);
             }
@@ -1757,7 +1757,7 @@ namespace Wlniao.Text
                 var len = strText.Length;
                 for (var i = 0; i < len; i++)
                 {
-                    myStr += Chs2Pinyin(strText.Substring(i, 1)).Substring(0, 1);
+                    myStr += Chs2Pinyin(strText.Substring(i, 1))[..1];
                 }
             }
             return myStr;
@@ -1776,7 +1776,7 @@ namespace Wlniao.Text
                 myStr = Chs2Pinyin(strText) + " ";
                 for (var i = 0; i < len; i++)
                 {
-                    myStr += Chs2Pinyin(strText.Substring(i, 1)).Substring(0, 1);
+                    myStr += Chs2Pinyin(strText.Substring(i, 1))[..1];
                 }
             }
             return myStr;
@@ -2021,7 +2021,7 @@ namespace Wlniao.Text
             }
             else
             {
-                return name.Substring(0, 1).PadRight(name.Length - 1, '＊') + name.Substring(name.Length - 1, 1);
+                return name[..1].PadRight(name.Length - 1, '＊') + name.Substring(name.Length - 1, 1);
             }
         }
         /// <summary>
@@ -2033,7 +2033,7 @@ namespace Wlniao.Text
         {
             if (!string.IsNullOrEmpty(mobile) && mobile.Length >= 11)
             {
-                return mobile.Substring(0, 3).PadRight(mobile.Length - 2, '*') + mobile.Substring(mobile.Length - 2, 2);
+                return mobile[..3].PadRight(mobile.Length - 2, '*') + mobile.Substring(mobile.Length - 2, 2);
             }
             return mobile;
         }
@@ -2046,7 +2046,7 @@ namespace Wlniao.Text
         {
             if (!string.IsNullOrEmpty(certificate) && certificate.Length >= 15)
             {
-                return certificate.Substring(0, 6).PadRight(certificate.Length - 4, '*') + certificate.Substring(certificate.Length - 4);
+                return certificate[..6].PadRight(certificate.Length - 4, '*') + certificate[^4..];
             }
             return certificate;
         }
@@ -2085,11 +2085,11 @@ namespace Wlniao.Text
             {
                 if (domain.EndsWith(suffix))
                 {
-                    var tmp = domain.Substring(0, domain.Length - suffix.Length);
-                    main = tmp.Substring(tmp.LastIndexOf('.') + 1) + suffix;
+                    var tmp = domain[..^suffix.Length];
+                    main = tmp[(tmp.LastIndexOf('.') + 1)..] + suffix;
                     if (tmp.LastIndexOf('.') > 0)
                     {
-                        host = tmp.Substring(0, tmp.LastIndexOf('.'));
+                        host = tmp[..tmp.LastIndexOf('.')];
                     }
                     break;
                 }
@@ -2106,10 +2106,10 @@ namespace Wlniao.Text
             {
                 if (domain.EndsWith(suffix))
                 {
-                    var tmp = domain.Substring(0, domain.Length - suffix.Length);
+                    var tmp = domain[..^suffix.Length];
                     if (tmp.LastIndexOf('.') > 0)
                     {
-                        return tmp.Substring(tmp.LastIndexOf('.') + 1) + suffix;
+                        return tmp[(tmp.LastIndexOf('.') + 1)..] + suffix;
                     }
                     else
                     {
@@ -2130,10 +2130,10 @@ namespace Wlniao.Text
             {
                 if (domain.EndsWith(suffix))
                 {
-                    var tmp = domain.Substring(0, domain.Length - suffix.Length);
+                    var tmp = domain[..^suffix.Length];
                     if (tmp.LastIndexOf('.') > 0)
                     {
-                        tmp = tmp.Substring(0, tmp.LastIndexOf('.'));
+                        tmp = tmp[..tmp.LastIndexOf('.')];
                         return tmp;
                     }
                 }
@@ -2152,10 +2152,10 @@ namespace Wlniao.Text
             {
                 if (domain.EndsWith(suffix))
                 {
-                    tmp = domain.Substring(0, domain.Length - suffix.Length);
+                    tmp = domain[..^suffix.Length];
                     if (tmp.LastIndexOf('.') > 0)
                     {
-                        tmp = tmp.Substring(tmp.LastIndexOf('.') + 1);
+                        tmp = tmp[(tmp.LastIndexOf('.') + 1)..];
                     }
                     break;
                 }

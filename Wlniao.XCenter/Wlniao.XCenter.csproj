@@ -48,7 +48,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Wlniao.AspNetCore" Version="8.0.80-beta1" />
-	  <PackageReference Include="Wlniao.XCore" Version="8.0.62-beta1" />
+	  <PackageReference Include="Wlniao.AspNetCore" Version="8.0.80-beta9" />
+	  <PackageReference Include="Wlniao.XCore" Version="8.0.62-beta2" />
 	</ItemGroup>
 </Project>

@@ -31,18 +31,27 @@ namespace Wlniao.Engine
         }
 
         /// <summary>
-        /// 初始化上下文
+        /// 通用请求执行内容
         /// </summary>
         /// <returns></returns>
-        protected IContext Invoke()
+        private IContext Invoke()
         {
             try
             {
                 _ctx.Init(Request);
             }
-            catch (Exception ex)
+            catch (AggregateException e)
             {
-                Loger.Error($"Init Context: {ex.Message}{Environment.NewLine}{ex.StackTrace}");
+                Loger.Error($"Init Context: {e.InnerException.Message}{Environment.NewLine}{e.InnerException.StackTrace}");
+                throw e.InnerException!;
+            }
+            catch (EngineException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                Loger.Error($"Init Context: {e.Message}{Environment.NewLine}{e.StackTrace}");
                 throw;
             }
 
@@ -53,46 +62,85 @@ namespace Wlniao.Engine
             }
             return _ctx;
         }
-        
+
+
         /// <summary>
-        /// 执行请求调用
+        /// 执行请求调用并返回通用内容
         /// </summary>
         /// <param name="func"></param>
         /// <param name="mustAuthentication"></param>
         /// <returns></returns>
         [NonAction]
-        protected IActionResult Invoke(Action<IContext> func, bool mustAuthentication = false)
+        protected IActionResult Invoke(Func<IContext, IActionResult> func, bool mustAuthentication = false)
         {
-            Invoke();
-            if (mustAuthentication && _ctx.Session.NotValid)
+            try
             {
-                if(_ctx.Continue)
+                Invoke();
+                if (!mustAuthentication || !_ctx.Session.NotValid)
                 {
-                    //前期处理就绪时，按默认输出处理
-                    _ctx.OutMessage("unauthorized", 401, false);
+                    return func(_ctx);
                 }
-                if(_ctx.AuthFailed != null)
-                {
-                    //调用登录失败输出结果的回调方法，返回自定义输出
-                    _ctx.AuthFailed(Request);
-                }
-                else 
-                {
-                    _ctx.HeaderOutput.TryAdd("Access-Control-Expose-Headers", "*");
-                    _ctx.HeaderOutput.TryAdd("Authify-State", "false");
-                }
-                //身份未验证通过时，直接跳转到输出
-                goto END;
-            }
-            //调用业务处理函数
-            func(_ctx);
-            END:
 
-            foreach (var kv in _ctx.HeaderOutput)
-            {
-                Response.Headers.TryAdd(kv.Key, kv.Value);
+                if (_ctx.AuthFailedCallback != null)
+                {
+                    return _ctx.AuthFailedCallback();
+                }
+
+                foreach (var kv in _ctx.HeaderOutput)
+                {
+                    Response.Headers.TryAdd(kv.Key, kv.Value);
+                }
+
+                return Content("{\"code\":401,\"message\":\"unauthorized\"}", "application/json");
             }
-            return Content(_ctx.SerializeJsonOutput(), _ctx.HeaderOutput.GetString("Content-Type", "application/json"));
+            catch (Exception e)
+            {
+                return Content("{\"code\":400,\"message\":\"" + e.Message + "\"}", "application/json");
+            }
+        }
+
+        /// <summary>
+        /// 执行请求调用并返回格式内容
+        /// </summary>
+        /// <param name="func"></param>
+        /// <param name="mustAuthentication"></param>
+        /// <returns></returns>
+        [NonAction]
+        protected IActionResult Invoke<T>(Func<IContext, T> func, bool mustAuthentication = false)
+        {
+            try
+            {
+                Invoke();
+                if (mustAuthentication && _ctx.Session.NotValid)
+                {
+                    if (_ctx.AuthFailedCallback != null)
+                    {
+                        return _ctx.AuthFailedCallback();
+                    }
+
+                    foreach (var kv in _ctx.HeaderOutput)
+                    {
+                        Response.Headers.TryAdd(kv.Key, kv.Value);
+                    }
+
+                    Response.StatusCode = 401;
+                    return Content("{\"code\":401,\"message\":\"unauthorized\"}", "application/json");
+                }
+
+                //调用业务处理函数
+                var obj = func(_ctx);
+                _ctx.Output = obj!;
+                foreach (var kv in _ctx.HeaderOutput)
+                {
+                    Response.Headers.TryAdd(kv.Key, kv.Value);
+                }
+
+                return _ctx.OutputSerialize(obj);
+            }
+            catch (Exception e)
+            {
+                return Content("{\"code\":400,\"message\":\"" + e.Message + "\"}", "application/json");
+            }
         }
 
     }

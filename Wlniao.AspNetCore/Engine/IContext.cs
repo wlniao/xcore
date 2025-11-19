@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Wlniao;
 
 namespace Wlniao.Engine
@@ -37,7 +38,7 @@ namespace Wlniao.Engine
         /// <summary>
         /// 
         /// </summary>
-        public ApiResult<object> Output { get; set; }
+        public object Output { get; set; }
         
         /// <summary>
         /// 请求是否启用Https
@@ -46,7 +47,7 @@ namespace Wlniao.Engine
         /// <summary>
         /// 请求客户端IP
         /// </summary>
-        public string ClientIP { get; }
+        public string ClientIp { get; }
         /// <summary>
         /// 请求身份凭据
         /// </summary>
@@ -86,14 +87,6 @@ namespace Wlniao.Engine
         /// 请求安全认证的回调方法，返回请求加密/解密密钥
         /// </summary>
         public Func<HttpRequest, string>? SafetyCertification { get; set; }
-        /// <summary>
-        /// 输出内容序列化托管
-        /// </summary>
-        public Func<HttpRequest, string>? SerializeOutput { get; set; }
-        /// <summary>
-        /// 认证失败时的回调方法
-        /// </summary>
-        public Action<HttpRequest>? AuthFailed { get; set; }
         
         /// <summary>
         /// 通过请求初始化实例内容
@@ -118,40 +111,21 @@ namespace Wlniao.Engine
         /// </summary>
         /// <returns></returns>
         public Dictionary<string, object> InputDeserialize();
-    
+
+
         /// <summary>
-        /// 输出正确内容及状态码
+        /// 输出内容序列化托管
         /// </summary>
-        /// <param name="data"></param>
-        /// <param name="code"></param>
-        public void OutSuccess(object? data, int code = 200);
-        /// <summary>
-        /// 输出正确内容及状态码
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="message"></param>
-        public void OutSuccess(object? data, string message);
-    
-        /// <summary>
-        /// 输出错误内容及状态码
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="code"></param>
-        /// <param name="tips"></param>
-        public void OutMessage(string message, int code, bool tips = false);
+        public IActionResult OutputSerialize<T>(T output);
         
         /// <summary>
-        /// 输出错误内容及状态码
+        /// 认证失败时内容输出
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="code"></param>
-        /// <param name="tips"></param>
-        public void OutMessage(string message, string code = "", bool tips = false);
-    
+        public Func<IActionResult>? AuthFailedCallback { get; set; }
+
         /// <summary>
-        /// 输出Json序列化内容
+        /// 输出内容序列化托管
         /// </summary>
-        /// <returns></returns>
-        public string SerializeJsonOutput();
+        public Func<string, IActionResult>? OutputSerializeCallback { get; set; }
     }
 }
