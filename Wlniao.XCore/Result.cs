@@ -1,6 +1,6 @@
 /*==============================================================================
     文件名称：Result.cs
-    适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    适用环境：CoreCLR
     功能描述：对结果信息的封装(有效或错误)
 ================================================================================
  
@@ -19,105 +19,129 @@
     limitations under the License.
 
 ===============================================================================*/
-
-using System.Collections.Generic;
-
+using System.Text.Json.Serialization;
 namespace Wlniao
 {
     /// <summary>
-    /// 对结果信息的封装(有效或错误)
+    /// 接口返回实例
     /// </summary>
-    public class Result
+    /// <typeparam name="T"></typeparam>
+    public class Result<T>
     {
-        private List<string> _errors;
-        private object _info;
+        
         /// <summary>
-        /// 
+        /// 返回状态码（200表示成功）
         /// </summary>
-        public Result()
-        {
-            _errors = new List<string>();
-        }
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        // ReSharper disable once MemberCanBePrivate.Global
+        public int Code { get; set; } = 0;
+        
         /// <summary>
-        /// 根据错误信息构建 result
+        /// 返回的数据
         /// </summary>
-        /// <param name="errorMsg"></param>
-        public Result(string errorMsg)
-        {
-            _errors = new List<string>();
-            _errors.Add(errorMsg);
-        }
+        // [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public T? Data { get; set; } = default;
+        
         /// <summary>
-        /// 添加错误信息
+        /// 返回的消息内容
         /// </summary>
-        /// <param name="errorMsg"></param>
-        public void Add(string errorMsg)
-        {
-            _errors.Add(errorMsg);
-        }
+        // [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string Message { get; set; } = string.Empty;
+
         /// <summary>
-        /// 附带的对象
+        /// 是否存在错误情况
         /// </summary>
-        public object Info
-        {
-            get { return _info; }
-            set { _info = value; }
-        }
+        /// <returns></returns>
+        // [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool Success => Code == 200;
+
         /// <summary>
-        /// 获取错误信息列表中第一条记录，没有时返回null
+        /// 是否存在错误情况
         /// </summary>
-        public string Error
-        {
-            get
-            {
-                if (_errors == null || _errors.Count == 0)
-                {
-                    return null;
-                }
-                else
-                {
-                    return _errors[0];
-                }
-            }
-        }
-        /// <summary>
-        /// 获取所有错误信息的列表
-        /// </summary>
-        public List<string> Errors
-        {
-            get { return _errors; }
-            set { _errors = value; }
-        }
-        /// <summary>
-        /// 结果是否全部正确有效
-        /// </summary>
+        /// <returns></returns>
         [System.Text.Json.Serialization.JsonIgnore]
-        public bool IsValid
+        public bool HasError => Code != 200;
+        
+        /// <summary>
+        /// 设置返回内容
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public Result<T> SetData(T data)
         {
-            get { return _errors.Count == 0; }
+            this.Data = data;
+            return this;
+        }
+        
+        /// <summary>
+        /// 设置返回消息
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public Result<T> SetMessage(string message)
+        {
+            this.Message = message;
+            return this;
         }
         /// <summary>
-        /// 结果是否包含错误
+        /// 设置返回消息
         /// </summary>
-        [System.Text.Json.Serialization.JsonIgnore]
-        public bool HasErrors
+        /// <param name="message"></param>
+        /// <param name="statusCode"></param>
+        /// <returns></returns>
+        public Result<T> SetMessage(string message, int statusCode)
         {
-            get { return _errors.Count > 0; }
+            this.Code = statusCode;
+            this.Message = message;
+            return this;
         }
+        
         /// <summary>
-        /// 合并结果信息
+        /// 设置返回状态
         /// </summary>
-        /// <param name="result"></param>
-        public void Join(Result result)
+        /// <param name="statusCode"></param>
+        /// <returns></returns>
+        public Result<T> SetStatusCode(int statusCode)
         {
-            foreach (var str in result.Errors)
-            {
-                Add(str);
-            }
-            if (_info == null)
-            {
-                _info = result.Info;
-            }
+            this.Code = statusCode;
+            return this;
+        }
+
+        /// <summary>
+        /// 返回成功结果
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="statusCode"></param>
+        /// <returns></returns>
+        public static Result<T> OutSuccess(T data, int statusCode = 200)
+        {
+            return new Result<T> { Code = statusCode, Data = data, Message = "success" };
+        }
+        
+        /// <summary>
+        /// 返回成功结果
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static Result<T> OutSuccess(string message, T data)
+        {
+            return new Result<T> { Code = 200, Data = data, Message = message };
+        }
+        
+        /// <summary>
+        /// 返回错误消息
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="statusCode"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static Result<T> OutMessage(string message, int statusCode, T data = default(T)!)
+        {
+            return new Result<T> { Code = statusCode, Data = data, Message = message };
         }
     }
 }

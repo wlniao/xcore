@@ -249,7 +249,7 @@ namespace Wlniao.XCenter
                 }
                 var start = DateTime.Now;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
-                var json = XServer.Common.GetResponseString(uri.ToString());
+                var json = Wlniao.Net.ApiClient.Get(uri.ToString());
                 if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
                     Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + uri.Query + "[Get]\n <<< " + json);
@@ -284,7 +284,7 @@ namespace Wlniao.XCenter
                 }
                 var start = DateTime.Now;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
-                var json = XServer.Common.GetResponseString(uri.ToString());
+                var json = Wlniao.Net.ApiClient.Get(uri.ToString());
                 if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
                     Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + uri.Query + "[Get]\n <<< " + json);
@@ -321,7 +321,7 @@ namespace Wlniao.XCenter
                 }
                 var start = DateTime.Now;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
-                var json = XServer.Common.PostResponseString(uri.ToString(), postdata);
+                var json = Wlniao.Net.ApiClient.Post(uri.ToString(), postdata);
                 if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
                     Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + postdata + "\n <<< " + json);

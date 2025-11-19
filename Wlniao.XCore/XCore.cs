@@ -203,7 +203,6 @@ namespace Wlniao
         private static string startupRoot = null;
         private static string sessionEncryptKey = null;
         private static string _XServerId = null;
-        private static string _XServerIP = null;
         private static string _WebNode = null;
         private static string _WebHost = null;
         private static string _Webroxy = null;
@@ -346,20 +345,6 @@ namespace Wlniao
             {
                 _XServerId ??= Config.GetConfigs("XServerId");
                 return _XServerId;
-            }
-        }
-        /// <summary>
-        /// 服务器IP
-        /// </summary>
-        public static string XServerIP
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(_XServerIP))
-                {
-                    _XServerIP = OpenApi.Tool.GetIP();
-                }
-                return _XServerIP;
             }
         }
         /// <summary>

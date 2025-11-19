@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Version>8.0.62-beta2</Version>
+        <Version>8.0.62</Version>
         <Authors>XieChaoyi</Authors>
         <Copyright>Copyright 2020 XieChaoyi</Copyright>
         <Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -36,6 +36,7 @@
     <ItemGroup>
         <Compile Remove="Namespace\log.cs" />
         <Compile Remove="Handler\**" />
+        <Compile Remove="OpenApi\Location.cs" />
     </ItemGroup>
 
     <ItemGroup>

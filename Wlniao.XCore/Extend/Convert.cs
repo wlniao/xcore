@@ -945,7 +945,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string ToSvgStr(string url)
         {
-            var svg = XServer.Common.GetResponseString(url);
+            var svg = Wlniao.Net.ApiClient.Get(url);
             if (string.IsNullOrEmpty(svg))
             {
                 return svg;

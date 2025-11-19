@@ -242,36 +242,6 @@ namespace Wlniao.OpenApi
 
         #region 包含的方法
         /// <summary>
-        /// 获取公众号AccessToken
-        /// </summary>
-        /// <param name="appid"></param>
-        /// <param name="appsecret"></param>
-        /// <returns></returns>
-        public static ApiResult<string> GetAccessToken(string appid, string appsecret)
-        {
-            var rlt = new ApiResult<string>();
-            try
-            {
-                var json = XServer.Common.Get("openapi", "wx", "getaccesstoken"
-                    , new KeyValuePair<string, string>("appid", appid)
-                    , new KeyValuePair<string, string>("appsecret", appsecret));
-                rlt = Json.Deserialize<ApiResult<string>>(json);
-                if (rlt == null)
-                {
-                    rlt = new ApiResult<string>();
-                    rlt.success = false;
-                    rlt.message = "解析Json结果失败";
-                }
-            }
-            catch (Exception ex)
-            {
-                rlt.success = false;
-                rlt.message = "内部异常：" + ex.Message;
-                rlt.code = "5x04040601";
-            }
-            return rlt;
-        }
-        /// <summary>
         /// 本地获取公众号AccessToken（无缓存）
         /// </summary>
         /// <param name="appid"></param>
@@ -283,31 +253,31 @@ namespace Wlniao.OpenApi
             try
             {
                 #region 获取新的AccessToken
-                var _response = "";
-                var url = string.Format("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={0}&secret={1}", appid, appsecret);
+                var response = "";
+                var url = $"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={appid}&secret={appsecret}";
                 using (var client = new System.Net.Http.HttpClient())
                 {
                     client.SendAsync(new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url)).ContinueWith((requestTask) =>
                     {
                         requestTask.Result.Content.ReadAsStringAsync().ContinueWith((readTask) =>
                         {
-                            _response = readTask.Result;
+                            response = readTask.Result;
                         }).Wait();
                     }).Wait();
                 }
                 try
                 {
-                    if (_response.IndexOf("access_token", StringComparison.Ordinal) > 0)
+                    if (response.IndexOf("access_token", StringComparison.Ordinal) > 0)
                     {
                         //var obj = Json.ToObject<Wlniao.OpenApi.Wx.AccessToken>(_response);
-                        var obj = Json.Deserialize<Dictionary<string, object>>(_response);
+                        var obj = Json.Deserialize<Dictionary<string, object>>(response);
                         rlt.data = obj.GetString("access_token");
                         rlt.message = "expires in " + obj.GetString("expires_in");
                         rlt.success = obj != null && !string.IsNullOrEmpty(rlt.data);
                     }
                     else
                     {
-                        var obj = Json.Deserialize<Dictionary<string, object>>(_response);
+                        var obj = Json.Deserialize<Dictionary<string, object>>(response);
                         rlt.message = obj.GetString("errmsg");
                     }
                 }
@@ -322,55 +292,7 @@ namespace Wlniao.OpenApi
             }
             return rlt;
         }
-        /// <summary>
-        /// 获取公众号GetTicketJsApi
-        /// </summary>
-        /// <param name="appid"></param>
-        /// <param name="appsecret"></param>
-        /// <returns></returns>
-        public static ApiResult<string> GetTicketJsApi(string appid, string appsecret)
-        {
-            var rlt = new ApiResult<string>();
-            try
-            {
-                var json = XServer.Common.Get("openapi", "wx", "getticketjsapi"
-                    , new KeyValuePair<string, string>("appid", appid)
-                    , new KeyValuePair<string, string>("appsecret", appsecret));
-                rlt = Json.Deserialize<ApiResult<string>>(json);
-                if (rlt == null)
-                {
-                    rlt = new ApiResult<string>();
-                    rlt.success = false;
-                    rlt.code = "";
-                    rlt.message = "解析Json结果失败";
-                }
-            }
-            catch (Exception ex)
-            {
-                rlt.success = false;
-                rlt.message = "发生异常：" + ex.Message;
-                rlt.code = "5x04040602";
-            }
-            return rlt;
-        }
-        /// <summary>
-        /// 通过OpenApi获取用户信息
-        /// </summary>
-        /// <param name="appid"></param>
-        /// <param name="wxopenid"></param>
-        /// <returns></returns>
-        public static UserInfo GetUserInfoByOpenApi(string appid, string wxopenid)
-        {
-            var json = XServer.Common.Get("openapi", "wx", "getuserinfo"
-                , new KeyValuePair<string, string>("appid", appid)
-                , new KeyValuePair<string, string>("wxopenid", wxopenid));
-            var rlt = Json.Deserialize<ApiResult<UserInfo>>(json);
-            if (rlt.success)
-            {
-                return rlt.data;
-            }
-            return new UserInfo();
-        }
+        
         /// <summary>
         /// 获取已关注用户的基本信息
         /// </summary>
@@ -380,7 +302,7 @@ namespace Wlniao.OpenApi
         public static UserInfo GetUserInfo(string access_token, string wxopenid)
         {
             var url = "https://api.weixin.qq.com/cgi-bin/user/info?access_token=" + access_token + "&openid=" + wxopenid + "&lang=zh_CN";
-            var json = XServer.Common.GetResponseString(url);
+            var json = Wlniao.Net.ApiClient.Get(url);
             if (!string.IsNullOrEmpty(json))
             {
                 return Json.Deserialize<UserInfo>(json);
@@ -414,7 +336,7 @@ namespace Wlniao.OpenApi
                     ,
                     data = data
                 });
-                var str = XServer.Common.PostResponseString("https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=" + access_token, json);
+                var str = Wlniao.Net.ApiClient.Post("https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=" + access_token, json);
                 if (!string.IsNullOrEmpty(str))
                 {
                     var msg = Json.Deserialize<ErrMsg>(str);
@@ -443,37 +365,6 @@ namespace Wlniao.OpenApi
         /// </summary>
         /// <param name="appid"></param>
         /// <param name="wxopenid"></param>
-        /// <returns></returns>
-        public static ApiResult<AuthUserInfo> GetAuthUserInfoByOpenApi(string appid, string wxopenid)
-        {
-            ApiResult<AuthUserInfo> rlt = null;
-            try
-            {
-                var json = XServer.Common.Get("openapi", "wx", "getuserinfo"
-                    , new KeyValuePair<string, string>("appid", appid)
-                    , new KeyValuePair<string, string>("wxopenid", wxopenid));
-                rlt = Json.Deserialize<ApiResult<AuthUserInfo>>(json);
-                if (rlt == null)
-                {
-                    rlt = new ApiResult<AuthUserInfo>();
-                    rlt.success = false;
-                    rlt.message = "解析Json结果失败";
-                }
-            }
-            catch (Exception ex)
-            {
-                rlt = new ApiResult<AuthUserInfo>();
-                rlt.success = false;
-                rlt.message = ex.Message;
-                rlt.code = "5x04040604";
-            }
-            return rlt;
-        }
-        /// <summary>
-        /// 获取通过网页授权后的用户信息
-        /// </summary>
-        /// <param name="appid"></param>
-        /// <param name="wxopenid"></param>
         /// <param name="access_token"></param>
         /// <returns></returns>
         public static ApiResult<AuthUserInfo> GetAuthUserInfo(string appid, string wxopenid, string access_token)
@@ -482,7 +373,7 @@ namespace Wlniao.OpenApi
             try
             {
                 var url = string.Format("https://api.weixin.qq.com/sns/userinfo?access_token={0}&openid={1}&lang=zh_CN", access_token, wxopenid);
-                var userJson = XServer.Common.GetResponseString(url);
+                var userJson = Wlniao.Net.ApiClient.Get(url);
                 var ui = Json.Deserialize<AuthUserInfo>(userJson);
                 if (!string.IsNullOrEmpty(ui.nickname))
                 {
