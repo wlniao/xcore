@@ -122,9 +122,9 @@ namespace Wlniao.Net
                 var byteKey = Encoding.UTF8.GetBytes(key);
                 return ResToText(SendCommand(socket, RedisCommand.Get, byteKey));
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                throw new XCoreException("RedisClient.Get => " + ex.Message, ex);
+                throw new XCoreException("RedisClient.Get => " + e.Message, 500);
             }
         }
         /// <summary>
@@ -145,9 +145,9 @@ namespace Wlniao.Net
                 }
                 return ResToBool(SendCommand(socket, RedisCommand.Set, byteKey, value));
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                throw new XCoreException("RedisClient.Set => " + ex.Message, ex);
+                throw new XCoreException("RedisClient.Set => " + e.Message, 500);
             }
         }
         /// <summary>
@@ -162,9 +162,9 @@ namespace Wlniao.Net
                 var byteKey = Encoding.UTF8.GetBytes(key);
                 return ResToBool(SendCommand(socket, RedisCommand.Del, byteKey));
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                throw new XCoreException("RedisClient.KeyDelete => " + ex.Message, ex);
+                throw new XCoreException("RedisClient.KeyDelete => " + e.Message, 500);
             }
         }
 
@@ -180,9 +180,9 @@ namespace Wlniao.Net
                 var byteKey = Encoding.UTF8.GetBytes(key);
                 return ResToBool(SendCommand(socket, RedisCommand.Exists, byteKey));
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                throw new XCoreException("RedisClient.KeyExists => " + ex.Message, ex);
+                throw new XCoreException("RedisClient.KeyExists => " + e.Message, 500);
             }
         }
 
@@ -276,7 +276,11 @@ namespace Wlniao.Net
                             }
                             socket.Close();
                         }
-                        catch { }
+                        catch
+                        {
+                            // ignored
+                        }
+
                         goto beginCheck;
                     }
                     if (!socket.Using && socket.Connected)
@@ -324,7 +328,7 @@ namespace Wlniao.Net
                                 newsocket.Shutdown(SocketShutdown.Both);
                             }
                             newsocket.Close();
-                            throw new XCoreException("Redis: client password is error!");
+                            throw new XCoreException("Redis: client password is error!", 500);
                         }
                     }
                     if (SelectDB > 0)
@@ -336,7 +340,7 @@ namespace Wlniao.Net
                                 newsocket.Shutdown(SocketShutdown.Both);
                             }
                             newsocket.Close();
-                            throw new XCoreException("Redis: client database select error!");
+                            throw new XCoreException("Redis: client database select error!", 500);
                         }
                     }
                     SocketList.Add(newsocket);
@@ -344,7 +348,7 @@ namespace Wlniao.Net
                 }
                 else
                 {
-                    throw new XCoreException(connMsg);
+                    throw new XCoreException(connMsg, 500);
                 }
             }
         }
@@ -417,14 +421,14 @@ namespace Wlniao.Net
             // 数据缓冲区
             var buffer = new List<byte>();
             // 请求头部格式， *<number of arguments>\r\n
-            var headstr = Encoding.GetBytes(string.Format("*{0}\r\n", args.Length + 1));
+            var headstr = Encoding.GetBytes($"*{args.Length + 1}\r\n");
             // 参数信息       $<number of bytes of argument N>\r\n<argument data>\r\n
-            var bulkstr = Encoding.GetBytes(string.Format("${0}\r\n{1}\r\n", cmd.Length, cmd));
+            var bulkstr = Encoding.GetBytes($"${cmd.Length}\r\n{cmd}\r\n");
             buffer.AddRange(headstr);
             buffer.AddRange(bulkstr);
             foreach (var arg in args)
             {
-                buffer.AddRange(Encoding.GetBytes(string.Format("${0}\r\n", arg.Length)));
+                buffer.AddRange(Encoding.GetBytes($"${arg.Length}\r\n"));
                 buffer.AddRange(arg);
                 buffer.AddRange(Encoding.GetBytes("\r\n"));
             }  
@@ -455,21 +459,22 @@ namespace Wlniao.Net
         #region 数据处理方法
         private string ResToText(byte[] res)
         {
-            if (res.Length > 0)
+            if (res.Length <= 0)
             {
-                var temp = Encoding.GetString(res, 0, res.Length > 16 ? 16 : res.Length);
-                if (temp[0] == '-')
+                return "";
+            }
+            var temp = Encoding.GetString(res, 0, res.Length > 16 ? 16 : res.Length);
+            if (temp[0] == '-')
+            {
+                temp = Encoding.GetString(res);
+                throw new XCoreException("Redis: " + temp.Substring(1, temp.LastIndexOf('\r')), 500);
+            }
+            else if (temp[0] == '$')
+            {
+                var length = Convert.ToInt(temp.Substring(1, temp.IndexOf('\r') - 1));
+                if (length > 0)
                 {
-                    temp = Encoding.GetString(res);
-                    throw new XCoreException("Redis: " + temp.Substring(1, temp.LastIndexOf('\r')));
-                }
-                else if (temp[0] == '$')
-                {
-                    var length = Convert.ToInt(temp.Substring(1, temp.IndexOf('\r') - 1));
-                    if (length > 0)
-                    {
-                        return Encoding.GetString(res, temp.IndexOf('\n') + 1, length);
-                    }
+                    return Encoding.GetString(res, temp.IndexOf('\n') + 1, length);
                 }
             }
             return "";
@@ -484,16 +489,12 @@ namespace Wlniao.Net
             else if (temp[0] == '*')
             {
                 var lines = temp.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                if (lines.Length == 3 && lines[1].StartsWith("+OK"))
-                {
-                    return true;
-                }
-                return false;
+                return lines.Length == 3 && lines[1].StartsWith("+OK");
             }
             else if (temp[0] == '-')
             {
                 temp = Encoding.GetString(res);
-                throw new XCoreException("Redis: " + temp.Substring(1, temp.LastIndexOf('\r')));
+                throw new XCoreException("Redis: " + temp.Substring(1, temp.LastIndexOf('\r')), 500);
             }
             else
             {

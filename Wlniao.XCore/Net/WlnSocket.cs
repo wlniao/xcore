@@ -59,16 +59,16 @@ namespace Wlniao.Net
         /// 
         /// </summary>
         public int TimeOutSeconds = 10;
-        private static object _lock = new object();
-        private static List<WlnSocket> sockets = new List<WlnSocket>();
+        private static readonly object _lock = new object();
+        private static readonly List<WlnSocket> _sockets = new List<WlnSocket>();
         /// <summary>
         /// 从连接池获取一个实例
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="TimeOutSeconds"></param>
+        /// <param name="timeOutSeconds"></param>
         /// <returns></returns>
-        public static WlnSocket GetSocket(string host, int port, int TimeOutSeconds = 10)
+        public static WlnSocket GetSocket(string host, int port, int timeOutSeconds = 10)
         {
             var ipaddress = StringUtil.IsIP(host) ? System.Net.IPAddress.Parse(host) : new Net.Dns.DnsTool().GetIPAddressDefault(host);
             if (ipaddress.IsIPv4MappedToIPv6)
@@ -81,11 +81,11 @@ namespace Wlniao.Net
                 try
                 {
                 beginCheck:
-                    foreach (var socket in sockets.OrderBy(a => a.LastUse))
+                    foreach (var socket in _sockets.OrderBy(a => a.LastUse))
                     {
                         if (socket.Catch || !socket.Connected)
                         {
-                            sockets.Remove(socket);
+                            _sockets.Remove(socket);
                             try
                             {
                                 if (socket.Connected)
@@ -94,10 +94,14 @@ namespace Wlniao.Net
                                 }
                                 socket.Close();
                             }
-                            catch { }
+                            catch
+                            {
+                                // ignored
+                            }
+
                             goto beginCheck;
                         }
-                        if (!socket.Using && socket.RemoteEndPoint.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < DateTools.GetUnix() - 15)
+                        if (!socket.Using && socket.RemoteEndPoint!.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < DateTools.GetUnix() - 15)
                         {
                             socket.Using = true;
                             socket.LastUse = DateTools.GetUnix();
@@ -108,9 +112,9 @@ namespace Wlniao.Net
                     newsocket.Using = true;
                     newsocket.LastUse = DateTools.GetUnix();
                     newsocket.Connect(endpoint);
-                    newsocket.SendTimeout = TimeOutSeconds * 1000;  //10s
-                    newsocket.ReceiveTimeout = TimeOutSeconds * 1000;  //10s
-                    sockets.Add(newsocket);
+                    newsocket.SendTimeout = timeOutSeconds * 1000;  //10s
+                    newsocket.ReceiveTimeout = timeOutSeconds * 1000;  //10s
+                    _sockets.Add(newsocket);
                     return newsocket;
                 }
                 catch { return null; }

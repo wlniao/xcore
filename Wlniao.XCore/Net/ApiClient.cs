@@ -29,7 +29,7 @@ namespace Wlniao.Net
     /// <summary>
     /// HTTP客户端
     /// </summary>
-    public class ApiClient
+    public static class ApiClient
     {
         /// <summary>
         /// 发起Get请求
@@ -137,7 +137,6 @@ namespace Wlniao.Net
             try
             {
                 var str = "";
-                var err = "";
                 var uri = new Uri(url);
                 if (string.IsNullOrEmpty(webroxy))
                 {
@@ -173,11 +172,11 @@ namespace Wlniao.Net
                     {
                         if (aex.InnerException != null)
                         {
-                            err = aex.InnerException.InnerException != null ? aex.InnerException.InnerException.Message : aex.InnerException.Message;
+                            _ = aex.InnerException.InnerException != null ? aex.InnerException.InnerException.Message : aex.InnerException.Message;
                         }
                         else
                         {
-                            err = aex.Message;
+                            _ = aex.Message;
                         }
                     }
                 }).Wait();

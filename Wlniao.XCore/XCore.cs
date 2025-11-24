@@ -266,7 +266,7 @@ namespace Wlniao
         /// 框架的根目录
         /// </summary>
         public const string FrameworkRoot = "xcore";
-        private static int port = 0;
+        private static int _port = 0;
         /// <summary>
         /// 默认监听端口
         /// </summary>
@@ -274,15 +274,16 @@ namespace Wlniao
         {
             get
             {
-                if (port == 0)
+                if (_port != 0)
                 {
-                    port = Convert.ToInt(Config.GetConfigs("WLN_LISTEN_PORT"));
-                    if (port <= 0)
-                    {
-                        port = 5000;
-                    }
+                    return _port;
                 }
-                return port;
+                _port = Convert.ToInt(Config.GetConfigs("WLN_LISTEN_PORT"));
+                if (_port <= 0)
+                {
+                    _port = 5000;
+                }
+                return _port;
             }
         }
         /// <summary>

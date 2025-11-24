@@ -3,6 +3,7 @@ using System.IO;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Wlniao.Runtime;
 
 namespace Wlniao
 {
@@ -17,7 +18,8 @@ namespace Wlniao
         /// <param name="builder"></param>
         /// <param name="options"></param>
         /// <returns></returns>
-        public static IWebHostBuilder UseWlniao(this IWebHostBuilder builder, Action<KestrelServerOptions>? options = null)
+        public static IWebHostBuilder UseWlniao(this IWebHostBuilder builder,
+            Action<KestrelServerOptions>? options = null)
         {
             try
             {
@@ -51,6 +53,7 @@ namespace Wlniao
                         {
                             o.ListenAnyIP(XCore.ListenPort);
                         }
+
                         o.ListenAnyIP(WebService.TlsPort, lo =>
                         {
                             WebService.UseHttps = true;
@@ -62,15 +65,21 @@ namespace Wlniao
                     {
                         o.ListenAnyIP(XCore.ListenPort);
                     }
+
                     options?.Invoke(o);
                     //输出监听终结点信息
                     WebService.ListenLogs();
                 });
             }
-            catch (Exception ex)
+            catch (XCoreException e)
             {
-                Log.Loger.Error(ex.Message);
+                Log.Loger.Warn(e.Message);
             }
+            catch (Exception e)
+            {
+                Log.Loger.Error(e.Message);
+            }
+
             return builder;
         }
     }

@@ -64,7 +64,7 @@ namespace Wlniao
         /// <returns></returns>
         [System.Text.Json.Serialization.JsonIgnore]
         public bool HasError => Code != 200;
-        
+
         /// <summary>
         /// 设置返回内容
         /// </summary>
@@ -72,10 +72,11 @@ namespace Wlniao
         /// <returns></returns>
         public Result<T> SetData(T data)
         {
+            this.Code = 200;
             this.Data = data;
             return this;
         }
-        
+
         /// <summary>
         /// 设置返回消息
         /// </summary>
@@ -107,6 +108,15 @@ namespace Wlniao
         public Result<T> SetStatusCode(int statusCode)
         {
             this.Code = statusCode;
+            return this;
+        }
+        /// <summary>
+        /// 标记状态为成功
+        /// </summary>
+        /// <returns></returns>
+        public Result<T> SetSuccess()
+        {
+            this.Code = 200;
             return this;
         }
 
