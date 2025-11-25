@@ -55,19 +55,19 @@ namespace Wlniao.Engine
         /// <summary>
         /// 多租户系统标识
         /// </summary>
-        public string ConsumerId { get; }
+        public string ConsumerId { get; set; }
         /// <summary>
         /// 多租户系统安全密钥
         /// </summary>
-        public string ConsumerSecretKey { get; }
+        public string ConsumerSecretKey { get; set; }
         /// <summary>
         /// 多租户系统对外公钥
         /// </summary>
-        public string ConsumerPublicKey { get; }
+        public string ConsumerPublicKey { get; set; }
         /// <summary>
         /// 多租户系统安全私钥
         /// </summary>
-        public string ConsumerPrivateKey { get; }
+        public string ConsumerPrivateKey { get; set; }
         /// <summary>
         /// 当前登录认证信息
         /// </summary>

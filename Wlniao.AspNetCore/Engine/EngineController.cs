@@ -106,7 +106,7 @@ namespace Wlniao.Engine
         /// <param name="mustAuthentication"></param>
         /// <returns></returns>
         [NonAction]
-        protected IActionResult Invoke<T>(Func<IContext, T> func, bool mustAuthentication = false)
+        protected IActionResult Invoke(Func<IContext, object> func, bool mustAuthentication = false)
         {
             try
             {

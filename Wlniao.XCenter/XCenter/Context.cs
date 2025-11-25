@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using Wlniao.Log;
+using Wlniao.Runtime;
 using Wlniao.Text;
 using Encoding = System.Text.Encoding;
 
@@ -156,17 +157,17 @@ namespace Wlniao.XCenter
             try
             {
                 var res = AppData<Dictionary<string, object>>("/app/saas/get_xapp_by_suite", new { suite_id = ctx.owner, app = ctx.app });
-                if (res.success)
+                if (res.Success)
                 {
-                    ctx.app = res.data.GetString("app");
-                    ctx.name = res.data.GetString("name");
-                    ctx.brand = res.data.GetString("brand");
-                    ctx.domain = res.data.GetString("domain");
+                    ctx.app = res.Data.GetString("app");
+                    ctx.name = res.Data.GetString("name");
+                    ctx.brand = res.Data.GetString("brand");
+                    ctx.domain = res.Data.GetString("domain");
                     try
                     {
                         if (string.IsNullOrEmpty(ctx.token) && XCenterPrivkey.Length > 0)
                         {
-                            var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.data.GetString("sm2token")), XCenterPrivkey);
+                            var sm2token = Wlniao.Encryptor.SM2DecryptByPrivateKey(Wlniao.Crypto.Helper.Decode(res.Data.GetString("sm2token")), XCenterPrivkey);
                             if (!string.IsNullOrEmpty(sm2token))
                             {
                                 ctx.token = sm2token;
@@ -178,7 +179,7 @@ namespace Wlniao.XCenter
                 }
                 else
                 {
-                    ctx.message = res.message;
+                    ctx.message = res.Message;
                 }
             }
             catch (Exception ex)
@@ -205,41 +206,42 @@ namespace Wlniao.XCenter
             else if (string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9 || (string.IsNullOrEmpty(XCenterToken) && string.IsNullOrEmpty(XCenterAppToken)) || (string.IsNullOrEmpty(XCenterApp) && string.IsNullOrEmpty(XCenterCertSn)))
             {
                 var ctx = Caching.Cache.Get<Context>("ctx_" + domain);
-                if (ctx == null || string.IsNullOrEmpty(ctx.app))
+                if (ctx != null && !string.IsNullOrEmpty(ctx.app))
                 {
-                    //未缓存时，需要使用公钥从服务器上加载应用信息
-                    ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };
-                    try
+                    return ctx;
+                }
+                //未缓存时，需要使用公钥从服务器上加载应用信息
+                ctx = new Context { domain = domain, token = XCenterToken, app = XCenterApp };
+                try
+                {
+                    if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPrivkey == null || XCenterPrivkey.Length < 20 || XCenterServerKey == null || XCenterServerKey.Length < 20)
                     {
-                        if (string.IsNullOrEmpty(XCenterCertSn) || XCenterPrivkey == null || XCenterPrivkey.Length < 20 || XCenterServerKey == null || XCenterServerKey.Length < 20)
+                        ctx.message = "程序配置错误，请检查XCenter相关配置";
+                        Log.Loger.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterServerKey/XCenterPrivkey 至少需要配置一项");
+                    }
+                    else
+                    {
+                        var res = AppData<Dictionary<string, object>>("/app/saas/get_xapp_by_domain", new { domain = ctx.domain, app = ctx.app });
+                        if (res.Success)
                         {
-                            ctx.message = "程序配置错误，请检查XCenter相关配置";
-                            Log.Loger.Error("XCenterApp/XCenterOwner/XCenterAppToken 或 XCenterCertSn/XCenterServerKey/XCenterPrivkey 至少需要配置一项");
+                            ctx.app = res.Data.GetString("app", ctx.app);
+                            ctx.name = res.Data.GetString("name");
+                            ctx.brand = res.Data.GetString("brand");
+                            ctx.owner = res.Data.GetString("suite_id");
+                            //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
+                            ctx.token = res.Data.GetString("token", ctx.token);
+                            ctx.app_token = res.Data.GetString("app_token", ctx.token);
+                            Caching.Cache.Set("ctx_" + ctx.domain, ctx, 300);
                         }
                         else
                         {
-                            var res = AppData<Dictionary<string, object>>("/app/saas/get_xapp_by_domain", new { domain = ctx.domain, app = ctx.app });
-                            if (res.success)
-                            {
-                                ctx.app = res.data.GetString("app", ctx.app);
-                                ctx.name = res.data.GetString("name");
-                                ctx.brand = res.data.GetString("brand");
-                                ctx.owner = res.data.GetString("suite_id");
-                                //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
-                                ctx.token = res.data.GetString("token", ctx.token);
-                                ctx.app_token = res.data.GetString("app_token", ctx.token);
-                                Caching.Cache.Set("ctx_" + ctx.domain, ctx, 300);
-                            }
-                            else
-                            {
-                                ctx.message = res.message;
-                            }
+                            ctx.message = res.Message;
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        ctx.message = "XApp初始化异常:" + ex.Message;
-                    }
+                }
+                catch (Exception ex)
+                {
+                    ctx.message = "XApp初始化异常:" + ex.Message;
                 }
                 return ctx;
             }
@@ -265,17 +267,18 @@ namespace Wlniao.XCenter
         /// <param name="path"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static Wlniao.ApiResult<T> AppData<T>(string path, object data)
+        public static Result<T> AppData<T>(string path, object data)
         {
             if (string.IsNullOrEmpty(XCenterCertSn))
             {
-                return new ApiResult<T> { message = "参数“XCenterCertSn”未配置，请先配置" };
+                return Result<T>.OutMessage("参数“XCenterCertSn”未配置，请先配置", 110);
             }
             else if (XCenterServerKey.Length == 0)
             {
-                return new ApiResult<T> { message = "参数“XCenterServerKey”未配置，请先配置" };
+                return Result<T>.OutMessage("参数“XCenterServerKey”未配置，请先配置", 110);
             }
-            var rlt = new Wlniao.ApiResult<T>();
+
+            var rlt = new Result<T>();
             var utime = "";
             var msgid = StringUtil.CreateLongId();
             var token = XCenterSm4Key.Length == 16 ? XCenterSm4Key : StringUtil.CreateRndStrE(16);
@@ -300,78 +303,55 @@ namespace Wlniao.XCenter
                     reqest.Content.Headers.Add("Content-Type", "application/json");
                     client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
                     client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", msgid);
-                    var respose = client.Send(reqest);
-                    resStr = respose.Content.ReadAsStringAsync().Result;
-                    if (respose.Headers.Contains("X-Wlniao-Trace"))
+                    var response = client.Send(reqest);
+                    resStr = response.Content.ReadAsStringAsync().Result;
+                    if (response.StatusCode != System.Net.HttpStatusCode.OK)
                     {
-                        rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
+                        Loger.Topic("authify", $"msgid:{msgid},authify:/{path}{Environment.NewLine}请确认接口访问是否正常： => {resStr}",
+                            LogLevel.Error, true);
+                        throw new XCoreException(resStr, (int)response.StatusCode);
                     }
-                    if (respose.Headers.Contains("X-Wlniao-UseTime"))
+                    else
                     {
-                        utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
+                        Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
+                    }
+                    if (response.Headers.Contains("X-Wlniao-UseTime"))
+                    {
+                        utime = response.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                     }
                 }
                 if (string.IsNullOrEmpty(utime))
                 {
                     utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 }
-                Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
+                var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiResult<string>>(resStr);
+                if (resObj != null && !string.IsNullOrEmpty(resObj.data))
+                {
+                    var plainResult = Encryptor.SM4DecryptECBFromHex(resObj.data, token);
+                    if (!string.IsNullOrEmpty(plainResult))
+                    {
+                        Log.Loger.Topic("authify", $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} >>> {plainData}{Environment.NewLine} <<< {plainResult}", Log.LogLevel.Debug, true);
+                        try
+                        {
+                            rlt = Newtonsoft.Json.JsonConvert.DeserializeObject<Result<T>>(plainResult);
+                        }
+                        catch (Exception e)
+                        {
+                            return Result<T>.OutMessage("收到远端输出，但格式错误：" + e.Message, 117);
+                        }
+                    }
+                    else
+                    {
+                        return Result<T>.OutMessage("远端返回内容无法解密", 106);
+                    }
+                }
             }
             catch (Exception ex)
             {
                 utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
+                return Result<T>.OutMessage("后端接口请求异常", 121);
             }
-            var logs = $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} >>> {plainData}";
-            try
-            {
-                var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiResult<string>>(resStr);
-                if (resObj != null)
-                {
-                    rlt.node = resObj.node;
-                    rlt.code = resObj.code;
-                    rlt.message = resObj.message;
-                    rlt.success = resObj.success;
-                    var plaintext = string.IsNullOrEmpty(resObj.data) ? "" : Encryptor.SM4DecryptECBFromHex(resObj.data, token);
-                    if (!string.IsNullOrEmpty(plaintext))
-                    {
-                        try
-                        {
-                            if (typeof(T) == typeof(string))
-                            {
-                                rlt.data = (T)System.Convert.ChangeType(plaintext, typeof(T));
-                            }
-                            else
-                            {
-                                rlt.data = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(plaintext);
-                            }
-
-                            rlt.tips = resObj.tips;
-                        }
-                        catch (Exception ex)
-                        {
-                            rlt.code = "107";
-                            rlt.message = "收到远端输出，但反序列化失败：" + ex.Message;
-                        }
-                    }
-                    else if (!string.IsNullOrEmpty(resObj.code) && !string.IsNullOrEmpty(resObj.data))
-                    {
-                        rlt.code = "106";
-                        rlt.message = "远端返回内容无法解密";
-                    }
-                    else if (string.IsNullOrEmpty(resObj.code) && string.IsNullOrEmpty(resObj.data))
-                    {
-                        rlt.code = "105";
-                        rlt.message = "远端暂无返回内容";
-                    }
-                    logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + (string.IsNullOrEmpty(plaintext) ? "\"\"" : plaintext) + "}";
-                }
-            }
-            catch (Exception ex)
-            {
-                logs += "\n <<< Exception" + ex.Message;
-            }
-            Log.Loger.Topic("authify", logs, Log.LogLevel.Debug, true);
             return rlt;
         }
 

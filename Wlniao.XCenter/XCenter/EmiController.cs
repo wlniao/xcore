@@ -216,9 +216,11 @@ namespace Wlniao.XCenter
                     }
                     else
                     {
-                        var errorPage = new ContentResult();
-                        errorPage.ContentType = "text/html;charset=utf-8";
-                        errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
+                        var errorPage = new ContentResult
+                        {
+                            ContentType = "text/html;charset=utf-8",
+                            Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon)
+                        };
                         errorMsg = "";
                         return errorPage;
                     }

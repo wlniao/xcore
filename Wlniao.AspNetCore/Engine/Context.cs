@@ -114,22 +114,22 @@ namespace Wlniao.Engine
         /// <summary>
         /// 多租户系统标识
         /// </summary>
-        public string ConsumerId { get; private set; }
+        public string ConsumerId { get; set; }
         
         /// <summary>
         /// 多租户系统安全密钥
         /// </summary>
-        public string ConsumerSecretKey { get; private set; }
+        public string ConsumerSecretKey { get; set; }
         
         /// <summary>
         /// 多租户系统对外公钥
         /// </summary>
-        public string ConsumerPublicKey { get; private set; }
+        public string ConsumerPublicKey { get; set; }
     
         /// <summary>
         /// 多租户系统安全私钥
         /// </summary>
-        public string ConsumerPrivateKey { get; private set; }
+        public string ConsumerPrivateKey { get; set; }
 
         /// <summary>
         /// 当前登录认证信息
@@ -427,7 +427,8 @@ namespace Wlniao.Engine
             {
                 Response.Headers.TryAdd(kv.Key, kv.Value);
             }
-            var json = Wlniao.Json.Serialize(output);
+
+            var json = output as string ?? Wlniao.Json.Serialize(output);
             if (OutputSerializeCallback != null)
             {
                 return OutputSerializeCallback(json);
