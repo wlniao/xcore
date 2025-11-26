@@ -78,16 +78,16 @@ namespace Wlniao.XServer
                     request.Content = new StreamContent(stream);
                     request.Content.Headers.Add("Content-Type", "application/json");
                     client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-TraceId", traceid);
                     var respose = client.Send(request);
                     resStr = respose.Content.ReadAsStringAsync().Result;
-                    if (respose.Headers.Contains("X-Wlniao-Trace"))
+                    if (respose.Headers.Contains("X-UseTime"))
                     {
-                        rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
+                        utime = respose.Headers.GetValues("X-UseTime").FirstOrDefault();
                     }
-                    if (respose.Headers.Contains("X-Wlniao-UseTime"))
+                    if (respose.Headers.Contains("X-TraceId"))
                     {
-                        utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
+                        rlt.traceid = respose.Headers.GetValues("X-TraceId").FirstOrDefault();
                     }
                     if (string.IsNullOrEmpty(utime))
                     {

@@ -38,7 +38,7 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 
         /// </summary>
-        private static string XCenterEmi = Wlniao.Config.GetConfigs("XCenterEmi");
+        private static string XCenterEmi = Config.GetConfigs("XCenterEmi");
         /// <summary>
         /// EMI服务器地址
         /// </summary>
@@ -62,13 +62,14 @@ namespace Wlniao.XCenter
             }
             set
             {
-                if (!string.IsNullOrEmpty(value))
+                if (string.IsNullOrEmpty(value))
                 {
-                    domain = value.Trim().Trim('/');
-                    if (domain.IndexOf("://") > 0)
-                    {
-                        domain = domain.Substring(domain.IndexOf("://") + 3);
-                    }
+                    return;
+                }
+                domain = value.Trim().Trim('/');
+                if (domain.IndexOf("://", StringComparison.Ordinal) > 0)
+                {
+                    domain = domain.Substring(domain.IndexOf("://", StringComparison.Ordinal) + 3);
                 }
             }
         }
@@ -78,28 +79,8 @@ namespace Wlniao.XCenter
         [JsonIgnore]
         public string CdnPrefix
         {
-            get
-            {
-                if (string.IsNullOrEmpty(cdn))
-                {
-                    return EmiHost;
-                }
-                else
-                {
-                    return cdn;
-                }
-            }
-            set
-            {
-                if (string.IsNullOrEmpty(value))
-                {
-                    cdn = "";
-                }
-                else
-                {
-                    cdn = value.Trim().TrimEnd('/');
-                }
-            }
+            get => string.IsNullOrEmpty(cdn) ? EmiHost : cdn;
+            set => cdn = string.IsNullOrEmpty(value) ? "" : value.Trim().TrimEnd('/');
         }
 
         /// <summary>
@@ -118,11 +99,11 @@ namespace Wlniao.XCenter
                     name = ctx.name,
                     brand = ctx.brand,
                     owner = ctx.owner,
-                    token = string.IsNullOrEmpty(ctx.token) ? Context.XCenterToken : ctx.token,
+                    token = string.IsNullOrEmpty(ctx.token) ? XCenterToken : ctx.token,
                     domain = ctx.domain,
                     message = ctx.message,
                     register = DateTime.MinValue,
-                    apptoken = string.IsNullOrEmpty(ctx.token) && string.IsNullOrEmpty(ctx.app_token) ? Context.XCenterAppToken : (string.IsNullOrEmpty(ctx.app_token) ? Encryptor.Md5Encryptor16(ctx.app + ":" + ctx.token).ToLower() : ctx.app_token),
+                    apptoken = string.IsNullOrEmpty(ctx.token) && string.IsNullOrEmpty(ctx.app_token) ? XCenterAppToken : (string.IsNullOrEmpty(ctx.app_token) ? Encryptor.Md5Encryptor16(ctx.app + ":" + ctx.token).ToLower() : ctx.app_token),
                     https = true
                 };
                 //if (!string.IsNullOrEmpty(EmiDomain))
@@ -212,7 +193,7 @@ namespace Wlniao.XCenter
                     }
                 }
                 values.Append(ctx.apptoken);
-                kvList.Add(new KeyValuePair<string, string>("sig", Wlniao.Encryptor.Md5Encryptor32(values.ToString())));
+                kvList.Add(new KeyValuePair<string, string>("sig", Encryptor.Md5Encryptor32(values.ToString())));
             }
             #endregion
             #region 拼接请求参数
@@ -237,19 +218,14 @@ namespace Wlniao.XCenter
         {
             try
             {
-                var rlt = new ApiResult<object>();
-                var list = new List<KeyValuePair<string, string>>();
-                foreach (var kv in kvs)
+                var list = kvs.ToList();
+                if (kvs.All(o => o.Key.ToLower() != "app"))
                 {
-                    list.Add(kv);
-                }
-                if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
-                {
-                    list.Add(new KeyValuePair<string, string>("app", this.app));
+                    list.Add(new KeyValuePair<string, string>("app", app));
                 }
                 var start = DateTime.Now;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
-                var json = Wlniao.Net.ApiClient.Get(uri.ToString());
+                var json = Net.ApiClient.Get(uri.ToString());
                 if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
                     Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + uri.Query + "[Get]\n <<< " + json);
@@ -273,23 +249,19 @@ namespace Wlniao.XCenter
         {
             try
             {
-                var list = new List<KeyValuePair<string, string>>();
-                foreach (var kv in kvs)
+                var list = kvs.ToList();
+                if (kvs.All(o => o.Key.ToLower() != "app"))
                 {
-                    list.Add(kv);
-                }
-                if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
-                {
-                    list.Add(new KeyValuePair<string, string>("app", this.app));
+                    list.Add(new KeyValuePair<string, string>("app", app));
                 }
                 var start = DateTime.Now;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
-                var json = Wlniao.Net.ApiClient.Get(uri.ToString());
+                var json = Net.ApiClient.Get(uri.ToString());
                 if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
                     Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + uri.Query + "[Get]\n <<< " + json);
                 }
-                return JsonSerializer.Deserialize<ApiResult<T>>(json, new JsonSerializerOptions { });
+                return JsonSerializer.Deserialize<ApiResult<T>>(json, XCore.JsonSerializerOptions);
             }
             catch (Exception ex)
             {
@@ -310,27 +282,23 @@ namespace Wlniao.XCenter
         {
             try
             {
-                var list = new List<KeyValuePair<string, string>>();
-                foreach (var kv in kvs)
+                var list = kvs.ToList();
+                if (kvs.All(o => o.Key.ToLower() != "app"))
                 {
-                    list.Add(kv);
-                }
-                if (kvs == null || !kvs.Where(o => o.Key.ToLower() == "app").Any())
-                {
-                    list.Add(new KeyValuePair<string, string>("app", this.app));
+                    list.Add(new KeyValuePair<string, string>("app", app));
                 }
                 var start = DateTime.Now;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
-                var json = Wlniao.Net.ApiClient.Post(uri.ToString(), postdata);
+                var json = Net.ApiClient.Post(uri.ToString(), postdata);
                 if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
                     Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + postdata + "\n <<< " + json);
                 }
-                return JsonSerializer.Deserialize<ApiResult<T>>(json, new JsonSerializerOptions { });
+                return JsonSerializer.Deserialize<ApiResult<T>>(json, XCore.JsonSerializerOptions);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return new ApiResult<T> { message = "EMI服务器请求异常：" + ex.Message, data = default(T) };
+                return new ApiResult<T> { message = "EMI服务器请求异常：" + e.Message, data = default(T) };
             }
         }
 
@@ -345,10 +313,10 @@ namespace Wlniao.XCenter
         {
             try
             {
-                var url = this.EmiHost + "/upload";
+                var url = EmiHost + "/upload";
                 if (string.IsNullOrEmpty(ticket))
                 {
-                    url += ("?ticket=" + Encryptor.SM4EncryptECBToHex((DateTools.GetUnix() + 300).ToString(), this.apptoken));
+                    url += ("?ticket=" + Encryptor.SM4EncryptECBToHex((DateTools.GetUnix() + 300).ToString(), apptoken));
                 }
                 else
                 {
@@ -357,16 +325,13 @@ namespace Wlniao.XCenter
                 var content = new MultipartFormDataContent();
                 content.Add(new ByteArrayContent(data), "file", name);
                 var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                using var client = new System.Net.Http.HttpClient(handler);
+                using var client = new HttpClient(handler);
                 var response = client.PostAsync(url, content).GetAwaiter().GetResult();
                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     var res = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                    var result = JsonSerializer.Deserialize<ApiResult<string>>(res, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
-                    if (result == null)
-                    {
-                        result = new ApiResult<string> { message = "上传结果返回无效，请稍后再试" };
-                    }
+                    var result = JsonSerializer.Deserialize<ApiResult<string>>(res, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) }) ??
+                                 new ApiResult<string> { message = "上传结果返回无效，请稍后再试" };
                     return result;
                 }
                 else
@@ -374,9 +339,9 @@ namespace Wlniao.XCenter
                     throw new Exception("StatusCode:" + response.StatusCode + " " + response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
                 }
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return new ApiResult<string> { message = ex.Message };
+                return new ApiResult<string> { message = e.Message };
             }
         }
 
@@ -392,7 +357,7 @@ namespace Wlniao.XCenter
             {
                 return "";
             }
-            var val = Caching.Cache.Get("emi_" + this.owner + "_label_" + key);
+            var val = Caching.Cache.Get($"emi_{owner}_label_{key}");
             if (string.IsNullOrEmpty(val))
             {
                 var rlt = EmiGet<string>("app", "getlabel", new KeyValuePair<string, string>("key", key), new KeyValuePair<string, string>("label", label));
@@ -408,7 +373,7 @@ namespace Wlniao.XCenter
                 {
                     val = label;
                 }
-                Caching.Cache.Set("emi_" + this.owner + "_label_" + key, val, 3600);
+                Caching.Cache.Set($"emi_{owner}_label_{key}", val, 3600);
             }
             return val;
         }
@@ -425,14 +390,14 @@ namespace Wlniao.XCenter
             {
                 return "";
             }
-            var val = Caching.Cache.Get("emi_" + this.owner + "_setting_" + key);
+            var val = Caching.Cache.Get($"emi_{owner}_setting_{key}");
             if (string.IsNullOrEmpty(val))
             {
                 var rlt = EmiGet<string>("app", "setting", new KeyValuePair<string, string>("key", key), new KeyValuePair<string, string>("value", value));
                 if (rlt.success && !string.IsNullOrEmpty(rlt.data))
                 {
                     val = rlt.data;
-                    Caching.Cache.Set("emi_" + this.owner + "_setting_" + key, val, 180);
+                    Caching.Cache.Set($"emi_{owner}_setting_{key}", val, 180);
                 }
                 else if (string.IsNullOrEmpty(value))
                 {
@@ -453,14 +418,14 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public string GetEnumName(string key)
         {
-            var val = Caching.Cache.Get<string>("emi_" + this.owner + "_enumname_" + key);
+            var val = Caching.Cache.Get<string>($"emi_{owner}_enumname_{key}");
             if (string.IsNullOrEmpty(val))
             {
                 var rlt = EmiGet<Wlniao.XCenter.Models.Enum>("app", "getenum", new KeyValuePair<string, string>("key", key));
                 if (rlt.success && rlt.data != null && !string.IsNullOrEmpty(rlt.data.label))
                 {
                     val = rlt.data.label;
-                    Caching.Cache.Set("emi_" + this.owner + "_enumname_" + key, val, 300);
+                    Caching.Cache.Set($"emi_{owner}_enumname_{key}", val, 300);
                 }
             }
             if (string.IsNullOrEmpty(val))
@@ -476,20 +441,17 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public List<Wlniao.XCenter.Models.Enum> GetEnumList(string parent)
         {
-            var val = Caching.Cache.Get<List<Wlniao.XCenter.Models.Enum>>("emi_" + this.owner + "_enumlist_" + parent);
+            var val = Caching.Cache.Get<List<Wlniao.XCenter.Models.Enum>>($"emi_{owner}_enumlist_{parent}");
             if (val == null || val.Count == 0)
             {
                 var rlt = EmiGet<List<Wlniao.XCenter.Models.Enum>>("app", "getenumlist", new KeyValuePair<string, string>("parent", parent));
-                if (rlt.success && rlt.data != null && rlt.data.Count > 0)
+                if (rlt is { success: true, data.Count: > 0 })
                 {
                     val = rlt.data;
-                    Caching.Cache.Set("emi_" + this.owner + "_enumlist_" + parent, val, 300);
+                    Caching.Cache.Set($"emi_{owner}_enumlist_{parent}", val, 300);
                 }
             }
-            if (val == null)
-            {
-                val = new List<Models.Enum>();
-            }
+            val ??= [];
             return val;
         }
         /// <summary>
@@ -503,17 +465,17 @@ namespace Wlniao.XCenter
             var item = new Models.Account();
             if (!string.IsNullOrEmpty(eid))
             {
-                var data = Caching.Cache.Get<Dictionary<string, object>>("emi_" + this.owner + "_account_" + eid);
+                var data = Caching.Cache.Get<Dictionary<string, object>>($"emi_{owner}_account_{eid}");
                 if (data == null || data.Count == 0)
                 {
                     var rlt = EmiGet<Dictionary<string, object>>("app", "getaccount", new KeyValuePair<string, string>("sid", eid));
-                    if (rlt.success && rlt.data != null && rlt.data.ContainsKey("sid"))
+                    if (rlt is { success: true, data: not null } && rlt.data.ContainsKey("sid"))
                     {
                         data = rlt.data;
-                        Caching.Cache.Set("emi_" + this.owner + "_account_" + eid, data, 3600);
+                        Caching.Cache.Set($"emi_{owner}_account_{eid}", data, 3600);
                     }
                 }
-                if (data != null && data.Count > 0)
+                if (data is { Count: > 0 })
                 {
                     item.sid = data.GetString("sid");
                     item.name = data.GetString("name");
@@ -545,16 +507,16 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 检查用户权限
         /// </summary>
-        /// <param name="Sid"></param>
-        /// <param name="Code"></param>
+        /// <param name="sid"></param>
+        /// <param name="code"></param>
         /// <returns></returns>
-        public bool Permission(string Sid, string Code)
+        public bool Permission(string sid, string code)
         {
-            if (!string.IsNullOrEmpty(Code))
+            if (!string.IsNullOrEmpty(code))
             {
                 var rlt = EmiGet<bool>("app", "permission"
-                    , new KeyValuePair<string, string>("sid", Sid)
-                    , new KeyValuePair<string, string>("code", Code));
+                    , new KeyValuePair<string, string>("sid", sid)
+                    , new KeyValuePair<string, string>("code", code));
                 return rlt.data;
             }
             return false;
@@ -562,18 +524,18 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 检查机构数据查看权限
         /// </summary>
-        /// <param name="Sid"></param>
-        /// <param name="Code"></param>
-        /// <param name="Organ"></param>
+        /// <param name="sid"></param>
+        /// <param name="code"></param>
+        /// <param name="organ"></param>
         /// <returns></returns>
-        public bool PermissionOrgan(string Sid, string Code, string Organ)
+        public bool PermissionOrgan(string sid, string code, string organ)
         {
-            if (!string.IsNullOrEmpty(Code))
+            if (!string.IsNullOrEmpty(code))
             {
                 var rlt = EmiGet<bool>("app", "permissionorgan"
-                    , new KeyValuePair<string, string>("sid", Sid)
-                    , new KeyValuePair<string, string>("code", Code)
-                    , new KeyValuePair<string, string>("organ", Organ));
+                    , new KeyValuePair<string, string>("sid", sid)
+                    , new KeyValuePair<string, string>("code", code)
+                    , new KeyValuePair<string, string>("organ", organ));
                 return rlt.data;
             }
             return false;
@@ -581,49 +543,48 @@ namespace Wlniao.XCenter
         /// <summary>
         /// 记录日志
         /// </summary>
-        /// <param name="Sid">操作用户</param>
-        /// <param name="Comments">日志内容</param>
-        /// <param name="ClientIP">终端IP</param>
+        /// <param name="sid">操作用户</param>
+        /// <param name="content">日志内容</param>
+        /// <param name="clientIp">终端IP</param>
         /// <returns></returns>
-        public bool Log(string Sid, string Comments, string ClientIP)
+        public bool Log(string sid, string content, string clientIp)
         {
-            return Log("", "", "", "", Sid, Comments, ClientIP);
+            return Log("", "", "", "", sid, content, clientIp);
         }
         /// <summary>
         /// 记录日志
         /// </summary>
-        /// <param name="Organ">所属部门</param>
-        /// <param name="Sid">操作用户</param>
-        /// <param name="Comments">日志内容</param>
-        /// <param name="ClientIP">终端IP</param>
+        /// <param name="organ">所属部门</param>
+        /// <param name="sid">操作用户</param>
+        /// <param name="content">日志内容</param>
+        /// <param name="clientIp">终端IP</param>
         /// <returns></returns>
-        public bool Log(string Organ, string Sid, string Comments, string ClientIP)
+        public bool Log(string organ, string sid, string content, string clientIp)
         {
-            return Log("", "", "", Organ, Sid, Comments, ClientIP);
+            return Log("", "", "", organ, sid, content, clientIp);
         }
         /// <summary>
         /// 记录日志
         /// </summary>
-        /// <param name="Model">模型表名</param>
-        /// <param name="Key">模型主键</param>
-        /// <param name="Method">操作方法</param>
-        /// <param name="Organ">所属部门</param>
-        /// <param name="Sid">操作用户</param>
-        /// <param name="Comments">日志内容</param>
-        /// <param name="ClientIP">终端IP</param>
+        /// <param name="model">模型表名</param>
+        /// <param name="key">模型主键</param>
+        /// <param name="method">操作方法</param>
+        /// <param name="organ">所属部门</param>
+        /// <param name="sid">操作用户</param>
+        /// <param name="content">日志内容</param>
+        /// <param name="clientIp">终端IP</param>
         /// <returns></returns>
-        public bool Log(string Model, string Key, string Method, string Organ, string Sid, string Comments, string ClientIP)
+        public bool Log(string model, string key, string method, string organ, string sid, string content, string clientIp)
         {
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(new
+            return EmiPost<string>("app", "log", Wlniao.Json.Serialize(new
             {
-                sid = Sid,
-                key = Key,
-                model = Model,
-                method = Method,
-                comments = Comments,
-                clientip = ClientIP
-            });
-            return EmiPost<string>("app", "log", json).success;
+                sid = sid,
+                key = key,
+                model = model,
+                method = method,
+                content = content,
+                clientip = clientIp
+            })).success;
         }
     }
 }

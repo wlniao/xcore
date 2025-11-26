@@ -2,9 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Wlniao.Text;
@@ -15,7 +13,7 @@ namespace Wlniao.Mvc
     /// <summary>
     /// XCore扩展的Controller
     /// </summary>
-    public class XCoreController : Controller
+    public partial class XCoreController : Controller
     {
         /// <summary>
         /// 请求是否为Https
@@ -36,7 +34,7 @@ namespace Wlniao.Mvc
         /// <summary>
         /// 当前请求开始时间
         /// </summary>
-        private DateTime start = DateTime.Now;
+        private DateTime start = DateTime.MinValue;
         /// <summary>
         /// 当前执行的方法，参数：do=
         /// </summary>
@@ -92,24 +90,26 @@ namespace Wlniao.Mvc
             {
                 errorMsg = Config.GetConfigs("NoSecurityMessage");
             }
-            if (!Response.HasStarted)
+
+            if (!Response.HasStarted && start > DateTime.MinValue)
             {
-                Response.Headers.TryAdd("X-Wlniao-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
+                Response.Headers.TryAdd("X-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
             }
+
             if (string.IsNullOrEmpty(errorMsg))
             {
                 base.OnActionExecuted(context);
-                if (string.IsNullOrEmpty(trace) && Request.Headers.ContainsKey("X-Wlniao-Trace"))
+                if (string.IsNullOrEmpty(trace) && Request.Headers.ContainsKey("X-TraceId"))
                 {
-                    trace = Request.Headers["X-Wlniao-Trace"].ToString();
+                    trace = Request.Headers["X-TraceId"].ToString();
                 }
                 if (!string.IsNullOrEmpty(trace) && !Response.HasStarted)
                 {
-                    Response.Headers.TryAdd("X-Wlniao-Trace", trace);
+                    Response.Headers.TryAdd("X-TraceId", trace);
                 }
                 if (!string.IsNullOrEmpty(XCore.XServerId) && !Response.HasStarted)
                 {
-                    Response.Headers.TryAdd("X-Wlniao-XServerId", XCore.XServerId);
+                    Response.Headers.TryAdd("X-Service", XCore.XServerId);
                 }
             }
             else if (string.IsNullOrEmpty(method))
@@ -122,20 +122,21 @@ namespace Wlniao.Mvc
             }
             else
             {
-                var jsonStr = Wlniao.Json.Serialize(new { success = false, message = errorMsg, data = "" });
-                var errorPage = new ContentResult();
-                if (string.IsNullOrEmpty(GetRequest("callback")))
+                context.Result = new ContentResult
                 {
-                    errorPage.ContentType = "text/json";
-                    errorPage.Content = jsonStr;
-                }
-                else
-                {
-                    errorPage.ContentType = "text/javascript";
-                    errorPage.Content = GetRequest("callback") + "(" + jsonStr + ")";
-                }
-                context.Result = errorPage;
+                    ContentType = "text/json",
+                    Content = Wlniao.Json.Serialize(new { success = false, message = errorMsg, data = "" })
+                };
             }
+        }
+
+        /// <summary>
+        /// 启用耗时统计
+        /// </summary>
+        [NonAction]
+        public void OpenUseTime()
+        {
+            start = DateTime.Now;
         }
         /// <summary>
         /// 输出调试消息
@@ -144,9 +145,9 @@ namespace Wlniao.Mvc
         [NonAction]
         public void DebugMessage(string message)
         {
-            if (!string.IsNullOrEmpty(message) && !Response.Headers.ContainsKey("X-Wlniao-Debug"))
+            if (!string.IsNullOrEmpty(message) && !Response.Headers.ContainsKey("X-Debug"))
             {
-                Response.Headers.TryAdd("X-Wlniao-Debug", message);
+                Response.Headers.TryAdd("X-Debug", message);
             }
         }
         /// <summary>
@@ -158,7 +159,7 @@ namespace Wlniao.Mvc
         [NonAction]
         public IActionResult RedirectWait(string url, int seconds)
         {
-            return Content("<html><head><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\"><meta http-equiv=\"refresh\" content=\"" + seconds + ";url=" + url + "\"></head></html>", "text/html");
+            return Content($"<html><head><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\"><meta http-equiv=\"refresh\" content=\"{seconds};url={url}\"></head></html>", "text/html");
         }
         /// <summary>
         /// Object输出
@@ -177,10 +178,7 @@ namespace Wlniao.Mvc
                     jsonStr = data.ToString();
                     break;
                 default:
-                    jsonStr = JsonSerializer.Serialize(data, new JsonSerializerOptions
-                    {
-                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                    });
+                    jsonStr = JsonSerializer.Serialize(data, XCore.JsonSerializerOptions);
                     break;
             }
 
@@ -204,10 +202,7 @@ namespace Wlniao.Mvc
                     jsonStr = data.ToString();
                     break;
                 default:
-                    jsonStr = JsonSerializer.Serialize(data, new JsonSerializerOptions
-                    {
-                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                    });
+                    jsonStr = JsonSerializer.Serialize(data, XCore.JsonSerializerOptions);
                     break;
             }
 
@@ -221,14 +216,7 @@ namespace Wlniao.Mvc
         [NonAction]
         public ActionResult JsonStr(string jsonStr)
         {
-            if (string.IsNullOrEmpty(GetRequest("callback")) || jsonStr.LastIndexOf(')') > jsonStr.LastIndexOf(':'))
-            {
-                return Content(jsonStr, "application/json", Encoding.UTF8);
-            }
-            else
-            {
-                return Content(GetRequest("callback") + "(" + jsonStr + ")", "application/json", Encoding.UTF8);
-            }
+            return Content(jsonStr, "application/json", Encoding.UTF8);
         }
         /// <summary>
         /// Json字符串输出
@@ -239,14 +227,7 @@ namespace Wlniao.Mvc
         [NonAction]
         public ActionResult JsonStr(string jsonStr, Encoding encoding)
         {
-            if (string.IsNullOrEmpty(GetRequest("callback")) || jsonStr.LastIndexOf(')') > jsonStr.LastIndexOf(':'))
-            {
-                return Content(jsonStr, "application/json", encoding ?? Encoding.UTF8);
-            }
-            else
-            {
-                return Content(GetRequest("callback") + "(" + jsonStr + ")", "application/json", encoding ?? Encoding.UTF8);
-            }
+            return Content(jsonStr, "application/json", encoding ?? Encoding.UTF8);
         }
         /// <summary>
         /// 输出错误消息
@@ -268,13 +249,9 @@ namespace Wlniao.Mvc
                     Content = errorHtml.Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon).Replace("{{errorMsg}}", message)
                 };
             }
-            else if (string.IsNullOrEmpty(GetRequest("callback")))
-            {
-                return Content(Wlniao.Json.Serialize(new { success = false, message = message }), "application/json", Encoding.UTF8);
-            }
             else
             {
-                return Content(GetRequest("callback") + "(" + Wlniao.Json.Serialize(new { success = false, message = message }) + ")", "text/json", Encoding.UTF8);
+                return Content(Wlniao.Json.Serialize(new { success = false, message = message }), "application/json", Encoding.UTF8);
             }
         }
         /// <summary>
@@ -289,43 +266,49 @@ namespace Wlniao.Mvc
             var item = Request.Cookies.FirstOrDefault(o => o.Key.ToLower() == key);
             return item.Value ?? "";
         }
+
         /// <summary>
         /// 获取请求参数Get及Post
         /// </summary>
-        /// <param name="Key"></param>
-        /// <param name="Default"></param>
+        /// <param name="key"></param>
+        /// <param name="defaultValue"></param>
         /// <returns></returns>
         [NonAction]
-        protected string GetRequestNoSecurity(string Key, string Default = "")
+        protected string GetRequestNoSecurity(string key, string defaultValue = "")
         {
-            var key = Key.ToLower();
+            key = key.ToLower();
             foreach (var item in Request.Query.Keys)
             {
                 if (item.ToLower() != key || string.IsNullOrEmpty(Request.Query[key]))
                 {
                     continue;
                 }
-                Default = Request.Query[item].ToString().Trim();
-                if (!string.IsNullOrEmpty(Default) && Default.IndexOf('%') >= 0)
+
+                defaultValue = Request.Query[item].ToString().Trim();
+                if (!string.IsNullOrEmpty(defaultValue) && defaultValue.IndexOf('%') >= 0)
                 {
-                    Default = StringUtil.UrlDecode(Default);
+                    defaultValue = StringUtil.UrlDecode(defaultValue);
                 }
-                return Default.Trim();
+
+                return defaultValue.Trim();
             }
-            return Default.Trim();
+
+            return defaultValue.Trim();
         }
+        
+
         /// <summary>
         /// 获取请求参数（过滤非安全字符）
         /// </summary>
-        /// <param name="Key"></param>
-        /// <param name="Default"></param>
+        /// <param name="key"></param>
+        /// <param name="defaultValue"></param>
         /// <returns></returns>
         [NonAction]
-        protected string GetRequestSecurity(string Key, string Default = "")
+        protected string GetRequestSecurity(string key, string defaultValue = "")
         {
-            Default = GetRequestNoSecurity(Key, Default);
-            var str = System.Text.RegularExpressions.Regex.Replace(Default, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\'|\.|<|>]", "").Replace("\"", "");
-            if (str != Default)
+            defaultValue = GetRequestNoSecurity(key, defaultValue);
+            var str = System.Text.RegularExpressions.Regex.Replace(defaultValue, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\'|\.|<|>]", "").Replace("\"", "");
+            if (str != defaultValue)
             {
                 RequestSecurity = false;
             }
@@ -334,40 +317,40 @@ namespace Wlniao.Mvc
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
         /// </summary>
-        /// <param name="Key"></param>
-        /// <param name="Default"></param>
+        /// <param name="key"></param>
+        /// <param name="defaultValue"></param>
         /// <returns></returns>
         [NonAction]
-        protected string GetRequest(string Key, string Default = "")
+        protected string GetRequest(string key, string defaultValue = "")
         {
-            Default = GetRequestNoSecurity(Key, Default);
-            var str = System.Text.RegularExpressions.Regex.Replace(Default, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\'|\.|<|>]", "").Replace("\"", "");
-            if (str != Default)
+            defaultValue = GetRequestNoSecurity(key, defaultValue);
+            var str = MyRegex().Replace(defaultValue, "").Replace("\"", "");
+            if (str != defaultValue)
             {
                 RequestSecurity = false;
             }
-            return Default;
+            return defaultValue;
         }
         /// <summary>
         /// 获取请求参数
         /// </summary>
-        /// <param name="Key"></param>
-        /// <param name="Default"></param>
+        /// <param name="key"></param>
+        /// <param name="defaultValue"></param>
         /// <returns></returns>
         [NonAction]
-        protected string GetRequestDecode(string Key, string Default = "")
+        protected string GetRequestDecode(string key, string defaultValue = "")
         {
-            return GetRequest(Key, Default);
+            return GetRequest(key, defaultValue);
         }
         /// <summary>
         /// 获取请求参数
         /// </summary>
-        /// <param name="Key"></param>
+        /// <param name="key"></param>
         /// <returns></returns>
         [NonAction]
-        protected int GetRequestInt(string Key)
+        protected int GetRequestInt(string key)
         {
-            return Convert.ToInt(GetRequest(Key, "0"));
+            return Convert.ToInt(GetRequest(key, "0"));
         }
         /// <summary>
         /// 获取Post的文本内容
@@ -386,11 +369,7 @@ namespace Wlniao.Mvc
                 {
                     if (Request.ContentType?.StartsWith("application/x-www-form-urlencoded") ?? false)
                     {
-                        var input = "";
-                        foreach(var kv in Request.Form)
-                        {
-                            input += "&" + kv.Key + "=" + kv.Value;
-                        }
+                        var input = Request.Form.Aggregate("", (current, kv) => current + ("&" + kv.Key + "=" + kv.Value));
                         strPost = input.TrimStart('&');
                     }
                     else
@@ -398,21 +377,19 @@ namespace Wlniao.Mvc
                         strPost = new StreamReader(Request.Body).ReadToEnd();
                         if (string.IsNullOrEmpty(strPost))
                         {
-                            using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
-                            {
-                                strPost = reader.ReadToEnd();
-                            }
+                            using var reader = new StreamReader(Request.Body, Encoding.UTF8);
+                            strPost = reader.ReadToEnd();
                         }
                     }
                 }
                 catch
                 {
-                    var buffer = new byte[0];
+                    var buffer = Array.Empty<byte>();
                     if (Request.ContentLength > 0)
                     {
                         buffer = new byte[(int)Request.ContentLength];
                     }
-                    Request.Body.Read(buffer, 0, buffer.Length);
+                    Request.Body.ReadExactly(buffer, 0, buffer.Length);
                     strPost = Encoding.UTF8.GetString(buffer);
                 }
             }
@@ -429,11 +406,11 @@ namespace Wlniao.Mvc
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
         /// </summary>
-        /// <param name="Key"></param>
-        /// <param name="Default"></param>
+        /// <param name="key"></param>
+        /// <param name="defaultValue"></param>
         /// <returns></returns>
         [NonAction]
-        protected string PostRequest(string Key, string Default = "")
+        protected string PostRequest(string key, string defaultValue = "")
         {
             if (ctxPost == null)
             {
@@ -457,7 +434,7 @@ namespace Wlniao.Mvc
                             else if (Request.ContentType != null && Request.ContentType.Contains("multipart/form-data"))
                             {
                                 #region 请求为文件上传
-                                if (Request.Form != null && Request.Form.Keys != null)
+                                if (Request.Form is { Keys: not null })
                                 {
                                     foreach (var item in Request.Form.Keys)
                                     {
@@ -491,14 +468,7 @@ namespace Wlniao.Mvc
                                     {
                                         foreach (var kv in tmpPost)
                                         {
-                                            if (kv.Value == null)
-                                            {
-                                                continue;
-                                            }
-                                            else
-                                            {
-                                                ctxPost.TryAdd(kv.Key, kv.Value);
-                                            }
+                                            ctxPost.TryAdd(kv.Key, kv.Value);
                                         }
                                     }
                                 }
@@ -507,57 +477,54 @@ namespace Wlniao.Mvc
                         }
                         catch { }
                     }
-                    if (Request.Query != null) //叠加URL传递的参数
+
+                    foreach (var item in Request.Query.Keys)
                     {
-                        foreach (var item in Request.Query.Keys)
-                        {
-                            ctxPost.TryAdd(item, StringUtil.UrlDecode(Request.Query[item].ToString().Trim()));
-                        }
+                        ctxPost.TryAdd(item, StringUtil.UrlDecode(Request.Query[item].ToString().Trim()));
                     }
                 }
                 catch { }
             }
             if (ctxPost != null)
             {
-                return ctxPost.GetString(Key, Default);
+                return ctxPost.GetString(key, defaultValue);
             }
-            else if (string.IsNullOrEmpty(Default))
+            else if (string.IsNullOrEmpty(defaultValue))
             {
                 return "";
             }
             else
             {
-                return Default.Trim();
+                return defaultValue.Trim();
             }
         }
 
         /// <summary>
         /// 获取请求参数
         /// </summary>
-        /// <param name="Key"></param>
+        /// <param name="key"></param>
         /// <returns></returns>
         [NonAction]
-        protected int PostRequestInt(string Key)
+        protected int PostRequestInt(string key)
         {
-            return Convert.ToInt(PostRequest(Key, "0"));
+            return Convert.ToInt(PostRequest(key, "0"));
         }
 
         /// <summary>
         /// 获取请求请求头信息
         /// </summary>
-        /// <param name="Key"></param>
-        /// <param name="Default"></param>
+        /// <param name="key"></param>
+        /// <param name="defaultValue"></param>
         /// <returns></returns>
         [NonAction]
-        protected string HeaderRequest(string Key, string Default = "")
+        protected string HeaderRequest(string key, string defaultValue = "")
         {
-            var key = Key.ToLower();
-            var value = new Microsoft.Extensions.Primitives.StringValues();
-            if (Request.Headers.TryGetValue(key, out value))
+            key = key.ToLower();
+            if (Request.Headers.TryGetValue(key, out var value))
             {
-                Default = value.ToString();
+                defaultValue = value.ToString();
             }
-            return Default.Trim();
+            return defaultValue.Trim();
         }
         /// <summary>
         /// 客户端请求是否为HTTPS协议(兼容X-Forwarded-Proto属性)
@@ -570,16 +537,15 @@ namespace Wlniao.Mvc
                 {
                     return true;
                 }
-                var val = new Microsoft.Extensions.Primitives.StringValues();
-                if (Request.Headers.TryGetValue("x-forwarded-proto", out val) && val.ToString().ToLower() == "https")
+                if (Request.Headers.TryGetValue("x-forwarded-proto", out var proto) && proto.ToString().ToLower() == "https")
                 {
                     https = true;
                 }
-                if (!https && Request.Headers.TryGetValue("x-client-scheme", out val) && val.ToString().ToLower() == "https")
+                if (!https && Request.Headers.TryGetValue("x-client-scheme", out var scheme) && scheme.ToString().ToLower() == "https")
                 {
                     https = true;
                 }
-                if (!https && Request.Headers.TryGetValue("referer", out val) && val.ToString().Contains("https"))
+                if (!https && Request.Headers.TryGetValue("referer", out var referer) && referer.ToString().Contains("https"))
                 {
                     https = true;
                 }
@@ -594,8 +560,7 @@ namespace Wlniao.Mvc
         {
             get
             {
-                var ua = new Microsoft.Extensions.Primitives.StringValues();
-                if (Request.Headers.TryGetValue("user-agent", out ua) && ua.Count > 0)
+                if (Request.Headers.TryGetValue("user-agent", out var ua) && ua.Count > 0)
                 {
                     return ua.ToString();
                 }
@@ -648,11 +613,11 @@ namespace Wlniao.Mvc
         {
             get
             {
-                var clientIp = (Request.HttpContext.Connection.RemoteIpAddress != null && !Request.HttpContext.Connection.RemoteIpAddress.IsIPv4MappedToIPv6) ? Request.HttpContext.Connection.RemoteIpAddress?.ToString() : Request.HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
-                if (Request.Headers.TryGetValue("x-forwarded-for", out var forwardedIP))
+                var clientIp = Request.HttpContext.Connection.RemoteIpAddress is { IsIPv4MappedToIPv6: false } ? Request.HttpContext.Connection.RemoteIpAddress?.ToString() : Request.HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
+                if (Request.Headers.TryGetValue("x-forwarded-for", out var forwardedIp))
                 {
                     // 通过代理网关部署时，获取"x-forwarded-for"传递的真实IP
-                    foreach (var ip in forwardedIP.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    foreach (var ip in forwardedIp.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
                     {
                         if (ip != "::1" && ip != "127.0.0.1" && StringUtil.IsIP(ip))
                         {
@@ -705,17 +670,17 @@ namespace Wlniao.Mvc
         {
             get
             {
+                if (!string.IsNullOrEmpty(domain))
+                {
+                    return domain;
+                }
+                if (Request.Headers.TryGetValue("X-Webroxy", out var webroxy))
+                {
+                    domain = webroxy.ToString();
+                }
                 if (string.IsNullOrEmpty(domain))
                 {
-                    var webroxy = new Microsoft.Extensions.Primitives.StringValues();
-                    if (Request.Headers.TryGetValue("X-Webroxy", out webroxy))
-                    {
-                        domain = webroxy.ToString();
-                    }
-                    if (string.IsNullOrEmpty(domain))
-                    {
-                        domain = Request.Host.Host;
-                    }
+                    domain = Request.Host.Host;
                 }
                 return domain;
             }
@@ -727,8 +692,7 @@ namespace Wlniao.Mvc
         {
             get
             {
-                var referer = new Microsoft.Extensions.Primitives.StringValues();
-                if (Request.Headers.TryGetValue("referer", out referer) && referer.Count > 0)
+                if (Request.Headers.TryGetValue("referer", out var referer) && referer.Count > 0)
                 {
                     return referer.ToString();
                 }
@@ -742,20 +706,23 @@ namespace Wlniao.Mvc
         {
             get
             {
-                if (trace == null)
+                if (trace != null)
                 {
-                    var traceId = new Microsoft.Extensions.Primitives.StringValues();
-                    if (Request.Headers.TryGetValue("wln-trace-id", out traceId) && traceId.Any())
-                    {
-                        trace = traceId.ToString();
-                    }
-                    else
-                    {
-                        trace = Guid.NewGuid().ToString().Replace('-', '\0');
-                    }
+                    return trace;
+                }
+                if (Request.Headers.TryGetValue("wln-trace-id", out var traceId) && traceId.Any())
+                {
+                    trace = traceId.ToString();
+                }
+                else
+                {
+                    trace = Guid.NewGuid().ToString().Replace('-', '\0');
                 }
                 return trace;
             }
         }
+
+        [System.Text.RegularExpressions.GeneratedRegex(@"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\'|\.|<|>]")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex();
     }
 }

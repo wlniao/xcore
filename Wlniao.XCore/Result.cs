@@ -128,18 +128,7 @@ namespace Wlniao
         /// <returns></returns>
         public static Result<T> OutSuccess(T data, int statusCode = 200)
         {
-            return new Result<T> { Code = statusCode, Data = data, Message = "success" };
-        }
-        
-        /// <summary>
-        /// 返回成功结果
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public static Result<T> OutSuccess(string message, T data)
-        {
-            return new Result<T> { Code = 200, Data = data, Message = message };
+            return new Result<T> { Code = statusCode, Data = data };
         }
         
         /// <summary>

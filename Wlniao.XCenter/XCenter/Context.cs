@@ -287,23 +287,23 @@ namespace Wlniao.XCenter
             var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
             var sm2Token = Wlniao.Encryptor.SM2EncryptByPublicKey(Encoding.ASCII.GetBytes(token), XCenterServerKey);
             var sign = Wlniao.Encryptor.Sm2SignWithPrivateKey(expireTime + sm2Token + encdata, XCenterPrivkey);
-            var resStr = "";
             var reqStr = Wlniao.Json.Serialize(new { sn = XCenterCertSn, data = encdata, sign, token = sm2Token, expire = expireTime });
             Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
             var start = DateTime.Now;
             try
             {
-                var stream = Convert.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
+                var stream = Convert.ToStream(Encoding.UTF8.GetBytes(reqStr));
                 var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                var resStr = "";
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
-                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path);
-                    reqest.Headers.Date = DateTime.Now;
-                    reqest.Content = new System.Net.Http.StreamContent(stream);
-                    reqest.Content.Headers.Add("Content-Type", "application/json");
+                    var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path);
+                    request.Headers.Date = DateTime.Now;
+                    request.Content = new System.Net.Http.StreamContent(stream);
+                    request.Content.Headers.Add("Content-Type", "application/json");
                     client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", msgid);
-                    var response = client.Send(reqest);
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-TraceId", msgid);
+                    var response = client.Send(request);
                     resStr = response.Content.ReadAsStringAsync().Result;
                     if (response.StatusCode != System.Net.HttpStatusCode.OK)
                     {
@@ -315,16 +315,16 @@ namespace Wlniao.XCenter
                     {
                         Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
                     }
-                    if (response.Headers.Contains("X-Wlniao-UseTime"))
+                    if (response.Headers.Contains("X-UseTime"))
                     {
-                        utime = response.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
+                        utime = response.Headers.GetValues("X-UseTime").FirstOrDefault();
                     }
                 }
                 if (string.IsNullOrEmpty(utime))
                 {
                     utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 }
-                var resObj = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiResult<string>>(resStr);
+                var resObj = Wlniao.Json.Deserialize<ApiResult<string>>(resStr);
                 if (resObj != null && !string.IsNullOrEmpty(resObj.data))
                 {
                     var plainResult = Encryptor.SM4DecryptECBFromHex(resObj.data, token);
@@ -333,7 +333,7 @@ namespace Wlniao.XCenter
                         Log.Loger.Topic("authify", $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} >>> {plainData}{Environment.NewLine} <<< {plainResult}", Log.LogLevel.Debug, true);
                         try
                         {
-                            rlt = Newtonsoft.Json.JsonConvert.DeserializeObject<Result<T>>(plainResult);
+                            rlt = Wlniao.Json.Deserialize<Result<T>>(plainResult);
                         }
                         catch (Exception e)
                         {
@@ -395,16 +395,16 @@ namespace Wlniao.XCenter
                         reqest.Content = new System.Net.Http.StreamContent(stream);
                         reqest.Content.Headers.Add("Content-Type", "application/json");
                         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", msgid);
+                        client.DefaultRequestHeaders.TryAddWithoutValidation("X-TraceId", msgid);
                         var respose = client.Send(reqest);
                         resStr = respose.Content.ReadAsStringAsync().Result;
-                        if (respose.Headers.Contains("X-Wlniao-Trace"))
+                        if (respose.Headers.Contains("X-TraceId"))
                         {
-                            rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
+                            rlt.traceid = respose.Headers.GetValues("X-TraceId").FirstOrDefault();
                         }
-                        if (respose.Headers.Contains("X-Wlniao-UseTime"))
+                        if (respose.Headers.Contains("X-UseTime"))
                         {
-                            utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
+                            utime = respose.Headers.GetValues("X-UseTime").FirstOrDefault();
                         }
                     }
                     if (string.IsNullOrEmpty(utime))
