@@ -304,6 +304,7 @@ namespace Wlniao.Text
             }
             return true;
         }
+        
         /// <summary>
         /// 只能以英文开头，允许英文、数字、短横杠和下划线
         /// </summary>
@@ -513,6 +514,10 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static bool IsIPv4(string ip)
         {
+            if (string.IsNullOrEmpty(ip))
+            {
+                return false;
+            }
             return Regex.IsMatch(ip, @"^((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$");
         }
         /// <summary>
@@ -558,6 +563,19 @@ namespace Wlniao.Text
             return Regex.IsMatch(str, @"^\d+$");
         }
         /// <summary>
+        /// 是否电子邮箱
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static bool IsEmail(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return false;
+            }
+            return Regex.IsMatch(str, @"^[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$");
+        }
+        /// <summary>
         /// 是否为手机号
         /// </summary>
         /// <param name="str"></param>
@@ -570,6 +588,7 @@ namespace Wlniao.Text
             }
             return str.Length == 11 && IsNumber(str) && str.StartsWith("1");
         }
+        
         /// <summary>
         /// 是否为18位身份证号
         /// </summary>
@@ -627,7 +646,7 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static bool IsUrlSafeChar(char ch)
         {
-            if ((((ch < 'a') || (ch > 'z')) && ((ch < 'A') || (ch > 'Z'))) && ((ch < '0') || (ch > '9')))
+            if (ch is (< 'a' or > 'z') and (< 'A' or > 'Z') and (< '0' or > '9'))
             {
                 switch (ch)
                 {

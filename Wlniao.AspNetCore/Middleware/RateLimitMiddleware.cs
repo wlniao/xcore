@@ -22,11 +22,12 @@ namespace Wlniao.Middleware
         /// </summary>
         public int TZoneCount { get; set; } = 0;
         /// <summary>
-        /// 请求时间窗口（默认：30秒）
+        /// 请求时间窗口（默认：180秒）
+        /// 时间窗口除以分片数量即时间粒度，请求堆栈过期时间
         /// </summary>
-        public int TimeWindow { get; set; } = Convert.ToInt(Config.GetSetting("WLN_RATE_TIME_SECONDS", "30"));
+        public int TimeWindow { get; set; } = Convert.ToInt(Config.GetSetting("WLN_RATE_TIME_SECONDS", "180"));
         /// <summary>
-        /// 最大请求次数
+        /// 最大请求次数（未设置时不启用）
         /// </summary>
         public int MaxRequests { get; set; } = Convert.ToInt(Config.GetSetting("WLN_RATE_MAX_REQUESTS", "0"));
         /// <summary>
@@ -34,23 +35,24 @@ namespace Wlniao.Middleware
         /// </summary>
         public bool IsolationPath { get; set; } = false;
         /// <summary>
-        /// 限流的白名单目录列表
+        /// 限流的白名单目录列表，如：/api*
         /// </summary>
-        public string[] WhitePath { get; set; } = Config.GetSetting("WLN_RATE_WHITEPATH", "/*").SplitBy();
+        public string[] WhitePath { get; set; } = Config.GetConfigs("WLN_RATE_WHITEPATH", "").SplitBy() ?? [];
         /// <summary>
         /// 限流的白名单标识列表
         /// </summary>
-        public string[] WhiteKeys { get; set; } = Config.GetSetting("WLN_RATE_WHITEKEYS").SplitBy();
+        public string[] WhiteKeys { get; set; } = Config.GetConfigs("WLN_RATE_WHITEKEYS", "").SplitBy() ?? [];
         /// <summary>
         /// 限流的黑名单标识列表
         /// </summary>
-        public string[] BlackKeys { get; set; } = Config.GetSetting("WLN_RATE_BLACKKEYS").SplitBy();
+        public string[] BlackKeys { get; set; } = Config.GetConfigs("WLN_RATE_BLACKKEYS", "").SplitBy() ?? [];
 
         /// <summary>
         /// 提示消息内容，支持{ClientKey}变量
         /// </summary>
         public string MessageTpl { get; set; } = "{\"message\":\"访问频率超限，来自：{ClientKey} 的请求已被拒绝\"}";
     }
+    
     /// <summary>
     /// 按标识符（IP、用户ID等）限流
     /// </summary>
@@ -61,7 +63,7 @@ namespace Wlniao.Middleware
         /// </summary>
         private readonly RequestDelegate _next;
         private readonly RateLimitOptions _options;
-        private static MemoryCache memoryCache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
+        private static MemoryCache _memoryCache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
         
         /// <summary>
         /// 
@@ -76,30 +78,16 @@ namespace Wlniao.Middleware
             {
                 _options.TZoneCount = _options.TZoneCount < 360 ? _options.TZoneCount : 360;
             }
-            else if (_options.TimeWindow >= 86400)
-            {
-                _options.TZoneCount = 120;
-            }
-            else if (_options.TimeWindow >= 3600)
-            {
-                _options.TZoneCount = _options.TimeWindow / 60;
-            }
-            else if (_options.TimeWindow >= 600)
-            {
-                _options.TZoneCount = _options.TimeWindow / 10;
-            }
-            else if (_options.TimeWindow >= 120)
-            {
-                _options.TZoneCount = _options.TimeWindow / 2;
-            }
-            else if (_options.TimeWindow < 60)
-            {
-                _options.TZoneCount = _options.TimeWindow;
-            }
             else
-            {
-                _options.TZoneCount = 60;
-            }
+                _options.TZoneCount = _options.TimeWindow switch
+                {
+                    >= 86400 => 120,
+                    >= 3600 => _options.TimeWindow / 60,
+                    >= 600 => _options.TimeWindow / 10,
+                    >= 120 => _options.TimeWindow / 2,
+                    < 60 => _options.TimeWindow,
+                    _ => 60
+                };
         }
         
         /// <summary>
@@ -131,7 +119,16 @@ namespace Wlniao.Middleware
             {
                 // 如果符合黑名单或无法获取客户端标识,则直接限行
                 context.Response.StatusCode = StatusCodes.Status428PreconditionRequired;
-                context.Response.ContentType = "text/json";
+                if (!string.IsNullOrEmpty(context.Request.ContentType) &&
+                    (context.Request.ContentType.Contains("json") ||
+                     context.Request.ContentType.Contains("text/plain")))
+                {
+                    context.Response.ContentType = "text/json";
+                }
+                else
+                {
+                    context.Response.ContentType = "text/plain";
+                }
                 await context.Response.WriteAsync(_options.MessageTpl.Replace("{ClientKey}", clientKey));
                 return;
             }
@@ -144,36 +141,17 @@ namespace Wlniao.Middleware
                 return;
             }
             var path = context.Request.Path.Value;
-            foreach (var item in _options.WhitePath)
-            {
-                // 判断当前请求是否非限流目录
-                if (item.EndsWith('*'))
-                {
-                    if (!path.StartsWith(item.TrimEnd('*')))
-                    {
-                        continue;
-                    }
-                    await _next(context);
-                    return;
-                }
-                else if (path == item)
-                {
-                    await _next(context);
-                    return;
-                }
-            }
-
             var key = $"wln_rate_{clientKey}";
             if (_options.IsolationPath)
             {
                 key += path;
             }
-            var granularity = _options.TimeWindow * 10000000L / _options.TZoneCount; // 时间粒度
+            var granularity = _options.TimeWindow * 10000000L / _options.TZoneCount; // 计算时间粒度
             var tickNowMin = (DateTime.UtcNow.Ticks / granularity) * granularity; // 当前统计区间起点时间（取整）
             var tickExpire = tickNowMin - granularity * _options.TZoneCount; // 请求记录过期时间
             var requestCount = 1L; //累计次数默认加上本次访问
             var requestRecords = new List<long>();
-            foreach (var record in memoryCache.GetOrCreate<List<long>>(key, entry => { return new List<long>(); }))
+            foreach (var record in _memoryCache.GetOrCreate<List<long>>(key, entry => []))
             {
                 if (record > tickNowMin)
                 {
@@ -191,14 +169,37 @@ namespace Wlniao.Middleware
             requestRecords.Add(tickNowMin + 1);
 
             // 缓存新的请求记录（并根据请求时间窗口设置缓存滑动过期时间）
-            memoryCache.Set(key, requestRecords, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromSeconds(_options.TimeWindow) });
+            _memoryCache.Set(key, requestRecords, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromSeconds(_options.TimeWindow) });
 
+            foreach (var item in _options.WhitePath)
+            {
+                // 判断当前请求是否非限流目录
+                if (item.EndsWith('*') && path.StartsWith(item.TrimEnd('*')))
+                {
+                    await _next(context);
+                    return;
+                }
+                else if (path == item)
+                {
+                    await _next(context);
+                    return;
+                }
+            }
             // 检查是否超过限制
             if (requestCount > _options.MaxRequests)
             {
                 // 如果超过限制,则根据策略进行处理,比如返回429 Too Many Requests状态码
                 context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                context.Response.ContentType = "text/json";
+                if (!string.IsNullOrEmpty(context.Request.ContentType) &&
+                    (context.Request.ContentType.Contains("json") ||
+                     context.Request.ContentType.Contains("text/plain")))
+                {
+                    context.Response.ContentType = "text/json";
+                }
+                else
+                {
+                    context.Response.ContentType = "text/plain";
+                }
                 await context.Response.WriteAsync(_options.MessageTpl.Replace("{ClientKey}", clientKey));
                 return;
             }
@@ -215,6 +216,8 @@ namespace Wlniao.Middleware
     /// </summary>
     public static class RateLimitExtension
     {
+        // app.UseMiddleware<RateLimitMiddleware>(new RateLimitMiddleware.RateLimitOptions { IsolationPath = true })
+        
         /// <summary>
         /// 配置使用限流中间件
         /// </summary>

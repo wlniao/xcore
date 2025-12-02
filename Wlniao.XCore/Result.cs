@@ -48,7 +48,7 @@ namespace Wlniao
         /// </summary>
         // [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Message { get; set; } = string.Empty;
+        public string Message { get; set; } = null;
 
         /// <summary>
         /// 是否存在错误情况

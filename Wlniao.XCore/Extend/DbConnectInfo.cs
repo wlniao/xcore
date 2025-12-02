@@ -3,7 +3,7 @@
     /// <summary>
     /// 数据库链接信息
     /// </summary>
-    public partial class DbConnectInfo
+    public abstract class DbConnectInfo
     {
         private static string _connstrRw = null;  //读写链接
         private static string _connstrRo = null;  //只读链接
@@ -103,15 +103,15 @@
 	            if (_connstrMysql != null) return _connstrMysql;
 	            _connstrMysql = Wlniao.Config.GetConfigs("WLN_CONNSTR_MYSQL");
 	            if (!string.IsNullOrEmpty(_connstrMysql)) return _connstrMysql;
-	            var wlnMysqlSsl = Wlniao.Config.GetConfigs("WLN_MYSQL_SSL", "none");
-                var wlnMysqlPort = Wlniao.Config.GetConfigs("WLN_MYSQL_PORT", "3306");
-                var wlnMysqlHost = Wlniao.Config.GetConfigs("WLN_MYSQL_HOST", WLN_CONNSTR_HOST);
-                var wlnMysqlName = Wlniao.Config.GetConfigs("WLN_MYSQL_NAME", WLN_CONNSTR_NAME);
-                var wlnMysqlUid = Wlniao.Config.GetEncrypt("WLN_MYSQL_UID", Config.Secret, WLN_CONNSTR_UID);
-                var wlnMysqlPwd = Wlniao.Config.GetEncrypt("WLN_MYSQL_PWD", Config.Secret, WLN_CONNSTR_PWD);
-                if (!string.IsNullOrEmpty(wlnMysqlHost) && !string.IsNullOrEmpty(wlnMysqlUid) && !string.IsNullOrEmpty(wlnMysqlPwd))
+	            var mysqlSsl = Wlniao.Config.GetConfigs("MYSQL_SSL", "none");
+                var mysqlPort = Wlniao.Config.GetConfigs("MYSQL_PORT", "3306");
+                var mysqlHost = Wlniao.Config.GetConfigs("MYSQL_HOST", WLN_CONNSTR_HOST);
+                var mysqlName = Wlniao.Config.GetConfigs("MYSQL_NAME", WLN_CONNSTR_NAME);
+                var mysqlUid = Wlniao.Config.GetEncrypt("MYSQL_UID", Config.Secret, WLN_CONNSTR_UID);
+                var mysqlPwd = Wlniao.Config.GetEncrypt("MYSQL_PWD", Config.Secret, WLN_CONNSTR_PWD);
+                if (!string.IsNullOrEmpty(mysqlHost) && !string.IsNullOrEmpty(mysqlUid) && !string.IsNullOrEmpty(mysqlPwd))
                 {
-	                _connstrMysql = $"Server={wlnMysqlHost};Port={wlnMysqlPort};Database={wlnMysqlName};Uid={wlnMysqlUid};Pwd={wlnMysqlPwd};CharSet=utf8;SslMode={wlnMysqlSsl};";
+	                _connstrMysql = $"Server={mysqlHost};Port={mysqlPort};Database={mysqlName};Uid={mysqlUid};Pwd={mysqlPwd};CharSet=utf8;SslMode={mysqlSsl};";
                 }
                 return _connstrMysql;
             }
@@ -125,10 +125,17 @@
 			get
 			{
 				if (_connstrSqlite != null) return _connstrSqlite;
-				var connStr = Wlniao.Config.GetSetting("WLN_CONNSTR_SQLITE");
+				var connStr = Wlniao.Config.GetConfigs("WLN_CONNSTR_SQLITE");
 				if (string.IsNullOrEmpty(connStr))
 				{
-					_connstrSqlite = "Data Source=" + Wlniao.IO.PathTool.Map(Wlniao.XCore.StartupRoot, XCore.FrameworkRoot, "xcore.db");
+                    var file = Wlniao.IO.PathTool.Map(Wlniao.Config.GetSetting("SQLITE_FILE", $"{XCore.FrameworkRoot}/sqlite.db"));
+					var folder = System.IO.Path.GetDirectoryName(file);
+					if (!string.IsNullOrEmpty(folder) && (folder.LastIndexOf('/') > 0 || folder.LastIndexOf('\\') > 0) && !System.IO.Directory.Exists(folder))
+					{
+						// 数据库文件所在目录不存在时自动创建目录
+						System.IO.Directory.CreateDirectory(folder);
+					}
+					_connstrSqlite = "Data Source=" + file;
 				}
 				else if(connStr.IndexOf('=') < 0)
 				{
@@ -160,17 +167,17 @@
 	            if (_connstrSqlsqlver != null) return _connstrSqlsqlver;
 	            _connstrSqlsqlver = Wlniao.Config.GetConfigs("WLN_CONNSTR_SQLSERVER");
 	            if (!string.IsNullOrEmpty(_connstrSqlsqlver)) return _connstrSqlsqlver;
-	            var wlnMssqlHost = Wlniao.Config.GetConfigs("WLN_MSSQL_HOST", WLN_CONNSTR_HOST);
-                var wlnMssqlName = Wlniao.Config.GetConfigs("WLN_MSSQL_NAME", WLN_CONNSTR_NAME);
-                var wlnMssqlUid = Wlniao.Config.GetEncrypt("WLN_MSSQL_UID", Config.Secret, WLN_CONNSTR_UID);
-                var wlnMssqlPwd = Wlniao.Config.GetEncrypt("WLN_MSSQL_PWD", Config.Secret, WLN_CONNSTR_PWD);
-                if (string.IsNullOrEmpty(wlnMssqlName) || string.IsNullOrEmpty(wlnMssqlUid) || string.IsNullOrEmpty(wlnMssqlPwd))
+	            var mssqlHost = Wlniao.Config.GetConfigs("MSSQL_HOST", WLN_CONNSTR_HOST);
+                var mssqlName = Wlniao.Config.GetConfigs("MSSQL_NAME", WLN_CONNSTR_NAME);
+                var mssqlUid = Wlniao.Config.GetEncrypt("MSSQL_UID", Config.Secret, WLN_CONNSTR_UID);
+                var mssqlPwd = Wlniao.Config.GetEncrypt("MSSQL_PWD", Config.Secret, WLN_CONNSTR_PWD);
+                if (string.IsNullOrEmpty(mssqlName) || string.IsNullOrEmpty(mssqlUid) || string.IsNullOrEmpty(mssqlPwd))
                 {
 	                _connstrSqlsqlver = "";
 	                return _connstrSqlsqlver;
                 }
-                var wlnMssqlPort = Wlniao.Config.GetConfigs("WLN_MSSQL_PORT", "1433");
-                _connstrSqlsqlver = $"Server={wlnMssqlHost},{wlnMssqlPort};Database={wlnMssqlName};User Id={wlnMssqlUid};Password={wlnMssqlPwd};TrustServerCertificate=true;";
+                var wlnMssqlPort = Wlniao.Config.GetConfigs("MSSQL_PORT", "1433");
+                _connstrSqlsqlver = $"Server={mssqlHost},{wlnMssqlPort};Database={mssqlName};User Id={mssqlUid};Password={mssqlPwd};TrustServerCertificate=true;";
                 return _connstrSqlsqlver;
             }
         }
