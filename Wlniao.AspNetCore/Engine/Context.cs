@@ -375,7 +375,16 @@ namespace Wlniao.Engine
             }
             else
             {
-                var json = Encryptor.SM4DecryptECBFromHex(Body, SKey, true);
+                var json = string.Empty;
+                try
+                {
+                    json = Encryptor.SM4DecryptECBFromHex(Body, SKey, true);
+                }
+                catch
+                {
+                    // ignored
+                }
+
                 return System.Text.Json.JsonSerializer.Deserialize<T>(string.IsNullOrEmpty(json) ? Body: json, XCore.JsonSerializerOptions) ??
                        Activator.CreateInstance<T>();
             }

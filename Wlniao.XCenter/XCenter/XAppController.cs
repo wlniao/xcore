@@ -41,23 +41,22 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult CheckAuth(Func<Context, IActionResult> func, Func<IActionResult> fail = null, string host = null)
         {
-            if (fail == null)
+            fail ??= new Func<IActionResult>(() =>
             {
-                fail = new Func<IActionResult>(() =>
+                if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                 {
-                    if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
+                    return OutputSerialize(new ApiResult<string> { message = ctx?.message });
+                }
+                else
+                {
+                    var errorPage = new ContentResult
                     {
-                        return OutputSerialize(new ApiResult<string> { message = ctx?.message });
-                    }
-                    else
-                    {
-                        var errorPage = new ContentResult();
-                        errorPage.ContentType = "text/html;charset=utf-8";
-                        errorPage.Content = errorHtml.Replace("{{errorMsg}}", ctx?.message).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-                        return errorPage;
-                    }
-                });
-            }
+                        ContentType = "text/html;charset=utf-8",
+                        Content = errorHtml.Replace("{{errorMsg}}", ctx?.message).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon)
+                    };
+                    return errorPage;
+                }
+            });
             if (string.IsNullOrEmpty(host) && string.IsNullOrEmpty(Context.XCenterDomain))
             {
                 host = HeaderRequest("x-domain", UrlDomain);
@@ -81,27 +80,26 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult CheckSession(Func<XSession, Context, IActionResult> func, Func<IActionResult> fail = null, string ticket = null, bool addHeader = true)
         {
-            if (fail == null)
+            fail ??= new Func<IActionResult>(() =>
             {
-                fail = new Func<IActionResult>(() =>
+                // Authify平台授权加载失败时执行
+                if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
                 {
-                    // Authify平台授权加载失败时执行
-                    if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
+                    var err = new ApiResult<string> { message = errorMsg };
+                    errorMsg = "";
+                    return OutputSerialize(err);
+                }
+                else
+                {
+                    var errorPage = new ContentResult
                     {
-                        var err = new ApiResult<string> { message = errorMsg };
-                        errorMsg = "";
-                        return OutputSerialize(err);
-                    }
-                    else
-                    {
-                        var errorPage = new ContentResult();
-                        errorPage.ContentType = "text/html;charset=utf-8";
-                        errorPage.Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
-                        errorMsg = "";
-                        return errorPage;
-                    }
-                });
-            }
+                        ContentType = "text/html;charset=utf-8",
+                        Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon)
+                    };
+                    errorMsg = "";
+                    return errorPage;
+                }
+            });
             return CheckAuth((ctx) =>
             {
                 if (string.IsNullOrEmpty(ticket))

@@ -133,36 +133,33 @@ namespace Wlniao.XCenter
             {
                 emihost = HeaderRequest("x-domain", Context.XCenterDomain);
             }
-            if (fail == null)
+            fail ??= new Func<IActionResult>(() =>
             {
-                fail = new Func<IActionResult>(() =>
+                if (string.IsNullOrEmpty(errorMsg))
                 {
-                    if (string.IsNullOrEmpty(errorMsg))
+                    // 显示基础授权流程中的错误提示
+                    if (base.ctx != null && !string.IsNullOrEmpty(base.ctx.message))
                     {
-                        // 显示基础授权流程中的错误提示
-                        if (base.ctx != null && !string.IsNullOrEmpty(base.ctx.message))
-                        {
-                            errorMsg = base.ctx.message;
-                        }
-                        else if (ctx != null && !string.IsNullOrEmpty(ctx.message))
-                        {
-                            errorMsg = ctx.message;
-                        }
+                        errorMsg = base.ctx.message;
                     }
-                    Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
-                    Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
-                    if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
+                    else if (ctx != null && !string.IsNullOrEmpty(ctx.message))
                     {
-                        var err = new ApiResult<string> { message = errorMsg };
-                        errorMsg = "";
-                        return OutputSerialize(err);
+                        errorMsg = ctx.message;
                     }
-                    else
-                    {
-                        return ErrorMsg(errorMsg);
-                    }
-                });
-            }
+                }
+                Response.Headers.TryAdd("Access-Control-Expose-Headers", new Microsoft.Extensions.Primitives.StringValues("*"));
+                Response.Headers.TryAdd("Authify-State", new Microsoft.Extensions.Primitives.StringValues("false"));
+                if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
+                {
+                    var err = new ApiResult<string> { message = errorMsg };
+                    errorMsg = "";
+                    return OutputSerialize(err);
+                }
+                else
+                {
+                    return ErrorMsg(errorMsg);
+                }
+            });
             return base.CheckAuth((ct) =>
             {
                 ctx = EmiContext.Load(ct);
@@ -187,45 +184,42 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult CheckSession(Func<XSession, EmiContext, IActionResult> func, Func<IActionResult> fail = null)
         {
-            if (fail == null)
+            fail ??= new Func<IActionResult>(() =>
             {
-                fail = new Func<IActionResult>(() =>
+                errorTitle = "用户身份校验异常";
+                if (string.IsNullOrEmpty(errorMsg))
                 {
-                    errorTitle = "用户身份校验异常";
-                    if (string.IsNullOrEmpty(errorMsg))
+                    // 显示基础授权流程中的错误提示
+                    if (base.ctx != null && !string.IsNullOrEmpty(base.ctx.message))
                     {
-                        // 显示基础授权流程中的错误提示
-                        if (base.ctx != null && !string.IsNullOrEmpty(base.ctx.message))
-                        {
-                            errorMsg = base.ctx.message;
-                        }
-                        else if (ctx != null && !string.IsNullOrEmpty(ctx.message))
-                        {
-                            errorMsg = ctx.message;
-                        }
+                        errorMsg = base.ctx.message;
                     }
-                    if (string.IsNullOrEmpty(errorMsg))
+                    else if (ctx != null && !string.IsNullOrEmpty(ctx.message))
                     {
-                        errorMsg = "暂未登录或已失效，请登录";
+                        errorMsg = ctx.message;
                     }
-                    if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
+                }
+                if (string.IsNullOrEmpty(errorMsg))
+                {
+                    errorMsg = "暂未登录或已失效，请登录";
+                }
+                if (Request.Method == "POST" || (Request.Query != null && Request.Query.ContainsKey("do")))
+                {
+                    var err = new ApiResult<string> { message = errorMsg };
+                    errorMsg = "";
+                    return OutputSerialize(err);
+                }
+                else
+                {
+                    var errorPage = new ContentResult
                     {
-                        var err = new ApiResult<string> { message = errorMsg };
-                        errorMsg = "";
-                        return OutputSerialize(err);
-                    }
-                    else
-                    {
-                        var errorPage = new ContentResult
-                        {
-                            ContentType = "text/html;charset=utf-8",
-                            Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon)
-                        };
-                        errorMsg = "";
-                        return errorPage;
-                    }
-                });
-            }
+                        ContentType = "text/html;charset=utf-8",
+                        Content = errorHtml.Replace("{{errorMsg}}", errorMsg).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon)
+                    };
+                    errorMsg = "";
+                    return errorPage;
+                }
+            });
             return this.CheckAuth((ctx) =>
             {
                 var authorization = HeaderRequest("Authorization");

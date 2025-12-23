@@ -130,37 +130,50 @@ namespace Wlniao.XCenter
                             emi.cdn = check.data.GetString("cdn");
                         }
                         Caching.Cache.Set("emi_context_" + ctx.domain, emi, 600);
+                        Caching.Cache.Set("await_emi_context_" + ctx.domain, emi, 86400);
                     }
-                    else if (check.success)
+                    else
                     {
-                        emi.install = false;
-                        emi.register = DateTime.MinValue;
-                        emi.message = "模块未安装，请先安装";
-                    }
-                    else switch (check.message)
-                    {
-                        case "request is expired":
-                            emi.message = "请求超时，请检查服务器时间是否同步";
-                            break;
-                        case "token not config":
-                            emi.message = "AppToken参数未配置，请先配置或注册";
-                            break;
-                        default:
+                        emi = Caching.Cache.Get<EmiContext>("await_emi_context_" + ctx.domain);
+                        if (emi is { install: true })
                         {
-                            if (check.message.Contains("token error"))
+                            // 使用长期缓存中的值
+                            return emi;
+                        }
+                        if (check.success)
+                        {
+                            emi.install = false;
+                            emi.register = DateTime.MinValue;
+                            emi.message = "模块未安装，请先安装";
+                        }
+                        else
+                        {
+                            switch (check.message)
                             {
-                                emi.message = "AppToken参数配置错误，请重新配置或注册";
-                            }
-                            else if (check.message == "request exception")
-                            {
-                                emi.message = "Emi服务器链接失败，请确保服务器已启动并检查您填写的地址是否正确!";
-                            }
-                            else
-                            {
-                                emi.message = check.message;
-                            }
+                                case "request is expired":
+                                    emi.message = "请求超时，请检查服务器时间是否同步";
+                                    break;
+                                case "token not config":
+                                    emi.message = "AppToken参数未配置，请先配置或注册";
+                                    break;
+                                default:
+                                {
+                                    if (check.message.Contains("token error"))
+                                    {
+                                        emi.message = "AppToken参数配置错误，请重新配置或注册";
+                                    }
+                                    else if (check.message == "request exception")
+                                    {
+                                        emi.message = "Emi服务器链接失败，请确保服务器已启动并检查您填写的地址是否正确!";
+                                    }
+                                    else
+                                    {
+                                        emi.message = check.message;
+                                    }
 
-                            break;
+                                    break;
+                                }
+                            }
                         }
                     }
                 }

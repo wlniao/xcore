@@ -39,6 +39,7 @@ namespace Wlniao.Net
         /// <returns></returns>
         public static string Get(string url, string webroxy = null)
         {
+            var logs = "";
             try
             {
 
@@ -54,10 +55,16 @@ namespace Wlniao.Net
                     url = webroxy + uri.PathAndQuery;
                 }
 
-                var handler = new HttpClientHandler
-                    { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                logs += "URL: " + url + Environment.NewLine;
+                // var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                var handler = new CustomHttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                handler.OnConnectionEstablished = (ipAddress) =>
+                {
+                    logs += "Server IP: " + ipAddress + Environment.NewLine;
+                };
                 using var client = new System.Net.Http.HttpClient(handler);
                 var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
+                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
                 if (!string.IsNullOrEmpty(webroxy))
                 {
                     request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
@@ -66,16 +73,25 @@ namespace Wlniao.Net
                 client.SendAsync(request).ContinueWith((requestTask) =>
                 {
                     var response = requestTask.Result;
+                    foreach (var hd in response.Headers)
+                    {
+                        logs += hd.Key + ": " + string.Join(",", hd.Value) + Environment.NewLine;
+                    }
+
                     response.Content.ReadAsStringAsync().ContinueWith((readTask) => { res = readTask.Result; }).Wait();
                 }).Wait();
                 return res;
             }
             catch (AggregateException e)
             {
+                logs += e.InnerException?.Message;
+                Wlniao.Log.Loger.Debug(logs);
                 throw e.InnerException!;
             }
-            catch
+            catch(Exception e)
             {
+                logs += e.Message;
+                Wlniao.Log.Loger.Debug(logs);
                 throw;
             }
         }
@@ -90,6 +106,7 @@ namespace Wlniao.Net
         /// <returns></returns>
         public static string Post(string url, string postData, string contentType = "application/json", string webroxy = null)
         {
+            var logs = "";
             try
             {
                 var uri = new Uri(url);
@@ -101,7 +118,13 @@ namespace Wlniao.Net
                 {
                     url = webroxy + uri.PathAndQuery;
                 }
-                var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                logs += "URL: " + url + Environment.NewLine;
+                // var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                var handler = new CustomHttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
+                handler.OnConnectionEstablished = (ipAddress) =>
+                {
+                    logs += "Server IP: " + ipAddress + Environment.NewLine;
+                };
                 using var client = new HttpClient(handler);
                 var stream = Convert.ToStream(string.IsNullOrEmpty(postData) ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(postData));
                 var content = new StreamContent(stream);
@@ -112,16 +135,24 @@ namespace Wlniao.Net
                     client.DefaultRequestHeaders.TryAddWithoutValidation("X-Webroxy", uri.Host);
                 }
                 var response = client.PostAsync(url, content).GetAwaiter().GetResult();
+                foreach (var hd in response.Headers)
+                {
+                    logs += hd.Key + ": " + string.Join(",", hd.Value) + Environment.NewLine;
+                }
                 return response.StatusCode == System.Net.HttpStatusCode.OK 
                     ? response.Content.ReadAsStringAsync().GetAwaiter().GetResult() 
                     : throw new Exception("StatusCode:" + response.StatusCode + " " + response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
             }
             catch (AggregateException e)
             {
+                logs += e.InnerException?.Message;
+                Wlniao.Log.Loger.Debug(logs);
                 throw e.InnerException!;
             }
-            catch
+            catch(Exception e)
             {
+                logs += e.Message;
+                Wlniao.Log.Loger.Debug(logs);
                 throw;
             }
         }

@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Text.RegularExpressions;
 namespace Wlniao.Crypto
 {
     /// <summary>
@@ -57,7 +58,7 @@ namespace Wlniao.Crypto
         }
 
         /// <summary>
-        /// 对Hex及Base64密钥自动编码
+        /// 对Hex及Base64密钥自动解码
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
@@ -71,30 +72,29 @@ namespace Wlniao.Crypto
             {
                 return System.Convert.FromHexString(data);
             }
-            else
+            else if(data.Length % 4 == 0 && Regex.IsMatch(data, "^[A-Za-z0-9+/]+(={0,2})$", RegexOptions.IgnoreCase))
             {
                 return System.Convert.FromBase64String(data);
+            }
+            else
+            {
+                return null;
             }
         }
 
         /// <summary>
-		/// 对Hex及Base64密钥自动编码
+		/// 对字节数组编码为Hex或Base64
 		/// </summary>
-		/// <param name="bytes"></param>
+        /// <param name="bytes"></param>
+        /// <param name="hex"></param>
 		/// <returns></returns>
-		public static string Encode(byte[] bytes)
+		public static string Encode(byte[] bytes, bool hex = true)
         {
             if (bytes == null || bytes.Length == 0)
             {
                 return string.Empty;
             }
-            var sb = new System.Text.StringBuilder(bytes.Length * 2);
-            foreach (var b in bytes)
-            {
-                // 格式化为两位十六进制，不足补0（如0x1→"01"，0xAB→"AB"）
-                sb.Append($"{b:x2}");
-            }
-            return sb.ToString();
+            return hex ? Wlniao.Convert.BytesToHexString(bytes) : System.Convert.ToBase64String(bytes);
         }
     }
 }

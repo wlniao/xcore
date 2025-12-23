@@ -673,6 +673,10 @@ namespace Wlniao
             {
                 return "";
             }
+            else if (!Regex.IsMatch(encText, "^[0-9a-f]+$", RegexOptions.IgnoreCase))
+            {
+                return "";
+            }
             try
             {
                 var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);

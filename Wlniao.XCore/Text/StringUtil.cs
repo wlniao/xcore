@@ -1950,6 +1950,28 @@ namespace Wlniao.Text
             var bytes = System.Text.Encoding.UTF8.GetBytes(utf8String);
             return Wlniao.Convert.BytesToHexString(bytes);
         }
+        
+        /// <summary>
+        /// HEX格式转Base64格式
+        /// </summary>
+        /// <param name="hexString"></param>
+        /// <returns></returns>
+        public static string HexStringToBase64(string hexString)
+        {
+            var bytes = Wlniao.Convert.HexStringToBytes(hexString);
+            return System.Convert.ToBase64String(bytes);
+        }
+        
+        /// <summary>
+        /// Base64格式转HEX格式
+        /// </summary>
+        /// <param name="base64"></param>
+        /// <returns></returns>
+        public static string Base64ToHexString(string base64)
+        {
+            var bytes = System.Convert.FromBase64String(base64);
+            return Wlniao.Convert.BytesToHexString(bytes);
+        }
 
         /// <summary>
         /// 检测敏感词（自动过滤符号，只支持中文）

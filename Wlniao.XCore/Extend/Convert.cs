@@ -30,7 +30,7 @@ namespace Wlniao
     /// <summary>
     /// 常用类型转换方法
     /// </summary>
-    public class Convert
+    public abstract class Convert
     {
         /// <summary>
         /// 判断字符串是否是小数或整数
@@ -886,7 +886,8 @@ namespace Wlniao
             var hexString = new StringBuilder();
             for (var i = 0; i < input.Length; i++)
             {
-                hexString.Append(string.Format("{0:x2}", input[i]));
+                // 格式化为两位十六进制，不足补0（如0x1→"01"，0xAB→"AB"）
+                hexString.Append($"{input[i]:x2}");
             }
             return hexString.ToString();
         }

@@ -56,7 +56,9 @@ namespace Wlniao.Caching
                     Expire = DateTime.Now.AddSeconds(expireSeconds),
                     Value = value ?? ""
                 };
-                Cache.Add(key, data);
+                if (Cache.TryAdd(key, data)) return true;
+                Cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
+                Cache[key].Value = value ?? "";
             }
             return true;
         }
