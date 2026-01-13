@@ -110,12 +110,12 @@ namespace Wlniao.Log
             }
             if (this.Interval > 0 && !string.IsNullOrEmpty(serverHost))
             {
-                Task.Run(() =>
+                Task.Run(async () =>
                 {
                     while (true)
                     {
                         Write("", null, LogLevel.None, true);
-                        Task.Delay(Interval * 1000).Wait();
+                        await Task.Delay(Interval * 1000);
                     }
                 });
             }

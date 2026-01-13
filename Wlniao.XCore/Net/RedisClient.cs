@@ -37,7 +37,7 @@ namespace Wlniao.Net
         /// <summary>
         /// 当前选中的数据库
         /// </summary>
-        public int SelectDB = 0;
+        public int SelectDb = 0;
         /// <summary>
         /// 
         /// </summary>
@@ -46,22 +46,35 @@ namespace Wlniao.Net
         /// 
         /// </summary>
         public string Password = null;
+        
         /// <summary>
         /// 数据处理编码
         /// </summary>
-        public Encoding Encoding = Encoding.UTF8;
+        public Encoding Encoding { get; set; }= Encoding.UTF8;
+        
         /// <summary>
         /// Socket 是否正在使用 Nagle 算法。
         /// </summary>
-        public bool NoDelaySocket = false;
+        public bool NoDelaySocket { get; set; } = false;
+        
         /// <summary>
         /// 
         /// </summary>
-        private List<WlnSocket> SocketList = new List<WlnSocket>();
+        private List<WlnSocket> _socketList = new List<WlnSocket>();
+        
         /// <summary>
         /// 连接终结点集合
         /// </summary>
         internal List<EndPoint> EndPointList = new List<EndPoint>();
+        
+        private readonly object _lock = new object();
+        
+        private const int MaxConnections = 100; // 最大连接数限制
+        
+        private const int ConnectionTimeoutSeconds = 300; // 5分钟超时
+
+        private bool _disposed = false;
+        
         /// <summary>
         /// 
         /// </summary>
@@ -100,6 +113,43 @@ namespace Wlniao.Net
             NoDelaySocket = nagle;
             EndPointList.Add(endpoint);
         }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed || !disposing)
+            {
+                return;
+            }
+            lock (_lock)
+            {
+                foreach (var socket in _socketList)
+                {
+                    try
+                    {
+                        socket?.Shutdown(SocketShutdown.Both);
+                        socket?.Close();
+                        socket?.Dispose();
+                    }
+                    catch { /* 忽略清理异常 */ }
+                }
+                _socketList.Clear();
+            }
+            _disposed = true;
+        }
+        
         /// <summary>
         /// 
         /// </summary>
@@ -253,6 +303,24 @@ namespace Wlniao.Net
         #endregion
 
         #region 通讯处理方法
+        private void CleanupInvalidSockets()
+        {
+            var socketsToRemove = _socketList.Where(s => s.Catch || !s.Connected || (DateTime.Now.Ticks - s.LastUse) > TimeSpan.FromSeconds(ConnectionTimeoutSeconds).Ticks).ToList();
+            foreach (var socket in socketsToRemove)
+            {
+                try
+                {
+                    _socketList.Remove(socket);
+                    if (socket.Connected)
+                    {
+                        socket.Shutdown(SocketShutdown.Both);
+                    }
+                    socket.Close();
+                    socket.Dispose();
+                }
+                catch { /* 忽略清理异常 */ }
+            }
+        }
 
         /// <summary>
         /// 从连接池获取一个实例
@@ -260,29 +328,15 @@ namespace Wlniao.Net
         /// <returns></returns>
         private WlnSocket GetSocket()
         {
-            lock (Encoding)
+            lock (_lock)
             {
-            beginCheck:
-                foreach (var socket in SocketList.OrderBy(a => a.LastUse))
-                {
-                    if (socket.Catch || !socket.Connected)
-                    {
-                        SocketList.Remove(socket);
-                        try
-                        {
-                            if (socket.Connected)
-                            {
-                                socket.Shutdown(SocketShutdown.Both);
-                            }
-                            socket.Close();
-                        }
-                        catch
-                        {
-                            // ignored
-                        }
+                // 清理过期和异常连接
+                CleanupInvalidSockets();
 
-                        goto beginCheck;
-                    }
+                // 寻找可用连接
+                foundSocket:
+                foreach (var socket in _socketList.OrderBy(a => a.LastUse))
+                {
                     if (!socket.Using && socket.Connected)
                     {
                         socket.Using = true;
@@ -290,6 +344,15 @@ namespace Wlniao.Net
                         return socket;
                     }
                 }
+
+                // 如果达到最大连接数限制，等待10ms后重新寻找
+                if (_socketList.Count >= MaxConnections)
+                {
+                    System.Threading.Thread.Sleep(10);
+                    goto foundSocket;
+                }
+                
+                // 创建新连接                
                 var connMsg = "Redis connection configuration error: not config server";
                 var newsocket = new WlnSocket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 newsocket.Using = true;
@@ -331,9 +394,9 @@ namespace Wlniao.Net
                             throw new XCoreException("Redis: client password is error!", 500);
                         }
                     }
-                    if (SelectDB > 0)
+                    if (SelectDb > 0)
                     {
-                        if (!ResToBool(SendCommand(newsocket, RedisCommand.Select, Encoding.GetBytes(SelectDB.ToString()))))
+                        if (!ResToBool(SendCommand(newsocket, RedisCommand.Select, Encoding.GetBytes(SelectDb.ToString()))))
                         {
                             if (newsocket.Connected)
                             {
@@ -343,7 +406,7 @@ namespace Wlniao.Net
                             throw new XCoreException("Redis: client database select error!", 500);
                         }
                     }
-                    SocketList.Add(newsocket);
+                    _socketList.Add(newsocket);
                     return newsocket;
                 }
                 else

@@ -77,17 +77,23 @@ namespace Wlniao.Runtime
                         try
                         {
                             var langPath = PathTool.Map(XCore.FrameworkRoot, "lang");
-                            foreach (var file in Directory.GetFiles(langPath))
+                            if(Directory.Exists(langPath))
                             {
-                                if (file.EndsWith(".ini"))
+                                foreach (var file in Directory.GetFiles(langPath))
                                 {
-                                    var str = FileEx.Read(file);
-                                    var langKey = Path.GetFileNameWithoutExtension(file);
-                                    langSetting.TryAdd(Path.GetFileNameWithoutExtension(file), Convert.ToDictionary(str));
+                                    if (file.EndsWith(".ini"))
+                                    {
+                                        var str = FileEx.Read(file);
+                                        var langKey = Path.GetFileNameWithoutExtension(file);
+                                        langSetting.TryAdd(Path.GetFileNameWithoutExtension(file), Convert.ToDictionary(str));
+                                    }
                                 }
                             }
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            Wlniao.Log.Loger.Error($"语言包加载异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+                        }
                         if (!langSetting.ContainsKey(langStr))
                         {
                             langSetting.TryAdd(langStr, new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
@@ -120,7 +126,10 @@ namespace Wlniao.Runtime
                     langSetting[langStr].TryAdd(key, defaultStr);
                     Config.Write(langSetting[langStr], PathTool.Map(XCore.FrameworkRoot, "lang", langStr + ".ini"));
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Wlniao.Log.Loger.Error($"语言包写入异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+                }
                 return "{" + key + "}"; // 返回约定内容
             }
             else

@@ -203,7 +203,10 @@ namespace Wlniao.Runtime
                         p.SetValue(currentObject, propertyValue, null);
                     }
                 }
-                catch { }
+                catch (Exception e)
+                {
+                    Wlniao.Log.Loger.Error($"反射设置属性值异常: {e.Message}, 堆栈: {e.StackTrace}");
+                }
             }
         }
         /// <summary>

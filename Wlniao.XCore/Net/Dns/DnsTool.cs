@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Wlniao.Net.Dns
 {
@@ -10,20 +11,41 @@ namespace Wlniao.Net.Dns
     /// </summary>
     public class DnsTool
     {
-        private int requestID = 0;
-        private IPAddress[] serverIPs;
+        private int _requestId = 0;
+        private bool _disposed = false; // 用于检测重复释放
+        private IPAddress[] _serverIPs;
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            System.GC.SuppressFinalize(this);
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                // 清理资源
+                _disposed = true;
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
         public DnsTool()
         {
-            serverIPs = new IPAddress[] {
-                IPAddress.Parse("223.5.5.5")        //阿里 AliDNS
-                ,
-                IPAddress.Parse("119.29.29.29")     //腾讯公共DNS
-                ,
-                IPAddress.Parse("8.8.8.8")          //Google DNS
-                ,
+            _serverIPs = new IPAddress[] {
+                IPAddress.Parse("223.5.5.5"),       //阿里 AliDNS
+                IPAddress.Parse("119.29.29.29"),    //腾讯公共DNS
+                IPAddress.Parse("8.8.8.8"),         //Google DNS
                 IPAddress.Parse("114.114.114.114")  //114 DNS
             };
         }
@@ -33,7 +55,7 @@ namespace Wlniao.Net.Dns
         /// <param name="ServerIPs"></param>
         public DnsTool(IPAddress[] ServerIPs)
         {
-            serverIPs = ServerIPs;
+            _serverIPs = ServerIPs;
         }
         /// <summary>
         /// 
@@ -48,11 +70,11 @@ namespace Wlniao.Net.Dns
                 {
                     serverIP = serverIP.MapToIPv4();
                 }
-                serverIPs = new IPAddress[] { serverIP };
+                _serverIPs = new IPAddress[] { serverIP };
             }
             else
             {
-                serverIPs = new IPAddress[] { new DnsTool().GetIPAddress(ServerIPorHost) };
+                _serverIPs = new IPAddress[] { new DnsTool().GetIPAddress(ServerIPorHost) };
             }
         }
         /// <summary>
@@ -62,19 +84,30 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         public IPAddress GetIPAddressDefault(string qname)
         {
-            IPAddress address = null;
+            // 使用异步版本的同步包装
+            return GetIPAddressDefaultAsync(qname).GetAwaiter().GetResult();
+        }
+        
+        /// <summary>
+        /// 异步获取IP地址
+        /// </summary>
+        /// <param name="qname"></param>
+        /// <returns></returns>
+        public async Task<IPAddress> GetIPAddressDefaultAsync(string qname)
+        {
             try
             {
-                System.Net.Dns.GetHostAddressesAsync(qname).ContinueWith((task) =>
+                var addresses = await System.Net.Dns.GetHostAddressesAsync(qname);
+                if (addresses.Length > 0)
                 {
-                    if (task.Status == System.Threading.Tasks.TaskStatus.RanToCompletion && task.Result != null && task.Result.Length > 0)
-                    {
-                        address = task.Result[0];
-                    }
-                }).Wait();
+                    return addresses[0];
+                }
             }
-            catch { }
-            return address;
+            catch (System.Exception e)
+            {
+                Wlniao.Log.Loger.Error($"DNS解析异常: {e.Message}, 堆栈: {e.StackTrace}");
+            }
+            return null;
         }
         /// <summary>
         /// 
@@ -109,7 +142,10 @@ namespace Wlniao.Net.Dns
                         }
                     }).Wait();
                 }
-                catch { }
+                catch (System.Exception e)
+                {
+                    Wlniao.Log.Loger.Error($"DNS解析异常: {e.Message}, 堆栈: {e.StackTrace}");
+                }
                 return address;
             }
             return null;
@@ -160,33 +196,39 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         private DnsServerResponse GetResponse(string qname, DnsRecordType type)
         {
-            DnsServerResponse rlt = null;
-            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            if (_disposed) throw new System.ObjectDisposedException(nameof(DnsTool));
+
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.ReceiveTimeout = 15000; // 15秒超时
+                
+            var buffer = new byte[512];
+            var sendLength = CreateQuery(buffer, System.Threading.Interlocked.Increment(ref _requestId), qname, type, 1);
+                
+            foreach (var serverIp in _serverIPs)
             {
-                var buffer = new byte[512];
-                var sendLength = CreateQuery(buffer, requestID++, qname, type, 1);
-                socket.ReceiveTimeout = 15000;
-                foreach (var serverIP in serverIPs)
+                try
                 {
-                    try
+                    socket.Connect(serverIp, 53);
+                        
+                    if (socket.Send(buffer, sendLength, SocketFlags.None) > 0)
                     {
-                        socket.Connect(serverIP, 53);
-                        if (socket.Send(buffer, sendLength, SocketFlags.None) > 0)
+                        var response = new byte[1024];
+                        var received = socket.Receive(response);
+                            
+                        if (received > 0)
                         {
-                            var response = new byte[1024];
-                            if (socket.Receive(response) > 0)
-                            {
-                                rlt = ParseQuery(response);
-                                socket.Shutdown(SocketShutdown.Both);
-                                socket.Dispose();
-                                break;
-                            }
+                            return ParseQuery(response);
                         }
                     }
-                    catch { }
+                }
+                catch (SocketException)
+                {
+                    // 继续尝试下一个DNS服务器
+                    continue;
                 }
             }
-            return rlt;
+
+            return null;
         }
 
         /// <summary>

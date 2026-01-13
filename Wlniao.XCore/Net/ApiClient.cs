@@ -21,8 +21,11 @@
 ===============================================================================*/
 
 using System;
+using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Wlniao.Net
 {
@@ -37,13 +40,11 @@ namespace Wlniao.Net
         /// <param name="url">请求的Url</param>
         /// <param name="webroxy">代理服务器地址</param>
         /// <returns></returns>
-        public static string Get(string url, string webroxy = null)
+        public static async Task<string> GetAsync(string url, string webroxy = null)
         {
             var logs = "";
             try
             {
-
-                var res = "";
                 var uri = new Uri(url);
                 if (string.IsNullOrEmpty(webroxy))
                 {
@@ -56,31 +57,23 @@ namespace Wlniao.Net
                 }
 
                 logs += "URL: " + url + Environment.NewLine;
-                // var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                var handler = new CustomHttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                handler.OnConnectionEstablished = (ipAddress) =>
-                {
-                    logs += "Server IP: " + ipAddress + Environment.NewLine;
-                };
-                using var client = new System.Net.Http.HttpClient(handler);
-                var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
-                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                
                 if (!string.IsNullOrEmpty(webroxy))
                 {
                     request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
                 }
 
-                client.SendAsync(request).ContinueWith((requestTask) =>
+                var response = await HttpClientManager.SharedInstance.SendAsync(request);
+                foreach (var hd in response.Headers)
                 {
-                    var response = requestTask.Result;
-                    foreach (var hd in response.Headers)
-                    {
-                        logs += hd.Key + ": " + string.Join(",", hd.Value) + Environment.NewLine;
-                    }
-
-                    response.Content.ReadAsStringAsync().ContinueWith((readTask) => { res = readTask.Result; }).Wait();
-                }).Wait();
-                return res;
+                    logs += hd.Key + ": " + string.Join(",", hd.Value) + Environment.NewLine;
+                }
+                var content = await response.Content.ReadAsStringAsync();
+                
+                return content;
             }
             catch (AggregateException e)
             {
@@ -94,6 +87,17 @@ namespace Wlniao.Net
                 Wlniao.Log.Loger.Debug(logs);
                 throw;
             }
+        }
+        
+        /// <summary>
+        /// 发起Get请求
+        /// </summary>
+        /// <param name="url">请求的Url</param>
+        /// <param name="webroxy">代理服务器地址</param>
+        /// <returns></returns>
+        public static string Get(string url, string webroxy = null)
+        {
+            return GetAsync(url, webroxy).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -104,7 +108,7 @@ namespace Wlniao.Net
         /// <param name="contentType"></param>
         /// <param name="webroxy">代理服务器地址</param>
         /// <returns></returns>
-        public static string Post(string url, string postData, string contentType = "application/json", string webroxy = null)
+        public static async Task<string> PostAsync(string url, string postData, string contentType = "application/json", string webroxy = null)
         {
             var logs = "";
             try
@@ -119,29 +123,28 @@ namespace Wlniao.Net
                     url = webroxy + uri.PathAndQuery;
                 }
                 logs += "URL: " + url + Environment.NewLine;
-                // var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                var handler = new CustomHttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                handler.OnConnectionEstablished = (ipAddress) =>
-                {
-                    logs += "Server IP: " + ipAddress + Environment.NewLine;
-                };
-                using var client = new HttpClient(handler);
-                var stream = Convert.ToStream(string.IsNullOrEmpty(postData) ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(postData));
+                
+                var stream = Wlniao.Convert.ToStream(string.IsNullOrEmpty(postData) ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(postData));
                 var content = new StreamContent(stream);
-                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", contentType);
+                var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = content
+                };
+                request.Headers.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                request.Headers.TryAddWithoutValidation("Content-Type", contentType);
                 if (!string.IsNullOrEmpty(webroxy))
                 {
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Webroxy", uri.Host);
+                    request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
                 }
-                var response = client.PostAsync(url, content).GetAwaiter().GetResult();
+                
+                var response = await HttpClientManager.SharedInstance.SendAsync(request);
                 foreach (var hd in response.Headers)
                 {
                     logs += hd.Key + ": " + string.Join(",", hd.Value) + Environment.NewLine;
                 }
                 return response.StatusCode == System.Net.HttpStatusCode.OK 
-                    ? response.Content.ReadAsStringAsync().GetAwaiter().GetResult() 
-                    : throw new Exception("StatusCode:" + response.StatusCode + " " + response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
+                    ? await response.Content.ReadAsStringAsync() 
+                    : throw new Exception("StatusCode:" + response.StatusCode + " " + await response.Content.ReadAsStringAsync());
             }
             catch (AggregateException e)
             {
@@ -156,6 +159,7 @@ namespace Wlniao.Net
                 throw;
             }
         }
+        
         /// <summary>
         /// 
         /// </summary>
@@ -163,11 +167,10 @@ namespace Wlniao.Net
         /// <param name="stream"></param>
         /// <param name="webroxy">代理服务器地址</param>
         /// <returns></returns>
-        public static string Post(string url, System.IO.Stream stream, string webroxy = null)
+        public static async Task<string> PostAsync(string url, System.IO.Stream stream, string webroxy = null)
         {
             try
             {
-                var str = "";
                 var uri = new Uri(url);
                 if (string.IsNullOrEmpty(webroxy))
                 {
@@ -177,8 +180,7 @@ namespace Wlniao.Net
                 {
                     url = webroxy + uri.PathAndQuery;
                 }
-                var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                using var client = new HttpClient(handler);
+                
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Headers.Date = DateTime.UtcNow;
                 request.Headers.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Wlniao-XCore-XServer", "beta"));
@@ -190,28 +192,9 @@ namespace Wlniao.Net
                 {
                     request.Content = new StreamContent(stream);
                 }
-                client.SendAsync(request).ContinueWith((requestTask) =>
-                {
-                    try
-                    {
-                        requestTask.Result.Content.ReadAsStringAsync().ContinueWith((readTask) =>
-                        {
-                            str = readTask.Result;
-                        }).Wait();
-                    }
-                    catch (AggregateException aex)
-                    {
-                        if (aex.InnerException != null)
-                        {
-                            _ = aex.InnerException.InnerException != null ? aex.InnerException.InnerException.Message : aex.InnerException.Message;
-                        }
-                        else
-                        {
-                            _ = aex.Message;
-                        }
-                    }
-                }).Wait();
-                return str;
+                
+                var response = await HttpClientManager.SharedInstance.SendAsync(request);
+                return await response.Content.ReadAsStringAsync();
             }
             catch (AggregateException e)
             {
@@ -221,6 +204,31 @@ namespace Wlniao.Net
             {
                 throw;
             }
+        }
+        
+        /// <summary>
+        /// 发起Post请求 (同步版本)
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="postData"></param>
+        /// <param name="contentType"></param>
+        /// <param name="webroxy">代理服务器地址</param>
+        /// <returns></returns>
+        public static string Post(string url, string postData, string contentType = "application/json", string webroxy = null)
+        {
+            return PostAsync(url, postData, contentType, webroxy).GetAwaiter().GetResult();
+        }
+        
+        /// <summary>
+        /// (同步版本)
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="stream"></param>
+        /// <param name="webroxy">代理服务器地址</param>
+        /// <returns></returns>
+        public static string Post(string url, System.IO.Stream stream, string webroxy = null)
+        {
+            return PostAsync(url, stream, webroxy).GetAwaiter().GetResult();
         }
 
     }

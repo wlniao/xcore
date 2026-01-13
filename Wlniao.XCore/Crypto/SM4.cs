@@ -195,7 +195,8 @@ namespace Wlniao.Crypto
 			}
 			if (input.Length == 0)
 			{
-				return mode == SM4_DECRYPT ? throw new ArgumentException("sm4 dec padding input can't empty") : input; // 加密时空输入无需填充（但会被处理为16字节填充）
+				if (mode == SM4_DECRYPT) throw new ArgumentException("sm4 dec padding input can't empty");
+				return input; // 加密时空输入无需填充（但会被处理为16字节填充）
 			}
 
 			if (mode == SM4_ENCRYPT)

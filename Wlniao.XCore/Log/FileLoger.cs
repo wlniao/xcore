@@ -188,7 +188,18 @@ namespace Wlniao.Log
                 fs.Flush();
                 fs.Dispose();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // 记录到控制台，因为日志文件写入失败
+                try
+                {
+                    System.Console.WriteLine($"日志文件写入异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+                }
+                catch
+                {
+                    // 如果连控制台都无法输出，则放弃记录
+                }
+            }
         }
     }
 }

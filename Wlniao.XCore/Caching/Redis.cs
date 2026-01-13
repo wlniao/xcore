@@ -139,7 +139,7 @@ namespace Wlniao.Caching
                 return null;
             }
             var args = connstr.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            var instance = new RedisClient { SelectDB = Select };
+            var instance = new RedisClient { SelectDb = Select };
             foreach (var item in args)
             {
                 var arg = item.Trim();

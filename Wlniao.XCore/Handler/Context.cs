@@ -78,7 +78,7 @@ namespace Wlniao.Handler
         /// 
         /// </summary>
         /// <returns></returns>
-        public Task<string> Handle()
+        public async Task<string> Handle()
         {
             var rlt = Task.Run<string>(() => { return ""; });
             Result = new ApiResult<IResponse> { node = XCore.WebNode, code = "-1", success = false, message = "unkown error" };
@@ -95,88 +95,89 @@ namespace Wlniao.Handler
             else
             {
                 System.Net.Http.HttpClient http = null;
-                Task<System.Net.Http.HttpResponseMessage> task = null;
-                if (Certificate == null)
+                System.Net.Http.HttpResponseMessage response = null;
+                try
                 {
-                    http = new System.Net.Http.HttpClient();
-                }
-                else
-                {
-                    var handler = new System.Net.Http.HttpClientHandler();
-                    handler.ClientCertificateOptions = System.Net.Http.ClientCertificateOption.Manual;
-                    handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
-                    handler.ClientCertificates.Add(Certificate);
-                    http = new System.Net.Http.HttpClient(handler);
-                }
-                http.BaseAddress = new System.Uri(ApiHost);
-                if (Method == "GET" || Method == "DELETE")
-                {
-                    var query = RequestBody as string;
-                    if (!string.IsNullOrEmpty(query))
+                    if (Certificate == null)
                     {
-                        var link = ApiPath.IndexOf('?') < 0 ? '?' : '&';
-                        ApiPath += query[0] == '?' || query[0] == '&' ? query : link + query;
+                        http = new System.Net.Http.HttpClient();
                     }
-                    if (HttpRequestHeaders != null)
+                    else
                     {
-                        foreach (var kv in HttpRequestHeaders)
+                        var handler = new System.Net.Http.HttpClientHandler();
+                        handler.ClientCertificateOptions = System.Net.Http.ClientCertificateOption.Manual;
+                        handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+                        handler.ClientCertificates.Add(Certificate);
+                        http = new System.Net.Http.HttpClient(handler);
+                    }
+                    http.BaseAddress = new System.Uri(ApiHost);
+                    if (Method == "GET" || Method == "DELETE")
+                    {
+                        var query = RequestBody as string;
+                        if (!string.IsNullOrEmpty(query))
                         {
-                            http.DefaultRequestHeaders.Add(kv.Key, kv.Value);
+                            var link = ApiPath.IndexOf('?') < 0 ? '?' : '&';
+                            ApiPath += query[0] == '?' || query[0] == '&' ? query : link + query;
+                        }
+                        if (HttpRequestHeaders != null)
+                        {
+                            foreach (var kv in HttpRequestHeaders)
+                            {
+                                http.DefaultRequestHeaders.Add(kv.Key, kv.Value);
+                            }
+                        }
+                        if (Method == "DELETE")
+                        {
+                            response = await http.DeleteAsync(ApiPath);
+                        }
+                        else
+                        {
+                            response = await http.GetAsync(ApiPath);
                         }
                     }
-                    if (Method == "DELETE")
-                    {
-                        task = http.DeleteAsync(ApiPath);
-                    }
                     else
                     {
-                        task = http.GetAsync(ApiPath);
-                    }
-                }
-                else
-                {
-                    System.Net.Http.HttpContent content = null;
-                    var text = RequestBody as string;
-                    var bytes = RequestBody as byte[];
-                    if (bytes != null)
-                    {
-                        content = new System.Net.Http.ByteArrayContent(bytes);
-                    }
-                    else if (!string.IsNullOrEmpty(text))
-                    {
-                        content = new System.Net.Http.StringContent(text, Encoding, ContentType);
-                    }
-                    else if (RequestBody != null)
-                    {
-                        text = Json.Serialize(RequestBody);
-                        content = new System.Net.Http.StringContent(text, Encoding, ContentType);
-                    }
-                    else
-                    {
-                        content = new System.Net.Http.ByteArrayContent(Array.Empty<byte>());
-                    }
-                    if (HttpRequestHeaders != null)
-                    {
-                        foreach (var kv in HttpRequestHeaders)
+                        System.Net.Http.HttpContent content = null;
+                        var text = RequestBody as string;
+                        var bytes = RequestBody as byte[];
+                        if (bytes != null)
                         {
-                            content.Headers.Add(kv.Key, kv.Value);
+                            content = new System.Net.Http.ByteArrayContent(bytes);
+                        }
+                        else if (!string.IsNullOrEmpty(text))
+                        {
+                            content = new System.Net.Http.StringContent(text, Encoding, ContentType);
+                        }
+                        else if (RequestBody != null)
+                        {
+                            text = Json.Serialize(RequestBody);
+                            content = new System.Net.Http.StringContent(text, Encoding, ContentType);
+                        }
+                        else
+                        {
+                            content = new System.Net.Http.ByteArrayContent(Array.Empty<byte>());
+                        }
+                        if (HttpRequestHeaders != null)
+                        {
+                            foreach (var kv in HttpRequestHeaders)
+                            {
+                                content.Headers.Add(kv.Key, kv.Value);
+                            }
+                        }
+                        if (Method == "PUT")
+                        {
+                            response = await http.PutAsync(ApiPath, content);
+                        }
+                        else
+                        {
+                            response = await http.PostAsync(ApiPath, content);
                         }
                     }
-                    if (Method == "PUT")
-                    {
-                        task = http.PutAsync(ApiPath, content);
-                    }
-                    else
-                    {
-                        task = http.PostAsync(ApiPath, content);
-                    }
-                }
 
-                task.Result.Content.ReadAsStringAsync().ContinueWith((res) =>
-                {
-                    ResponseBody = res.Result;
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    ResponseBody = responseBody;
                     HttpResponseHeaders = new Dictionary<string, string>();
-                    foreach (var item in task.Result.Headers)
+                    foreach (var item in response.Headers)
                     {
                         var em = item.Value.GetEnumerator();
                         if (em.MoveNext())
@@ -184,10 +185,14 @@ namespace Wlniao.Handler
                             HttpResponseHeaders.Add(item.Key.ToLower(), em.Current);
                         }
                     }
-                    rlt = Task.Run<string>(() => { return res.Result; });
-                }).Wait();
+                    rlt = Task.Run<string>(() => { return responseBody; });
+                }
+                finally
+                {
+                    http?.Dispose();
+                }
             }
-            return rlt;
+            return await rlt;
         }
     }
 }

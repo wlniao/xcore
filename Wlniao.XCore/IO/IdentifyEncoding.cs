@@ -21,6 +21,8 @@
 ===============================================================================*/
 
 using System.IO;
+using Wlniao.Log;
+
 namespace Wlniao.IO
 {
     /// <summary>
@@ -53,7 +55,10 @@ namespace Wlniao.IO
                     }
                 }
             }
-            catch { }
+            catch (System.Exception ex)
+            {
+                Loger.Error($"文件编码检测异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+            }
             return "";
         }
 

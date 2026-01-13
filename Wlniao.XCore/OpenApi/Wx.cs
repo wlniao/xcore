@@ -21,6 +21,8 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+
 namespace Wlniao.OpenApi
 {
     /// <summary>
@@ -249,39 +251,49 @@ namespace Wlniao.OpenApi
         /// <returns></returns>
         public static ApiResult<string> GetAccessTokenByLocal(string appid, string appsecret)
         {
+            // 使用异步版本的同步包装
+            return GetAccessTokenByLocalAsync(appid, appsecret).GetAwaiter().GetResult();
+        }
+        
+        /// <summary>
+        /// 异步获取本地微信AccessToken
+        /// </summary>
+        /// <param name="appid"></param>
+        /// <param name="appsecret"></param>
+        /// <returns></returns>
+        public static async Task<ApiResult<string>> GetAccessTokenByLocalAsync(string appid, string appsecret)
+        {
             var rlt = new ApiResult<string>();
             try
             {
                 #region 获取新的AccessToken
-                var response = "";
                 var url = $"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={appid}&secret={appsecret}";
                 using (var client = new System.Net.Http.HttpClient())
                 {
-                    client.SendAsync(new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url)).ContinueWith((requestTask) =>
+                    var responseMessage = await client.SendAsync(new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url));
+                    var response = await responseMessage.Content.ReadAsStringAsync();
+                    
+                    try
                     {
-                        requestTask.Result.Content.ReadAsStringAsync().ContinueWith((readTask) =>
+                        if (response.IndexOf("access_token", StringComparison.Ordinal) > 0)
                         {
-                            response = readTask.Result;
-                        }).Wait();
-                    }).Wait();
-                }
-                try
-                {
-                    if (response.IndexOf("access_token", StringComparison.Ordinal) > 0)
-                    {
-                        //var obj = Json.ToObject<Wlniao.OpenApi.Wx.AccessToken>(_response);
-                        var obj = Json.Deserialize<Dictionary<string, object>>(response);
-                        rlt.data = obj.GetString("access_token");
-                        rlt.message = "expires in " + obj.GetString("expires_in");
-                        rlt.success = obj != null && !string.IsNullOrEmpty(rlt.data);
+                            //var obj = Json.ToObject<Wlniao.OpenApi.Wx.AccessToken>(_response);
+                            var obj = Json.Deserialize<Dictionary<string, object>>(response);
+                            rlt.data = obj.GetString("access_token");
+                            rlt.message = "expires in " + obj.GetString("expires_in");
+                            rlt.success = obj != null && !string.IsNullOrEmpty(rlt.data);
+                        }
+                        else
+                        {
+                            var obj = Json.Deserialize<Dictionary<string, object>>(response);
+                            rlt.message = obj.GetString("errmsg");
+                        }
                     }
-                    else
+                    catch (Exception e)
                     {
-                        var obj = Json.Deserialize<Dictionary<string, object>>(response);
-                        rlt.message = obj.GetString("errmsg");
+                        Wlniao.Log.Loger.Error($"微信API响应解析异常: {e.Message}, 响应内容: {response}");
                     }
                 }
-                catch { }
                 #endregion
             }
             catch (Exception ex)

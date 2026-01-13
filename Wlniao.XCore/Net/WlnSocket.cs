@@ -61,6 +61,10 @@ namespace Wlniao.Net
         public int TimeOutSeconds = 10;
         private static readonly object _lock = new object();
         private static readonly List<WlnSocket> _sockets = new List<WlnSocket>();
+        
+        // 定期清理过期连接的时间间隔（秒）
+        private static readonly int CLEANUP_INTERVAL_SECONDS = 30;
+        private static DateTime _lastCleanup = DateTime.UtcNow;
         /// <summary>
         /// 从连接池获取一个实例
         /// </summary>
@@ -78,10 +82,17 @@ namespace Wlniao.Net
             var endpoint = new System.Net.IPEndPoint(ipaddress, port);
             lock (_lock)
             {
+                // 定期清理过期的连接
+                if ((DateTime.UtcNow - _lastCleanup).TotalSeconds > CLEANUP_INTERVAL_SECONDS)
+                {
+                    CleanupUnusedSockets();
+                    _lastCleanup = DateTime.UtcNow;
+                }
+                
                 try
                 {
                 beginCheck:
-                    foreach (var socket in _sockets.OrderBy(a => a.LastUse))
+                    foreach (var socket in _sockets.Where(s => !s.Using).OrderBy(a => a.LastUse))
                     {
                         if (socket.Catch || !socket.Connected)
                         {
@@ -94,9 +105,9 @@ namespace Wlniao.Net
                                 }
                                 socket.Close();
                             }
-                            catch
+                            catch (Exception ex)
                             {
-                                // ignored
+                                Wlniao.Log.Loger.Error($"Socket清理异常: {ex.Message}, 堆栈: {ex.StackTrace}");
                             }
 
                             goto beginCheck;
@@ -117,7 +128,11 @@ namespace Wlniao.Net
                     _sockets.Add(newsocket);
                     return newsocket;
                 }
-                catch { return null; }
+                catch (Exception ex)
+                {
+                    Wlniao.Log.Loger.Error($"Socket连接异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+                    return null;
+                }
             }
         }
         /// <summary>
@@ -249,8 +264,64 @@ namespace Wlniao.Net
                 }
                 hostSocket.Using = false;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Wlniao.Log.Loger.Error($"Socket HTTP请求异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+            }
             return sb.ToString();
+        }
+        
+        /// <summary>
+        /// 清理未使用的Socket连接
+        /// </summary>
+        private static void CleanupUnusedSockets()
+        {
+            var now = DateTools.GetUnix();
+            var socketsToRemove = new List<WlnSocket>();
+            
+            foreach (var socket in _sockets)
+            {
+                // 清理超过5分钟未使用的连接
+                if (!socket.Using && (now - socket.LastUse) > 300) // 300秒 = 5分钟
+                {
+                    socketsToRemove.Add(socket);
+                }
+                // 清理使用完毕但长时间未释放的连接
+                else if (socket.Using && (now - socket.LastUse) > 600) // 600秒 = 10分钟
+                {
+                    socketsToRemove.Add(socket);
+                }
+            }
+            
+            foreach (var socket in socketsToRemove)
+            {
+                try
+                {
+                    _sockets.Remove(socket);
+                    if (socket.Connected)
+                    {
+                        socket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
+                    }
+                    socket.Close();
+                    socket.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Wlniao.Log.Loger.Error($"Socket清理异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 定期清理整个连接池
+        /// </summary>
+        public static void CleanupPool()
+        {
+            lock (_lock)
+            {
+                CleanupUnusedSockets();
+                _lastCleanup = DateTime.UtcNow;
+            }
         }
     }
 }

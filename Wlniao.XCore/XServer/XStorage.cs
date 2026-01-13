@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Net.Http;
 using System.Globalization;
+using System.Threading.Tasks;
 using Wlniao.IO;
 using Wlniao.Text;
 
@@ -251,56 +252,52 @@ namespace Wlniao.XServer
         /// <summary>
         /// 还原HTML内容中的图片地址
         /// </summary>
-        /// <param name="DataStr"></param>
+        /// <param name="dataStr"></param>
         /// <returns></returns>
-        public static string ConvertHtmlToFullUrl(string DataStr)
+        public static string ConvertHtmlToFullUrl(string dataStr)
         {
-            if (string.IsNullOrEmpty(DataStr))
-            {
-                return "";
-            }
-            return DataStr.Replace("src=\"/", "src=\"" + XStorageUrl + "/");
+            return string.IsNullOrEmpty(dataStr) ? "" : dataStr.Replace("src=\"/", "src=\"" + XStorageUrl + "/");
         }
         /// <summary>
         /// 还原HTML内容中的图片地址
         /// </summary>
-        /// <param name="DataStr"></param>
+        /// <param name="dataStr"></param>
         /// <param name="darwing"></param>
         /// <param name="suffix"></param>
         /// <returns></returns>
-        public static string ConvertHtmlToFullUrl(string DataStr, bool darwing = false, string suffix = "")
+        public static string ConvertHtmlToFullUrl(string dataStr, bool darwing = false, string suffix = "")
         {
-            if (string.IsNullOrEmpty(DataStr))
+            if (string.IsNullOrEmpty(dataStr))
             {
                 return "";
             }
-            DataStr = StringUtil.HtmlDecode(DataStr);
-            DataStr = DataStr.Replace("src=\"/", "src=\"" + XStorageUrl + "/");
+            dataStr = StringUtil.HtmlDecode(dataStr);
+            dataStr = dataStr.Replace("src=\"/", "src=\"" + XStorageUrl + "/");
             if (darwing)
             {
-                var _temp = "";
-                var lines = DataStr.Split(new[] { "src=\"" }, StringSplitOptions.RemoveEmptyEntries);
+                var temp = "";
+                var lines = dataStr.Split(new[] { "src=\"" }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (var line in lines)
                 {
-                    if (string.IsNullOrEmpty(_temp))
+                    if (string.IsNullOrEmpty(temp))
                     {
-                        _temp = line;
+                        temp = line;
                     }
                     else if (line.StartsWith(XStorageUrl))
                     {
                         var _line = line.Replace(".jpg\"", ".jpg" + (string.IsNullOrEmpty(suffix) ? Suffix : suffix) + "\"");
                         _line = _line.Replace(".png\"", ".png" + (string.IsNullOrEmpty(suffix) ? Suffix : suffix) + "\"");
                         _line = _line.Replace(".gif\"", ".gif" + (string.IsNullOrEmpty(suffix) ? Suffix : suffix) + "\"");
-                        _temp += "src=\"" + _line;
+                        temp += "src=\"" + _line;
                     }
                     else
                     {
-                        _temp += "src=\"" + line;
+                        temp += "src=\"" + line;
                     }
                 }
-                DataStr = _temp;
+                dataStr = temp;
             }
-            return DataStr;
+            return dataStr;
         }
 
         /// <summary>
@@ -311,51 +308,54 @@ namespace Wlniao.XServer
         /// <returns></returns>
         public static bool SaveUrl(string FileName, string url)
         {
-            using (var client = new System.Net.Http.HttpClient())
+            // 使用异步版本的同步包装
+            return SaveUrlAsync(FileName, url).GetAwaiter().GetResult();
+        }
+        
+        /// <summary>
+        /// 异步保存在线文件
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public static async Task<bool> SaveUrlAsync(string fileName, string url)
+        {
+            try
             {
-                try
+                var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
+                request.Headers.Date = DateTime.UtcNow;
+                var response = await Wlniao.Net.HttpClientManager.SharedInstance.SendAsync(request);
+                var data = await response.Content.ReadAsByteArrayAsync();
+                if (data != null)
                 {
-                    byte[] data = null;
-                    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
-                    reqest.Headers.Date = DateTime.UtcNow;
-                    client.SendAsync(reqest).ContinueWith((requestTask) =>
+                    if (XStorageType == "local")
                     {
-                        requestTask.Result.Content.ReadAsByteArrayAsync().ContinueWith((readTask) =>
+                        var toFileName = IO.PathTool.Map(UploadPath, fileName);
+                        var toFilePath = System.IO.Path.GetDirectoryName(toFileName);
+                        var toFileExt = System.IO.Path.GetExtension(toFileName);
+                        if (!Directory.Exists(toFilePath))
                         {
-                            data = readTask.Result;
-                        }).Wait();
-                    }).Wait();
-                    if (data != null)
-                    {
-                        if (XStorageType == "local")
-                        {
-                            var toFileName = IO.PathTool.Map(UploadPath, FileName);
-                            var toFilePath = System.IO.Path.GetDirectoryName(toFileName);
-                            var toFileExt = System.IO.Path.GetExtension(toFileName);
-                            if (!Directory.Exists(toFilePath))
-                            {
-                                Directory.CreateDirectory(toFilePath);
-                            }
-                            else if (FileEx.Exists(toFileName))
-                            {
-                                FileEx.Delete(toFileName);
-                            }
-                            using (var fs = new System.IO.FileStream(toFileName, FileMode.CreateNew))
-                            {
-                                fs.Write(data, 0, data.Length);
-                                return true;
-                            }
+                            Directory.CreateDirectory(toFilePath);
                         }
-                        else
+                        else if (FileEx.Exists(toFileName))
                         {
-                            return Upload(UploadPath + FileName, data);
+                            FileEx.Delete(toFileName);
+                        }
+                        using (var fs = new System.IO.FileStream(toFileName, FileMode.CreateNew))
+                        {
+                            fs.Write(data, 0, data.Length);
+                            return true;
                         }
                     }
+                    else
+                    {
+                        return Upload(UploadPath + fileName, data);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Log.Loger.Error(ex.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.Loger.Error(ex.Message);
             }
             return false;
         }
@@ -855,7 +855,10 @@ namespace Wlniao.XServer
                         }).Wait();
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Log.Loger.Error($"读取目录列表异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+                }
                 return AL;
             }
 
@@ -1080,7 +1083,7 @@ namespace Wlniao.XServer
                     //var time = DateTools.ConvertToUtc(1720574407);
                     var days = time.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
                     var date = time.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
-                    var scope = string.Format("{0}/{1}/{2}/aliyun_v4_request", days, ossregion, "oss");
+                    var scope = $"{days}/{ossregion}/{"oss"}/aliyun_v4_request";
                     var payload = "UNSIGNED-PAYLOAD";
                     var contentType = Wlniao.MimeMapping.GetMimeMapping(path);
                     request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(postData);

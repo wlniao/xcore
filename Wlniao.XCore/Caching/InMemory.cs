@@ -60,6 +60,11 @@ namespace Wlniao.Caching
                 Cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
                 Cache[key].Value = value ?? "";
             }
+            // 每100次设置操作清理一次，或者缓存大小超过8000时清理
+            if (Cache.Count % 100 == 0 || Cache.Count > 8000)
+            {
+                CleanupExpiredAndLimitSize();
+            }
             return true;
         }
 
@@ -88,6 +93,11 @@ namespace Wlniao.Caching
                 {
                     Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
                 });
+            }
+            // 每100次设置操作清理一次，或者缓存大小超过8000时清理
+            if (Cache.Count % 100 == 0 || Cache.Count > 8000)
+            {
+                CleanupExpiredAndLimitSize();
             }
             return true;
         }
@@ -120,7 +130,7 @@ namespace Wlniao.Caching
             }
             else
             {
-                return Cache.Remove(keys);
+                return Del(keys);
             }
         }
 
@@ -137,7 +147,7 @@ namespace Wlniao.Caching
             }
             else
             {
-                Cache.Remove(key);
+                Del(key);
             }
             return false;
         }
@@ -155,10 +165,11 @@ namespace Wlniao.Caching
             }
             else
             {
-                Cache.Remove(key);
+                Del(key);
             }
             return "";
         }
+
         /// <summary>
         /// 获取一个缓存项（允许null）
         /// </summary>
@@ -172,10 +183,11 @@ namespace Wlniao.Caching
             }
             else
             {
-                Cache.Remove(key);
+                Del(key);
             }
             return null;
         }
+
         /// <summary>
         /// 获取一个缓存项
         /// </summary>
@@ -194,9 +206,55 @@ namespace Wlniao.Caching
             }
             else
             {
-                Cache.Remove(key);
+                Del(key);
             }
             return default(T);
+        }
+
+        /// <summary>
+        /// 清理过期项
+        /// </summary>
+        public static void CleanupExpired()
+        {
+            var expiredKeys = Cache.Where(x => x.Value.Expire <= DateTime.Now).Select(x => x.Key).ToList();
+            foreach(var key in expiredKeys)
+            {
+                Del(key);
+            }
+        }
+        
+        /// <summary>
+        /// 清理过期项并限制缓存大小
+        /// </summary>
+        /// <param name="maxCacheSize">最大缓存项数，默认10000</param>
+        public static void CleanupExpiredAndLimitSize(int maxCacheSize = 10000)
+        {
+            // 先清理过期项
+            CleanupExpired();
+            
+            // 如果缓存仍然过大，删除最久未使用的项
+            if (Cache.Count > maxCacheSize)
+            {
+                var sortedKeys = Cache.OrderBy(x => x.Value.Expire) // 按过期时间排序，最早过期的在前
+                                  .Take(Cache.Count - maxCacheSize) // 取出超出数量的部分
+                                  .Select(x => x.Key)
+                                  .ToList();
+                
+                foreach(var key in sortedKeys)
+                {
+                    Del(key);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 获取缓存统计信息
+        /// </summary>
+        /// <returns>返回缓存总数和过期项数</returns>
+        public static (int totalCount, int expiredCount) GetCacheStats()
+        {
+            var expiredCount = Cache.Count(x => x.Value.Expire <= DateTime.Now);
+            return (Cache.Count, expiredCount);
         }
     }
 }

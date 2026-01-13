@@ -27,8 +27,8 @@ namespace Wlniao.Runtime
     /// 当前系统信息（如：OSVersion等）
     /// </summary>
     public partial class SysInfo
-    {     
-
+    {
+    
         /// <summary>
         /// 当前是否为Linux系统
         /// </summary>
@@ -39,6 +39,7 @@ namespace Wlniao.Runtime
                 return RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
             }
         }
+
         /// <summary>
         /// 当前是否为Windows系统
         /// </summary>
@@ -134,5 +135,30 @@ namespace Wlniao.Runtime
             }
         }
         #endregion
+
+
+        private static System.Threading.Timer _memoryCheckTimer;
+
+        private static void CheckMemoryUsage(object state)
+        {
+            var memory = System.GC.GetTotalMemory(false);
+            var process = System.Diagnostics.Process.GetCurrentProcess();
+            var workingSet = process.WorkingSet64;
+            
+            // 如果内存使用超过阈值，记录警告
+            if (workingSet > 100 * 1024 * 1024) // 100MB
+            {
+                Wlniao.Log.Loger.Warn($"High memory usage detected: {workingSet / 1024 / 1024}MB");
+            }
+        }
+
+        /// <summary>
+        /// 启动内存监控
+        /// <param name="interval">监控间隔，默认60秒</param>
+        /// </summary>
+        public static void StartMemoryMonitor(int interval = 60000)
+        {
+            _memoryCheckTimer = new System.Threading.Timer(CheckMemoryUsage, null, 0, interval);
+        }
     }
 }

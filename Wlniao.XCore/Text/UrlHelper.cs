@@ -76,7 +76,7 @@ namespace Wlniao.Text
             return new List<string>
             {
                 "htm", "html", "xhtml", "txt", "json",
-                "jpg", "gif", "png", "jpg", "jpeg", "bmp",
+                "jpg", "gif", "png", "jpeg", "bmp",
                 "doc", "docx", "ppt", "pptx", "xls", "xlsx", "chm", "pdf",
                 "zip", "7z", "rar", "exe", "dll",
                 "mov", "wav", "mp3", "rm", "rmvb", "mkv", "avi",
@@ -92,6 +92,7 @@ namespace Wlniao.Text
         private static bool hasCommonExt(string str)
         {
             var dotIndex = str.LastIndexOf(".", StringComparison.Ordinal);
+            if (dotIndex < 0) return false; // 如果没有找到点号，直接返回false
             var ext = str.Substring(dotIndex + 1, str.Length - dotIndex - 1);
             return ExtList.Contains(ext);
         }
@@ -121,7 +122,7 @@ namespace Wlniao.Text
             {
                 return rawUrl;
             }
-            var dotIndex = rawUrl.IndexOf(".", StringComparison.Ordinal);
+            var dotIndex = rawUrl.LastIndexOf(".", StringComparison.Ordinal);  // 查找最后一个点，而不是第一个
             if (dotIndex < 0)
             {
                 return rawUrl;

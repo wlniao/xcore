@@ -134,7 +134,10 @@ namespace Wlniao
                 Console.WriteLine("\r\nInit Use:        " + DateTime.Now.Subtract(_startup_time).TotalMilliseconds.ToString("F2") + "ms");
                 Console.WriteLine("");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Loger.Error($"XCore信息输出异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+            }
         }
 
 
@@ -160,7 +163,7 @@ namespace Wlniao
         /// <param name="chain"></param>
         /// <param name="sslErrors"></param>
         /// <returns></returns>
-        private static bool ServerCertificateCustomValidation(HttpRequestMessage requestMessage, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors sslErrors)
+        internal static bool ServerCertificateCustomValidation(HttpRequestMessage requestMessage, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors sslErrors)
         {
             if (sslErrors == SslPolicyErrors.None)
             {
