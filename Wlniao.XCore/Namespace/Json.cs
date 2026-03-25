@@ -35,20 +35,22 @@ namespace Wlniao
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="jsonString">json 字符串</param>
+        /// <param name="options">序列化选项</param>
         /// <returns></returns>
-        public static T Deserialize<T>(string jsonString)
+        public static T Deserialize<T>(string jsonString, JsonSerializerOptions options = null)
         {
-            return System.Text.Json.JsonSerializer.Deserialize<T>(jsonString, XCore.JsonSerializerOptions);
+            return System.Text.Json.JsonSerializer.Deserialize<T>(jsonString, options ?? XCore.JsonSerializerOptions);
         }
         
         /// <summary>
         /// 将 json 字符串反序列化为字典对象
         /// </summary>
         /// <param name="jsonString"></param>
+        /// <param name="options">序列化选项</param>
         /// <returns></returns>
-        public static Dictionary<string, object> DeserializeToDic(string jsonString)
+        public static Dictionary<string, object> DeserializeToDic(string jsonString, JsonSerializerOptions options = null)
         {
-            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonString, XCore.JsonSerializerOptions);
+            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonString, options ?? XCore.JsonSerializerOptions);
         }
         
         /// <summary>
@@ -56,20 +58,22 @@ namespace Wlniao
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="jsonString">json 字符串</param>
+        /// <param name="options">序列化选项</param>
         /// <returns>返回对象列表</returns>
-        public static List<T> DeserializeToList<T>(string jsonString)
+        public static List<T> DeserializeToList<T>(string jsonString, JsonSerializerOptions options = null)
         {
-            return System.Text.Json.JsonSerializer.Deserialize<List<T>>(jsonString, XCore.JsonSerializerOptions);
+            return System.Text.Json.JsonSerializer.Deserialize<List<T>>(jsonString, options ?? XCore.JsonSerializerOptions);
         }
 
         /// <summary>
         /// 将对象序列化为json字符串,支持子对象的序列化
         /// </summary>
         /// <param name="obj">序列化的对象</param>
+        /// <param name="options">序列化选项</param>
         /// <returns></returns>
-        public static string Serialize<T>(T obj)
+        public static string Serialize<T>(T obj, JsonSerializerOptions options = null)
         {
-            return JsonSerializer.Serialize<T>(obj, XCore.JsonSerializerOptions);
+            return JsonSerializer.Serialize<T>(obj, options ?? XCore.JsonSerializerOptions);
         }
         
         /// <summary>

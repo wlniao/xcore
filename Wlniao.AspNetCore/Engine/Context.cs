@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Unicode;
+using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -437,7 +440,7 @@ namespace Wlniao.Engine
                 Response.Headers.TryAdd(kv.Key, kv.Value);
             }
 
-            var json = output as string ?? Wlniao.Json.Serialize(output);
+            var json = output as string ?? Wlniao.Json.Serialize(output, JsonSerializerOptions);
             if (OutputSerializeCallback != null)
             {
                 return OutputSerializeCallback(json);
@@ -457,5 +460,15 @@ namespace Wlniao.Engine
         /// 
         /// </summary>
         public Func<string, IActionResult>? OutputSerializeCallback { get; set; }
+
+                
+        /// <summary>
+        /// 基础的JSON序列化选项
+        /// </summary>
+        public static JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions
+        {
+            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
+            UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
+        };
     }
 }
