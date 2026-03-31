@@ -63,7 +63,7 @@ namespace Wlniao.Net
             var handler = new SocketsHttpHandler
             {
                 // 设置连接池中连接的最大生存时间，这会强制DNS重新解析
-                PooledConnectionLifetime = TimeSpan.FromMinutes(10), // 连接存活时间略小于刷新周期
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5), // 连接存活时间略小于刷新周期
                 MaxConnectionsPerServer = 200, // 最大并发数
                 UseProxy = false, // 不使用代理
                 AllowAutoRedirect = true, // 允许自动重定向

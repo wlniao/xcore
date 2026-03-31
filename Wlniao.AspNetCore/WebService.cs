@@ -147,17 +147,26 @@ namespace Wlniao
         public static void ServiceStop(string node, string code = "302", string message = "服务器正在维护中 Server maintenance.")
         {
             var json = Json.Serialize(new { node, code, success = false, message });
-            new WebHostBuilder().UseKestrel(o => { o.Listen(IPAddress.IPv6Any, XCore.ListenPort); }).Configure(app =>
+            
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.ConfigureKestrel(o => 
+            { 
+                o.Listen(IPAddress.IPv6Any, XCore.ListenPort); 
+            });
+            
+            var app = builder.Build();
+            
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Node " + node + " on maintenance mode: " + code);
+            Console.ForegroundColor = ConsoleColor.White;
+            
+            app.Run(async (HttpContext context) =>
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Node " + node + " on maintenance mode: " + code);
-                Console.ForegroundColor = ConsoleColor.White;
-                app.Run((HttpContext context) =>
-                {
-                    context.Response.Headers.TryAdd("Content-Type", "application/json");
-                    return context.Response.WriteAsync(json);
-                });
-            }).Build().Run();
+                context.Response.Headers.TryAdd("Content-Type", "application/json");
+                await context.Response.WriteAsync(json);
+            });
+            
+            app.Run();
         }
 	}
 }

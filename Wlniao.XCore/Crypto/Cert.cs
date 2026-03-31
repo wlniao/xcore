@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
@@ -26,25 +26,28 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public static X509Certificate2 CrtToPfx(string crtfile, string keyfile, string outfile = null, string password = null)
         {
-            var cert = X509Certificate2.CreateFromPemFile(crtfile, keyfile);
-            var data = cert.Export(X509ContentType.Pfx, password);
-            //if (string.IsNullOrEmpty(password))
-            //{
-            //    data = cert.Export(X509ContentType.Pfx);
-            //}
-            //else
-            //{
-            //    data = cert.Export(X509ContentType.Pfx, password);
-            //}
-            if(!string.IsNullOrEmpty(outfile))
+            X509Certificate2 cert = null;
+            try
             {
-                System.IO.File.WriteAllBytes(outfile, data);
+                cert = X509Certificate2.CreateFromPemFile(crtfile, keyfile);
+                var data = cert.Export(X509ContentType.Pfx, password);
+                if(!string.IsNullOrEmpty(outfile))
+                {
+                    System.IO.File.WriteAllBytes(outfile, data);
+                }
+                if (!string.IsNullOrEmpty(password))
+                {
+                    data = cert.Export(X509ContentType.Pfx);
+                }
+                return new X509Certificate2(data);
             }
-            if (!string.IsNullOrEmpty(password))
+            finally
             {
-                data = cert.Export(X509ContentType.Pfx);
+                if (cert != null)
+                {
+                    cert.Dispose();
+                }
             }
-            return new X509Certificate2(data);
         }
         /// <summary>
         /// Private Key Convert Pkcs1->Pkcs8
@@ -54,15 +57,20 @@ namespace Wlniao.Crypto
         public static string PrivateKeyPkcs1ToPkcs8(string privateKey)
         {
             privateKey = Pkcs1PrivateKeyFormat(privateKey);
-            var pr = new PemReader(new StringReader(privateKey));
-            var kp = pr.ReadObject() as AsymmetricCipherKeyPair;
-            var sw = new StringWriter();
-            var pWrt = new PemWriter(sw);
-            var pkcs8 = new Pkcs8Generator(kp.Private);
-            pWrt.WriteObject(pkcs8);
-            pWrt.Writer.Close();
-            var result = sw.ToString();
-            return result;
+            using (var sr = new StringReader(privateKey))
+            {
+                var pr = new PemReader(sr);
+                var kp = pr.ReadObject() as AsymmetricCipherKeyPair;
+                using (var sw = new StringWriter())
+                {
+                    var pWrt = new PemWriter(sw);
+                    var pkcs8 = new Pkcs8Generator(kp.Private);
+                    pWrt.WriteObject(pkcs8);
+                    pWrt.Writer.Close();
+                    var result = sw.ToString();
+                    return result;
+                }
+            }
         }
         /// <summary>
         /// Private Key Convert Pkcs8->Pkcs1
@@ -72,15 +80,20 @@ namespace Wlniao.Crypto
         public static string PrivateKeyPkcs8ToPkcs1(string privateKey)
         {
             privateKey = Pkcs8PrivateKeyFormat(privateKey);
-            var pr = new PemReader(new StringReader(privateKey));
-            var kp = pr.ReadObject() as RsaPrivateCrtKeyParameters;
-            var keyParameter = PrivateKeyFactory.CreateKey(PrivateKeyInfoFactory.CreatePrivateKeyInfo(kp));
-            var sw = new StringWriter();
-            var pWrt = new PemWriter(sw);
-            pWrt.WriteObject(keyParameter);
-            pWrt.Writer.Close();
-            var result = sw.ToString();
-            return result;
+            using (var sr = new StringReader(privateKey))
+            {
+                var pr = new PemReader(sr);
+                var kp = pr.ReadObject() as RsaPrivateCrtKeyParameters;
+                var keyParameter = PrivateKeyFactory.CreateKey(PrivateKeyInfoFactory.CreatePrivateKeyInfo(kp));
+                using (var sw = new StringWriter())
+                {
+                    var pWrt = new PemWriter(sw);
+                    pWrt.WriteObject(keyParameter);
+                    pWrt.Writer.Close();
+                    var result = sw.ToString();
+                    return result;
+                }
+            }
         }
         /// <summary>
         /// Format Pkcs1 format private key
@@ -199,11 +212,19 @@ namespace Wlniao.Crypto
                 privateKey = PrivateKeyPkcs8ToPkcs1(privateKey);
             }
             var rsa = new RSACryptoServiceProvider();
-            var buffer = GetBytesFromPemFile(privateKey, "RSA PRIVATE KEY");
-            var rsaParam = rsa.ExportParameters(false);
-            rsaParam.Modulus = buffer;
-            rsa.ImportParameters(rsaParam);
-            return rsa;
+            try
+            {
+                var buffer = GetBytesFromPemFile(privateKey, "RSA PRIVATE KEY");
+                var rsaParam = rsa.ExportParameters(false);
+                rsaParam.Modulus = buffer;
+                rsa.ImportParameters(rsaParam);
+                return rsa;
+            }
+            catch
+            {
+                rsa.Dispose();
+                throw;
+            }
         }
     }
 }

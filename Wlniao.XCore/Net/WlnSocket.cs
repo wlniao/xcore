@@ -17,7 +17,6 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-
 ===============================================================================*/
 using System;
 using System.Linq;
@@ -65,6 +64,10 @@ namespace Wlniao.Net
         // 定期清理过期连接的时间间隔（秒）
         private static readonly int CLEANUP_INTERVAL_SECONDS = 30;
         private static DateTime _lastCleanup = DateTime.UtcNow;
+        
+        // 最大重试次数
+        private static readonly int MAX_RETRY_COUNT = 10;
+        
         /// <summary>
         /// 从连接池获取一个实例
         /// </summary>
@@ -80,6 +83,10 @@ namespace Wlniao.Net
                 ipaddress = ipaddress.MapToIPv4();
             }
             var endpoint = new System.Net.IPEndPoint(ipaddress, port);
+            
+            // 先在锁内查找可用连接
+            WlnSocket availableSocket = null;
+            
             lock (_lock)
             {
                 // 定期清理过期的连接
@@ -89,13 +96,18 @@ namespace Wlniao.Net
                     _lastCleanup = DateTime.UtcNow;
                 }
                 
-                try
+                // 查找可用连接，使用重试机制避免无限循环
+                var retryCount = 0;
+                while (retryCount < MAX_RETRY_COUNT)
                 {
-                beginCheck:
-                    foreach (var socket in _sockets.Where(s => !s.Using).OrderBy(a => a.LastUse))
+                    var foundInvalid = false;
+                    
+                    // 使用ToList()避免集合修改导致的枚举异常
+                    foreach (var socket in _sockets.Where(s => !s.Using).OrderBy(a => a.LastUse).ToList())
                     {
                         if (socket.Catch || !socket.Connected)
                         {
+                            // 清理无效连接
                             _sockets.Remove(socket);
                             try
                             {
@@ -104,37 +116,85 @@ namespace Wlniao.Net
                                     socket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
                                 }
                                 socket.Close();
+                                socket.Dispose();
                             }
                             catch (Exception ex)
                             {
                                 Wlniao.Log.Loger.Error($"Socket清理异常: {ex.Message}, 堆栈: {ex.StackTrace}");
                             }
-
-                            goto beginCheck;
+                            foundInvalid = true;
+                            break;
                         }
+                        
                         if (!socket.Using && socket.RemoteEndPoint!.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < DateTools.GetUnix() - 15)
                         {
                             socket.Using = true;
                             socket.LastUse = DateTools.GetUnix();
-                            return socket;
+                            availableSocket = socket;
+                            break;
                         }
                     }
-                    var newsocket = new WlnSocket(endpoint.AddressFamily, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
-                    newsocket.Using = true;
-                    newsocket.LastUse = DateTools.GetUnix();
-                    newsocket.Connect(endpoint);
-                    newsocket.SendTimeout = timeOutSeconds * 1000;  //10s
-                    newsocket.ReceiveTimeout = timeOutSeconds * 1000;  //10s
-                    _sockets.Add(newsocket);
-                    return newsocket;
-                }
-                catch (Exception ex)
-                {
-                    Wlniao.Log.Loger.Error($"Socket连接异常: {ex.Message}, 堆栈: {ex.StackTrace}");
-                    return null;
+                    
+                    if (availableSocket != null)
+                    {
+                        break;
+                    }
+                    
+                    if (!foundInvalid)
+                    {
+                        break;
+                    }
+                    
+                    retryCount++;
                 }
             }
+            
+            if (availableSocket != null)
+            {
+                return availableSocket;
+            }
+            
+            // 在锁外创建新连接（避免在锁内执行网络IO）
+            var newsocket = new WlnSocket(endpoint.AddressFamily, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
+            newsocket.Using = true;
+            newsocket.LastUse = DateTools.GetUnix();
+            
+            try
+            {
+                newsocket.Connect(endpoint);
+                newsocket.SendTimeout = timeOutSeconds * 1000;
+                newsocket.ReceiveTimeout = timeOutSeconds * 1000;
+                
+                // 将新连接加入池
+                lock (_lock)
+                {
+                    _sockets.Add(newsocket);
+                }
+                
+                return newsocket;
+            }
+            catch (Exception ex)
+            {
+                // 确保异常情况下释放资源
+                try
+                {
+                    if (newsocket.Connected)
+                    {
+                        newsocket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
+                    }
+                    newsocket.Close();
+                    newsocket.Dispose();
+                }
+                catch
+                {
+                    // 忽略清理异常
+                }
+                
+                Wlniao.Log.Loger.Error($"Socket连接异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+                return null;
+            }
         }
+        
         /// <summary>
         /// 通过Socket发送Http请求
         /// </summary>
@@ -146,6 +206,13 @@ namespace Wlniao.Net
             var sb = new System.Text.StringBuilder();
             var uri = new Uri(url);
             var hostSocket = Net.WlnSocket.GetSocket(uri.Host, uri.Port, 15);
+            
+            if (hostSocket == null)
+            {
+                Wlniao.Log.Loger.Error($"Socket连接失败: {uri.Host}:{uri.Port}");
+                return "";
+            }
+            
             try
             {
                 var reqStr = "";
@@ -266,6 +333,12 @@ namespace Wlniao.Net
             }
             catch (Exception ex)
             {
+                // 确保异常情况下标记连接为不可用
+                if (hostSocket != null)
+                {
+                    hostSocket.Catch = true;
+                    hostSocket.Using = false;
+                }
                 Wlniao.Log.Loger.Error($"Socket HTTP请求异常: {ex.Message}, 堆栈: {ex.StackTrace}");
             }
             return sb.ToString();

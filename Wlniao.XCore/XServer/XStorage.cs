@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -494,18 +494,23 @@ namespace Wlniao.XServer
             byte[] buffur = null;
             if (FileEx.Exists(FileName))
             {
-                var fs = new FileStream(FileName.StartsWith(UploadPath) ? FileName : UploadPath + FileName, FileMode.Open, FileAccess.Read);
-                try
+                var filePath = FileName.StartsWith(UploadPath) ? FileName : UploadPath + FileName;
+                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 {
-                    buffur = new byte[fs.Length];
-                    fs.Read(buffur, 0, (int)fs.Length);
-                }
-                finally
-                {
-                    if (fs != null)
+                    if (fs.Length > int.MaxValue)
                     {
-                        //关闭资源
-                        fs.Dispose();
+                        throw new IOException("文件过大，无法一次性读取");
+                    }
+                    buffur = new byte[fs.Length];
+                    var bytesRead = 0;
+                    var totalBytesRead = 0;
+                    while (totalBytesRead < buffur.Length && (bytesRead = fs.Read(buffur, totalBytesRead, buffur.Length - totalBytesRead)) > 0)
+                    {
+                        totalBytesRead += bytesRead;
+                    }
+                    if (totalBytesRead < buffur.Length)
+                    {
+                        Array.Resize(ref buffur, totalBytesRead);
                     }
                 }
             }

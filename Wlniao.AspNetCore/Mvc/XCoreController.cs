@@ -653,7 +653,7 @@ namespace Wlniao.Mvc
                     }
                     if (string.IsNullOrEmpty(host))
                     {
-                        host = Request.Host.Value;
+                        host = Request.Host.Value ?? "";
                     }
                 }
                 if (host.IndexOf("://", StringComparison.Ordinal) < 0)

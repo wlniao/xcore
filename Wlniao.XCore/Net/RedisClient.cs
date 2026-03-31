@@ -1,7 +1,7 @@
-﻿/*==============================================================================
-    文件名称：WlnSocket.cs
+/*==============================================================================
+    文件名称：RedisClient.cs
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    功能描述：Socket类封装
+    功能描述：Redis客户端封装
 ================================================================================
  
     Copyright 2017 XieChaoyi
@@ -17,7 +17,6 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-
 ===============================================================================*/
 using System;
 using System.Linq;
@@ -69,9 +68,15 @@ namespace Wlniao.Net
         
         private readonly object _lock = new object();
         
-        private const int MaxConnections = 100; // 最大连接数限制
+        private const int MaxConnections = 30; // 最大连接数限制
         
-        private const int ConnectionTimeoutSeconds = 300; // 5分钟超时
+        private const int ConnectionTimeoutSeconds = 120; // 2分钟超时
+        
+        // 获取连接的最大等待时间（秒）
+        private const int GetConnectionMaxWaitSeconds = 5;
+        
+        // 等待重试间隔（毫秒）
+        private const int WaitRetryIntervalMs = 10;
 
         private bool _disposed = false;
         
@@ -166,15 +171,24 @@ namespace Wlniao.Net
         /// <returns></returns>
         public string Get(string key)
         {
+            WlnSocket socket = null;
             try
             {
-                var socket = GetSocket();
+                socket = GetSocket();
                 var byteKey = Encoding.UTF8.GetBytes(key);
                 return ResToText(SendCommand(socket, RedisCommand.Get, byteKey));
             }
-            catch (Exception e)
+            catch
             {
-                throw new XCoreException("RedisClient.Get => " + e.Message, 500);
+                ReleaseSocket(socket, true);
+                throw;
+            }
+            finally
+            {
+                if (socket != null)
+                {
+                    ReleaseSocket(socket);
+                }
             }
         }
         /// <summary>
@@ -185,9 +199,10 @@ namespace Wlniao.Net
         /// <param name="expire"></param>
         public bool Set(string key, byte[] value, int expire)
         {
+            WlnSocket socket = null;
             try
             {
-                var socket = GetSocket();
+                socket = GetSocket();
                 var byteKey = Encoding.UTF8.GetBytes(key);
                 if (expire > 0)
                 {
@@ -195,9 +210,17 @@ namespace Wlniao.Net
                 }
                 return ResToBool(SendCommand(socket, RedisCommand.Set, byteKey, value));
             }
-            catch (Exception e)
+            catch
             {
-                throw new XCoreException("RedisClient.Set => " + e.Message, 500);
+                ReleaseSocket(socket, true);
+                throw;
+            }
+            finally
+            {
+                if (socket != null)
+                {
+                    ReleaseSocket(socket);
+                }
             }
         }
         /// <summary>
@@ -206,15 +229,24 @@ namespace Wlniao.Net
         /// <param name="key"></param>
         public bool KeyDelete(string key)
         {
+            WlnSocket socket = null;
             try
             {
-                var socket = GetSocket();
+                socket = GetSocket();
                 var byteKey = Encoding.UTF8.GetBytes(key);
                 return ResToBool(SendCommand(socket, RedisCommand.Del, byteKey));
             }
-            catch (Exception e)
+            catch
             {
-                throw new XCoreException("RedisClient.KeyDelete => " + e.Message, 500);
+                ReleaseSocket(socket, true);
+                throw;
+            }
+            finally
+            {
+                if (socket != null)
+                {
+                    ReleaseSocket(socket);
+                }
             }
         }
 
@@ -224,15 +256,24 @@ namespace Wlniao.Net
         /// <param name="key"></param>
         public bool KeyExists(string key)
         {
+            WlnSocket socket = null;
             try
             {
-                var socket = GetSocket();
+                socket = GetSocket();
                 var byteKey = Encoding.UTF8.GetBytes(key);
                 return ResToBool(SendCommand(socket, RedisCommand.Exists, byteKey));
             }
-            catch (Exception e)
+            catch
             {
-                throw new XCoreException("RedisClient.KeyExists => " + e.Message, 500);
+                ReleaseSocket(socket, true);
+                throw;
+            }
+            finally
+            {
+                if (socket != null)
+                {
+                    ReleaseSocket(socket);
+                }
             }
         }
 
@@ -328,92 +369,236 @@ namespace Wlniao.Net
         /// <returns></returns>
         private WlnSocket GetSocket()
         {
-            lock (_lock)
+            WlnSocket socket = null;
+            
+            try
             {
-                // 清理过期和异常连接
-                CleanupInvalidSockets();
-
-                // 寻找可用连接
-                foundSocket:
-                foreach (var socket in _socketList.OrderBy(a => a.LastUse))
+                lock (_lock)
                 {
-                    if (!socket.Using && socket.Connected)
+                    // 清理过期和异常连接
+                    CleanupInvalidSockets();
+                    
+                    // 寻找可用连接
+                    foreach (var s in _socketList.OrderBy(a => a.LastUse))
                     {
-                        socket.Using = true;
-                        socket.LastUse = DateTime.Now.Ticks;
-                        return socket;
-                    }
-                }
-
-                // 如果达到最大连接数限制，等待10ms后重新寻找
-                if (_socketList.Count >= MaxConnections)
-                {
-                    System.Threading.Thread.Sleep(10);
-                    goto foundSocket;
-                }
-                
-                // 创建新连接                
-                var connMsg = "Redis connection configuration error: not config server";
-                var newsocket = new WlnSocket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                newsocket.Using = true;
-                newsocket.LastUse = DateTime.Now.Ticks;
-                newsocket.NoDelay = NoDelaySocket;
-                //newsocket.SendTimeout = TimeOutSeconds * 1000;  //10s
-                //newsocket.ReceiveTimeout = TimeOutSeconds * 1000;  //10s
-                try
-                {
-                    foreach (var endPoint in EndPointList)
-                    {
-                        newsocket.Connect(endPoint);
-                        if (newsocket.Connected)
+                        if (!s.Using && s.Connected && !s.Catch)
                         {
+                            s.Using = true;
+                            s.LastUse = DateTime.Now.Ticks;
+                            socket = s;
                             break;
                         }
                     }
                 }
-                catch (Exception ex)
+                
+                if (socket != null)
                 {
-                    connMsg = "Redis connection configuration error: " + ex.Message;
-                    Log.Loger.Error(connMsg);
+                    return socket;
                 }
-                if (newsocket.Connected)
+                
+                // 如果没有可用连接，创建新连接
+                socket = CreateNewConnection();
+                
+                // 将新连接加入池
+                lock (_lock)
                 {
-                    if (!string.IsNullOrEmpty(Password))
+                    _socketList.Add(socket);
+                }
+                
+                return socket;
+            }
+            catch
+            {
+                // 如果获取连接失败，确保释放资源
+                if (socket != null && !_socketList.Contains(socket))
+                {
+                    // 新创建的连接，直接释放
+                    try
                     {
-                        if (string.IsNullOrEmpty(Username))
+                        if (socket.Connected)
                         {
-                            Username = "default";
+                            socket.Shutdown(SocketShutdown.Both);
                         }
-                        if (!ResToBool(SendCommand(newsocket, RedisCommand.Auth, Encoding.GetBytes(Username), Encoding.GetBytes(Password))))
+                        socket.Close();
+                        socket.Dispose();
+                    }
+                    catch { /* 忽略清理异常 */ }
+                }
+                throw;
+            }
+        }
+        
+        /// <summary>
+        /// 创建新连接
+        /// </summary>
+        /// <returns></returns>
+        private WlnSocket CreateNewConnection()
+        {
+            // 检查是否达到最大连接数限制
+            var startTime = DateTime.Now;
+            while (true)
+            {
+                lock (_lock)
+                {
+                    if (_socketList.Count < MaxConnections)
+                    {
+                        break;
+                    }
+                    
+                    // 检查是否有可用连接
+                    foreach (var s in _socketList.OrderBy(a => a.LastUse))
+                    {
+                        if (!s.Using && s.Connected && !s.Catch)
                         {
-                            if (newsocket.Connected)
-                            {
-                                newsocket.Shutdown(SocketShutdown.Both);
-                            }
-                            newsocket.Close();
-                            throw new XCoreException("Redis: client password is error!", 500);
+                            s.Using = true;
+                            s.LastUse = DateTime.Now.Ticks;
+                            return s;
                         }
                     }
-                    if (SelectDb > 0)
-                    {
-                        if (!ResToBool(SendCommand(newsocket, RedisCommand.Select, Encoding.GetBytes(SelectDb.ToString()))))
-                        {
-                            if (newsocket.Connected)
-                            {
-                                newsocket.Shutdown(SocketShutdown.Both);
-                            }
-                            newsocket.Close();
-                            throw new XCoreException("Redis: client database select error!", 500);
-                        }
-                    }
-                    _socketList.Add(newsocket);
-                    return newsocket;
                 }
-                else
+                
+                // 检查是否超时
+                if ((DateTime.Now - startTime).TotalSeconds > GetConnectionMaxWaitSeconds)
                 {
-                    throw new XCoreException(connMsg, 500);
+                    throw new XCoreException($"Redis: 获取连接超时，等待时间超过 {GetConnectionMaxWaitSeconds} 秒，当前连接数: {_socketList.Count}, 最大连接数: {MaxConnections}", 500);
+                }
+                
+                // 等待后重试
+                System.Threading.Thread.Sleep(WaitRetryIntervalMs);
+            }
+            
+            // 在锁外创建新连接（避免在锁内执行网络IO）
+            var connMsg = "Redis connection configuration error: not config server";
+            var newsocket = new WlnSocket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            newsocket.Using = true;
+            newsocket.LastUse = DateTime.Now.Ticks;
+            newsocket.NoDelay = NoDelaySocket;
+            
+            try
+            {
+                foreach (var endPoint in EndPointList)
+                {
+                    newsocket.Connect(endPoint);
+                    if (newsocket.Connected)
+                    {
+                        break;
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                connMsg = "Redis connection configuration error: " + ex.Message;
+                Log.Loger.Error(connMsg);
+            }
+            
+            if (!newsocket.Connected)
+            {
+                // 确保连接失败时释放资源
+                try
+                {
+                    newsocket.Close();
+                    newsocket.Dispose();
+                }
+                catch { /* 忽略清理异常 */ }
+                throw new XCoreException(connMsg, 500);
+            }
+            
+            // 认证和数据库选择
+            try
+            {
+                if (!string.IsNullOrEmpty(Password))
+                {
+                    if (string.IsNullOrEmpty(Username))
+                    {
+                        Username = "default";
+                    }
+                    if (!ResToBool(SendCommand(newsocket, RedisCommand.Auth, Encoding.GetBytes(Username), Encoding.GetBytes(Password))))
+                    {
+                        throw new XCoreException("Redis: client password is error!", 500);
+                    }
+                }
+                
+                if (SelectDb > 0)
+                {
+                    if (!ResToBool(SendCommand(newsocket, RedisCommand.Select, Encoding.GetBytes(SelectDb.ToString()))))
+                    {
+                        throw new XCoreException("Redis: client database select error!", 500);
+                    }
+                }
+                
+                // 重置使用标记，因为SendCommand会将其设置为false
+                newsocket.Using = true;
+                newsocket.LastUse = DateTime.Now.Ticks;
+                
+                return newsocket;
+            }
+            catch
+            {
+                // 确保认证或数据库选择失败时释放资源
+                try
+                {
+                    if (newsocket.Connected)
+                    {
+                        newsocket.Shutdown(SocketShutdown.Both);
+                    }
+                    newsocket.Close();
+                    newsocket.Dispose();
+                }
+                catch { /* 忽略清理异常 */ }
+                throw;
+            }
+        }
+        
+        /// <summary>
+        /// 释放连接回连接池
+        /// </summary>
+        /// <param name="socket"></param>
+        /// <param name="markAsError">是否标记为错误</param>
+        private void ReleaseSocket(WlnSocket socket, bool markAsError = false)
+        {
+            if (socket == null) return;
+            
+            try
+            {
+                lock (_lock)
+                {
+                    // 标记为错误或异常状态
+                    if (markAsError)
+                    {
+                        socket.Catch = true;
+                    }
+                    
+                    // 释放连接
+                    socket.Using = false;
+                    socket.LastUse = DateTime.Now.Ticks;
+                }
+            }
+            catch { /* 忽略锁异常 */ }
+        }
+        
+        /// <summary>
+        /// 关闭并移除连接
+        /// </summary>
+        /// <param name="socket"></param>
+        private void CloseSocket(WlnSocket socket)
+        {
+            if (socket == null) return;
+            
+            try
+            {
+                lock (_lock)
+                {
+                    _socketList.Remove(socket);
+                }
+                
+                if (socket.Connected)
+                {
+                    socket.Shutdown(SocketShutdown.Both);
+                }
+                socket.Close();
+                socket.Dispose();
+            }
+            catch { /* 忽略清理异常 */ }
         }
         /// <summary>
         /// 创建事务
@@ -421,7 +606,7 @@ namespace Wlniao.Net
         /// <param name="socket"></param>
         private byte[] Multi(WlnSocket socket)
         {
-            return SendData(socket, RedisCommand.Multi, new byte[][] { }, true);
+            return SendData(socket, RedisCommand.Multi, new byte[][] { });
         }
         /// <summary>
         /// 执行事务
@@ -430,7 +615,7 @@ namespace Wlniao.Net
         /// <returns></returns>
         private byte[] Exec(WlnSocket socket)
         {
-            return SendData(socket, RedisCommand.Exec, new byte[][] { }, false);
+            return SendData(socket, RedisCommand.Exec, new byte[][] { });
         }
         /// <summary>
         /// 
@@ -456,7 +641,7 @@ namespace Wlniao.Net
         /// <returns></returns>
         private byte[] AddCommand(WlnSocket socket, RedisCommand command, params byte[][]args)
         {
-            return SendData(socket, command, args, true);
+            return SendData(socket, command, args);
         }
         /// <summary>
         /// 发送命令
@@ -467,17 +652,17 @@ namespace Wlniao.Net
         /// <returns></returns>
         private byte[] SendCommand(WlnSocket socket, RedisCommand command, params byte[][] data)
         {
-            return SendData(socket, command, data, false);
+            return SendData(socket, command, data);
         }
+
         /// <summary>
         /// 数据发送方法
         /// </summary>
         /// <param name="socket"></param>
         /// <param name="command"></param>
         /// <param name="args"></param>
-        /// <param name="keepConnect"></param>
         /// <returns></returns>
-        private byte[] SendData(WlnSocket socket, RedisCommand command, byte[][] args, bool keepConnect)
+        private byte[] SendData(WlnSocket socket, RedisCommand command, byte[][] args)
         {
             // 参数命令
             var cmd = command.ToString();
@@ -509,10 +694,6 @@ namespace Wlniao.Net
                 {
                     break;
                 }
-            }
-            if (!keepConnect)
-            {
-                socket.Using = false;
             }
             return buffer.ToArray();
         }

@@ -17,7 +17,6 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-
 ===============================================================================*/
 using System;
 using System.IO;
@@ -39,12 +38,17 @@ namespace Wlniao.IO
         /// <returns>文件的内容</returns>
         public static System.Text.Encoding GetEncoding(string absolutePath)
         {
-            var br = new System.IO.BinaryReader(new System.IO.FileStream(absolutePath.Replace(".html", ".md"), System.IO.FileMode.Open, System.IO.FileAccess.Read));
-            var buffer = br.ReadBytes(2);
-            var encoding = IO.IdentifyEncoding.GetEncodingName(buffer);
-            if (!string.IsNullOrEmpty(encoding))
+            using (var fs = new System.IO.FileStream(absolutePath.Replace(".html", ".md"), System.IO.FileMode.Open, System.IO.FileAccess.Read))
             {
-                Encoding.GetEncoding(encoding);
+                using (var br = new System.IO.BinaryReader(fs))
+                {
+                    var buffer = br.ReadBytes(2);
+                    var encoding = IO.IdentifyEncoding.GetEncodingName(buffer);
+                    if (!string.IsNullOrEmpty(encoding))
+                    {
+                        return Encoding.GetEncoding(encoding);
+                    }
+                }
             }
             return System.Text.Encoding.ASCII;
         }
@@ -55,11 +59,15 @@ namespace Wlniao.IO
         /// <returns>文件的内容</returns>
         public static byte[] ReadByte(string absolutePath)
         {
-            using (var fs = new FileStream(absolutePath, FileMode.Open))
+            using (var fs = new FileStream(absolutePath, FileMode.Open, FileAccess.Read))
             {
                 var buffer = new byte[fs.Length];
-                fs.Read(buffer, 0, buffer.Length);
-                fs.Flush();
+                var bytesRead = 0;
+                var totalBytesRead = 0;
+                while (totalBytesRead < buffer.Length && (bytesRead = fs.Read(buffer, totalBytesRead, buffer.Length - totalBytesRead)) > 0)
+                {
+                    totalBytesRead += bytesRead;
+                }
                 return buffer;
             }
         }
@@ -71,10 +79,10 @@ namespace Wlniao.IO
         /// <returns>文件的内容</returns>
         public static void WriteByte(string absolutePath, byte[] buffer)
         {
-            using (var sw = new StreamWriter(new FileStream(absolutePath, FileMode.Create)))
+            using (var fs = new FileStream(absolutePath, FileMode.Create, FileAccess.Write))
             {
-                sw.Write(buffer);
-                sw.Flush();
+                fs.Write(buffer, 0, buffer.Length);
+                fs.Flush();
             }
         }
         /// <summary>
@@ -85,14 +93,19 @@ namespace Wlniao.IO
         /// <returns>文件的内容</returns>
         public static void WriteStream(string absolutePath, System.IO.Stream stream)
         {
-            using (var sw = new StreamWriter(new FileStream(absolutePath, FileMode.Create)))
+            using (var fs = new FileStream(absolutePath, FileMode.Create, FileAccess.Write))
             {
                 var bytes = new byte[stream.Length];
-                stream.Read(bytes, 0, bytes.Length);
+                var bytesRead = 0;
+                var totalBytesRead = 0;
+                while (totalBytesRead < bytes.Length && (bytesRead = stream.Read(bytes, totalBytesRead, bytes.Length - totalBytesRead)) > 0)
+                {
+                    totalBytesRead += bytesRead;
+                }
                 // 设置当前流的位置为流的开始 
                 stream.Seek(0, System.IO.SeekOrigin.Begin);
-                sw.Write(bytes);
-                sw.Flush();
+                fs.Write(bytes, 0, totalBytesRead);
+                fs.Flush();
             }
         }
         /// <summary>
@@ -117,7 +130,12 @@ namespace Wlniao.IO
                 if (fs.CanRead)
                 {
                     var bytes = new byte[(int)fs.Length];
-                    var r = fs.Read(bytes, 0, bytes.Length);
+                    var bytesRead = 0;
+                    var totalBytesRead = 0;
+                    while (totalBytesRead < bytes.Length && (bytesRead = fs.Read(bytes, totalBytesRead, bytes.Length - totalBytesRead)) > 0)
+                    {
+                        totalBytesRead += bytesRead;
+                    }
                     if (encoding == System.Text.Encoding.UTF8 && bytes.Length > 3)
                     {
                         var bomBuffer = new byte[] { 0xef, 0xbb, 0xbf };
@@ -128,7 +146,7 @@ namespace Wlniao.IO
                             return new UTF8Encoding(false).GetString(bytes, 3, bytes.Length - 3);
                         }
                     }
-                    return encoding.GetString(bytes, 0, bytes.Length);
+                    return encoding.GetString(bytes, 0, totalBytesRead);
                 }
             }
             return "";
@@ -160,13 +178,15 @@ namespace Wlniao.IO
         public static string[] ReadAllLines(string absolutePath, System.Text.Encoding encoding)
         {
             var list = new System.Collections.Generic.List<string>();
-            using (var fs = new FileStream(absolutePath, FileMode.Open))
+            using (var fs = new FileStream(absolutePath, FileMode.Open, FileAccess.Read))
             {
-                var reader = new StreamReader(fs, Encoding.UTF8);
-                string str;
-                while ((str = reader.ReadLine()) != null)
+                using (var reader = new StreamReader(fs, encoding))
                 {
-                    list.Add(str);
+                    string str;
+                    while ((str = reader.ReadLine()) != null)
+                    {
+                        list.Add(str);
+                    }
                 }
             }
             return list.ToArray();
@@ -188,7 +208,7 @@ namespace Wlniao.IO
         /// <param name="autoCreateDir">是否自动创建目录</param>
         public static void Write(string absolutePath, string fileContent, bool autoCreateDir)
         {
-            if (!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(absolutePath)))
+            if (autoCreateDir && !System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(absolutePath)))
             {
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(absolutePath));
             }
@@ -206,11 +226,13 @@ namespace Wlniao.IO
             {
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(absolutePath));
             }
-            using (var fs = new FileStream(absolutePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))
+            using (var fs = new FileStream(absolutePath, FileMode.Create, FileAccess.Write))
             {
-                var writer = new StreamWriter(fs, encoding);
-                writer.Write(fileContent);
-                writer.Flush();
+                using (var writer = new StreamWriter(fs, encoding))
+                {
+                    writer.Write(fileContent);
+                    writer.Flush();
+                }
             }
         }
         /// <summary>
@@ -280,11 +302,13 @@ namespace Wlniao.IO
         /// <param name="encoding">编码方式</param>
         public static void Append(string absolutePath, string fileContent, System.Text.Encoding encoding)
         {
-            using (var fs = new FileStream(absolutePath, FileMode.Append))
+            using (var fs = new FileStream(absolutePath, FileMode.Append, FileAccess.Write))
             {
-                var writer = new StreamWriter(fs, encoding);
-                writer.Write(fileContent);
-                writer.Flush();
+                using (var writer = new StreamWriter(fs, encoding))
+                {
+                    writer.Write(fileContent);
+                    writer.Flush();
+                }
             }
         }
         /// <summary>

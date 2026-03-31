@@ -32,7 +32,7 @@
 		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="10.1.6" />
 		<PackageReference Include="IGeekFan.AspNetCore.Knife4jUI" Version="0.0.16" />
 		<PackageReference Include="Microsoft.OpenApi" Version="3.5.0" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.67" />
+		<PackageReference Include="Wlniao.XCore" Version="8.0.68" />
 	</ItemGroup>
 
 	<ItemGroup>

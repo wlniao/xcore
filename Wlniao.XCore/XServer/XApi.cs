@@ -17,11 +17,12 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-
 ===============================================================================*/
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Wlniao.Log;
 using Wlniao.Text;
 
@@ -32,6 +33,21 @@ namespace Wlniao.XServer
     /// </summary>
     public class XApi
     {
+        // 静态HttpClient实例，避免每次创建新实例
+        private static readonly HttpClient _httpClient;
+        
+        static XApi()
+        {
+            var handler = new HttpClientHandler 
+            { 
+                ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback,
+                AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+            };
+            _httpClient = new HttpClient(handler);
+            _httpClient.Timeout = TimeSpan.FromSeconds(30);
+            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+        }
+        
         /// <summary>
         /// 获取平台接口数据
         /// </summary>
@@ -43,6 +59,22 @@ namespace Wlniao.XServer
         /// <param name="traceid"></param>
         /// <returns></returns>
         public static Wlniao.ApiResult<T> Request<T>(string node, string url, string token, object data, string traceid = "")
+        {
+            return RequestAsync<T>(node, url, token, data, traceid, CancellationToken.None).GetAwaiter().GetResult();
+        }
+        
+        /// <summary>
+        /// 异步获取平台接口数据
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="node"></param>
+        /// <param name="url"></param>
+        /// <param name="token"></param>
+        /// <param name="data"></param>
+        /// <param name="traceid"></param>
+        /// <param name="cancellationToken">取消令牌</param>
+        /// <returns></returns>
+        public static async Task<Wlniao.ApiResult<T>> RequestAsync<T>(string node, string url, string token, object data, string traceid = "", CancellationToken cancellationToken = default)
         {
             var now = DateTools.GetUnix().ToString();
             var rlt = new Wlniao.ApiResult<T>();
@@ -66,31 +98,37 @@ namespace Wlniao.XServer
                 var reqStr = Json.Serialize(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
                 try
                 {
-                    var stream = Convert.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
-                    var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                    using var client = new HttpClient(handler);
                     Loger.Topic(node, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr, Log.LogLevel.Information, false);
+                    
+                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    cts.CancelAfter(TimeSpan.FromSeconds(30));
+                    
                     var request = new HttpRequestMessage(HttpMethod.Post, uri);
                     request.Headers.Date = DateTime.Now;
-                    request.Content = new StreamContent(stream);
-                    request.Content.Headers.Add("Content-Type", "application/json");
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
-                    var respose = client.Send(request);
-                    resStr = respose.Content.ReadAsStringAsync().Result;
-                    if (respose.Headers.Contains("X-Wlniao-Trace"))
+                    request.Headers.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
+                    request.Content = new StringContent(reqStr, System.Text.Encoding.UTF8, "application/json");
+                    
+                    var response = await _httpClient.SendAsync(request, cts.Token).ConfigureAwait(false);
+                    resStr = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    
+                    if (response.Headers.Contains("X-Wlniao-Trace"))
                     {
-                        rlt.traceid = respose.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
+                        rlt.traceid = response.Headers.GetValues("X-Wlniao-Trace").FirstOrDefault();
                     }
-                    if (respose.Headers.Contains("X-Wlniao-UseTime"))
+                    if (response.Headers.Contains("X-Wlniao-UseTime"))
                     {
-                        utime = respose.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
+                        utime = response.Headers.GetValues("X-Wlniao-UseTime").FirstOrDefault();
                     }
                     if (string.IsNullOrEmpty(utime))
                     {
                         utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                     }
                     Loger.Topic(node, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
+                }
+                catch (OperationCanceledException)
+                {
+                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    Loger.Topic(node, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< 请求超时", Wlniao.Log.LogLevel.Error, true);
                 }
                 catch (Exception ex)
                 {
