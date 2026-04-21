@@ -21,6 +21,7 @@
 ===============================================================================*/
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Wlniao
 {
@@ -29,6 +30,48 @@ namespace Wlniao
     /// </summary>
     public static class DictionaryExtend
     {
+        /// <summary>
+        /// 对象转换为Dictionary
+        /// </summary>
+        /// <param name="obj">需要转换的对象</param>
+        public static Dictionary<string, object> ToDictionary<T>(this T obj)
+        {
+            // AOT 安全分支
+            if (obj is IDictionaryConvertible convertible)
+            {
+                return convertible.ToDictionary();
+            }
+
+            // 反射分支（AOT 会警告，但能编译）
+            return ReflectionToDictionary(obj);
+        }
+
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<System.Type, System.Reflection.PropertyInfo[]> _propertyCache = new();
+
+        /// <summary>
+        /// 对象转换为Dictionary
+        /// </summary>
+        /// <param name="obj">需要转换的对象</param>
+        [RequiresDynamicCode("Uses reflection to convert object to dictionary")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072", Justification = "Intended reflection for non-AOT usage")]
+        private static Dictionary<string, object> ReflectionToDictionary(object obj)
+        {
+            if (obj == null) return new Dictionary<string, object>();
+
+            System.Type type = obj.GetType();
+            var properties = _propertyCache.GetOrAdd(type, t => 
+                t.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            );
+
+            var dict = new Dictionary<string, object>();
+            foreach (var prop in properties)
+            {
+                dict[prop.Name] = prop.GetValue(obj);
+            }
+            return dict;
+        }
+
+
         /// <summary>
         /// 
         /// </summary>

@@ -191,15 +191,6 @@ namespace Wlniao
             return false;
         }
 
-        /// <summary>
-        /// 关闭服务端SSL证书检查
-        /// </summary>
-        public static void CloseServerCertificateValidation()
-        {
-            XCore.ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-            System.Net.ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(delegate { return true; });
-        }
-
         #region 系统信息
         private static short microNode = 0;
         private static string startupTime = null;

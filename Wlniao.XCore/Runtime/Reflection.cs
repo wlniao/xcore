@@ -21,8 +21,9 @@
 ===============================================================================*/
 using System;
 using System.Collections;
-using System.Reflection;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Wlniao.Text;
 
 namespace Wlniao.Runtime
@@ -103,20 +104,24 @@ namespace Wlniao.Runtime
         /// <param name="currentObject"></param>
         /// <param name="propertyName"></param>
         /// <returns></returns>
+        [RequiresDynamicCode("Uses reflection to get property values")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072", Justification = "Reflection over object is intentional and safe for this library")]
         public static object GetPropertyValue(object currentObject, string propertyName)
         {
             if (currentObject == null) return null;
             if (StringUtil.IsNullOrEmpty(propertyName)) return null;
             var p = currentObject.GetType().GetRuntimeProperty(propertyName);
-            if (p == null) return null;
-            return p.GetValue(currentObject, null);
+            return p?.GetValue(currentObject);
         }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="currentObject"></param>
         /// <param name="propertyName"></param>
         /// <param name="propertyValue"></param>
+        [RequiresDynamicCode("Uses reflection to get property values")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072", Justification = "Reflection over object is intentional and safe for this library")]
         public static void SetPropertyValue(object currentObject, string propertyName, object propertyValue)
         {
             if (currentObject == null)
@@ -209,6 +214,7 @@ namespace Wlniao.Runtime
                 }
             }
         }
+
         /// <summary>
         /// 获取属性的类型的fullName(对泛型名称做了特殊处理)
         /// </summary>
@@ -229,52 +235,20 @@ namespace Wlniao.Runtime
             }
             return genericTypeName + "<" + args + ">";
         }
+
         /// <summary>
-        /// 
+        /// 参数添加 AOT 反射标记
         /// </summary>
+        /// <param name="type"></param>
         /// <param name="obj"></param>
-        /// <param name="methodName"></param>
+        /// <param name="name"></param>
         /// <returns></returns>
-        public static object CallMethod(object obj, string methodName)
+        private static object GetPropertyValueCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, object obj, string name)
         {
-            return CallMethod(obj, methodName, null);
+            var p = type.GetRuntimeProperty(name);
+            return p?.GetValue(obj);
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="currentType"></param>
-        /// <param name="methodName"></param>
-        /// <returns></returns>
-        public static object CallMethod(Type currentType, string methodName)
-        {
-            return CallMethod(currentType, methodName, null);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <param name="methodName"></param>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        public static object CallMethod(object obj, string methodName, object[] args)
-        {
-            //var method = obj.GetType().GetRuntimeMethod(methodName,new Type[] { obj.GetType() });
-            //return method.Invoke(obj, args);
-            var method = obj.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
-            return method.Invoke(obj, args);
-            //return obj.GetType().InvokeMember(methodName, BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance, null, obj, args);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="currentType"></param>
-        /// <param name="methodName"></param>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        public static object CallMethod(Type currentType, string methodName, object[] args)
-        {
-            return CallMethod(GetInstance(currentType), methodName, args);
-        }
+
         /// <summary>
         /// 获取 public 实例方法，不包括继承的方法
         /// </summary>

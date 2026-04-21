@@ -39,7 +39,13 @@ namespace Wlniao.Crypto
                 {
                     data = cert.Export(X509ContentType.Pfx);
                 }
+#if NET10_0_OR_GREATER
+                // .NET 10+ 新写法（无警告、AOT 兼容）
+                return X509CertificateLoader.LoadCertificate(data);
+#else
+                // .NET 8 及更早旧写法
                 return new X509Certificate2(data);
+#endif
             }
             finally
             {

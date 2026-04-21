@@ -30,7 +30,7 @@ namespace Wlniao
     /// <summary>
     /// 常用类型转换方法
     /// </summary>
-    public abstract class Convert
+    public static class Convert
     {
         /// <summary>
         /// 判断字符串是否是小数或整数
@@ -1005,6 +1005,16 @@ namespace Wlniao
         public static double Identity(double literal)
         {
             return literal;
+        }
+
+        /// <summary>
+        /// 对象转换为Dictionary
+        /// </summary>
+        /// <param name="obj">需要转换的对象</param>
+        /// <returns></returns>
+        public static Dictionary<string, object> ObjectToDictionary(object obj)
+        {
+            return obj.ToDictionary();
         }
     }
 }
