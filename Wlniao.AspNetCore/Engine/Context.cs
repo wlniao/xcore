@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Unicode;
 using System.Text.Encodings.Web;
@@ -28,12 +29,12 @@ namespace Wlniao.Engine
         /// <summary>
         /// 当前请求会话密钥
         /// </summary>
-        public string SKey { get; private set; }
+        public string SKey { get; set; }
         
         /// <summary>
         /// 当前请求域名
         /// </summary>
-        public string Host { get; private set; }
+        public string Host { get; set; }
         
         /// <summary>
         /// 请求输入内容
@@ -43,12 +44,12 @@ namespace Wlniao.Engine
         /// <summary>
         /// 请求输入参数
         /// </summary>
-        public Dictionary<string, string> Query { get; private set; }
+        public Dictionary<string, string> Query { get; set; }
         
         /// <summary>
         /// 请求输入头信息
         /// </summary>
-        public Dictionary<string, string> HeaderInput { get; private set;  }
+        public Dictionary<string, string> HeaderInput { get; set; }
         
         /// <summary>
         /// 请求输出头信息
@@ -137,22 +138,22 @@ namespace Wlniao.Engine
         /// <summary>
         /// 当前登录认证信息
         /// </summary>
-        public EngineSession Session { get; private set; }
+        public EngineSession Session { get; set; }
         
         /// <summary>
         /// 
         /// </summary>
-        public Func<HttpRequest, ConsumerInfo>? LoadConsumerInfo { get; set; }
+        public Func<HttpRequest, Task<ConsumerInfo>> LoadConsumerInfo { get; set; }
 
         /// <summary>
         /// 
         /// </summary>
-        public Func<HttpRequest, EngineSession>? IdentityAuthentication { get; set; }
+        public Func<HttpRequest, Task<EngineSession>> IdentityAuthentication { get; set; }
 
         /// <summary>
         /// 
         /// </summary>
-        public Func<HttpRequest, string>? SafetyCertification { get; set; }
+        public Func<HttpRequest, Task<string>> SafetyCertification { get; set; }
 
         /// <summary>
         /// 
@@ -188,7 +189,7 @@ namespace Wlniao.Engine
         /// 
         /// </summary>
         /// <param name="httpRequest"></param>
-        public void Init(HttpRequest httpRequest)
+        public async Task InitAsync(HttpRequest httpRequest)
         {
             if (this.HeaderInput.Count > 0)
             {
@@ -208,17 +209,17 @@ namespace Wlniao.Engine
             {
                 try
                 {
-                    Body = new StreamReader(httpRequest.Body).ReadToEnd();
+                    Body = await new StreamReader(httpRequest.Body).ReadToEndAsync();
                     if (string.IsNullOrEmpty(Body))
                     {
                         using var reader = new StreamReader(httpRequest.Body, System.Text.Encoding.UTF8);
-                        Body = reader.ReadToEnd();
+                        Body = await reader.ReadToEndAsync();
                     }
                 }
                 catch
                 {
                     var buffer = new byte[(int)httpRequest.ContentLength];
-                    httpRequest.Body.ReadExactly(buffer, 0, buffer.Length);
+                    await httpRequest.Body.ReadExactlyAsync(buffer, 0, buffer.Length);
                     Body = System.Text.Encoding.UTF8.GetString(buffer);
                 }
 
@@ -270,7 +271,7 @@ namespace Wlniao.Engine
                 // 执行加载租户信息的回调方法
                 try
                 {
-                    var consumer = LoadConsumerInfo.Invoke(Request) ?? new ConsumerInfo();
+                    var consumer = await LoadConsumerInfo.Invoke(Request) ?? new ConsumerInfo();
                     Host = consumer.Domain;
                     ConsumerId = consumer.Id;
                     ConsumerSecretKey = consumer.SecretKey;
@@ -297,7 +298,7 @@ namespace Wlniao.Engine
                     // 执行加载安全认证的回调方法
                     try
                     {
-                        SKey = SafetyCertification(Request) ?? string.Empty;
+                        SKey = await SafetyCertification(Request) ?? string.Empty;
                     }
                     catch (Exception e)
                     {
@@ -327,7 +328,7 @@ namespace Wlniao.Engine
         /// 
         /// </summary>
         /// <returns></returns>
-        public void Auth()
+        public async Task AuthAsync()
         {
             if (IdentityAuthentication == null)
             {
@@ -350,7 +351,7 @@ namespace Wlniao.Engine
                 // 执行登录身份认证的回调方法
                 try
                 {
-                    Session = IdentityAuthentication.Invoke(Request) ?? new EngineSession();
+                    Session = await IdentityAuthentication.Invoke(Request) ?? new EngineSession();
                 }
                 catch (Exception e)
                 {

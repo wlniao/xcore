@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -76,28 +77,28 @@ namespace Wlniao.Engine
         /// <summary>
         /// 系统用户识别的回调方法，返回系统用户信息
         /// </summary>
-        public Func<HttpRequest, ConsumerInfo>? LoadConsumerInfo { get; set; }
+        public Func<HttpRequest, Task<ConsumerInfo>> LoadConsumerInfo { get; set; }
         
         /// <summary>
         /// 登录身份认证的回调方法，返回统一会话状态
         /// </summary>
-        public Func<HttpRequest, EngineSession>? IdentityAuthentication { get; set; }
+        public Func<HttpRequest, Task<EngineSession>> IdentityAuthentication { get; set; }
         
         /// <summary>
         /// 请求安全认证的回调方法，返回请求加密/解密密钥
         /// </summary>
-        public Func<HttpRequest, string>? SafetyCertification { get; set; }
+        public Func<HttpRequest, Task<string>> SafetyCertification { get; set; }
         
         /// <summary>
         /// 通过请求初始化实例内容
         /// </summary>
         /// <param name="httpRequest"></param>
-        public void Init(HttpRequest httpRequest);
+        public Task InitAsync(HttpRequest httpRequest);
         
         /// <summary>
         /// 执行身份验证（未验证通过时需将Ready设置为false）
         /// </summary>
-        public void Auth();
+        public Task AuthAsync();
     
         /// <summary>
         /// 请求内容解析

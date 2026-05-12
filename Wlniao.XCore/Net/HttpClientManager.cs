@@ -92,7 +92,7 @@ namespace Wlniao.Net
                     _httpClient = CreateNewHttpClient();
                     
                     // 异步释放旧的HttpClient
-                    _ = Task.Run(async () =>
+                    _ = Task.Run(() =>
                     {
                         try
                         {

@@ -34,11 +34,11 @@ namespace Wlniao.Engine
         /// 通用请求执行内容
         /// </summary>
         /// <returns></returns>
-        private IContext Invoke()
+        private async Task<IContext> Invoke()
         {
             try
             {
-                _ctx.Init(Request);
+                await _ctx.InitAsync(Request);
             }
             catch (AggregateException e)
             {
@@ -58,7 +58,7 @@ namespace Wlniao.Engine
             if (_ctx.Continue)
             {
                 //执行身份验证
-                _ctx.Auth();
+                await _ctx.AuthAsync();
             }
             return _ctx;
         }
@@ -71,14 +71,14 @@ namespace Wlniao.Engine
         /// <param name="mustAuthentication"></param>
         /// <returns></returns>
         [NonAction]
-        protected IActionResult Invoke(Func<IContext, IActionResult> func, bool mustAuthentication = false)
+        protected async Task<IActionResult> Invoke(Func<IContext, Task<IActionResult>> func, bool mustAuthentication = false)
         {
             try
             {
-                Invoke();
+                await Invoke();
                 if (!mustAuthentication || !_ctx.Session.NotValid)
                 {
-                    return func(_ctx);
+                    return await func(_ctx);
                 }
 
                 if (_ctx.AuthFailedCallback != null)
@@ -106,11 +106,11 @@ namespace Wlniao.Engine
         /// <param name="mustAuthentication"></param>
         /// <returns></returns>
         [NonAction]
-        protected IActionResult Invoke(Func<IContext, object> func, bool mustAuthentication = false)
+        protected async Task<IActionResult> Invoke(Func<IContext, Task<object>> func, bool mustAuthentication = false)
         {
             try
             {
-                Invoke();
+                await Invoke();
                 if (mustAuthentication && _ctx.Session.NotValid)
                 {
                     if (_ctx.AuthFailedCallback != null)
@@ -128,7 +128,7 @@ namespace Wlniao.Engine
                 }
 
                 //调用业务处理函数
-                var obj = func(_ctx);
+                var obj = await func(_ctx);
                 _ctx.Output = obj!;
                 foreach (var kv in _ctx.HeaderOutput)
                 {
