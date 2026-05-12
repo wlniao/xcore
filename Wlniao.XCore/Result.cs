@@ -138,7 +138,7 @@ namespace Wlniao
         /// <param name="statusCode"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static Result<T> OutMessage(string message, int statusCode, T data = default(T)!)
+        public static Result<T> OutMessage(string message, int statusCode, T data = default!)
         {
             return new Result<T> { Code = statusCode, Data = data, Message = message };
         }

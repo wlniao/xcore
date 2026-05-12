@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
@@ -399,9 +400,6 @@ namespace Wlniao.Mvc
         /// 
         /// </summary>
         private string? strPost = null;
-        /// <summary>
-        /// 
-        /// </summary>
         private Dictionary<string, object>? ctxPost = null;
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
@@ -409,8 +407,18 @@ namespace Wlniao.Mvc
         /// <param name="key"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        [NonAction]
         protected string PostRequest(string key, string defaultValue = "")
+        {
+            return PostRequestAsync(key, defaultValue).Result;
+        }
+        /// <summary>
+        /// 获取请求参数（仅标记但不过滤非安全字符）
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        [NonAction]
+        protected async Task<string> PostRequestAsync(string key, string defaultValue = "")
         {
             if (ctxPost == null)
             {
@@ -449,21 +457,12 @@ namespace Wlniao.Mvc
                                 #region 请求为其它类型
                                 if (strPost == null)
                                 {
-                                    try
-                                    {
-                                        strPost = new StreamReader(Request.Body).ReadToEnd();
-                                    }
-                                    catch
-                                    {
-                                        //strPost=Request.BodyReader.ReadAsync().Result.ToString();
-                                        var buffer = new byte[(int)Request.ContentLength];
-                                        Request.Body.Read(buffer, 0, buffer.Length);
-                                        strPost = Encoding.UTF8.GetString(buffer);
-                                    }
+                                    var resPost = await new StreamReader(Request.Body).ReadToEndAsync();
+                                    strPost = resPost;
                                 }
                                 if (!string.IsNullOrEmpty(strPost))
                                 {
-                                    var tmpPost = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(strPost);
+                                    var tmpPost = Wlniao.Json.DeserializeToDic(strPost);
                                     if (tmpPost != null)
                                     {
                                         foreach (var kv in tmpPost)

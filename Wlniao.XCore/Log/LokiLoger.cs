@@ -96,8 +96,10 @@ namespace Wlniao.Log
                 ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback,
                 AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
             };
-            _httpClient = new HttpClient(handler);
-            _httpClient.Timeout = TimeSpan.FromSeconds(30);
+            _httpClient = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(30)
+            };
             _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
             _cancellationTokenSource = new CancellationTokenSource();
         }
@@ -116,10 +118,7 @@ namespace Wlniao.Log
             this.Interval = this.Interval > 0 ? this.Interval : Convert.ToInt(Config.GetConfigs("WLN_LOG_INTERVAL"));
             if (string.IsNullOrEmpty(server))
             {
-                if (serverHost == null)
-                {
-                    serverHost = Config.GetConfigs("WLN_LOG_SERVER").TrimEnd('/');
-                }
+                serverHost ??= Config.GetConfigs("WLN_LOG_SERVER").TrimEnd('/');
                 if (string.IsNullOrEmpty(serverHost))
                 {
                     serverHost = "";
@@ -132,10 +131,7 @@ namespace Wlniao.Log
             }
             if (string.IsNullOrEmpty(org_id))
             {
-                if (orgId == null)
-                {
-                    orgId = Config.GetConfigs("WLN_LOG_ORGID").TrimEnd('/');
-                }
+                orgId ??= Config.GetConfigs("WLN_LOG_ORGID").TrimEnd('/');
                 if (string.IsNullOrEmpty(orgId))
                 {
                     orgId = "";

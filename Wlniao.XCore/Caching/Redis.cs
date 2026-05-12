@@ -201,7 +201,7 @@ namespace Wlniao.Caching
                     Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
                 });
             }
-            return default(T);
+            return default;
         }
 
         /// <summary>
