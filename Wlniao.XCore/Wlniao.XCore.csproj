@@ -36,7 +36,9 @@
     <ItemGroup>
         <Compile Remove="Namespace\log.cs" />
         <Compile Remove="Handler\**" />
+        <Compile Remove="OpenApi\**" />
         <Compile Remove="OpenApi\Location.cs" />
+        <Compile Remove="OpenApi\Wx.cs" />
     </ItemGroup>
 
     <ItemGroup>

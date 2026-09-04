@@ -39,7 +39,7 @@ namespace Wlniao
         /// <summary>
         /// 单线程锁
         /// </summary>
-        public static object Lock = new object();
+        public static object Lock = new();
         /// <summary>
         /// 框架初始化时间
         /// </summary>

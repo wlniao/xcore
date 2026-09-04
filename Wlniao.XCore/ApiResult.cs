@@ -34,7 +34,7 @@ namespace Wlniao
         /// <summary>
         /// 业务返回数据
         /// </summary>
-        private T _data = default(T);
+        private T _data = default;
 
         /// <summary>
         /// 服务端提示消息
