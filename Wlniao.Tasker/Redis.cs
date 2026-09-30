@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using StackExchange.Redis;
 using System.Threading.Tasks;
 using Wlniao.Log;
@@ -15,7 +16,7 @@ namespace Wlniao.Tasker
         /// <summary>
         /// 订阅任务监视缓存
         /// </summary>
-        private static Dictionary<string, DateTime> watcher = new Dictionary<string, DateTime>();
+        private static ConcurrentDictionary<string, DateTime> watcher = new ConcurrentDictionary<string, DateTime>();
         /// <summary>
         /// Delays内部字段
         /// </summary>
@@ -282,7 +283,7 @@ namespace Wlniao.Tasker
         /// <param name="topic"></param>
         public static bool UnSubscribe(string topic)
         {
-            return watcher.ContainsKey(topic) && watcher.Remove(topic);
+            return watcher.TryRemove(topic, out _);
         }
         /// <summary>
         /// 删除任务

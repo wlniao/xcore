@@ -462,7 +462,6 @@ namespace Wlniao.Engine
         /// </summary>
         public Func<string, IActionResult>? OutputSerializeCallback { get; set; }
 
-                
         /// <summary>
         /// 基础的JSON序列化选项
         /// </summary>

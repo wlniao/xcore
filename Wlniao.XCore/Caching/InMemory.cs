@@ -21,6 +21,7 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -33,7 +34,7 @@ namespace Wlniao.Caching
     /// </summary>
     public static class InMemory
     {
-        private static readonly Dictionary<string, CacheData> Cache = new();
+        private static readonly ConcurrentDictionary<string, CacheData> Cache = new();
 
 
         /// <summary>
@@ -44,22 +45,13 @@ namespace Wlniao.Caching
         /// <param name="expireSeconds"></param>
         public static bool Set(string key, string value, int expireSeconds = 86400)
         {
-            if (Cache.ContainsKey(key))
-            {
-                Cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
-                Cache[key].Value = value ?? "";
-            }
-            else
-            {
-                var data = new CacheData
-                {
-                    Expire = DateTime.Now.AddSeconds(expireSeconds),
-                    Value = value ?? ""
-                };
-                if (Cache.TryAdd(key, data)) return true;
-                Cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
-                Cache[key].Value = value ?? "";
-            }
+            var expire = DateTime.Now.AddSeconds(expireSeconds);
+            Cache.AddOrUpdate(key, new CacheData { Expire = expire, Value = value ?? ""}, (k, old) => {
+                old.Value = value ?? "";
+                old.Expire = expire;
+                return old;
+            });
+
             // 每100次设置操作清理一次，或者缓存大小超过8000时清理
             if (Cache.Count % 100 == 0 || Cache.Count > 8000)
             {
@@ -79,21 +71,16 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static bool Set<T>(string key, T obj, int expireSeconds = 86400)
         {
-            if (Cache.ContainsKey(key) || !Cache.TryAdd(key, new CacheData
-                {
-                    Expire = DateTime.Now.AddSeconds(expireSeconds),
-                    Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
-                    {
-                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                    })
-                }))
-            {
-                Cache[key].Expire = DateTime.Now.AddSeconds(expireSeconds);
-                Cache[key].Value = JsonSerializer.Serialize(obj, new JsonSerializerOptions
-                {
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                });
-            }
+            var expire = DateTime.Now.AddSeconds(expireSeconds);
+            var value = JsonSerializer.Serialize(obj, new JsonSerializerOptions{
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+            });
+            Cache.AddOrUpdate(key, new CacheData { Expire = expire, Value = value}, (k, old) => {
+                old.Value = value;
+                old.Expire = expire;
+                return old;
+            });
+
             // 每100次设置操作清理一次，或者缓存大小超过8000时清理
             if (Cache.Count % 100 == 0 || Cache.Count > 8000)
             {
@@ -110,7 +97,7 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static bool Del(string key)
         {
-            return Cache.ContainsKey(key) && Cache.Remove(key);
+            return Cache.TryRemove(key, out _);
         }
 
         /// <summary>
@@ -126,7 +113,7 @@ namespace Wlniao.Caching
             else if (keys.EndsWith('*'))
             {
                 var tmp = keys.TrimEnd('*');
-                return (from key in Cache.Keys where key.StartsWith(tmp) select Cache.Remove(key)).FirstOrDefault();
+                return (from key in Cache.Keys where key.StartsWith(tmp) select Cache.TryRemove(key, out _)).FirstOrDefault();
             }
             else
             {
@@ -158,14 +145,16 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static string Get(string key)
         {
-            if (!Cache.ContainsKey(key)) return "";
-            if (Cache[key].Expire > DateTime.Now)
+            if(Cache.TryGetValue(key, out var val))
             {
-                return Cache[key].Value == null ? "" : Cache[key].Value;
-            }
-            else
-            {
-                Del(key);
+                if (val.Expire > DateTime.Now)
+                {
+                    return val.Value ?? "";
+                }
+                else
+                {
+                    Del(key);
+                }
             }
             return "";
         }
@@ -176,14 +165,16 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static string GetAllowNull(string key)
         {
-            if (!Cache.ContainsKey(key)) return null;
-            if (Cache[key].Expire > DateTime.Now)
+            if(Cache.TryGetValue(key, out var val))
             {
-                return Cache[key].Value;
-            }
-            else
-            {
-                Del(key);
+                if (val.Expire > DateTime.Now)
+                {
+                    return val.Value;
+                }
+                else
+                {
+                    Del(key);
+                }
             }
             return null;
         }
@@ -196,17 +187,19 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static T Get<T>(string key)
         {
-            if (!Cache.ContainsKey(key)) return default(T);
-            if (Cache[key].Expire > DateTime.Now)
+            if(Cache.TryGetValue(key, out var val))
             {
-                return JsonSerializer.Deserialize<T>(Cache[key].Value, new JsonSerializerOptions
+                if (val.Expire > DateTime.Now)
                 {
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                });
-            }
-            else
-            {
-                Del(key);
+                    return JsonSerializer.Deserialize<T>(val.Value, new JsonSerializerOptions
+                    {
+                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
+                    });
+                }
+                else
+                {
+                    Del(key);
+                }
             }
             return default(T);
         }
