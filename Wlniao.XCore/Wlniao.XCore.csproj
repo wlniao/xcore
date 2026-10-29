@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Version>8.1.0-beta</Version>
+        <Version>8.1.1-beta</Version>
         <Authors>XieChaoyi</Authors>
         <Copyright>Copyright 2020 XieChaoyi</Copyright>
         <Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -59,9 +59,14 @@
         </None>
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
-    </ItemGroup>
+    <!--
+      SM2 / SM3 / RSA 均已改为纯托管实现，不再依赖 BouncyCastle：
+        Crypto/Sm2Curve.cs   SM2P256V1 曲线参数与点运算（GB/T 32918.1）
+        Crypto/Sm2Core.cs    SM2 签名验签与加解密（GB/T 32918.2 / 32918.4）
+        Crypto/Asn1Der.cs    DER 编解码与 PKCS#8/SPKI 解析
+        Crypto/SM3.cs        SM3 自有实现（GB/T 32905）
+      一致性由 NTest/SM2InteropTests.cs 以 BouncyCastle 为参照实现做双向互操作校验。
+    -->
 
     <ItemGroup>
       <EmbeddedResource Remove="Handler\**" />

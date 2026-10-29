@@ -21,6 +21,14 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
+
+    <!--
+      仅测试项目保留 BouncyCastle，作为 SM2/SM3/RSA 改造的参照实现。
+      Wlniao.XCore 本身已不再依赖它；这里引用是为了让 SM2InteropTests 能做
+      "XCore 产出 → BC 消费 / BC 产出 → XCore 消费" 的双向互操作校验，
+      从而把 "改造前后结果一致" 变成每次 dotnet test 都会执行的断言，而非一次性人工比对。
+    -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
   </ItemGroup>
 
   <ItemGroup>

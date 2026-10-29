@@ -174,7 +174,7 @@ namespace Wlniao.Engine
             SKey = string.Empty;
             Host = string.Empty;
             Body = string.Empty;
-            Query = new Dictionary<string, string>();
+            Query = [];
             HeaderInput = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             HeaderOutput = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             Authorization = string.Empty;
@@ -467,7 +467,7 @@ namespace Wlniao.Engine
         /// <summary>
         /// 基础的JSON序列化选项
         /// </summary>
-        public static JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions
+        public static JsonSerializerOptions JsonSerializerOptions = new()
         {
             Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
             UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode

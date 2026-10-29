@@ -171,7 +171,7 @@ namespace Wlniao
         /// <param name="jsonString"></param>
         /// <param name="options">保留参数以兼容旧签名，实际解析使用 JsonNode</param>
         /// <returns></returns>
-        public static Dictionary<string, object?> DeserializeToDic(string jsonString, JsonSerializerOptions options = null)
+        public static Dictionary<string, object?> DeserializeToDic(string jsonString)
         {
             var dict = new Dictionary<string, object?>();
             if (string.IsNullOrEmpty(jsonString))

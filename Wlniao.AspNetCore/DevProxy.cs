@@ -7,7 +7,6 @@ using System.Net.WebSockets;
 using System.Net.Http.Headers;
 using System.Threading;
 using Microsoft.AspNetCore.Http;
-using Wlniao.Log;
 
 namespace Wlniao;
 
@@ -28,7 +27,7 @@ public class DevProxy
         var context = request.HttpContext;
         if(context.WebSockets.IsWebSocketRequest)
         {
-            var wst = "ws://" + target.Substring(target.IndexOf("://", StringComparison.Ordinal) + 3);
+            var wst = "ws://" + target[(target.IndexOf("://", StringComparison.Ordinal) + 3)..];
             ProxyWebSocketAsync(context, wst);
             return new Task<HttpResponseMessage>(null);
         }
@@ -54,9 +53,9 @@ public class DevProxy
             {
                 continue;
             }
-            if (!msg.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray()) && msg.Content != null)
+            if (!msg.Headers.TryAddWithoutValidation(header.Key, [.. header.Value]) && msg.Content != null)
             {
-                msg.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
+                _ = (msg.Content?.Headers.TryAddWithoutValidation(header.Key, [.. header.Value]));
             }
         }
 
@@ -125,7 +124,7 @@ public class DevProxy
         }
         catch (Exception ex)
         {
-            Loger.Error($"WebSocket proxy error => {ex.Message}{Environment.NewLine}{ex.StackTrace}");
+            Wlniao.Log.Loger.Error($"WebSocket proxy error => {ex.Message}{Environment.NewLine}{ex.StackTrace}");
         }
         finally
         {

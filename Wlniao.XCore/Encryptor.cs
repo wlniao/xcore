@@ -21,10 +21,10 @@
 ===============================================================================*/
 using System;
 using System.IO;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using Org.BouncyCastle.Security;
 using Wlniao.Crypto;
 using Wlniao.Log;
 
@@ -89,27 +89,22 @@ namespace Wlniao
             var sData = System.Convert.FromBase64String(data);
             if (privateKey.Contains("BEGIN RSA PRIVATE KEY") && !privateKey.Contains("BEGIN PRIVATE KEY"))
             {
-                //RSA 格式私钥处理
-                if (!privateKey.Contains("----"))
-                {
-                    privateKey = "-----BEGIN RSA PRIVATE KEY-----" + privateKey + "-----END RSA PRIVATE KEY-----";
-                }
-                var pemReader = new Org.BouncyCastle.OpenSsl.PemReader(new StringReader(privateKey));
-                var keyParameter = ((Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair)pemReader.ReadObject()).Private;
-
-                var cipher = CipherUtilities.GetCipher("SHA1withRSA");
-                cipher.Init(false, keyParameter);
-                return encoding.GetString(cipher.DoFinal(sData));
+                // PKCS#1 私钥。
+                // 历史实现此处把签名算法名 "SHA1withRSA" 当作 cipher 名称传给 CipherUtilities，
+                // 而该类不支持该名称（实测抛 SecurityUtilityException: Cipher SHA1withRSA not recognised.），
+                // 因此这条分支过去根本无法使用。现按语意本意改为 PKCS#1 v1.5 填充解密。
+                using var rsa = CreateRsaFromPem(privateKey);
+                return encoding.GetString(rsa.Decrypt(sData, RSAEncryptionPadding.Pkcs1));
             }
             else
             {
+                // PKCS#8 私钥 + 无填充（教科书 RSA），保持历史语义：只做 c^d mod n，输出定长模长字节
                 privateKey = privateKey.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "").Replace("\n", "").Replace("\r", "").Trim();
                 var privateBytes = System.Convert.FromBase64String(privateKey);
-                var keyParameter = PrivateKeyFactory.CreateKey(privateBytes);
-
-                var cipher = CipherUtilities.GetCipher("RSA/ECB/NoPadding");
-                cipher.Init(false, keyParameter);
-                return encoding.GetString(cipher.DoFinal(sData));
+                using var rsa = RSA.Create();
+                rsa.ImportPkcs8PrivateKey(privateBytes, out _);
+                var parameters = rsa.ExportParameters(true);
+                return encoding.GetString(RsaNoPadding(parameters, sData, usePrivate: true));
             }
         }
 
@@ -128,11 +123,11 @@ namespace Wlniao
                 publicKey = publicKey.Replace("-----BEGIN CERTIFICATE-----", "").Replace("-----END CERTIFICATE-----", "").Replace("\n", "").Replace("\r", "").Trim();
             }
             var certBytes = System.Convert.FromBase64String(publicKey);
-            var pubKey = PublicKeyFactory.CreateKey(certBytes);
-            var cipher = CipherUtilities.GetCipher("RSA/ECB/NoPadding");
-            cipher.Init(true, pubKey);
+            using var rsa = RSA.Create();
+            rsa.ImportSubjectPublicKeyInfo(certBytes, out _);
             var sData = encoding.GetBytes(data);
-            return System.Convert.ToBase64String(cipher.DoFinal(sData));
+            // 保持历史语义：无填充（教科书 RSA），输出定长模长字节
+            return System.Convert.ToBase64String(RsaNoPadding(rsa.ExportParameters(false), sData, usePrivate: false));
         }
 
         /// <summary>
@@ -146,34 +141,10 @@ namespace Wlniao
         {
             encoding ??= Encoding.UTF8;
             var sData = encoding.GetBytes(data);
-            if (privateKey.Contains("BEGIN RSA PRIVATE KEY") && !privateKey.Contains("BEGIN PRIVATE KEY"))
-            {
-                //RSA 格式私钥处理
-                if (!privateKey.Contains("----"))
-                {
-                    privateKey = "-----BEGIN RSA PRIVATE KEY-----" + privateKey + "-----END RSA PRIVATE KEY-----";
-                }
-                var pemReader = new Org.BouncyCastle.OpenSsl.PemReader(new StringReader(privateKey));
-                var keyParameter = ((Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair)pemReader.ReadObject()).Private;
-
-                var signer = SignerUtilities.GetSigner("SHA1withRSA");
-                signer.Init(true, keyParameter);
-                signer.BlockUpdate(sData, 0, sData.Length);
-                sData = signer.GenerateSignature();
-            }
-            else
-            {
-                privateKey = privateKey.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "").Replace("\n", "").Replace("\r", "").Trim();
-                var privateBytes = System.Convert.FromBase64String(privateKey);
-                var keyParameter = PrivateKeyFactory.CreateKey(privateBytes);
-
-                var signer = SignerUtilities.GetSigner("SHA1withRSA");
-                signer.Init(true, keyParameter);
-                signer.BlockUpdate(sData, 0, sData.Length);
-                sData = signer.GenerateSignature();
-            }
-
-            return System.Convert.ToBase64String(sData);
+            using var rsa = CreateRsaFromPem(privateKey);
+            // 与历史 SignerUtilities.GetSigner("SHA1withRSA") 对应：SHA1 + PKCS#1 v1.5
+            var signature = rsa.SignData(sData, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+            return System.Convert.ToBase64String(signature);
         }
 
         /// <summary>
@@ -193,12 +164,72 @@ namespace Wlniao
                 publicKey = publicKey.Replace("-----BEGIN CERTIFICATE-----", "").Replace("-----END CERTIFICATE-----", "").Replace("\n", "").Replace("\r", "").Trim();
             }
             var certBytes = System.Convert.FromBase64String(publicKey);
-            var pubKey = PublicKeyFactory.CreateKey(certBytes);
-            var signer = SignerUtilities.GetSigner("SHA1withRSA");
-            signer.Init(false, pubKey);
-            signer.BlockUpdate(sData, 0, sData.Length);
-            var expectedSig = System.Convert.FromBase64String(sign);
-            return signer.VerifySignature(expectedSig);
+            using var rsa = RSA.Create();
+            rsa.ImportSubjectPublicKeyInfo(certBytes, out _);
+            return rsa.VerifyData(sData, System.Convert.FromBase64String(sign), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+        }
+
+        /// <summary>
+        /// 从 PEM 文本构造 RSA 实例。支持 PKCS#1（RSA PRIVATE KEY）与 PKCS#8（PRIVATE KEY），
+        /// 也兼顾历史调用方直接传入裸 Base64 正文（无头尾标记）的情形。
+        /// </summary>
+        private static RSA CreateRsaFromPem(string privateKey)
+        {
+            var pem = privateKey;
+            if (privateKey.Contains("BEGIN RSA PRIVATE KEY") && !privateKey.Contains("BEGIN PRIVATE KEY"))
+            {
+                if (!privateKey.Contains("----"))
+                {
+                    pem = "-----BEGIN RSA PRIVATE KEY-----" + privateKey + "-----END RSA PRIVATE KEY-----";
+                }
+            }
+            else if (!privateKey.Contains("-----"))
+            {
+                var body = privateKey.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "")
+                    .Replace("\n", "").Replace("\r", "").Trim();
+                pem = "-----BEGIN PRIVATE KEY-----" + body + "-----END PRIVATE KEY-----";
+            }
+            var rsa = RSA.Create();
+            try
+            {
+                rsa.ImportFromPem(pem);
+                return rsa;
+            }
+            catch
+            {
+                rsa.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 无填充（教科书）RSA 运算：result = input^exp mod n，输出固定模长的大端字节。
+        /// .NET 的 RSAEncryptionPadding 只有 Pkcs1 与 Oaep，没有 NoPadding，因此这里直接做模幂。
+        /// 安全性说明：本次改造只求与历史行为保持一致，该方法本身不具备语义安全性，不应在新代码中使用。
+        /// </summary>
+        private static byte[] RsaNoPadding(RSAParameters parameters, byte[] input, bool usePrivate)
+        {
+            var modulus = new BigInteger(parameters.Modulus, isUnsigned: true, isBigEndian: true);
+            var exponentBytes = usePrivate ? parameters.D : parameters.Exponent;
+            var exponent = new BigInteger(exponentBytes, isUnsigned: true, isBigEndian: true);
+            var value = new BigInteger(input, isUnsigned: true, isBigEndian: true);
+
+            if (value >= modulus)
+            {
+                throw new CryptographicException("RSA 输入数据长度不能超过模长");
+            }
+
+            var raw = BigInteger.ModPow(value, exponent, modulus)
+                .ToByteArray(isUnsigned: true, isBigEndian: true);
+
+            var modulusLength = parameters.Modulus.Length;
+            if (raw.Length > modulusLength)
+            {
+                throw new CryptographicException("RSA 运算结果超过模长");
+            }
+            var output = new byte[modulusLength];
+            Buffer.BlockCopy(raw, 0, output, modulusLength - raw.Length, raw.Length);
+            return output;
         }
 
         /// <summary>

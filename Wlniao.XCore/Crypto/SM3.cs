@@ -1,11 +1,15 @@
 ﻿using System;
-using Org.BouncyCastle.Crypto;
 namespace Wlniao.Crypto
 {
     /// <summary>
     /// SM3杂凑算法
     /// </summary>
-    public class SM3 : IDigest
+    /// <remarks>
+    /// 本类自带完整实现，不依赖任何第三方密码库。
+    /// 历史上曾声明实现 BouncyCastle 的 IDigest 接口，仅为与旧代码的调用形态对齐，
+    /// 移除依赖后接口声明一并去掉；BlockUpdate / DoFinal / GetDigestSize 等方法签名保持不变。
+    /// </remarks>
+    public class SM3
     {
         /// <summary>
         /// 内部缓冲区的大小

@@ -7,13 +7,12 @@
     <PublishAot>true</PublishAot>
     <NoWarn>IL2026;IL3050</NoWarn>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <!--
     NativeAOT 制品体积优化
     基线（仅 Program.cs 的极简用例）：exe 9426 KB 到 8076 KB，publish 目录 44344 KB 到 8380 KB，整体降约 81%。
-    当前（叠加 SM 国密、Converter 注册、裁剪诊断三套冒烟用例后）：exe 9399 KB，publish 目录 9864 KB。
+    当前（叠加 SM 国密、Converter 注册、裁剪诊断三套冒烟用例，并移除 BouncyCastle 依赖后）：exe 8260 KB，publish 目录 8748 KB。
 
       DebugType=none                     去掉 34 MB 托管 PDB。最大单项收益，仅影响本机调试，不影响运行。
       OptimizationPreference=Size        让 ILC 启用 Os 优化，并在 Windows 上额外启用 dehydrate。收益约 1200 KB，代价是运行速度略降。

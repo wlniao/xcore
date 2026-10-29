@@ -3,11 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.OpenSsl;
-using Org.BouncyCastle.Pkcs;
-using Org.BouncyCastle.Security;
+using System.Text;
 
 namespace Wlniao.Crypto
 {
@@ -63,20 +59,9 @@ namespace Wlniao.Crypto
         public static string PrivateKeyPkcs1ToPkcs8(string privateKey)
         {
             privateKey = Pkcs1PrivateKeyFormat(privateKey);
-            using (var sr = new StringReader(privateKey))
-            {
-                var pr = new PemReader(sr);
-                var kp = pr.ReadObject() as AsymmetricCipherKeyPair;
-                using (var sw = new StringWriter())
-                {
-                    var pWrt = new PemWriter(sw);
-                    var pkcs8 = new Pkcs8Generator(kp.Private);
-                    pWrt.WriteObject(pkcs8);
-                    pWrt.Writer.Close();
-                    var result = sw.ToString();
-                    return result;
-                }
-            }
+            using var rsa = RSA.Create();
+            rsa.ImportFromPem(privateKey);
+            return ToPem("PRIVATE KEY", rsa.ExportPkcs8PrivateKey());
         }
         /// <summary>
         /// Private Key Convert Pkcs8->Pkcs1
@@ -86,20 +71,28 @@ namespace Wlniao.Crypto
         public static string PrivateKeyPkcs8ToPkcs1(string privateKey)
         {
             privateKey = Pkcs8PrivateKeyFormat(privateKey);
-            using (var sr = new StringReader(privateKey))
+            using var rsa = RSA.Create();
+            rsa.ImportFromPem(privateKey);
+            return ToPem("RSA PRIVATE KEY", rsa.ExportRSAPrivateKey());
+        }
+
+        /// <summary>
+        /// 把 DER 字节封装成 PEM 文本：Base64 每 64 字符换行，头尾带 BEGIN/END 标记。
+        /// </summary>
+        /// <param name="label">标记名，如 PRIVATE KEY / RSA PRIVATE KEY</param>
+        /// <param name="der">DER 字节</param>
+        /// <returns>PEM 文本</returns>
+        private static string ToPem(string label, byte[] der)
+        {
+            var base64 = System.Convert.ToBase64String(der);
+            var builder = new StringBuilder(base64.Length + base64.Length / 64 * 2 + 64);
+            builder.Append("-----BEGIN ").Append(label).Append("-----").Append(Environment.NewLine);
+            for (var i = 0; i < base64.Length; i += 64)
             {
-                var pr = new PemReader(sr);
-                var kp = pr.ReadObject() as RsaPrivateCrtKeyParameters;
-                var keyParameter = PrivateKeyFactory.CreateKey(PrivateKeyInfoFactory.CreatePrivateKeyInfo(kp));
-                using (var sw = new StringWriter())
-                {
-                    var pWrt = new PemWriter(sw);
-                    pWrt.WriteObject(keyParameter);
-                    pWrt.Writer.Close();
-                    var result = sw.ToString();
-                    return result;
-                }
+                builder.Append(base64, i, Math.Min(64, base64.Length - i)).Append(Environment.NewLine);
             }
+            builder.Append("-----END ").Append(label).Append("-----").Append(Environment.NewLine);
+            return builder.ToString();
         }
         /// <summary>
         /// Format Pkcs1 format private key

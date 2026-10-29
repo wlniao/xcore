@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Buffers;
 using Wlniao.Crypto;
-using Org.BouncyCastle.Utilities.Encoders;
 using Wlniao.Log;
 using Wlniao.Text;
 using Encoding = System.Text.Encoding;
@@ -117,7 +116,7 @@ namespace Wlniao.Tasker
             var builder = new MqttApplicationMessageBuilder()
             .WithTopic(topic)
             .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-            .WithPayload(Hex.ToHexString(buffer));
+            .WithPayload(System.Convert.ToHexString(buffer).ToLowerInvariant());
             return builder.Build();
         }
         /// <summary>
@@ -156,7 +155,7 @@ namespace Wlniao.Tasker
                     clientId = UserName + "@" + clientId;
                     if (string.IsNullOrEmpty(Password) && !string.IsNullOrEmpty(pubkey))
                     {
-                        Password = Hex.ToHexString(_sm2.Encrypt(Encoding.UTF8.GetBytes(clientId)));
+                        Password = System.Convert.ToHexString(_sm2.Encrypt(Encoding.UTF8.GetBytes(clientId))).ToLowerInvariant();
                     }
                     optionsBuilder.WithCredentials(UserName, Password);  // 设置鉴权参数
                 }
@@ -167,7 +166,7 @@ namespace Wlniao.Tasker
                     var willBuilder = new MqttApplicationMessageBuilder();
                     willBuilder.WithTopic("watcher/disconnected");
                     willBuilder.WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce);
-                    willBuilder.WithPayload(Hex.ToHexString(buffer));
+                    willBuilder.WithPayload(System.Convert.ToHexString(buffer).ToLowerInvariant());
                     optionsBuilder.WithWillTopic(willBuilder.Build().Topic)
                         .WithWillPayload(willBuilder.Build().Payload.ToArray())
                         .WithWillQualityOfServiceLevel(willBuilder.Build().QualityOfServiceLevel);

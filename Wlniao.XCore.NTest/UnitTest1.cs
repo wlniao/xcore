@@ -1,4 +1,3 @@
-using Org.BouncyCastle.Utilities.Encoders;
 using Wlniao.Text;
 
 namespace Wlniao.XCore.NTest
@@ -36,27 +35,30 @@ namespace Wlniao.XCore.NTest
         {
             var sm4 = new Wlniao.Crypto.SM4();
             var txt = "qwdgewosdgewtewe";
+            // 期望值是按「带填充」生成的：明文恰好 16 字节占满一个分组，PBOC 填充会再补一个 0x10×16 的完整块，
+            // 所以密文是 32 字节。传 pad:false 只能得到前 16 字节，四条比较会全部不成立。
             var ecb = "BB528C338D6E23686397C35E2B5B4EC0BD5DF75A39F0E8AAD05626BD185019C5";
             var cbc = "BB528C338D6E23686397C35E2B5B4EC07149C2740F614ECC6CAD1469CC41518C";
 
-            //var keys = Hex.Decode("0123456789abcdeffedcba9876543210");
+            //var keys = System.Convert.FromHexString("0123456789abcdeffedcba9876543210");
             var keys = System.Text.Encoding.ASCII.GetBytes("1qabgw9qd2aoqevl");
-            var ecbenc = sm4.EncryptECB(System.Text.Encoding.ASCII.GetBytes(txt), keys, false);
-            var ecbdec = sm4.DecryptECB(Hex.Decode(ecb), keys, false);
-            var secbenc = Wlniao.Crypto.Helper.Encode(ecbenc);
+            var ecbenc = sm4.EncryptECB(System.Text.Encoding.ASCII.GetBytes(txt), keys, true);
+            var ecbdec = sm4.DecryptECB(System.Convert.FromHexString(ecb), keys, true);
+            var secbenc = System.Convert.ToHexString(ecbenc);
             var secbdec = System.Text.Encoding.ASCII.GetString(ecbdec);
             
-            var cbcenc = sm4.EncryptCBC(System.Text.Encoding.ASCII.GetBytes(txt), keys, new byte[16], false);
-            var cbcdec = sm4.DecryptCBC(Hex.Decode(cbc), keys, new byte[16], false);
-            var scbcenc = Wlniao.Crypto.Helper.Encode(cbcenc);
+            var cbcenc = sm4.EncryptCBC(System.Text.Encoding.ASCII.GetBytes(txt), keys, new byte[16], true);
+            var cbcdec = sm4.DecryptCBC(System.Convert.FromHexString(cbc), keys, new byte[16], true);
+            var scbcenc = System.Convert.ToHexString(cbcenc);
             var scbcdec = System.Text.Encoding.ASCII.GetString(cbcdec);
-            
-            if (ecb == secbenc || txt == secbdec || cbc == scbcenc || txt == scbcdec)
-            {
-                
-            }
 
-            Assert.Pass(Hex.ToHexString(cbcenc));
+            Assert.Multiple(() =>
+            {
+                Assert.That(secbenc, Is.EqualTo(ecb), "ECB 密文");
+                Assert.That(secbdec, Is.EqualTo(txt), "ECB 解密还原");
+                Assert.That(scbcenc, Is.EqualTo(cbc), "CBC 密文");
+                Assert.That(scbcdec, Is.EqualTo(txt), "CBC 解密还原");
+            });
         }
         [Test]
         public void TestSm2Sign()

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>0.9.13-beta</Version>
+		<Version>0.10.2-beta</Version>
 		<Authors>XieChaoyi</Authors>
 		<Copyright>Copyright 2020 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -31,9 +31,7 @@
 	<ItemGroup>
 		<PackageReference Include="MQTTnet" Version="5.1.0.1559" />
 		<PackageReference Include="StackExchange.Redis" Version="2.12.8" />
-	</ItemGroup>
-	<ItemGroup>
-		<ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
+    	<PackageReference Include="Wlniao.XCore" Version="8.1.1-beta" />
 	</ItemGroup>
 
 	<ItemGroup>

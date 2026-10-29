@@ -268,9 +268,11 @@ namespace Wlniao.XCenter
             }
             else
             {
-                var errorPage = new ContentResult();
-                errorPage.ContentType = "text/html;charset=utf-8";
-                errorPage.Content = errorHtml.Replace("{{errorMsg}}", nopermissionMessage).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon);
+                var errorPage = new ContentResult
+                {
+                    ContentType = "text/html;charset=utf-8",
+                    Content = errorHtml.Replace("{{errorMsg}}", nopermissionMessage).Replace("{{errorTitle}}", errorTitle).Replace("{{errorIcon}}", errorIcon)
+                };
                 return errorPage;
             }
         }
@@ -285,13 +287,10 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult? CheckPermission(string code, Func<IActionResult> func, Func<IActionResult> fail = null)
         {
-            if (fail == null)
+            fail ??= new Func<IActionResult>(() =>
             {
-                fail = new Func<IActionResult>(() =>
-                {
-                    return NoPermission();
-                });
-            }
+                return NoPermission();
+            });
             if (ctx == null || xsession == null)
             {
                 nopermissionMessage = "请先调用“CheckSession”后再进行权限验证";
@@ -328,13 +327,10 @@ namespace Wlniao.XCenter
         [NonAction]
         public IActionResult? CheckPermission(string code, string organ, Func<IActionResult> func, Func<IActionResult> fail = null)
         {
-            if (fail == null)
-            {
-                fail = new Func<IActionResult>(() =>
+            fail ??= new Func<IActionResult>(() =>
                 {
                     return NoPermission();
                 });
-            }
             if (ctx == null || xsession == null)
             {
                 nopermissionMessage = "请先调用“CheckSession”后再进行权限验证";

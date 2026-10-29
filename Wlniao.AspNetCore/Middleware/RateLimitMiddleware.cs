@@ -134,21 +134,13 @@ namespace Wlniao.Middleware
     /// <summary>
     /// 令牌桶限流实现
     /// </summary>
-    internal class TokenBucket
+    internal class TokenBucket(double rate, double capacity)
     {
-        private readonly double _rate;
-        private readonly double _capacity;
-        private double _tokens;
-        private DateTime _lastRefill;
-        private readonly object _lock = new object();
-
-        public TokenBucket(double rate, double capacity)
-        {
-            _rate = rate;
-            _capacity = capacity;
-            _tokens = capacity;
-            _lastRefill = DateTime.UtcNow;
-        }
+        private readonly double _rate = rate;
+        private readonly double _capacity = capacity;
+        private double _tokens = capacity;
+        private DateTime _lastRefill = DateTime.UtcNow;
+        private readonly object _lock = new();
 
         public bool TryConsume(double tokens = 1)
         {
@@ -179,20 +171,14 @@ namespace Wlniao.Middleware
     /// <summary>
     /// 熔断器实现
     /// </summary>
-    internal class CircuitBreaker
+    internal class CircuitBreaker(int failureThreshold, TimeSpan recoveryTime)
     {
         private int _failureCount;
         private DateTime _lastFailureTime;
         private CircuitBreakerState _state = CircuitBreakerState.Closed;
-        private readonly object _lock = new object();
-        private readonly int _failureThreshold;
-        private readonly TimeSpan _recoveryTime;
-
-        public CircuitBreaker(int failureThreshold, TimeSpan recoveryTime)
-        {
-            _failureThreshold = failureThreshold;
-            _recoveryTime = recoveryTime;
-        }
+        private readonly object _lock = new();
+        private readonly int _failureThreshold = failureThreshold;
+        private readonly TimeSpan _recoveryTime = recoveryTime;
 
         public bool IsOpen
         {
@@ -260,7 +246,7 @@ namespace Wlniao.Middleware
         private readonly HashSet<string> _whiteKeysSet;
         private readonly HashSet<string> _blackKeysSet;
         private readonly CircuitBreaker _circuitBreaker;
-        private static readonly MemoryCache _memoryCache = new MemoryCache(Options.Create(new MemoryCacheOptions
+        private static readonly MemoryCache _memoryCache = new(Options.Create(new MemoryCacheOptions
         {
             SizeLimit = 10000
         }));
@@ -433,17 +419,13 @@ namespace Wlniao.Middleware
 
         private bool CheckLocalRateLimit(string key)
         {
-            switch (_options.Algorithm)
+            return _options.Algorithm switch
             {
-                case RateLimitAlgorithm.TokenBucket:
-                    return CheckTokenBucket(key);
-                case RateLimitAlgorithm.FixedWindow:
-                    return CheckFixedWindow(key);
-                case RateLimitAlgorithm.SlidingWindow:
-                    return CheckSlidingWindow(key);
-                default:
-                    return CheckTokenBucket(key);
-            }
+                RateLimitAlgorithm.TokenBucket => CheckTokenBucket(key),
+                RateLimitAlgorithm.FixedWindow => CheckFixedWindow(key),
+                RateLimitAlgorithm.SlidingWindow => CheckSlidingWindow(key),
+                _ => CheckTokenBucket(key),
+            };
         }
 
         private bool CheckTokenBucket(string key)

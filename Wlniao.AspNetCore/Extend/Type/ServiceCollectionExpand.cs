@@ -49,13 +49,13 @@ namespace Wlniao
             Type[]? types = null;
             if (string.IsNullOrEmpty(assemblyFile))
             {
-                types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes()).ToArray();
+                types = [.. AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes())];
             }
             else
             {
                 var asms = assemblyFile.IndexOf('/') < 0 && assemblyFile.IndexOf(':') < 0
                     ? System.IO.Directory.GetFiles(XCore.StartupRoot, assemblyFile, System.IO.SearchOption.AllDirectories)
-                    : System.IO.File.Exists(assemblyFile) ? new [] { assemblyFile } : new string[] { };
+                    : System.IO.File.Exists(assemblyFile) ? [assemblyFile] : [];
                 if (asms.Length > 0)
                 {
                     types = Assembly.LoadFrom(asms[0]).GetTypes();
@@ -72,7 +72,7 @@ namespace Wlniao
             {
                 return;
             }
-            types = types.Where(t => t.GetCustomAttributes(typeof(BusinessServiceAttribute), false).Any()).ToArray();
+            types = [.. types.Where(t => t.GetCustomAttributes(typeof(BusinessServiceAttribute), false).Any())];
             if (types.Length > 0)
             {
                 foreach (var impl in types)
