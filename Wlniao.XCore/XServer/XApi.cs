@@ -19,6 +19,8 @@
     limitations under the License.
 ===============================================================================*/
 using System;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -49,32 +51,34 @@ namespace Wlniao.XServer
         }
         
         /// <summary>
-        /// 获取平台接口数据
+        /// 获取平台接口数据（AOT 安全：调用方需预序列化请求体并传入响应体源生成元数据）
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">响应数据载荷类型</typeparam>
         /// <param name="node"></param>
         /// <param name="url"></param>
         /// <param name="token"></param>
-        /// <param name="data"></param>
+        /// <param name="dataJson">已由调用方序列化为 JSON 字符串的请求体</param>
+        /// <param name="dataInfo">响应数据载荷 T 的源生成元数据</param>
         /// <param name="traceid"></param>
         /// <returns></returns>
-        public static Wlniao.ApiResult<T> Request<T>(string node, string url, string token, object data, string traceid = "")
+        public static Wlniao.ApiResult<T> Request<T>(string node, string url, string token, string dataJson, JsonTypeInfo<T> dataInfo, string traceid = "")
         {
-            return RequestAsync<T>(node, url, token, data, traceid, CancellationToken.None).GetAwaiter().GetResult();
+            return RequestAsync<T>(node, url, token, dataJson, dataInfo, traceid, CancellationToken.None).GetAwaiter().GetResult();
         }
         
         /// <summary>
-        /// 异步获取平台接口数据
+        /// 异步获取平台接口数据（AOT 安全）
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">响应数据载荷类型</typeparam>
         /// <param name="node"></param>
         /// <param name="url"></param>
         /// <param name="token"></param>
-        /// <param name="data"></param>
+        /// <param name="dataJson">已由调用方序列化为 JSON 字符串的请求体</param>
+        /// <param name="dataInfo">响应数据载荷 T 的源生成元数据</param>
         /// <param name="traceid"></param>
         /// <param name="cancellationToken">取消令牌</param>
         /// <returns></returns>
-        public static async Task<Wlniao.ApiResult<T>> RequestAsync<T>(string node, string url, string token, object data, string traceid = "", CancellationToken cancellationToken = default)
+        public static async Task<Wlniao.ApiResult<T>> RequestAsync<T>(string node, string url, string token, string dataJson, JsonTypeInfo<T> dataInfo, string traceid = "", CancellationToken cancellationToken = default)
         {
             var now = DateTools.GetUnix().ToString();
             var rlt = new Wlniao.ApiResult<T>();
@@ -90,12 +94,18 @@ namespace Wlniao.XServer
                     traceid = StringUtil.CreateLongId();
                 }
                 var uri = new Uri(url);
-                var txt = data is string ? data.ToString() : Json.Serialize(data);
+                var txt = dataJson;
                 var utime = "";
                 var start = DateTime.Now;
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
                 var resStr = "";
-                var reqStr = Json.Serialize(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
+                var reqStr = new System.Text.Json.Nodes.JsonObject
+                {
+                    ["sign"] = Encryptor.SM3Encrypt(now + encdata + token),
+                    ["data"] = encdata,
+                    ["trace"] = traceid,
+                    ["timestamp"] = now
+                }.ToJsonString(XCore.JsonSerializerOptions);
                 try
                 {
                     Loger.Topic(node, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr, Log.LogLevel.Information, false);
@@ -153,7 +163,7 @@ namespace Wlniao.XServer
                     Wlniao.ApiResult<string> resObj = null;
                     try
                     {
-                        resObj = Json.Deserialize<Wlniao.ApiResult<string>>(resStr);
+                        resObj = System.Text.Json.JsonSerializer.Deserialize(resStr, XApiJsonContext.Default.GetTypeInfo(typeof(Wlniao.ApiResult<string>))) as Wlniao.ApiResult<string>;
                     }
                     catch
                     {
@@ -190,7 +200,7 @@ namespace Wlniao.XServer
                                 }
                                 else
                                 {
-                                    rlt.data = Json.Deserialize<T>(plaintext);
+                                    rlt.data = Json.Deserialize<T>(plaintext, dataInfo);
                                 }
 
                                 rlt.tips = resObj.tips;
@@ -218,5 +228,15 @@ namespace Wlniao.XServer
             }
             return rlt;
         }
+    }
+
+    /// <summary>
+    /// XApi 内部使用的源生成 JSON 元数据上下文（AOT 安全，零反射）。
+    /// 仅声明响应信封 ApiResult&lt;string&gt; 的固定类型；开放泛型 T 的载荷由调用方通过 JsonTypeInfo&lt;T&gt; 传入。
+    /// </summary>
+    [JsonSourceGenerationOptions]
+    [JsonSerializable(typeof(Wlniao.ApiResult<string>))]
+    internal partial class XApiJsonContext : JsonSerializerContext
+    {
     }
 }

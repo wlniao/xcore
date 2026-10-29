@@ -40,7 +40,12 @@ namespace Wlniao
         /// 返回的数据
         /// </summary>
         // [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        // 注意：这里必须是 WhenWritingDefault，不能是 WhenWritingNull。
+        // Data 是 T?，当 T 为 int/long/bool/DateTime 等值类型时，运行时属性类型是非空值类型，
+        // System.Text.Json 会对 WhenWritingNull 抛 InvalidOperationException(IgnoreConditionOnValueTypeInvalid)，
+        // 导致 Result<int> 这类元数据一被物化就崩。WhenWritingDefault 对值类型与引用类型都合法：
+        // 引用类型下等同忽略 null，值类型下忽略默认值，且缺失与默认值在反序列化后不可区分，往返无损。
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public T? Data { get; set; } = default;
         
         /// <summary>

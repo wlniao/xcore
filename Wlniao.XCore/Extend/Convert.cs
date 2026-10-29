@@ -20,6 +20,7 @@
 
 ===============================================================================*/
 using System;
+using System.Text.Json.Serialization.Metadata;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
@@ -1008,13 +1009,15 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// 对象转换为Dictionary
+        /// 对象转换为 Dictionary（AOT 安全，基于源生成元数据，零反射）
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="obj">需要转换的对象</param>
+        /// <param name="typeInfo">由 JsonSerializerContext 生成的类型元数据</param>
         /// <returns></returns>
-        public static Dictionary<string, object> ObjectToDictionary(object obj)
+        public static Dictionary<string, object> ObjectToDictionary<T>(this T obj, JsonTypeInfo<T> typeInfo)
         {
-            return obj.ToDictionary();
+            return obj.ToDictionary(typeInfo);
         }
     }
 }

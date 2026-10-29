@@ -16,7 +16,7 @@ namespace Wlniao.Tasker
         /// <summary>
         /// 订阅任务监视缓存
         /// </summary>
-        private static ConcurrentDictionary<string, DateTime> watcher = new ConcurrentDictionary<string, DateTime>();
+        private static readonly ConcurrentDictionary<string, DateTime> watcher = new();
         /// <summary>
         /// Delays内部字段
         /// </summary>
@@ -39,7 +39,7 @@ namespace Wlniao.Tasker
                             {
                                 list.Add(Convert.ToInt(delay));
                             }
-                            delays = list.ToArray();
+                            delays = [.. list];
                         }
                         catch
                         {
@@ -99,15 +99,15 @@ namespace Wlniao.Tasker
             /// <summary>
             /// 任务标识
             /// </summary>
-            public string key { get; set; }
+            public string Key { get; set; }
             /// <summary>
             /// 任务主题
             /// </summary>
-            public string topics { get; set; }
+            public string Topics { get; set; }
             /// <summary>
             /// 任务的执行时间点，如当前unixtime后的10秒/30秒/1分钟/3分钟/5分钟/10分钟/30分钟
             /// </summary>
-            public List<long> times { get; set; }
+            public List<long> Times { get; set; }
         }
 
 
@@ -311,7 +311,7 @@ namespace Wlniao.Tasker
 							var keys = instance.GetServers().First().Keys(db.Database, "tasker_tl" + topic + "_" + jobId);
 							foreach (var key in keys)
 							{
-                                var mkey = key.ToString().Substring(10 + topic.Length);
+                                var mkey = key.ToString()[(10 + topic.Length)..];
 								tran.SortedSetRemoveAsync("tasker_queue_" + topic, mkey);
 								tran.KeyDeleteAsync(key);
 							}

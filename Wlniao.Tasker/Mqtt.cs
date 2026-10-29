@@ -49,11 +49,11 @@ namespace Wlniao.Tasker
         /// <summary>
         /// SM2加密实例
         /// </summary>
-        private static SM2 _sm2 = new SM2(null, null);
+        private static SM2 _sm2 = new(null, null);
         /// <summary>
         /// 订阅任务缓存
         /// </summary>
-        private Dictionary<string, Action<Context>> _subscribe = new Dictionary<string, Action<Context>>();
+        private readonly Dictionary<string, Action<Context>> _subscribe = [];
         /// <summary>
         /// 订阅事件
         /// </summary>
@@ -140,7 +140,7 @@ namespace Wlniao.Tasker
                 }
                 else
                 {
-                    _sm2 = new SM2(Helper.Decode(pubkey), new byte[0], SM2Mode.C1C3C2);
+                    _sm2 = new SM2(Helper.Decode(pubkey), [], SM2Mode.C1C3C2);
                 }
                 if (Port == "8883" || Config.GetConfigs("MQTT_SERVER_TLS", "false") == "true")
                 {

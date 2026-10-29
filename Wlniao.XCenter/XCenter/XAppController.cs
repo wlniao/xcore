@@ -249,7 +249,7 @@ namespace Wlniao.XCenter
             }
             try
             {
-                var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(input);
+                var obj = System.Text.Json.JsonSerializer.Deserialize(input, Wlniao.JsonContext.Instance.DictionaryStringObject);
                 if (obj != null)
                 {
                     foreach (var kv in obj)
@@ -268,7 +268,7 @@ namespace Wlniao.XCenter
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         [NonAction]
-        public T InputDeserialize<T>(string sm4key = null)
+        public T InputDeserialize<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo, string sm4key = null)
         {
             if (!string.IsNullOrEmpty(sm4key))
             {
@@ -312,7 +312,7 @@ namespace Wlniao.XCenter
                     throw new Exception("请求内容解密失败");
                 }
             }
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(input);
+            return System.Text.Json.JsonSerializer.Deserialize(input, typeInfo);
         }
 
 

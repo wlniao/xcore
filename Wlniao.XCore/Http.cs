@@ -57,9 +57,15 @@ namespace Wlniao
             /// </summary>  
             public string Request { get; set; }
             /// <summary>  
-            /// 输出内容
+            /// 输出内容（字符串，需由处理器自行序列化；二进制响应请使用 ResponseBytes）。
+            /// 改为 string 以契合 NativeAOT：Start() 不再对 object 做运行时反射式 JSON 序列化，
+            /// 序列化应在处理器已知具体类型的上下文中完成（如 JsonObject / 源生成 JsonSerializerContext）。
             /// </summary>  
-            public object Response { get; set; }
+            public string Response { get; set; }
+            /// <summary>  
+            /// 原始二进制输出（优先级高于 Response；用于图片、文件等非文本响应）。AOT 安全，不涉及反射。
+            /// </summary>  
+            public byte[] ResponseBytes { get; set; }
             /// <summary>  
             /// 身份令牌
             /// </summary>
@@ -155,18 +161,11 @@ namespace Wlniao
                                 sb.Append("Date: " + DateTime.UtcNow.ToString("r") + "\r\n");
                                 sb.Append("Server: wlniao/1.0\r\n");
                                 sb.Append("X-UseTime: " + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\r\n");
-                                var data = ctx.Response as byte[];
-                                if (data == null)
+                                // AOT 安全：Response 为已序列化的字符串，ResponseBytes 为原始字节，均不涉及运行时反射
+                                var data = ctx.ResponseBytes;
+                                if (data == null && !string.IsNullOrEmpty(ctx.Response))
                                 {
-                                    if (ctx.Response is string)
-                                    {
-                                        data = encoding.GetBytes(ctx.Response.ToString());
-                                    }
-                                    else if (ctx.Response != null)
-                                    {
-                                        ctx.ContentType = "application/json; charset=utf-8";
-                                        data = encoding.GetBytes(Json.Serialize(ctx.Response));
-                                    }
+                                    data = encoding.GetBytes(ctx.Response);
                                 }
                                 if (data != null)
                                 {

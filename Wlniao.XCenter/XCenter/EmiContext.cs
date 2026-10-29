@@ -90,7 +90,7 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public static EmiContext Load(Context ctx)
         {
-            var emi = Caching.Cache.Get<EmiContext>("emi_context_" + ctx.domain);
+            var emi = Caching.Cache.Get<EmiContext>("emi_context_" + ctx.domain, Wlniao.XCenter.JsonContext.Default.EmiContext);
             if (emi is not { install: true })
             {
                 emi = new EmiContext()
@@ -129,12 +129,12 @@ namespace Wlniao.XCenter
                         {
                             emi.cdn = check.data.GetString("cdn");
                         }
-                        Caching.Cache.Set("emi_context_" + ctx.domain, emi, 600);
-                        Caching.Cache.Set("await_emi_context_" + ctx.domain, emi, 86400);
+                        Caching.Cache.Set("emi_context_" + ctx.domain, emi, Wlniao.XCenter.JsonContext.Default.EmiContext, 600);
+                        Caching.Cache.Set("await_emi_context_" + ctx.domain, emi, Wlniao.XCenter.JsonContext.Default.EmiContext, 86400);
                     }
                     else
                     {
-                        emi = Caching.Cache.Get<EmiContext>("await_emi_context_" + ctx.domain);
+                        emi = Caching.Cache.Get<EmiContext>("await_emi_context_" + ctx.domain, Wlniao.XCenter.JsonContext.Default.EmiContext);
                         if (emi is { install: true })
                         {
                             // 使用长期缓存中的值
@@ -431,7 +431,7 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public string GetEnumName(string key)
         {
-            var val = Caching.Cache.Get<string>($"emi_{owner}_enumname_{key}");
+            var val = Caching.Cache.Get($"emi_{owner}_enumname_{key}");
             if (string.IsNullOrEmpty(val))
             {
                 var rlt = EmiGet<Wlniao.XCenter.Models.Enum>("app", "getenum", new KeyValuePair<string, string>("key", key));
@@ -454,14 +454,14 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public List<Wlniao.XCenter.Models.Enum> GetEnumList(string parent)
         {
-            var val = Caching.Cache.Get<List<Wlniao.XCenter.Models.Enum>>($"emi_{owner}_enumlist_{parent}");
+            var val = Caching.Cache.Get<List<Wlniao.XCenter.Models.Enum>>($"emi_{owner}_enumlist_{parent}", Wlniao.XCenter.JsonContext.Default.ListEnum);
             if (val == null || val.Count == 0)
             {
                 var rlt = EmiGet<List<Wlniao.XCenter.Models.Enum>>("app", "getenumlist", new KeyValuePair<string, string>("parent", parent));
                 if (rlt is { success: true, data.Count: > 0 })
                 {
                     val = rlt.data;
-                    Caching.Cache.Set($"emi_{owner}_enumlist_{parent}", val, 300);
+                    Caching.Cache.Set($"emi_{owner}_enumlist_{parent}", val, Wlniao.XCenter.JsonContext.Default.ListEnum, 300);
                 }
             }
             val ??= [];
@@ -478,14 +478,14 @@ namespace Wlniao.XCenter
             var item = new Models.Account();
             if (!string.IsNullOrEmpty(eid))
             {
-                var data = Caching.Cache.Get<Dictionary<string, object>>($"emi_{owner}_account_{eid}");
+                var data = Caching.Cache.Get<Dictionary<string, object>>($"emi_{owner}_account_{eid}", Wlniao.JsonContext.Instance.DictionaryStringObject);
                 if (data == null || data.Count == 0)
                 {
                     var rlt = EmiGet<Dictionary<string, object>>("app", "getaccount", new KeyValuePair<string, string>("sid", eid));
                     if (rlt is { success: true, data: not null } && rlt.data.ContainsKey("sid"))
                     {
                         data = rlt.data;
-                        Caching.Cache.Set($"emi_{owner}_account_{eid}", data, 3600);
+                        Caching.Cache.Set($"emi_{owner}_account_{eid}", data, Wlniao.JsonContext.Instance.DictionaryStringObject, 3600);
                     }
                 }
                 if (data is { Count: > 0 })

@@ -31,6 +31,7 @@ namespace Wlniao.Runtime
     /// <summary>
     /// 封装了反射的常用操作方法
     /// </summary>
+    [Obsolete("Wlniao.Runtime.Reflection 依赖运行时反射，在 NativeAOT / 裁剪环境下不可用，将在下个大版本移除。请改用显式类型化方案或源生成的 JsonSerializerContext。", DiagnosticId = "XCORE0001")]
     public class Reflection
     {
         /// <summary>
@@ -38,6 +39,9 @@ namespace Wlniao.Runtime
         /// </summary>
         /// <param name="typeFullName"></param>
         /// <returns></returns>
+        [RequiresUnreferencedCode("通过类型名称创建实例依赖运行时类型解析，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("通过类型名称创建实例依赖运行时类型解析，在 NativeAOT 环境下可能失败")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057", Justification = "类型名称由本方法动态拼接，属预期的反射加载场景")]
         public static object GetInstance(string typeFullName)
         {
             if (typeFullName.IndexOf(',') <= 0)
@@ -54,7 +58,9 @@ namespace Wlniao.Runtime
         /// <param name="t"></param>
         /// <param name="args"></param>
         /// <returns></returns>
-        public static object GetInstance(Type t, params object[] args)
+        [RequiresUnreferencedCode("通过反射创建实例依赖运行时元数据，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("通过反射创建实例依赖运行时代码生成，在 NativeAOT 环境下可能失败")]
+        public static object GetInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type t, params object[] args)
         {
             return Activator.CreateInstance(t, args);
         }
@@ -64,6 +70,8 @@ namespace Wlniao.Runtime
         /// <param name="asmName">不需要后缀名</param>
         /// <param name="typeName"></param>
         /// <returns></returns>
+        [RequiresUnreferencedCode("通过程序集名称加载类型依赖运行时反射，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("通过程序集名称加载类型依赖运行时反射，在 NativeAOT 环境下可能失败")]
         public static object GetInstance(string asmName, string typeName)
         {
             // Load不需要ext，LoadFrom需要
@@ -77,6 +85,8 @@ namespace Wlniao.Runtime
         /// <param name="asm">程序集</param>
         /// <param name="typeName"></param>
         /// <returns></returns>
+        [RequiresUnreferencedCode("通过程序集加载类型依赖运行时反射，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("通过程序集加载类型依赖运行时反射，在 NativeAOT 环境下可能失败")]
         public static object GetInstance(Assembly asm, string typeName)
         {
             var type = asm.GetType(typeName, false, false);
@@ -87,7 +97,9 @@ namespace Wlniao.Runtime
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
-        public static PropertyInfo[] GetPropertyList(Type t)
+        [RequiresUnreferencedCode("反射读取属性依赖运行时元数据，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("反射读取属性依赖运行时元数据，在 NativeAOT 环境下可能失败")]
+        public static PropertyInfo[] GetPropertyList([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] Type t)
         {
             var list = new List<PropertyInfo>();
             var arrp = t.GetRuntimeProperties();
@@ -120,7 +132,11 @@ namespace Wlniao.Runtime
         /// <param name="currentObject"></param>
         /// <param name="propertyName"></param>
         /// <param name="propertyValue"></param>
-        [RequiresDynamicCode("Uses reflection to get property values")]
+        [RequiresUnreferencedCode("Uses reflection to set property values")]
+        [RequiresDynamicCode("Uses reflection to set property values")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Reflection over object is intentional and safe for this library")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062", Justification = "Reflection over object is intentional and safe for this library")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070", Justification = "Reflection over object is intentional and safe for this library")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072", Justification = "Reflection over object is intentional and safe for this library")]
         public static void SetPropertyValue(object currentObject, string propertyName, object propertyValue)
         {
@@ -189,7 +205,9 @@ namespace Wlniao.Runtime
                                 var listTrue = Activator.CreateInstance(typeOfList);
                                 foreach(var obj in list)
                                 {
-                                    var item = Reflection.GetInstance(type);
+    #pragma warning disable CS0618 // 类内自递归调用，过渡期内允许使用已 Obsolete 的自身
+                                var item = Reflection.GetInstance(type);
+#pragma warning restore CS0618
                                     var dic = (Dictionary<string, object>)obj;
                                     var em = dic.GetEnumerator();
                                     while (em.MoveNext())
@@ -254,7 +272,9 @@ namespace Wlniao.Runtime
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
-        public static MethodInfo[] GetMethods(Type t)
+        [RequiresUnreferencedCode("反射读取方法依赖运行时元数据，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("反射读取方法依赖运行时元数据，在 NativeAOT 环境下可能失败")]
+        public static MethodInfo[] GetMethods([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type t)
         {
             var methods = new List<MethodInfo>();
             var arr= t.GetRuntimeMethods();
@@ -270,7 +290,9 @@ namespace Wlniao.Runtime
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
-        public static MethodInfo[] GetMethodsWithInheritance(Type t)
+        [RequiresUnreferencedCode("反射读取方法依赖运行时元数据，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("反射读取方法依赖运行时元数据，在 NativeAOT 环境下可能失败")]
+        public static MethodInfo[] GetMethodsWithInheritance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type t)
         {
             var methods = new List<MethodInfo>();
             var arr = t.GetRuntimeMethods();
@@ -290,7 +312,9 @@ namespace Wlniao.Runtime
         /// <param name="t"></param>
         /// <param name="attributeType"></param>
         /// <returns></returns>
-        public static Attribute GetAttribute(Type t, Type attributeType)
+        [RequiresUnreferencedCode("反射读取特性依赖运行时元数据，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("反射读取特性依赖运行时元数据，在 NativeAOT 环境下可能失败")]
+        public static Attribute GetAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicEvents)] Type t, Type attributeType)
         {
             var members = t.GetTypeInfo().GetMembers();
             foreach (var member in members)
@@ -377,7 +401,9 @@ namespace Wlniao.Runtime
         /// <param name="t">需要判断的类型</param>
         /// <param name="interfaceType">是否实现的接口</param>
         /// <returns></returns>
-        public static bool IsInterface(Type t, Type interfaceType)
+        [RequiresUnreferencedCode("反射读取接口依赖运行时元数据，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("反射读取接口依赖运行时元数据，在 NativeAOT 环境下可能失败")]
+        public static bool IsInterface([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type t, Type interfaceType)
         {
             var interfaces = t.GetTypeInfo().GetInterfaces();
             foreach (var type in interfaces)

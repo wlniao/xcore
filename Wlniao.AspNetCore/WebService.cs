@@ -146,7 +146,15 @@ namespace Wlniao
         /// <param name="message"></param>
         public static void ServiceStop(string node, string code = "302", string message = "服务器正在维护中 Server maintenance.")
         {
-            var json = Json.Serialize(new { node, code, success = false, message });
+            // 基于 Dictionary<string, string> 源生成（JsonContext）做零反射序列化，AOT / 裁剪安全，无需 Requires* 或抑制特性
+            var payload = new Dictionary<string, string>
+            {
+                ["node"] = node,
+                ["code"] = code,
+                ["success"] = "false",
+                ["message"] = message
+            };
+            var json = System.Text.Json.JsonSerializer.Serialize(payload, Wlniao.JsonContext.Instance.DictionaryStringString);
             
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.ConfigureKestrel(o => 

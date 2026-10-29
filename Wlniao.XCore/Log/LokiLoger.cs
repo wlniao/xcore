@@ -20,8 +20,12 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Encodings.Web;
+using System.Text.Json.Nodes;
+using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
@@ -34,12 +38,12 @@ namespace Wlniao.Log
     /// </summary>
     public class LokiLoger : ILogProvider
     {
-        private static readonly string[] levels = new string[] { "info", "warn", "debug", "error", "fatal" };
+        private static readonly string[] levels = ["info", "warn", "debug", "error", "fatal"];
         
         /// <summary>
         /// 专门的锁对象，避免使用levels数组
         /// </summary>
-        private static readonly object _queueLock = new object();
+        private static readonly object _queueLock = new();
         
         /// <summary>
         /// 多租户标识
@@ -52,7 +56,7 @@ namespace Wlniao.Log
         /// <summary>
         /// 待写入数据流
         /// </summary>
-        private static Queue<LokiStream> queue = new Queue<LokiStream>();
+        private static Queue<LokiStream> queue = new();
         /// <summary>
         /// 日志输出级别
         /// </summary>
@@ -387,7 +391,7 @@ namespace Wlniao.Log
         {
             try
             {
-                var content = Json.Serialize(dto);
+                var content = SerializeLokiDto(dto);
                 
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 cts.CancelAfter(TimeSpan.FromSeconds(30));
@@ -751,6 +755,54 @@ namespace Wlniao.Log
             /// 日志内容
             /// </summary>
             public List<string[]> values { get; set; }
+        }
+
+        /// <summary>
+        /// 将 LokiDto 序列化为 JSON 字符串（基于 JsonNode 手工构建，零反射，AOT 安全）。
+        /// 保留与 XCore.JsonSerializerOptions 一致的中文非转义编码（UnicodeRanges.All）。
+        /// </summary>
+        private static string SerializeLokiDto(LokiDto dto)
+        {
+            var streamsArray = new JsonArray();
+            if (dto?.streams != null)
+            {
+                foreach (var s in dto.streams)
+                {
+                    var streamObj = new JsonObject();
+                    if (s.stream != null)
+                    {
+                        foreach (var kvp in s.stream)
+                        {
+                            streamObj[kvp.Key] = kvp.Value;
+                        }
+                    }
+                    var valuesArray = new JsonArray();
+                    if (s.values != null)
+                    {
+                        foreach (var pair in s.values)
+                        {
+                            var inner = new JsonArray();
+                            if (pair != null)
+                            {
+                                foreach (var v in pair)
+                                {
+                                    // 显式走 IList<JsonNode?>.Add(JsonNode?) 非泛型重载，避免绑定到 JsonArray.Add<T>(T)
+                                    // （该泛型重载带 RequiresUnreferencedCode/RequiresDynamicCode，在裁剪/NativeAOT 下不安全）
+                                    ((IList<JsonNode?>)inner).Add(JsonValue.Create(v));
+                                }
+                            }
+                            ((IList<JsonNode?>)valuesArray).Add(inner);
+                        }
+                    }
+                    ((IList<JsonNode?>)streamsArray).Add(new JsonObject
+                    {
+                        ["stream"] = streamObj,
+                        ["values"] = valuesArray
+                    });
+                }
+            }
+            var root = new JsonObject { ["streams"] = streamsArray };
+            return root.ToJsonString(XCore.JsonSerializerOptions);
         }
     }
 }

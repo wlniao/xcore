@@ -41,16 +41,23 @@ namespace Wlniao
         /// </summary>
         public static object Lock = new();
         /// <summary>
-        /// 框架初始化时间
+        /// 框架启动计时器（单调时钟）。
+        /// 不用 DateTime.Now 是因为墙钟受 NTP 校时、手动改时间影响，可能算出负值或跳变。
         /// </summary>
-        internal static DateTime _startup_time = DateTime.Now;
+        internal static readonly System.Diagnostics.Stopwatch _startup_watch = System.Diagnostics.Stopwatch.StartNew();
+        /// <summary>
+        /// 最近一次 Init() 的内部耗时（毫秒），尚未执行过为 -1
+        /// </summary>
+        private static double _init_use_ms = -1;
         /// <summary>
         /// 重新初始化状态
         /// </summary>
         public static void Init()
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             Config.Clear();
             Loger.logLevel = LogLevel.None;
+            _init_use_ms = sw.Elapsed.TotalMilliseconds;
         }
         /// <summary>
         /// 输出系统信息
@@ -59,6 +66,9 @@ namespace Wlniao
         {
             try
             {
+                // 必须在任何输出之前取样：下面 ASCII 那 20 行同步控制台 I/O 在 Windows 上往往是最大耗时项，
+                // 放到打印前再取会把输出耗时也算进启动耗时里。
+                var startupElapsed = _startup_watch.Elapsed.TotalMilliseconds;
                 Console.ForegroundColor = ConsoleColor.DarkCyan;
                 if (!Runtime.SysInfo.IsWindows)
                 {
@@ -131,7 +141,12 @@ namespace Wlniao
                 Console.WriteLine("    OpenApi          Load Finish");
                 Console.WriteLine("    XServer          Load Finish");
                 Console.WriteLine("    HttpEngine       Load Finish");
-                Console.WriteLine("\r\nInit Use:        " + DateTime.Now.Subtract(_startup_time).TotalMilliseconds.ToString("F2") + "ms");
+                Console.WriteLine("");
+                Console.WriteLine("    Startup Elapsed  " + startupElapsed.ToString("F2") + "ms");
+                if (_init_use_ms >= 0)
+                {
+                    Console.WriteLine("    Init Use         " + _init_use_ms.ToString("F2") + "ms");
+                }
                 Console.WriteLine("");
             }
             catch (Exception ex)
@@ -149,7 +164,7 @@ namespace Wlniao
         /// <summary>
         /// 基础的JSON序列化选项
         /// </summary>
-        public static JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions
+        public static JsonSerializerOptions JsonSerializerOptions = new ()
         {
             Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
             UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
@@ -371,8 +386,8 @@ namespace Wlniao
         {
             get
             {
-                var files = System.Reflection.Assembly.GetEntryAssembly();
-                return files != null ? DateTools.GetUnix(new System.IO.FileInfo(files.Location).LastWriteTime) : 0;
+                var exePath = Environment.ProcessPath;
+                return exePath != null ? DateTools.GetUnix(new System.IO.FileInfo(exePath).LastWriteTime) : 0;
             }
         }
 

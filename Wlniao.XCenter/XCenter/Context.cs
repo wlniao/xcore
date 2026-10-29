@@ -173,7 +173,7 @@ namespace Wlniao.XCenter
                                 ctx.token = sm2token;
                             }
                         }
-                        Caching.Cache.Set("ctx_" + ctx.domain, ctx, 300);
+                        Caching.Cache.Set("ctx_" + ctx.domain, ctx, Wlniao.XCenter.JsonContext.Default.Context, 300);
                     }
                     catch { }
                 }
@@ -205,7 +205,7 @@ namespace Wlniao.XCenter
             }
             else if (string.IsNullOrEmpty(XCenterOwner) || XCenterOwner.Length != 9 || (string.IsNullOrEmpty(XCenterToken) && string.IsNullOrEmpty(XCenterAppToken)) || (string.IsNullOrEmpty(XCenterApp) && string.IsNullOrEmpty(XCenterCertSn)))
             {
-                var ctx = Caching.Cache.Get<Context>("ctx_" + domain);
+                var ctx = Caching.Cache.Get<Context>("ctx_" + domain, Wlniao.XCenter.JsonContext.Default.Context);
                 if (ctx != null && !string.IsNullOrEmpty(ctx.app))
                 {
                     return ctx;
@@ -222,7 +222,7 @@ namespace Wlniao.XCenter
                     else
                     {
                         var res = AppData<Dictionary<string, object>>("/app/saas/get_xapp_by_domain", new { domain = ctx.domain, app = ctx.app });
-                        if (res.Success)
+                        if (res.Success && res.Data != null)
                         {
                             ctx.app = res.Data.GetString("app", ctx.app);
                             ctx.name = res.Data.GetString("name");
@@ -231,7 +231,7 @@ namespace Wlniao.XCenter
                             //尝试通过私钥还原XCenter分发的应用密钥（Saas多租户模式）
                             ctx.token = res.Data.GetString("token", ctx.token);
                             ctx.app_token = res.Data.GetString("app_token", ctx.token);
-                            Caching.Cache.Set("ctx_" + ctx.domain, ctx, 300);
+                            Caching.Cache.Set("ctx_" + ctx.domain, ctx, Wlniao.XCenter.JsonContext.Default.Context, 300);
                         }
                         else
                         {
@@ -579,11 +579,11 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public Dictionary<string, string> ApiSetting(string key)
         {
-            Dictionary<string, string> obj = null;
+            Dictionary<string, string>? obj = null;
             try
             {
                 var val = Wlniao.Caching.InMemory.Get("appsetting_" + key);
-                obj = string.IsNullOrEmpty(val) ? null : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(val);
+                obj = string.IsNullOrEmpty(val) ? null : System.Text.Json.JsonSerializer.Deserialize(val, Wlniao.JsonContext.Instance.DictionaryStringString);
             }
             catch { }
             try
@@ -593,7 +593,7 @@ namespace Wlniao.XCenter
                     var res = ApiData<string>("/api/get_setting", new { key = key });
                     if (res.success)
                     {
-                        obj = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(res.data);
+                        obj = System.Text.Json.JsonSerializer.Deserialize(res.data, Wlniao.JsonContext.Instance.DictionaryStringString);
                         if (obj != null && obj.Count > 0)
                         {
                             Wlniao.Caching.InMemory.Set("appsetting_" + key, res.data, 900);
@@ -613,7 +613,7 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public Dictionary<string, object> ApiCheckTicket(string ticket)
         {
-            Dictionary<string, object> obj = null;
+            Dictionary<string, object>? obj = null;
             try
             {
                 if (string.IsNullOrEmpty(XCenterToken))
@@ -627,7 +627,7 @@ namespace Wlniao.XCenter
                 else
                 {
                     var json = Wlniao.Encryptor.SM4DecryptECBFromHex(ticket, XCenterToken);
-                    obj = string.IsNullOrEmpty(json) ? null : Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                    obj = string.IsNullOrEmpty(json) ? null : System.Text.Json.JsonSerializer.Deserialize(json, Wlniao.JsonContext.Instance.DictionaryStringObject);
                 }
             }
             catch { }
@@ -635,7 +635,7 @@ namespace Wlniao.XCenter
             {
                 return obj;
             }
-            return new Dictionary<string, object>();
+            return [];
         }
     
     }

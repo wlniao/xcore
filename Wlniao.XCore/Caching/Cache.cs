@@ -21,6 +21,7 @@
 ===============================================================================*/
 
 using System;
+using System.Text.Json.Serialization.Metadata;
 using Wlniao.IO;
 using Wlniao.Log;
 
@@ -121,20 +122,21 @@ namespace Wlniao.Caching
         }
 
         /// <summary>
-        /// 缓存一个对象实例
+        /// 缓存一个对象实例（AOT 安全：通过源生成的 JsonTypeInfo&lt;T&gt; 完成序列化，不依赖运行时反射）
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">缓存值类型</typeparam>
         /// <param name="key">缓存的Key值</param>
         /// <param name="obj">要缓存的对象</param>
+        /// <param name="typeInfo">源生成的 JSON 元数据（在 JsonSerializerContext 中声明）</param>
         /// <param name="expireSeconds">缓存过期时间（秒）</param>
         /// <returns></returns>
-        public static bool Set<T>(string key, T obj, int expireSeconds = 86400)
+        public static bool Set<T>(string key, T obj, JsonTypeInfo<T> typeInfo, int expireSeconds = 86400)
         {
             return cType switch
             {
-                CacheType.Redis => Redis.Set<T>(key, obj, expireSeconds),
-                CacheType.InFile => FileCache.Set<T>(key, obj, expireSeconds),
-                _ => InMemory.Set<T>(key, obj, expireSeconds)
+                CacheType.Redis => Redis.Set(key, obj, typeInfo, expireSeconds),
+                CacheType.InFile => FileCache.Set(key, obj, typeInfo, expireSeconds),
+                _ => InMemory.Set(key, obj, typeInfo, expireSeconds)
             };
         }
 
@@ -192,19 +194,21 @@ namespace Wlniao.Caching
                 _ => InMemory.GetAllowNull(key)
             };
         }
+
         /// <summary>
-        /// 获取一个缓存项
+        /// 获取一个缓存项（AOT 安全：通过源生成的 JsonTypeInfo&lt;T&gt; 完成反序列化，不依赖运行时反射）
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="key"></param>
+        /// <typeparam name="T">缓存值类型</typeparam>
+        /// <param name="key">缓存的Key值</param>
+        /// <param name="typeInfo">源生成的 JSON 元数据（在 JsonSerializerContext 中声明）</param>
         /// <returns></returns>
-        public static T Get<T>(string key)
+        public static T Get<T>(string key, JsonTypeInfo<T> typeInfo)
         {
             return cType switch
             {
-                CacheType.Redis => Redis.Get<T>(key),
-                CacheType.InFile => FileCache.Get<T>(key),
-                _ => InMemory.Get<T>(key)
+                CacheType.Redis => Redis.Get(key, typeInfo),
+                CacheType.InFile => FileCache.Get(key, typeInfo),
+                _ => InMemory.Get(key, typeInfo)
             };
         }
 

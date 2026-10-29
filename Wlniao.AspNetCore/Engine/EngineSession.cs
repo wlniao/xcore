@@ -89,7 +89,7 @@ namespace Wlniao.Engine
                 ExpireTime = DateTools.GetUnix() + expireSeconds;
             }
 
-            var extStr = System.Text.Json.JsonSerializer.Serialize(extend, XCore.JsonSerializerOptions);
+            var extStr = System.Text.Json.JsonSerializer.Serialize(extend, Wlniao.JsonContext.Instance.DictionaryStringString);
             var extHex = StringUtil.UTF8ToHexString(extStr);
             var plain = $"{ExpireTime},{UserId},{currentConsumerId},{extHex}".Trim(',');
             return base64
@@ -123,10 +123,10 @@ namespace Wlniao.Engine
                     UserId = data[1];
                     if (!string.IsNullOrEmpty(data.LastOrDefault()))
                     {
-                        var plain = StringUtil.HexStringToUTF8(data.LastOrDefault());
-                        var kvs = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(plain,
-                            XCore.JsonSerializerOptions);
-                        foreach (var kv in kvs ?? new Dictionary<string, string>())
+                        var plain = StringUtil.HexStringToUTF8(data.LastOrDefault()!);
+                        var kvs = System.Text.Json.JsonSerializer.Deserialize(plain,
+                            Wlniao.JsonContext.Instance.DictionaryStringString);
+                        foreach (var kv in kvs ?? [])
                         {
                             switch (kv.Key)
                             {

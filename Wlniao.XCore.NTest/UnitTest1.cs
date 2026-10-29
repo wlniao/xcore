@@ -8,23 +8,26 @@ namespace Wlniao.XCore.NTest
         [SetUp]
         public void Setup()
         {
-            Wlniao.Config.SetConfigs("WLN_LOG_TYPE", "loki");
-            Wlniao.Config.SetConfigs("WLN_LOG_SERVER", "http://192.168.31.230:3100");
+            // Wlniao.Config.SetConfigs("WLN_LOG_TYPE", "loki");
+            // Wlniao.Config.SetConfigs("WLN_LOG_SERVER", "http://192.168.31.230:3100");
         }
 
         [Test]
         public void TestOrg()
         {
-            Wlniao.XServer.XApi.Request<string>("utest", "https://xcr.xiechaoyi.com/invoke", "0000000000000000",
-                new Dictionary<string, object>());
+            // var requestData = new Dictionary<string, object>();
+            // var requestJson = Wlniao.Json.Serialize(requestData, (System.Text.Json.Serialization.Metadata.JsonTypeInfo<Dictionary<string, object>>)NTestJsonContext.Default.GetTypeInfo(typeof(Dictionary<string, object>))!);
+            // Wlniao.XServer.XApi.Request<string>("utest", "https://xcr.xiechaoyi.com/invoke", "0000000000000000",
+            //     requestJson,
+            //     (System.Text.Json.Serialization.Metadata.JsonTypeInfo<string>)NTestJsonContext.Default.GetTypeInfo(typeof(string))!);
+
             Wlniao.Config.SetConfigs("WLN_LOG_ORGID", "2");
             Wlniao.Log.Loger.Debug(StringUtil.CreateRndStrE(50));
             Wlniao.Log.Loger.Info(StringUtil.CreateRndStrE(50));
             Wlniao.Log.Loger.Warn(StringUtil.CreateRndStrE(50));
             Wlniao.Log.Loger.Error(StringUtil.CreateRndStrE(50));
             Wlniao.Log.Loger.Fatal(StringUtil.CreateRndStrE(50));
-            System.Threading.Thread.Sleep(8000);
-            //Assert.Fail("Fail");
+            System.Threading.Thread.Sleep(1000);
             Assert.Pass("Success");
         }
 

@@ -81,6 +81,8 @@ namespace Wlniao.Mvc
         /// 
         /// </summary>
         /// <param name="context"></param>
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "OnActionExecuted 内序列化运行时类型（object/匿名类型）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "OnActionExecuted 内序列化运行时类型（object/匿名类型）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public override void OnActionExecuted(ActionExecutedContext context)
         {
             if(context.HttpContext.WebSockets.IsWebSocketRequest)
@@ -168,6 +170,8 @@ namespace Wlniao.Mvc
         /// <param name="data"></param>
         /// <returns></returns>
         [NonAction]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Json(object) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "Json(object) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public new ActionResult Json(object data)
         {
             var jsonStr = "";
@@ -192,6 +196,8 @@ namespace Wlniao.Mvc
         /// <param name="encoding"></param>
         /// <returns></returns>
         [NonAction]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Json(object?, Encoding) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "Json(object?, Encoding) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public ActionResult Json(object? data, Encoding encoding)
         {
             var jsonStr = "";
@@ -236,6 +242,8 @@ namespace Wlniao.Mvc
         /// <param name="message"></param>
         /// <returns></returns>
         [NonAction]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "ErrorMsg 序列化运行时类型（object/匿名类型）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "ErrorMsg 序列化运行时类型（object/匿名类型）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public ActionResult ErrorMsg(string? message = null)
         {
             if (string.IsNullOrEmpty(message))

@@ -117,12 +117,14 @@ namespace Wlniao.Mvc
         /// <param name="obj"></param>
         /// <returns></returns>
         [NonAction]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "OutSuccess(object) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "OutSuccess(object) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public IActionResult OutSuccess(object obj)
         {
             result.code = "0";
             result.data = obj;
             result.success = true;
-            var txt = string.Empty;
+            string? txt;
             if (obj == null)
             {
                 txt = "";
@@ -135,13 +137,15 @@ namespace Wlniao.Mvc
             {
                 txt = Wlniao.Json.Serialize(obj);
             }
-            var dic = new Dictionary<string, object>();
-            dic.Add("node", result.node);
-            dic.Add("code", result.code);
-            dic.Add("tips", result.tips);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
-            dic.Add("success", result.success);
-            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            var dic = new Dictionary<string, object>
+            {
+                { "node", result.node },
+                { "code", result.code },
+                { "tips", result.tips },
+                { "data", Encryptor.SM4EncryptECBToHex(txt!, token) },
+                { "success", result.success },
+                { "message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message }
+            };
             if (!string.IsNullOrEmpty(result.debuger))
             {
                 dic.Add("debuger", result.debuger);
@@ -158,13 +162,15 @@ namespace Wlniao.Mvc
         {
             result.code = "0";
             result.success = true;
-            var dic = new Dictionary<string, object>();
-            dic.Add("node", result.node);
-            dic.Add("code", result.code);
-            dic.Add("tips", result.tips);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(str, token));
-            dic.Add("success", result.success);
-            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            var dic = new Dictionary<string, object>
+            {
+                { "node", result.node },
+                { "code", result.code },
+                { "tips", result.tips },
+                { "data", Encryptor.SM4EncryptECBToHex(str, token) },
+                { "success", result.success },
+                { "message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message }
+            };
             if (!string.IsNullOrEmpty(result.debuger))
             {
                 dic.Add("debuger", result.debuger);
@@ -196,9 +202,11 @@ namespace Wlniao.Mvc
         /// </summary>
         /// <returns></returns>
         [NonAction]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "OutDefault 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "OutDefault 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public IActionResult OutDefault()
         {
-            var txt = string.Empty;
+            string? txt;
             if (result.data == null)
             {
                 txt = "";
@@ -215,13 +223,15 @@ namespace Wlniao.Mvc
             {
                 result.code = "1";
             }
-            var dic = new Dictionary<string, object>();
-            dic.Add("node", result.node);
-            dic.Add("code", result.code);
-            dic.Add("tips", result.tips);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
-            dic.Add("success", result.success);
-            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            var dic = new Dictionary<string, object>
+            {
+                { "node", result.node },
+                { "code", result.code },
+                { "tips", result.tips },
+                { "data", Encryptor.SM4EncryptECBToHex(txt!, token) },
+                { "success", result.success },
+                { "message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message }
+            };
             if (!string.IsNullOrEmpty(result.debuger))
             {
                 dic.Add("debuger", result.debuger);

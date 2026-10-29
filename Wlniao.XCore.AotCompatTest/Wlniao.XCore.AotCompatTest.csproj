@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishAot>true</PublishAot>
+    <NoWarn>IL2026;IL3050</NoWarn>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <!--
+    NativeAOT 制品体积优化
+    基线（仅 Program.cs 的极简用例）：exe 9426 KB 到 8076 KB，publish 目录 44344 KB 到 8380 KB，整体降约 81%。
+    当前（叠加 SM 国密、Converter 注册、裁剪诊断三套冒烟用例后）：exe 9399 KB，publish 目录 9864 KB。
+
+      DebugType=none                     去掉 34 MB 托管 PDB。最大单项收益，仅影响本机调试，不影响运行。
+      OptimizationPreference=Size        让 ILC 启用 Os 优化，并在 Windows 上额外启用 dehydrate。收益约 1200 KB，代价是运行速度略降。
+      IlcFoldIdenticalMethodBodies=true  合并完全相同的方法体。收益约 140 KB，代价是堆栈跟踪可能指向被合并的同名方法。
+
+    注意：以下三项不要开启。
+      UseSystemResourceKeys=true         剔除框架异常消息资源串，仅省约 100 KB，却把所有异常消息压成资源键名
+                                         （例如只看得到 Reflection_InsufficientMetadata_EdbNeeded 这种裸键，
+                                         看不到"哪个类型的元数据缺失"）。本项目是 AOT 兼容性验证工具，
+                                         排错能力优先于这 100 KB，故不启用。
+      IlcScanReflection=false            会移除反射扫描，反射元数据不足，运行时抛
+                                         NotSupportedException Reflection_InsufficientMetadata_EdbNeeded JsonConverterAttribute
+                                         因为 Wlniao.Json 逃生舱降级依赖反射元数据查找 JsonConverterAttribute。
+      StackTraceSupport=false            会移除堆栈数据，异常堆栈退化成 0x 开头地址，无法排错。
+  -->
+  <PropertyGroup>
+    <DebugType>none</DebugType>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
+  </ItemGroup>
+</Project>

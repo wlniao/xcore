@@ -365,17 +365,17 @@ namespace Wlniao.Engine
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public T InputDeserialize<T>()
+        public T InputDeserialize<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo) where T : new()
         {
             if (string.IsNullOrEmpty(Body))
             {
-                return Activator.CreateInstance<T>();
+                return new T();
             }
 
             if (string.IsNullOrEmpty(SKey))
             {
-                return System.Text.Json.JsonSerializer.Deserialize<T>(Body, XCore.JsonSerializerOptions) ??
-                       Activator.CreateInstance<T>();
+                return System.Text.Json.JsonSerializer.Deserialize<T>(Body, typeInfo) ??
+                       new T();
             }
             else
             {
@@ -389,15 +389,15 @@ namespace Wlniao.Engine
                     // ignored
                 }
 
-                return System.Text.Json.JsonSerializer.Deserialize<T>(string.IsNullOrEmpty(json) ? Body: json, XCore.JsonSerializerOptions) ??
-                       Activator.CreateInstance<T>();
+                return System.Text.Json.JsonSerializer.Deserialize<T>(string.IsNullOrEmpty(json) ? Body: json, typeInfo) ??
+                       new T();
             }
         }
 
         /// <summary>
         /// 输入内容缓存（避免重复反序列化）
         /// </summary>
-        private readonly Dictionary<string, object> _input = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, object> _input = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// 返回输入内容
@@ -417,7 +417,7 @@ namespace Wlniao.Engine
                     _input.TryAdd(kv.Key, kv.Value);
                 }
 
-                foreach (var kv in InputDeserialize<Dictionary<string, object>>())
+                foreach (var kv in InputDeserialize<Dictionary<string, object>>(Wlniao.JsonContext.Instance.DictionaryStringObject))
                 {
                     //再尝试Body参数进行覆盖
                     _input.PutValue(kv.Key, kv.Value);
@@ -434,6 +434,8 @@ namespace Wlniao.Engine
         /// <summary>
         /// 
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "OutputSerialize 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析具体类型，与 XCore.Json 逃生舱语义一致")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "OutputSerialize 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析具体类型，与 XCore.Json 逃生舱语义一致")]
         public IActionResult OutputSerialize<T>(T output)
         {
             foreach (var kv in HeaderOutput)

@@ -22,9 +22,8 @@
 using System;
 using System.Net;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
+using System.Text.Json.Serialization.Metadata;
 using Wlniao.Log;
 using Wlniao.Net;
 using Wlniao.Runtime;
@@ -59,10 +58,7 @@ namespace Wlniao.Caching
                 };
             }
         }
-        /// <summary>
-        /// 下次尝试链接时间
-        /// </summary>
-        private static DateTime _nextConnect = DateTime.MinValue;
+        
         /// <summary>
         /// Redis链接字符串
         /// </summary>
@@ -185,23 +181,18 @@ namespace Wlniao.Caching
             }
             return "";
         }
+        
         /// <summary>
-        /// 
+        /// 获取一个缓存项（AOT 安全：通过源生成的 JsonTypeInfo&lt;T&gt; 反序列化）
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">缓存值类型</typeparam>
         /// <param name="key"></param>
+        /// <param name="typeInfo">源生成的 JSON 元数据</param>
         /// <returns></returns>
-        public static T Get<T>(string key)
+        public static T Get<T>(string key, JsonTypeInfo<T> typeInfo)
         {
             var str = Get(key);
-            if (!string.IsNullOrEmpty(str))
-            {
-                return JsonSerializer.Deserialize<T>(str, new JsonSerializerOptions
-                {
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                });
-            }
-            return default;
+            return string.IsNullOrEmpty(str) ? default : JsonSerializer.Deserialize(str, typeInfo);
         }
 
         /// <summary>
@@ -236,20 +227,19 @@ namespace Wlniao.Caching
         {
             return Set(key, Encoding.UTF8.GetBytes(value), expire);
         }
+        
         /// <summary>
-        /// 
+        /// 设置缓存内容（AOT 安全：通过源生成的 JsonTypeInfo&lt;T&gt; 序列化）
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">缓存值类型</typeparam>
         /// <param name="key"></param>
-        /// <param name="obj"></param>
+        /// <param name="obj">要缓存的对象</param>
+        /// <param name="typeInfo">源生成的 JSON 元数据</param>
         /// <param name="expire"></param>
         /// <returns></returns>
-        public static bool Set<T>(string key, T obj, int expire)
+        public static bool Set<T>(string key, T obj, JsonTypeInfo<T> typeInfo, int expire)
         {
-            return Set(key, JsonSerializer.Serialize(obj, new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-            }), expire);
+            return Set(key, JsonSerializer.Serialize(obj, typeInfo), expire);
         }
 
         /// <summary>

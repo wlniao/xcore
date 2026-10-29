@@ -25,7 +25,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using Wlniao.Log;
-using Wlniao.OpenApi;
 using Wlniao.Text;
 
 namespace Wlniao.XServer

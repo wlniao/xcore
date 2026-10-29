@@ -118,7 +118,13 @@ namespace Wlniao.Middleware
             {
                 // context.Response.ContentType = "text/json";
                 context.Response.StatusCode = options.StatusCode;
-                return context.Response.WriteAsync(Json.Serialize(new { success = false, message = "系统异常，稍后可尝试重新提交" }));
+                // 基于 Dictionary<string, string> 源生成（JsonContext）做零反射序列化，AOT / 裁剪安全，无需 Requires* 或抑制特性
+                var payload = new Dictionary<string, string>
+                {
+                    ["success"] = "false",
+                    ["message"] = "系统异常，稍后可尝试重新提交"
+                };
+                return context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(payload, Wlniao.JsonContext.Instance.DictionaryStringString));
             }
             else
             {

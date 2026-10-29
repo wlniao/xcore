@@ -105,7 +105,7 @@ namespace Wlniao.Engine
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public T InputDeserialize<T>();
+        public T InputDeserialize<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo) where T : new();
     
         /// <summary>
         /// 请求内容解析

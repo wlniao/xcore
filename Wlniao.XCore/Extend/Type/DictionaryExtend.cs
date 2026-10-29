@@ -21,7 +21,7 @@
 ===============================================================================*/
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Wlniao
 {
@@ -31,10 +31,12 @@ namespace Wlniao
     public static class DictionaryExtend
     {
         /// <summary>
-        /// 对象转换为Dictionary
+        /// 对象转换为 Dictionary（AOT 安全：基于源生成元数据序列化后经 JsonNode 解析，零反射）
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="obj">需要转换的对象</param>
-        public static Dictionary<string, object> ToDictionary<T>(this T obj)
+        /// <param name="typeInfo">由 JsonSerializerContext 生成的类型元数据</param>
+        public static Dictionary<string, object> ToDictionary<T>(this T obj, JsonTypeInfo<T> typeInfo)
         {
             // AOT 安全分支
             if (obj is IDictionaryConvertible convertible)
@@ -42,33 +44,17 @@ namespace Wlniao
                 return convertible.ToDictionary();
             }
 
-            // 反射分支（AOT 会警告，但能编译）
-            return ReflectionToDictionary(obj);
-        }
-
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<System.Type, System.Reflection.PropertyInfo[]> _propertyCache = new();
-
-        /// <summary>
-        /// 对象转换为Dictionary
-        /// </summary>
-        /// <param name="obj">需要转换的对象</param>
-        [RequiresDynamicCode("Uses reflection to convert object to dictionary")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072", Justification = "Intended reflection for non-AOT usage")]
-        private static Dictionary<string, object> ReflectionToDictionary(object obj)
-        {
-            if (obj == null) return new Dictionary<string, object>();
-
-            System.Type type = obj.GetType();
-            var properties = _propertyCache.GetOrAdd(type, t => 
-                t.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-            );
-
-            var dict = new Dictionary<string, object>();
-            foreach (var prop in properties)
+            // 源生成序列化后经 JsonNode 解析为字典（零反射，AOT 安全）
+            var dic = Json.DeserializeToDic(Json.Serialize(obj, typeInfo));
+            var result = new Dictionary<string, object>();
+            foreach (var kvp in dic)
             {
-                dict[prop.Name] = prop.GetValue(obj);
+                if (kvp.Value != null)
+                {
+                    result[kvp.Key] = kvp.Value;
+                }
             }
-            return dict;
+            return result;
         }
 
 
@@ -254,28 +240,38 @@ namespace Wlniao
         /// <typeparam name="T"></typeparam>
         /// <param name="dic"></param>
         /// <param name="key"></param>
+        /// <param name="typeInfo">由 JsonSerializerContext 生成的类型元数据</param>
         /// <returns></returns>
-        public static T GetValue<T>(this Dictionary<string, object> dic, string key)
+        public static T GetValue<T>(this Dictionary<string, object> dic, string key, JsonTypeInfo<T> typeInfo)
         {
-            return dic.GetValue<T>(key, default(T));
+            return dic.GetValue<T>(key, default(T), typeInfo);
         }
         /// <summary>
-        /// 
+        /// 从字典获取指定键的值（AOT 安全，基于源生成元数据）
         /// </summary>
         /// <param name="dic"></param>
         /// <param name="key"></param>
         /// <param name="Default"></param>
+        /// <param name="typeInfo">由 JsonSerializerContext 生成的类型元数据</param>
         /// <returns></returns>
-        public static T GetValue<T>(this Dictionary<string, object> dic, string key, T Default)
+        public static T GetValue<T>(this Dictionary<string, object> dic, string key, T Default, JsonTypeInfo<T> typeInfo)
         {
-            if (dic != null && dic.ContainsKey(key))
+            if (dic != null && dic.TryGetValue(key, out var v))
             {
-                try
+                // 最常见路径：值本身已是目标类型（如 Json.DeserializeToDic 后的基元类型）
+                if (v is T t)
                 {
-                    var json = Json.Serialize(dic[key]);
-                    return Json.Deserialize<T>(json);
+                    return t;
                 }
-                catch { }
+                // 兼容以 JSON 字符串形式存储的值：基于源生成元数据还原（零反射）
+                if (v is string s)
+                {
+                    try
+                    {
+                        return Json.Deserialize<T>(s, typeInfo);
+                    }
+                    catch { }
+                }
             }
             return Default;
         }

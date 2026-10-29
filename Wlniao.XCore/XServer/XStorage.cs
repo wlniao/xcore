@@ -626,7 +626,14 @@ namespace Wlniao.XServer
                     var json = "{\"bucket\":\"" + bucketname + "\",\"save-key\":\"" + dir + "{random}{.suffix}\",\"expiration\":\"" + (DateTools.GetUnix() + expire) + "\"}";
                     var policy = Encryptor.Base64Encrypt(json);
                     var signature = Encryptor.Md5Encryptor32(policy + "&" + formapi);
-                    return Json.Serialize(new { to = "upyun", host = XStorageUrl, bucket = bucketname, policy, signature });
+                    return new System.Text.Json.Nodes.JsonObject
+                    {
+                        ["to"] = "upyun",
+                        ["host"] = XStorageUrl,
+                        ["bucket"] = bucketname,
+                        ["policy"] = policy,
+                        ["signature"] = signature
+                    }.ToJsonString(XCore.JsonSerializerOptions);
                 }
                 return "";
             }
@@ -1197,7 +1204,16 @@ namespace Wlniao.XServer
                     var bytesSecret = Wlniao.Text.Encodings.UTF8.GetBytes(ossaccesskeySecret);
                     var signature = System.Convert.ToBase64String(Encryptor.HmacSHA1(bytesPolicy, bytesSecret));
                     var host = ossdomain.IndexOf("://", StringComparison.Ordinal) < 0 ? "//" + ossdomain : ossdomain;
-                    return Json.Serialize(new { to = "oss", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, ossdomain = host, ossaccesskeyid, dir, policy, signature });
+                    return new System.Text.Json.Nodes.JsonObject
+                    {
+                        ["to"] = "oss",
+                        ["host"] = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl,
+                        ["ossdomain"] = host,
+                        ["ossaccesskeyid"] = ossaccesskeyid,
+                        ["dir"] = dir,
+                        ["policy"] = policy,
+                        ["signature"] = signature
+                    }.ToJsonString(XCore.JsonSerializerOptions);
                 }
                 return "";
             }
@@ -1487,7 +1503,18 @@ namespace Wlniao.XServer
                     var signKey = Encryptor.HmacSHA1(keytime, cosaccesskeySecret);
                     var signature = Encryptor.HmacSHA1(stringToSign, signKey);
                     var host = cosdomain.IndexOf("://", StringComparison.Ordinal) < 0 ? "//" + cosdomain : cosdomain;
-                    return Json.Serialize(new { to = "cos", host = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl, domain = host, keytime = keytime, secretid = cosaccesskeyid, dir, max, policy, signature });
+                    return new System.Text.Json.Nodes.JsonObject
+                    {
+                        ["to"] = "cos",
+                        ["host"] = string.IsNullOrEmpty(XStorageUrl) ? host : XStorageUrl,
+                        ["domain"] = host,
+                        ["keytime"] = keytime,
+                        ["secretid"] = cosaccesskeyid,
+                        ["dir"] = dir,
+                        ["max"] = max,
+                        ["policy"] = policy,
+                        ["signature"] = signature
+                    }.ToJsonString(XCore.JsonSerializerOptions);
                 }
                 return "";
             }

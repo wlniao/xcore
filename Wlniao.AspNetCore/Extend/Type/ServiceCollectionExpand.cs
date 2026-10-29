@@ -26,6 +26,7 @@
 ===============================================================================*/
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,6 +43,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="service"></param>
         /// <param name="assemblyFile">要注册的DLL名称</param>
+        [RequiresUnreferencedCode("AddBusiness 在运行时动态加载程序集并反射扫描 BusinessService 特性（Assembly.LoadFrom/GetTypes/GetCustomAttributes/GetInterfaces），trim/单文件/AOT 下无法静态分析，调用方需保证相关类型未被裁剪")]
         public static void AddBusiness(this IServiceCollection service, string? assemblyFile = null)
         {
             Type[]? types = null;

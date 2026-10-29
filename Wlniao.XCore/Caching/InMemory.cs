@@ -20,12 +20,10 @@
 
 ===============================================================================*/
 using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Wlniao.Caching
 {
@@ -62,19 +60,18 @@ namespace Wlniao.Caching
 
 
         /// <summary>
-        /// 设置缓存内容
+        /// 设置缓存内容（AOT 安全：通过源生成的 JsonTypeInfo&lt;T&gt; 序列化）
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">缓存值类型</typeparam>
         /// <param name="key"></param>
-        /// <param name="obj"></param>
+        /// <param name="obj">要缓存的对象</param>
+        /// <param name="typeInfo">源生成的 JSON 元数据</param>
         /// <param name="expireSeconds"></param>
         /// <returns></returns>
-        public static bool Set<T>(string key, T obj, int expireSeconds = 86400)
+        public static bool Set<T>(string key, T obj, JsonTypeInfo<T> typeInfo, int expireSeconds = 86400)
         {
             var expire = DateTime.Now.AddSeconds(expireSeconds);
-            var value = JsonSerializer.Serialize(obj, new JsonSerializerOptions{
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-            });
+            var value = JsonSerializer.Serialize(obj, typeInfo);
             Cache.AddOrUpdate(key, new CacheData { Expire = expire, Value = value}, (k, old) => {
                 old.Value = value;
                 old.Expire = expire;
@@ -179,22 +176,21 @@ namespace Wlniao.Caching
             return null;
         }
 
+
         /// <summary>
-        /// 获取一个缓存项
+        /// 获取一个缓存项（AOT 安全：通过源生成的 JsonTypeInfo&lt;T&gt; 反序列化）
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">缓存值类型</typeparam>
         /// <param name="key"></param>
+        /// <param name="typeInfo">源生成的 JSON 元数据</param>
         /// <returns></returns>
-        public static T Get<T>(string key)
+        public static T Get<T>(string key, JsonTypeInfo<T> typeInfo)
         {
             if(Cache.TryGetValue(key, out var val))
             {
                 if (val.Expire > DateTime.Now)
                 {
-                    return JsonSerializer.Deserialize<T>(val.Value, new JsonSerializerOptions
-                    {
-                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //Json序列化的时候对中文进行处理
-                    });
+                    return JsonSerializer.Deserialize(val.Value, typeInfo);
                 }
                 else
                 {

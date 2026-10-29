@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Version>8.0.73</Version>
+        <Version>8.1.0-beta</Version>
         <Authors>XieChaoyi</Authors>
         <Copyright>Copyright 2020 XieChaoyi</Copyright>
         <Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -13,7 +13,9 @@
         <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
         <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
         <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-        <NoWarn>CS8632;IL2026;IL2057;IL2067;IL2070;IL2087;IL2090</NoWarn>
+        <!-- 显式声明本库面向 NativeAOT/裁剪兼容：保留 IsTrimmable，并移除对 IL2xxx 裁剪/AOT 警告的压制，
+             相关问题通过对反射路径标注 RequiresDynamicCode/RequiresUnreferencedCode 与 JsonNode/JsonObject 重写显式处理。 -->
+        <IsAotCompatible>True</IsAotCompatible>
         <PackageId>Wlniao.XCore</PackageId>
         <PackageTags>Wlniao;XCore;CoreCLR;XServer</PackageTags>
         <PackageUrl>https://static.wlniao.com/wlniao/logo.png</PackageUrl>
@@ -25,6 +27,7 @@
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <RepositoryUrl>https://github.com/wlniao/xcore</RepositoryUrl>
         <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+        <Nullable>annotations</Nullable>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
         <Optimize>False</Optimize>
@@ -34,11 +37,7 @@
         <IsTrimmable>True</IsTrimmable>
     </PropertyGroup>
     <ItemGroup>
-        <Compile Remove="Namespace\log.cs" />
         <Compile Remove="Handler\**" />
-        <Compile Remove="OpenApi\**" />
-        <Compile Remove="OpenApi\Location.cs" />
-        <Compile Remove="OpenApi\Wx.cs" />
     </ItemGroup>
 
     <ItemGroup>

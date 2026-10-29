@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>0.9.13</Version>
+		<Version>0.9.13-beta</Version>
 		<Authors>XieChaoyi</Authors>
 		<Copyright>Copyright 2020 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -14,7 +14,6 @@
 		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<NoWarn>CS8603;CS8618;CS8625;CS8632</NoWarn>
 		<PackageId>Wlniao.Tasker</PackageId>
 		<PackageTags>Wlniao;XCore;Tasker</PackageTags>
 		<PackageUrl>https://static.wlniao.com/wlniao/logo.png</PackageUrl>
@@ -25,13 +24,16 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/wlniao/xcore</RepositoryUrl>
-		<TargetFramework>net8.0</TargetFramework>
+        <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+        <Nullable>annotations</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="MQTTnet" Version="5.1.0.1559" />
 		<PackageReference Include="StackExchange.Redis" Version="2.12.8" />
-		<PackageReference Include="Wlniao.XCore" Version="8.0.73" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
