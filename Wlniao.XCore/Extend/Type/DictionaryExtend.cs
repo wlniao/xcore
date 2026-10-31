@@ -21,6 +21,9 @@
 ===============================================================================*/
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Wlniao
@@ -30,6 +33,11 @@ namespace Wlniao
     /// </summary>
     public static class DictionaryExtend
     {
+        /// <summary>
+        /// 未显式传入 JsonTypeInfo 时的反射兜底说明（与 Json 逃生舱重载保持同一口径）
+        /// </summary>
+        private const string UnAotMessage = "未显式传入 JsonTypeInfo<T> 的 ToDictionary 重载，在目标类型未被源生成上下文覆盖时需要运行时反射，在 NativeAOT/裁剪环境下可能丢字段或失效。AOT 场景请改用 ToDictionary<T>(T, JsonTypeInfo<T>)，或在 JsonSerializerContext 上登记目标类型以命中零反射分支。";
+
         /// <summary>
         /// 对象转换为 Dictionary（AOT 安全：基于源生成元数据序列化后经 JsonNode 解析，零反射）
         /// </summary>
@@ -45,9 +53,49 @@ namespace Wlniao
             }
 
             // 源生成序列化后经 JsonNode 解析为字典（零反射，AOT 安全）
-            var dic = Json.DeserializeToDic(Json.Serialize(obj, typeInfo));
+            return FromJsonObject(Json.Serialize(obj, typeInfo));
+        }
+
+        /// <summary>
+        /// 对象转换为 Dictionary（无需显式 typeInfo：命中源生成上下文走零反射，未命中时反射兜底）
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj">需要转换的对象</param>
+        /// <param name="context">源生成上下文，默认使用 <see cref="JsonContext"/>；传入自有上下文可让已登记类型走零反射路径</param>
+        /// <remarks>
+        /// 解析顺序：IDictionaryConvertible 接口 → 上下文按运行时类型解析元数据（零反射、AOT 安全）→ 反射式序列化兜底。
+        /// 前两分支均不使用反射；只有目标类型（取 <c>obj.GetType()</c>）未登记在上下文中时才会走最后的反射兜底，
+        /// 其行为与 Json.Serialize 的逃生舱重载一致（含 DegradeOptions 降级与 <see cref="Json.StrictTrimDiagnostics"/> 诊断）。
+        /// 因存在反射兜底分支，本重载标注了 <c>Requires*</c>：严格 AOT/裁剪场景请改用
+        /// <see cref="ToDictionary{T}(T, JsonTypeInfo{T})"/>，或将目标类型登记进上下文以稳定命中零反射分支。
+        /// </remarks>
+        [RequiresUnreferencedCode(UnAotMessage)]
+        [RequiresDynamicCode(UnAotMessage)]
+        public static Dictionary<string, object> ToDictionary<T>(this T obj, JsonSerializerContext context = null)
+        {
+            // AOT 安全分支
+            if (obj is IDictionaryConvertible convertible)
+            {
+                return convertible.ToDictionary();
+            }
+            // 按运行时类型解析元数据：命中即零反射（声明为基类/接口时也不会丢派生成员）
+            var typeInfo = (context ?? JsonContext.Instance).GetTypeInfo(obj == null ? typeof(T) : obj.GetType());
+            if (typeInfo != null)
+            {
+                return FromJsonObject(JsonSerializer.Serialize(obj, typeInfo));
+            }
+            // 未登记：反射兜底
+            return FromJsonObject(Json.Serialize(obj));
+        }
+
+        /// <summary>
+        /// 源生成序列化后的 JSON 经 JsonNode 解析为字典并过滤空值
+        /// </summary>
+        /// <param name="json">序列化结果</param>
+        private static Dictionary<string, object> FromJsonObject(string json)
+        {
             var result = new Dictionary<string, object>();
-            foreach (var kvp in dic)
+            foreach (var kvp in Json.DeserializeToDic(json))
             {
                 if (kvp.Value != null)
                 {

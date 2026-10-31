@@ -169,7 +169,6 @@ namespace Wlniao
         /// 将 json 字符串反序列化为字典对象（AOT 安全，基于 JsonNode 解析，不依赖反射）
         /// </summary>
         /// <param name="jsonString"></param>
-        /// <param name="options">保留参数以兼容旧签名，实际解析使用 JsonNode</param>
         /// <returns></returns>
         public static Dictionary<string, object?> DeserializeToDic(string jsonString)
         {
