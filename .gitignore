@@ -10,6 +10,7 @@
 **.vs
 **.idea
 **.vscode
+**.workbuddy
 **/bin
 **/obj
 **/Properties

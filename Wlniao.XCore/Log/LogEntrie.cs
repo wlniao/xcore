@@ -1,7 +1,7 @@
-/*==============================================================================
-    ÎÄ¼şÃû³Æ£ºLogLevel.cs
-    ÊÊÓÃ»·¾³£ºCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    ¹¦ÄÜÃèÊö£ºÈÕÖ¾µÄµÈ¼¶
+ï»¿/*==============================================================================
+    æ–‡ä»¶åç§°ï¼šLogEntrie.cs
+    é€‚ç”¨ç¯å¢ƒï¼šCoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    åŠŸèƒ½æè¿°ï¼šæ—¥å¿—å®ä½“
 ================================================================================
  
     Copyright 2015 XieChaoyi
@@ -24,27 +24,27 @@ using System.Collections.Generic;
 namespace Wlniao.Log
 {
     /// <summary>
-    /// ÈÕÖ¾ÊµÌå
+    /// æ—¥å¿—å®ä½“
     /// </summary>
     public class LogEntrie
     {
         /// <summary>
-        /// ÈÕÖ¾±êÇ©
+        /// æ—¥å¿—æ ‡ç­¾
         /// </summary>
         public IDictionary<string, string> tags = new Dictionary<string, string>();
 
         /// <summary>
-        /// ÈÕÖ¾Ê±¼ä
+        /// æ—¥å¿—æ—¶é—´
         /// </summary>
         public DateTime time { get; set; }
 
         /// <summary>
-        /// ÈÕÖ¾ÄÚÈİ
+        /// æ—¥å¿—å†…å®¹
         /// </summary>
         public string content { get; set; }
 
         /// <summary>
-        /// RFC3339Nano¸ñÊ½Ê±¼ä
+        /// RFC3339Nanoæ ¼å¼æ—¶é—´
         /// </summary>
         public string ts
         {

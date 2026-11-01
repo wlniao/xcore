@@ -1,0 +1,28 @@
+<Project>
+  <PropertyGroup>
+		<!-- 禁用 SourceLink，阻止 Git 仓库信息读取 -->
+		<EnableSourceLink>false</EnableSourceLink>
+		
+        <!-- 禁用 SourceLink 对源代码管理器的查询，从根本上阻止 Git 任务运行 -->
+        <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+
+        <!-- 取当前项目所在目录的名称，例如 Backend -->
+        <_ProjectDirName>$([System.IO.Path]::GetFileName($(MSBuildProjectDirectory)))</_ProjectDirName>
+        
+        <!-- 当前项目所在目录的绝对路径（UNC 或本地） -->
+        <_ProjectDirAbs>$(MSBuildProjectDirectory)</_ProjectDirAbs>
+
+        <!-- 将绝对路径扁平化为合法、唯一的目录名：替换 : \ / 为 _ -->
+        <_ProjectDirKey>$([System.String]::Copy('$(_ProjectDirAbs)').Replace(':', '_').Replace('\', '_').Replace('/', '_').Trim('_').ToLower())</_ProjectDirKey>
+
+		<!-- 系统缓存根目录：Windows → %TEMP%，Linux → /tmp，按用户天然隔离 -->
+        <_BuildCacheRoot>$([System.IO.Path]::Combine($([System.IO.Path]::GetTempPath()), '$(_ProjectDirKey)'))</_BuildCacheRoot>
+
+		<!-- 中间目录 obj：必须与 MSBuildProjectExtensionsPath 同步设置 -->
+		<BaseIntermediateOutputPath>$([System.IO.Path]::Combine($(_BuildCacheRoot), 'obj'))$([System.IO.Path]::DirectorySeparatorChar)</BaseIntermediateOutputPath>
+		<MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+
+		<!-- 输出目录 bin -->
+		<BaseOutputPath>$([System.IO.Path]::Combine($(_BuildCacheRoot), 'bin'))$([System.IO.Path]::DirectorySeparatorChar)</BaseOutputPath>
+  </PropertyGroup>
+</Project>

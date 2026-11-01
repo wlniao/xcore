@@ -24,8 +24,13 @@ using System;
 namespace Wlniao.Runtime
 {
     /// <summary>
-    /// 
+    /// 控制台进度输出工具
     /// </summary>
+    /// <remarks>
+    /// 类名与 <see cref="System.Console"/> 同名：任何 <c>using Wlniao.Runtime;</c> 的文件里
+    /// 写 <c>Console.WriteLine</c> 都会产生歧义，库内零调用，将在下个大版本重命名或移除。
+    /// </remarks>
+    [Obsolete("Wlniao.Runtime.Console 与 System.Console 同名易造成冲突，且无反射以外的必要性，将在下个大版本移除。", DiagnosticId = "XCORE0005")]
     public class Console
     {
         private int outType = 0;    //输出模式：1,行内输出 2,新行输出

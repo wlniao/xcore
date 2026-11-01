@@ -29,9 +29,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="10.2.3" />
+		<!-- 源码使用 Microsoft.OpenApi 1.x 的对象模型（Microsoft.OpenApi.Models / .Interfaces），
+		     该命名空间自 Microsoft.OpenApi 2.0 起被移除，因此这里必须锁定 1.x 系列，
+		     与之配套的 Swashbuckle 只能是 6.x（7.x 起改用新的 OpenApi 模型）。 -->
+		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.5.0" />
 		<PackageReference Include="IGeekFan.AspNetCore.Knife4jUI" Version="0.0.16" />
-		<PackageReference Include="Microsoft.OpenApi" Version="3.5.0" />
+		<PackageReference Include="Microsoft.OpenApi" Version="1.6.14" />
 		<PackageReference Include="Wlniao.XCore" Version="10.0.0" />
 	</ItemGroup>
 

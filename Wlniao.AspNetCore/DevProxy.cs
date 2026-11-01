@@ -1,11 +1,11 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
-using System.Net.WebSockets;
 using System.Net.Http.Headers;
+using System.Net.WebSockets;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
 namespace Wlniao;
@@ -15,72 +15,74 @@ namespace Wlniao;
 /// </summary>
 public class DevProxy
 {
+    /// <summary>
+    /// 复用 HttpClient，避免每次请求新建实例导致套接字耗尽
+    /// </summary>
+    private static readonly HttpClient _client = new(new HttpClientHandler { AllowAutoRedirect = false })
+    {
+        Timeout = TimeSpan.FromSeconds(60)
+    };
+
+    /// <summary>
+    /// 不允许透传给目标服务的请求头（由 HttpClient 自行计算或与升级协议冲突）
+    /// </summary>
+    private static readonly string[] _skipHeaders =
+        ["host", "connection", "content-length", "transfer-encoding", "keep-alive", "upgrade", "proxy-connection"];
 
     /// <summary>
     /// Http代理
     /// </summary>
+    /// <remarks>
+    /// 普通请求返回上游响应，调用方负责回写状态码、响应头与响应体。
+    /// 当请求为 WebSocket 升级请求时，本方法会接管连接直到其关闭，返回值的 StatusCode 固定为
+    /// <see cref="HttpStatusCode.SwitchingProtocols"/>，**仅用于表示代理已结束**：
+    /// 此时响应已升级完成，调用方不得再把该对象写入客户端响应。
+    /// </remarks>
     /// <param name="request"></param>
     /// <param name="target"></param>
     /// <returns></returns>
-    public static Task<HttpResponseMessage> Http(HttpRequest request, string target)
+    public static async Task<HttpResponseMessage> Http(HttpRequest request, string target)
     {
         var context = request.HttpContext;
-        if(context.WebSockets.IsWebSocketRequest)
+        if (context.WebSockets.IsWebSocketRequest)
         {
             var wst = "ws://" + target[(target.IndexOf("://", StringComparison.Ordinal) + 3)..];
-            ProxyWebSocketAsync(context, wst);
-            return new Task<HttpResponseMessage>(null);
+            // WebSocket 代理会持续到连接关闭，必须等待其结束，否则 HttpContext 被提前释放
+            await ProxyWebSocketAsync(context, wst);
+            return new HttpResponseMessage(HttpStatusCode.SwitchingProtocols);
         }
-        var client = new HttpClient();
+
         var uri = new Uri(target + request.Path.Value + context.Request.QueryString);
-        var msg = new HttpRequestMessage();
-        client.Timeout = TimeSpan.FromSeconds(60);
-        msg.Method = new HttpMethod(request.Method);
-        msg.RequestUri = uri;
-        msg.Headers.Host = uri.Host;
-        if (request.ContentLength > 0)
+        using var msg = new HttpRequestMessage
         {
-            msg.Content = new StreamContent(context.Request.Body);
-            if (request.ContentType != null)
-            {
-                msg.Content.Headers.ContentType = new MediaTypeHeaderValue(request.ContentType);
-            }
+            Method = new HttpMethod(request.Method),
+            RequestUri = uri
+        };
+        msg.Headers.Host = uri.Authority;
+
+        if (request is { ContentLength: > 0, ContentType: not null })
+        {
+            // 包一层不释放内层流的包装器：HttpRequestMessage.Dispose → StreamContent.Dispose 会连带释放 Request.Body
+            msg.Content = new StreamContent(new NonDisposingStream(context.Request.Body));
+            msg.Content.Headers.ContentType = new MediaTypeHeaderValue(request.ContentType);
+            // content-length 未参与透传，这里显式回填，避免出站请求退化为 chunked 而不被部分下游接受
+            msg.Content.Headers.ContentLength = request.ContentLength;
         }
+
         // 复制请求头
         foreach (var header in context.Request.Headers)
         {
-            if (header.Key.ToLower() == "host" || header.Key.ToLower() == "connection")
+            if (Array.IndexOf(_skipHeaders, header.Key.ToLowerInvariant()) >= 0)
             {
                 continue;
             }
             if (!msg.Headers.TryAddWithoutValidation(header.Key, [.. header.Value]) && msg.Content != null)
             {
-                _ = (msg.Content?.Headers.TryAddWithoutValidation(header.Key, [.. header.Value]));
+                msg.Content.Headers.TryAddWithoutValidation(header.Key, [.. header.Value]);
             }
         }
 
-        // 复制请求体（如果是 POST、PUT 等）
-        if (request is not { ContentLength: > 0, ContentType: not null })
-        {
-            return client.SendAsync(msg);
-        }
-        msg.Content = new StreamContent(request.Body);
-        msg.Content.Headers.ContentType = new MediaTypeHeaderValue(request.ContentType);
-
-        // using (var responseMessageTask = client.SendAsync(msg, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, context.RequestAborted))
-        // {
-        //     var responseMessage = responseMessageTask.Result;
-        //     foreach (var header in responseMessage.Content.Headers)
-        //     {
-        //         context.Response.Headers.TryAdd(header.Key, header.Value.ToArray());
-        //     }
-        //     context.Response.StatusCode = (int)responseMessage.StatusCode;
-        //     responseMessage.Content.CopyToAsync(context.Response.Body, context.RequestAborted);
-        // }
-
-
-        // 发送请求
-        return client.SendAsync(msg);
+        return await _client.SendAsync(msg, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
     }
 
     /// <summary>
@@ -89,50 +91,40 @@ public class DevProxy
     /// <param name="context"></param>
     /// <param name="targetWebSocketUrl"></param>
     /// <returns></returns>
-    private static Task ProxyWebSocketAsync(HttpContext context, string targetWebSocketUrl)
+    private static async Task ProxyWebSocketAsync(HttpContext context, string targetWebSocketUrl)
     {
-        // 检查当前请求是否是 WebSocket 请求
         if (!context.WebSockets.IsWebSocketRequest)
         {
-            // context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            // context.Response.WriteAsync("This endpoint requires WebSocket protocol");
-            return Task.CompletedTask;
+            return;
         }
 
-        // 接受客户端 WebSocket 连接
-        using var clientWebSocket = context.WebSockets.AcceptWebSocketAsync().Result;
-        
-        // 创建到目标服务器的 WebSocket 连接
+        var cancellationToken = context.RequestAborted;
+        using var clientWebSocket = await context.WebSockets.AcceptWebSocketAsync();
         using var targetWebSocket = new ClientWebSocket();
-        
+
         try
         {
-            // 连接到目标 WebSocket 服务器
-            targetWebSocket.ConnectAsync(new Uri(targetWebSocketUrl), context.RequestAborted);
+            await targetWebSocket.ConnectAsync(new Uri(targetWebSocketUrl), cancellationToken);
+            Log.Loger.Debug($"WebSocket proxy established: {context.Connection.RemoteIpAddress} -> {targetWebSocketUrl}");
 
-            Console.WriteLine("WebSocket proxy established: {Client} -> {Target}", context.Connection.RemoteIpAddress, targetWebSocketUrl);
-
-            // 创建双向数据传输任务
-            var clientToTarget = Task.Run(() => 
-                ForwardWebSocketDataAsync(clientWebSocket, targetWebSocket, "Client->Target", context.RequestAborted));
-            
-            var targetToClient = Task.Run(() => 
-                ForwardWebSocketDataAsync(targetWebSocket, clientWebSocket, "Target->Client", context.RequestAborted));
-
-            // 等待任意一个任务完成（连接关闭）
-            return Task.WhenAny(clientToTarget, targetToClient);
+            // 双向转发，任意一个方向结束即视为连接关闭
+            await Task.WhenAny(
+                ForwardWebSocketDataAsync(clientWebSocket, targetWebSocket, "Client->Target", cancellationToken),
+                ForwardWebSocketDataAsync(targetWebSocket, clientWebSocket, "Target->Client", cancellationToken));
+        }
+        catch (OperationCanceledException)
+        {
+            // 客户端主动断开，忽略
         }
         catch (Exception ex)
         {
-            Wlniao.Log.Loger.Error($"WebSocket proxy error => {ex.Message}{Environment.NewLine}{ex.StackTrace}");
+            Log.Loger.Error($"WebSocket proxy error => {ex.Message}{Environment.NewLine}{ex.StackTrace}");
         }
         finally
         {
-            // 关闭连接
-            CloseWebSocketAsync(clientWebSocket, WebSocketCloseStatus.NormalClosure, "Proxy closed", context.RequestAborted).Wait();
-            CloseWebSocketAsync(targetWebSocket, WebSocketCloseStatus.NormalClosure, "Proxy closed", CancellationToken.None).Wait();
+            await CloseWebSocketAsync(clientWebSocket, WebSocketCloseStatus.NormalClosure, "Proxy closed", CancellationToken.None);
+            await CloseWebSocketAsync(targetWebSocket, WebSocketCloseStatus.NormalClosure, "Proxy closed", CancellationToken.None);
         }
-        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -143,32 +135,32 @@ public class DevProxy
     /// <param name="direction"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private static Task ForwardWebSocketDataAsync(WebSocket source, WebSocket destination, string direction, CancellationToken cancellationToken)
+    private static async Task ForwardWebSocketDataAsync(WebSocket source, WebSocket destination, string direction, CancellationToken cancellationToken)
     {
-        var buffer = new byte[4096];
-        WebSocketReceiveResult result;
-        do
+        var buffer = new byte[8192];
+        try
         {
-            result = source.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken).Result;            
-            if (result.MessageType == WebSocketMessageType.Close)
+            while (!cancellationToken.IsCancellationRequested && source.State == WebSocketState.Open)
             {
-                Console.WriteLine("{Direction}: Received close message", direction);
-                destination.CloseAsync(WebSocketCloseStatus.NormalClosure, "Proxy close", cancellationToken);
-                break;
+                // 必须等待接收完成后再发送，且发送完成前不能复用 buffer，否则会出现乱序或数据错乱
+                var result = await source.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    await CloseWebSocketAsync(destination, WebSocketCloseStatus.NormalClosure, "Proxy close", CancellationToken.None);
+                    break;
+                }
+
+                await destination.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, cancellationToken);
             }
-
-            // 转发消息到目标
-            destination.SendAsync(
-                new ArraySegment<byte>(buffer, 0, result.Count),
-                result.MessageType,
-                result.EndOfMessage,
-                cancellationToken);
-
-            Console.WriteLine("{Direction}: Forwarded {Count} bytes, MessageType: {MessageType}, EndOfMessage: {EndOfMessage}",
-                direction, result.Count, result.MessageType, result.EndOfMessage);
-
-        } while (!result.CloseStatus.HasValue && !cancellationToken.IsCancellationRequested);
-        return Task.CompletedTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // 连接已关闭，忽略
+        }
+        catch (Exception ex)
+        {
+            Log.Loger.Debug($"{direction}: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -179,12 +171,50 @@ public class DevProxy
     /// <param name="statusDescription"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private static Task CloseWebSocketAsync(WebSocket webSocket, WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
+    private static async Task CloseWebSocketAsync(WebSocket webSocket, WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
     {
-        if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived)
+        try
         {
-            return webSocket.CloseAsync(closeStatus, statusDescription, cancellationToken);
+            if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived)
+            {
+                await webSocket.CloseAsync(closeStatus, statusDescription, cancellationToken);
+            }
         }
-        return Task.CompletedTask;
+        catch (Exception ex)
+        {
+            Log.Loger.Debug($"WebSocket close: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 只读转发包装器：释放自身时不释放内层流，
+    /// 避免 HttpRequestMessage 释放时把 ASP.NET Core 的 Request.Body 一起关掉
+    /// </summary>
+    private sealed class NonDisposingStream(Stream inner) : Stream
+    {
+        public override bool CanRead => inner.CanRead;
+        public override bool CanSeek => inner.CanSeek;
+        public override bool CanWrite => inner.CanWrite;
+        public override long Length => inner.Length;
+        public override long Position
+        {
+            get => inner.Position;
+            set => inner.Position = value;
+        }
+        public override void Flush() => inner.Flush();
+        public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
+        public override int Read(Span<byte> buffer) => inner.Read(buffer);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => inner.ReadAsync(buffer, cancellationToken);
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => inner.ReadAsync(buffer, offset, count, cancellationToken);
+        public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
+        public override void SetLength(long value) => inner.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => inner.Write(buffer, offset, count);
+        protected override void Dispose(bool disposing)
+        {
+            // 故意不释放 inner
+        }
+        public override ValueTask DisposeAsync() => default;
     }
 }

@@ -312,9 +312,10 @@ namespace Wlniao.IO
             }
         }
         /// <summary>
-        /// 使用ZIP格式压缩文件（未实现）
+        /// 使用ZIP格式压缩文件（从未实现）
         /// </summary>
         /// <param name="sourceFileName">压缩的文件名</param>
+        [Obsolete("FileEx.Zip 从未实现，调用必然抛异常，请使用 System.IO.Compression.ZipFile。", DiagnosticId = "XCORE0007")]
         public static void Zip(string sourceFileName)
         {
             Zip(sourceFileName, sourceFileName + ".zip");
@@ -324,26 +325,29 @@ namespace Wlniao.IO
         /// </summary>
         /// <param name="sourceFileName">压缩的文件名</param>
         /// <param name="destFileName">压缩后输出的文件名</param>
+        [Obsolete("FileEx.Zip 从未实现，调用必然抛异常，请使用 System.IO.Compression.ZipFile。", DiagnosticId = "XCORE0007")]
         public static void Zip(string sourceFileName, string destFileName)
         {
-            throw new Exception("Zip 方法未实现");
+            throw new NotImplementedException("Zip 方法未实现，请使用 System.IO.Compression.ZipFile");
         }
         /// <summary>
         /// 解包ZIP压缩文件（未实现）
         /// </summary>
         /// <param name="sourceFileName">需要解包的ZIP文件名</param>
+        [Obsolete("FileEx.UnZip 从未实现，调用必然抛异常，请使用 System.IO.Compression.ZipFile。", DiagnosticId = "XCORE0007")]
         public static void UnZip(string sourceFileName)
         {
-            throw new Exception("UnZip 方法未实现");
+            throw new NotImplementedException("UnZip 方法未实现，请使用 System.IO.Compression.ZipFile");
         }
         /// <summary>
         /// 解包ZIP压缩文件（未实现）
         /// </summary>
         /// <param name="sourceFileName">需要解包的ZIP文件名</param>
         /// <param name="destFilePath">接包后的文件输出路径</param>
+        [Obsolete("FileEx.UnZip 从未实现，调用必然抛异常，请使用 System.IO.Compression.ZipFile。", DiagnosticId = "XCORE0007")]
         public static void UnZip(string sourceFileName, string destFilePath)
         {
-            throw new Exception("UnZip 方法未实现");
+            throw new NotImplementedException("UnZip 方法未实现，请使用 System.IO.Compression.ZipFile");
         }
     }
 }

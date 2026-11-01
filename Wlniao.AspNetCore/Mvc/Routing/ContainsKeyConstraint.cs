@@ -1,6 +1,6 @@
 ﻿/*==============================================================================
     文件名称：ContainsKeyConstraint.cs
-    适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    适用环境：.NET 8.0 / .NET 10.0
     功能描述：Mvc特定路径匹配工具
 ================================================================================
  
@@ -31,18 +31,20 @@ namespace Wlniao.Mvc.Routing
     /// </summary>
     public class ContainsKeyConstraint : IRouteConstraint
     {
-        private static string[] _keys = null;
+        /// <summary>
+        /// 允许的取值集合（实例级，避免多个约束实例互相覆盖）
+        /// </summary>
+        private readonly string[] _keys;
         /// <summary>
         /// 
         /// </summary>
         /// <param name="keys"></param>
         public ContainsKeyConstraint(params string[] keys)
         {
-            _keys = keys;
-            for(var i = 0; i < _keys.Length; i++)
-            {
-                _keys[i] = _keys[i].ToLower();
-            }
+            // 复制传入数组，既不修改调用方数据，也不会被后续实例覆盖
+            _keys = keys == null || keys.Length == 0
+                ? []
+                : [.. keys.Select(k => k?.ToLowerInvariant() ?? string.Empty)];
         }
         /// <summary>
         /// 
@@ -55,15 +57,12 @@ namespace Wlniao.Mvc.Routing
         /// <returns></returns>
         public bool Match(HttpContext? httpContext, IRouter? route, string routeKey, RouteValueDictionary values, RouteDirection routeDirection)
         {
-            if (_keys != null && _keys.Length > 0 && values.ContainsKey(routeKey))
+            if (_keys.Length == 0 || !values.TryGetValue(routeKey, out var value))
             {
-                var stringValue = values[routeKey] as string;
-                if (!string.IsNullOrEmpty(stringValue))
-                {
-                    return _keys.Contains<string>(stringValue.ToLower());
-                }
+                return false;
             }
-            return false;
+            var stringValue = value as string;
+            return !string.IsNullOrEmpty(stringValue) && _keys.Contains(stringValue.ToLowerInvariant());
         }
     }
     /// <summary>

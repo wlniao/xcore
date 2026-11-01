@@ -20,6 +20,7 @@
 
 ===============================================================================*/
 
+using System;
 using System.Text;
 
 namespace Wlniao.IO
@@ -279,9 +280,11 @@ namespace Wlniao.IO
 
         }
     }
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <remarks>
+    /// 本类只是 <see cref="System.Convert.ToBase64String(byte[])"/> /
+    /// <see cref="System.Convert.FromBase64String(string)"/> 的两行包装，库内零调用，将在下个大版本移除。
+    /// </remarks>
+    [Obsolete("请直接使用 System.Convert.ToBase64String / FromBase64String，或 Wlniao.Encryptor 的 Base64 相关方法。", DiagnosticId = "XCORE0004")]
     public class Base64Default
     {
         /// <summary>

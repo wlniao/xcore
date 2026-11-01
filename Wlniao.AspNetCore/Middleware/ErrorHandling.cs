@@ -1,6 +1,6 @@
 ﻿/*==============================================================================
     文件名称：ErrorHandling.cs
-    适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
+    适用环境：.NET 8.0 / .NET 10.0
     功能描述：异常处理中间件
 ================================================================================
  
@@ -102,16 +102,25 @@ namespace Wlniao.Middleware
         /// <returns></returns>
         private static Task HandleExceptionAsync(HttpContext context, ErrorHandlingOptions options, string message)
         {
-            try
+            // 仅开发环境回传异常摘要，生产环境依赖日志排查，避免内部信息经响应头泄露
+            if (XCore.IsDevTest)
             {
-                if (!context.Response.Headers.ContainsKey("X-Wlniao-Debug"))
+                try
                 {
-                    context.Response.Headers.TryAdd("X-Wlniao-Debug", message);
+                    var debug = message.Replace("\r", " ").Replace("\n", " ");
+                    if (debug.Length > 200)
+                    {
+                        debug = debug[..200];
+                    }
+                    if (!context.Response.Headers.ContainsKey("X-Wlniao-Debug"))
+                    {
+                        context.Response.Headers.TryAdd("X-Wlniao-Debug", debug);
+                    }
                 }
-            }
-            catch
-            {
-                // ignored
+                catch
+                {
+                    // ignored
+                }
             }
 
             if (context.Request.Method == "POST" || context.Request.Query.ContainsKey("do"))

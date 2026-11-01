@@ -1,24 +1,20 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 
 namespace Wlniao.Net.Dns
 {
     /// <summary>
     /// A record class.
     /// </summary>
-    internal class DnsRecord_A : DnsRecord
+    internal class DnsRecord_A : DnsRecord_Address
     {
-        private IPAddress m_IP = null;
-
         /// <summary>
         /// Default constructor.
         /// </summary>
         /// <param name="name">DNS domain name that owns a resource record.</param>
         /// <param name="ip">IP address.</param>
         /// <param name="ttl">TTL value.</param>
-        public DnsRecord_A(string name, IPAddress ip, int ttl) : base(name, DnsRecordType.A, ttl)
+        public DnsRecord_A(string name, IPAddress ip, int ttl) : base(name, DnsRecordType.A, ip, ttl)
         {
-            m_IP = ip;
         }
 
 
@@ -35,28 +31,9 @@ namespace Wlniao.Net.Dns
         public static DnsRecord_A Parse(string name, byte[] reply, ref int offset, int rdLength, int ttl)
         {
             // IPv4 = byte byte byte byte
-
-            var ip = new byte[rdLength];
-            Array.Copy(reply, offset, ip, 0, rdLength);
-            offset += rdLength;
-
-            return new DnsRecord_A(name, new IPAddress(ip), ttl);
+            return new DnsRecord_A(name, ReadIP(reply, ref offset, rdLength), ttl);
         }
 
         #endregion
-
-
-        #region Properties Implementation
-
-        /// <summary>
-        /// Gets host IP address.
-        /// </summary>
-        public IPAddress IP
-        {
-            get { return m_IP; }
-        }
-
-        #endregion
-
     }
 }

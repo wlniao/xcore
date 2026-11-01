@@ -973,6 +973,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="literal">各进制写法</param>
         /// <returns>对应数值</returns>
+        [Obsolete("Identity 只是把入参原样返回，对外没有语义价值，将在下个大版本移除。直接在调用处写字面量或强转即可。", DiagnosticId = "XCORE0002")]
         public static long Identity(long literal)
         {
             return literal;
@@ -983,6 +984,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="literal">各进制写法</param>
         /// <returns>对应数值</returns>
+        [Obsolete("Identity 只是把入参原样返回，对外没有语义价值，将在下个大版本移除。直接在调用处写字面量或强转即可。", DiagnosticId = "XCORE0002")]
         public static ulong Identity(ulong literal)
         {
             return literal;
@@ -993,6 +995,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="literal">各进制写法</param>
         /// <returns>对应数值</returns>
+        [Obsolete("Identity 只是把入参原样返回，对外没有语义价值，将在下个大版本移除。直接在调用处写字面量或强转即可。", DiagnosticId = "XCORE0002")]
         public static float Identity(float literal)
         {
             return literal;
@@ -1003,6 +1006,7 @@ namespace Wlniao
         /// </summary>
         /// <param name="literal">各进制写法</param>
         /// <returns>对应数值</returns>
+        [Obsolete("Identity 只是把入参原样返回，对外没有语义价值，将在下个大版本移除。直接在调用处写字面量或强转即可。", DiagnosticId = "XCORE0002")]
         public static double Identity(double literal)
         {
             return literal;
@@ -1015,6 +1019,11 @@ namespace Wlniao
         /// <param name="obj">需要转换的对象</param>
         /// <param name="typeInfo">由 JsonSerializerContext 生成的类型元数据</param>
         /// <returns></returns>
+        /// <remarks>
+        /// 本方法只是 <see cref="DictionaryExtend.ToDictionary{T}(T, JsonTypeInfo{T})"/> 的一行转发，
+        /// 属于同一能力重复暴露，将在下个大版本移除。
+        /// </remarks>
+        [Obsolete("请使用 Wlniao.DictionaryExtend.ToDictionary<T>(obj, typeInfo)，两者实现完全一致。", DiagnosticId = "XCORE0003")]
         public static Dictionary<string, object> ObjectToDictionary<T>(this T obj, JsonTypeInfo<T> typeInfo)
         {
             return obj.ToDictionary(typeInfo);

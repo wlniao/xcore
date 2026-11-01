@@ -156,15 +156,7 @@ namespace Wlniao.Log
             Write(topic, message);
             if (consoleLocal && Level <= logLevel && Loger.LogLocal == "console")
             {
-                var color = logLevel switch
-                {
-                    LogLevel.Information => ConsoleColor.Gray,
-                    LogLevel.Debug => ConsoleColor.White,
-                    LogLevel.Error => ConsoleColor.Red,
-                    LogLevel.Warning => ConsoleColor.DarkYellow,
-                    LogLevel.Critical => ConsoleColor.Magenta,
-                    _ => ConsoleColor.DarkGray
-                };
+                var color = Loger.GetLevelColor(logLevel);
                 Loger.Console(string.Format("[{0}]{1} => {2}", topic, DateTools.Format(), message), color);
             }
         }
@@ -176,17 +168,19 @@ namespace Wlniao.Log
         /// <param name="message"></param>
         public void Write(string topic, string message)
         {
+            // 写入句柄必须在 finally 中释放：磁盘写满、共享冲突等失败发生在句柄已打开之后，
+            // 若此时直接抛出并被 catch 捕获，句柄会一直留到进程结束，日志文件之后既无法轮换也无法改写。
+            StreamWriter writer = null;
             try
             {
                 var fi = new System.IO.FileInfo(Path.GetFullPath(topic + ".log", basePath + DateTools.FormatDate()));
-                if (!fi.Directory.Exists)
+                if (fi.Directory != null && !fi.Directory.Exists)
                 {
                     fi.Directory.Create();
                 }
-                var fs = fi.Exists ? fi.AppendText() : fi.CreateText();
-                fs.WriteLine(string.Format("{0} {1} - {2}", DateTools.Format(), topic, message));
-                fs.Flush();
-                fs.Dispose();
+                writer = fi.Exists ? fi.AppendText() : fi.CreateText();
+                writer.WriteLine(string.Format("{0} {1} - {2}", DateTools.Format(), topic, message));
+                writer.Flush();
             }
             catch (Exception ex)
             {
@@ -198,6 +192,20 @@ namespace Wlniao.Log
                 catch
                 {
                     // 如果连控制台都无法输出，则放弃记录
+                }
+            }
+            finally
+            {
+                if (writer != null)
+                {
+                    try
+                    {
+                        writer.Dispose();
+                    }
+                    catch
+                    {
+                        // 释放失败时没有可用的兜底手段，忽略以避免掩盖上面的原始异常
+                    }
                 }
             }
         }

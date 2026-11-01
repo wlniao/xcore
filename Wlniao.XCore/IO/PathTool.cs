@@ -58,25 +58,48 @@ namespace Wlniao.IO
         /// <summary>
         /// 将相对路径转换为绝对路径
         /// </summary>
-        /// <returns></returns>
+        /// <remarks>
+        /// 注意：本重载与 public 的 <c>Map(params string[])</c> 语义并不完全一致
+        /// （本重载会额外剥掉 '~' 前缀），刻意保留 internal 可见性，
+        /// 避免 <c>Map("~/x")</c> 从 params 重载改判到本重载。
+        /// </remarks>
+        /// <param name="path">相对路径，支持以 ~ 开头的写法</param>
+        /// <returns>返回绝对路径；入参为空时返回程序根目录</returns>
         internal static string Map(string path)
         {
             if (StringUtil.IsNullOrEmpty(path))
             {
                 return XCore.StartupRoot;
             }
-            else
+            path = TrimHomePrefix(path);
+            if (path.Length == 0)
             {
-                if (path.IndexOf('~') >= 0)
-                {
-                    path = path.Replace("~", "");
-                }
-                if (path.IndexOf(':') < 0 && path[0] != '/')
-                {
-                    path = JoinPath(XCore.StartupRoot, path);
-                }
+                return XCore.StartupRoot;
+            }
+            if (path.IndexOf(':') < 0 && path[0] != '/')
+            {
+                path = JoinPath(XCore.StartupRoot, path);
+            }
+            return path;
+        }
+        /// <summary>
+        /// 剥掉路径开头的 '~'（表示程序根目录）：'~/a' → 'a'，'~' → 空串。
+        /// </summary>
+        /// <remarks>
+        /// 只处理开头：路径中间的 '~' 是普通字符（如 <c>/tmp/~backup/a.txt</c>），
+        /// 对它做整体替换会悄悄改变目标路径。
+        /// </remarks>
+        /// <param name="path">待处理的路径</param>
+        /// <returns>去掉 '~' 前缀后的路径</returns>
+        private static string TrimHomePrefix(string path)
+        {
+            if (StringUtil.IsNullOrEmpty(path) || path[0] != '~')
+            {
                 return path;
             }
+            return path.Length > 1 && (path[1] == '/' || path[1] == '\\')
+                ? path.Substring(2)
+                : path.Substring(1);
         }
         /// <summary>
         /// 将相对路径转换为绝对路径
@@ -93,12 +116,17 @@ namespace Wlniao.IO
             }
             else
             {
-                path = relativePath[0];
-				if (path.IndexOf(':') < 0 && path[0] != '/')
-				{
-					path = JoinPath(XCore.StartupRoot, path);
-				}
-				for (var i = 1; i < relativePath.Length; i++)
+                // '~' 必须在拼接之前剥掉：先拼接会让 '~' 混进路径中间，后续再也无法识别为根目录
+                path = TrimHomePrefix(relativePath[0] ?? "");
+                if (path.Length == 0)
+                {
+                    path = XCore.StartupRoot;
+                }
+                else if (path.IndexOf(':') < 0 && path[0] != '/')
+                {
+                    path = JoinPath(XCore.StartupRoot, path);
+                }
+                for (var i = 1; i < relativePath.Length; i++)
                 {
                     path = JoinPath(path, relativePath[i]);
                 }

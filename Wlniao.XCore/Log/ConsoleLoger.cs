@@ -116,15 +116,7 @@ namespace Wlniao.Log
         {
             if (Level <= logLevel)
             {
-                var color = logLevel switch
-                {
-                    LogLevel.Information => ConsoleColor.Gray,
-                    LogLevel.Debug => ConsoleColor.White,
-                    LogLevel.Error => ConsoleColor.Red,
-                    LogLevel.Warning => ConsoleColor.DarkYellow,
-                    LogLevel.Critical => ConsoleColor.Magenta,
-                    _ => ConsoleColor.DarkGray
-                };
+                var color = Loger.GetLevelColor(logLevel);
                 Loger.Console(string.Format("{0} => {2} => {1}", DateTools.Format(), message, topic), color);
             }
         }

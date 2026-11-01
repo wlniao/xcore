@@ -1,7 +1,7 @@
 ﻿/*==============================================================================
     文件名称：Attributes.cs
-    适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
-    功能描述：可在OnActionExecuting中使用“filterContext.ActionDescriptor.FilterDescriptors.Where(a => a.Filter.ToString().Contains("Wlniao.Mvc.NoLoginAttribute")).ToList().Count()”判断是否引用自定义属性
+    适用环境：.NET 8.0 / .NET 10.0
+    功能描述：控制器方法上的标记特性（空实现），配合 ActionDescriptor 上的特性判断当前请求的认证策略
 ================================================================================
  
     Copyright 2014 XieChaoyi

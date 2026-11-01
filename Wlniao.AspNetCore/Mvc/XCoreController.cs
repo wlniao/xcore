@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Wlniao.Text;
@@ -368,41 +369,67 @@ namespace Wlniao.Mvc
         [NonAction]
         protected string GetPostString()
         {
-            if (Request.Method == "OPTIONS")
+            return ReadBodyAsync().GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// 读取请求体文本内容（带缓冲，可重复读取）
+        /// </summary>
+        /// <returns></returns>
+        [NonAction]
+        protected async Task<string> GetPostStringAsync()
+        {
+            return await ReadBodyAsync();
+        }
+
+        /// <summary>
+        /// 读取请求体文本内容（带缓冲，可重复读取）
+        /// Kestrel 默认禁止同步 IO，因此内部统一使用异步读取，读取完成后回退流位置
+        /// </summary>
+        /// <returns></returns>
+        private async Task<string> ReadBodyAsync()
+        {
+            if (strPost != null)
             {
-                return string.Empty;
+                return strPost;
             }
-            else if (strPost == null && Request.Method == "POST")
+            if (Request.Method != "POST")
             {
-                try
+                strPost = string.Empty;
+                return strPost;
+            }
+
+            try
+            {
+                Request.EnableBuffering();
+                if (Request.ContentType?.StartsWith("application/x-www-form-urlencoded") ?? false)
                 {
-                    if (Request.ContentType?.StartsWith("application/x-www-form-urlencoded") ?? false)
-                    {
-                        var input = Request.Form.Aggregate("", (current, kv) => current + ("&" + kv.Key + "=" + kv.Value));
-                        strPost = input.TrimStart('&');
-                    }
-                    else
-                    {
-                        strPost = new StreamReader(Request.Body).ReadToEnd();
-                        if (string.IsNullOrEmpty(strPost))
-                        {
-                            using var reader = new StreamReader(Request.Body, Encoding.UTF8);
-                            strPost = reader.ReadToEnd();
-                        }
-                    }
+                    strPost = string.Join("&", Request.Form.Select(kv => kv.Key + "=" + kv.Value));
                 }
-                catch
+                else
                 {
-                    var buffer = Array.Empty<byte>();
-                    if (Request.ContentLength > 0)
+                    if (Request.Body.CanSeek)
                     {
-                        buffer = new byte[(int)Request.ContentLength];
+                        Request.Body.Position = 0;
                     }
-                    Request.Body.ReadExactly(buffer, 0, buffer.Length);
-                    strPost = Encoding.UTF8.GetString(buffer);
+                    using var reader = new StreamReader(Request.Body, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+                    strPost = await reader.ReadToEndAsync();
                 }
             }
-            return strPost ?? "";
+            catch (Exception ex)
+            {
+                Log.Loger.Debug($"Read body: {ex.Message}");
+                strPost = string.Empty;
+            }
+            finally
+            {
+                if (Request.Body.CanSeek)
+                {
+                    Request.Body.Position = 0;
+                }
+            }
+
+            return strPost;
         }
         /// <summary>
         /// 
@@ -417,7 +444,8 @@ namespace Wlniao.Mvc
         /// <returns></returns>
         protected string PostRequest(string key, string defaultValue = "")
         {
-            return PostRequestAsync(key, defaultValue).Result;
+            // 同步版本仅用于兼容旧调用，异常经 GetAwaiter().GetResult() 原样抛出（避免 AggregateException 包装）
+            return PostRequestAsync(key, defaultValue).GetAwaiter().GetResult();
         }
         /// <summary>
         /// 获取请求参数（仅标记但不过滤非安全字符）
@@ -465,8 +493,7 @@ namespace Wlniao.Mvc
                                 #region 请求为其它类型
                                 if (strPost == null)
                                 {
-                                    var resPost = await new StreamReader(Request.Body).ReadToEndAsync();
-                                    strPost = resPost;
+                                    strPost = await ReadBodyAsync();
                                 }
                                 if (!string.IsNullOrEmpty(strPost))
                                 {
@@ -723,7 +750,8 @@ namespace Wlniao.Mvc
                 }
                 else
                 {
-                    trace = Guid.NewGuid().ToString().Replace('-', '\0');
+                    // 必须使用可打印字符，NUL 等控制字符会导致响应头非法甚至被中途截断
+                    trace = Guid.NewGuid().ToString("N");
                 }
                 return trace;
             }

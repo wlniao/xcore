@@ -33,6 +33,34 @@ namespace Wlniao.Net.Dns
         }
 
 
+        #region method GetRecords
+
+        /// <summary>
+        /// 从应答中筛选指定类型的记录并转换为具体记录类型。
+        /// </summary>
+        /// <typeparam name="TRecord">具体的 DNS 记录类型</typeparam>
+        /// <param name="type">要筛选的记录类型</param>
+        /// <returns>指定类型的记录数组</returns>
+        internal TRecord[] GetRecords<TRecord>(DnsRecordType type) where TRecord : DnsRecord
+        {
+            var retVal = new List<TRecord>();
+            if (m_pAnswers == null)
+            {
+                return retVal.ToArray();
+            }
+            foreach (var record in m_pAnswers)
+            {
+                if (record.RecordType == type && record is TRecord typed)
+                {
+                    retVal.Add(typed);
+                }
+            }
+
+            return retVal.ToArray();
+        }
+
+        #endregion
+
         #region method GetARecords
 
         /// <summary>
@@ -41,16 +69,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_A[] GetARecords()
         {
-            var retVal = new List<DnsRecord_A>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.A)
-                {
-                    retVal.Add((DnsRecord_A)record);
-                }
-            }
-
-            return retVal.ToArray();
+            return GetRecords<DnsRecord_A>(DnsRecordType.A);
         }
 
         #endregion
@@ -63,16 +82,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_AAAA[] GetAAAARecords()
         {
-            var retVal = new List<DnsRecord_AAAA>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.AAAA)
-                {
-                    retVal.Add((DnsRecord_AAAA)record);
-                }
-            }
-
-            return retVal.ToArray();
+            return GetRecords<DnsRecord_AAAA>(DnsRecordType.AAAA);
         }
 
         #endregion
@@ -85,16 +95,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_NS[] GetNSRecords()
         {
-            var retVal = new List<DnsRecord_NS>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.NS)
-                {
-                    retVal.Add((DnsRecord_NS)record);
-                }
-            }
-
-            return retVal.ToArray();
+            return GetRecords<DnsRecord_NS>(DnsRecordType.NS);
         }
 
         #endregion
@@ -107,16 +108,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_CNAME[] GetCNAMERecords()
         {
-            var retVal = new List<DnsRecord_CNAME>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.CNAME)
-                {
-                    retVal.Add((DnsRecord_CNAME)record);
-                }
-            }
-
-            return retVal.ToArray();
+            return GetRecords<DnsRecord_CNAME>(DnsRecordType.CNAME);
         }
 
         #endregion
@@ -129,17 +121,8 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_MX[] GetMXRecords()
         {
-            var mx = new List<DnsRecord_MX>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.MX)
-                {
-                    mx.Add((DnsRecord_MX)record);
-                }
-            }
-
             // Sort MX records by preference.
-            var retVal = mx.ToArray();
+            var retVal = GetRecords<DnsRecord_MX>(DnsRecordType.MX);
             Array.Sort(retVal);
 
             return retVal;
@@ -155,16 +138,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_TXT[] GetTXTRecords()
         {
-            var retVal = new List<DnsRecord_TXT>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.TXT)
-                {
-                    retVal.Add((DnsRecord_TXT)record);
-                }
-            }
-
-            return retVal.ToArray();
+            return GetRecords<DnsRecord_TXT>(DnsRecordType.TXT);
         }
 
         #endregion
@@ -177,16 +151,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_SOA[] GetSOARecords()
         {
-            var retVal = new List<DnsRecord_SOA>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.SOA)
-                {
-                    retVal.Add((DnsRecord_SOA)record);
-                }
-            }
-
-            return retVal.ToArray();
+            return GetRecords<DnsRecord_SOA>(DnsRecordType.SOA);
         }
 
         #endregion
@@ -199,16 +164,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_PTR[] GetPTRRecords()
         {
-            var retVal = new List<DnsRecord_PTR>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.PTR)
-                {
-                    retVal.Add((DnsRecord_PTR)record);
-                }
-            }
-
-            return retVal.ToArray();
+            return GetRecords<DnsRecord_PTR>(DnsRecordType.PTR);
         }
 
         #endregion
@@ -221,16 +177,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_HINFO[] GetHINFORecords()
         {
-            var retVal = new List<DnsRecord_HINFO>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.HINFO)
-                {
-                    retVal.Add((DnsRecord_HINFO)record);
-                }
-            }
-
-            return retVal.ToArray();
+            return GetRecords<DnsRecord_HINFO>(DnsRecordType.HINFO);
         }
 
         #endregion
@@ -243,16 +190,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_SRV[] GetSRVRecords()
         {
-            var retVal = new List<DnsRecord_SRV>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.SRV)
-                {
-                    retVal.Add((DnsRecord_SRV)record);
-                }
-            }
-
-            return retVal.ToArray();
+            return GetRecords<DnsRecord_SRV>(DnsRecordType.SRV);
         }
 
         #endregion
@@ -265,16 +203,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_NAPTR[] GetNAPTRRecords()
         {
-            var retVal = new List<DnsRecord_NAPTR>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.NAPTR)
-                {
-                    retVal.Add((DnsRecord_NAPTR)record);
-                }
-            }
-
-            return retVal.ToArray();
+            return GetRecords<DnsRecord_NAPTR>(DnsRecordType.NAPTR);
         }
 
         #endregion
@@ -287,41 +216,7 @@ namespace Wlniao.Net.Dns
         /// <returns></returns>
         internal DnsRecord_SPF[] GetSPFRecords()
         {
-            var retVal = new List<DnsRecord_SPF>();
-            foreach (var record in m_pAnswers)
-            {
-                if (record.RecordType == DnsRecordType.SPF)
-                {
-                    retVal.Add((DnsRecord_SPF)record);
-                }
-            }
-
-            return retVal.ToArray();
-        }
-
-        #endregion
-
-
-        #region method FilterRecords
-
-        /// <summary>
-        /// Filters out specified type of records from answer.
-        /// </summary>
-        /// <param name="answers"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        private List<DnsRecord> FilterRecordsX(List<DnsRecord> answers, DnsRecordType type)
-        {
-            var retVal = new List<DnsRecord>();
-            foreach (var record in answers)
-            {
-                if (record.RecordType == type)
-                {
-                    retVal.Add(record);
-                }
-            }
-
-            return retVal;
+            return GetRecords<DnsRecord_SPF>(DnsRecordType.SPF);
         }
 
         #endregion
@@ -374,22 +269,6 @@ namespace Wlniao.Net.Dns
         /// <summary>
         /// Gets dns server returned answers. NOTE: Before using this property ensure that ConnectionOk=true and ResponseCode=RCODE.NO_ERROR.
         /// </summary>
-        /// <code>
-        /// // NOTE: DNS server may return diffrent record types even if you query MX.
-        /// //       For example you query lumisoft.ee MX and server may response:	
-        ///	//		 1) MX - mail.lumisoft.ee
-        ///	//		 2) A  - lumisoft.ee
-        ///	// 
-        ///	//       Before casting to right record type, see what type record is !
-        ///				
-        /// 
-        /// foreach(DnsRecordBase record in Answers){
-        ///		// MX record, cast it to MX_Record
-        ///		if(record.RecordType == QTYPE.MX){
-        ///			MX_Record mx = (MX_Record)record;
-        ///		}
-        /// }
-        /// </code>
         internal DnsRecord[] Answers
         {
             get { return m_pAnswers.ToArray(); }

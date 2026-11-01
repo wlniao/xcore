@@ -66,15 +66,24 @@
                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
             */
 
+            // RDATA 边界必须在读任何字段之前确定：ORDER/PREFERENCE 各占 2 字节，
+            // 若读完这两段再算 offset + rdLength，边界会比真实末尾宽 4 字节，
+            // 后面几个字符段就能读穿到下一条记录里。
+            var endOffset = offset + rdLength;
+            if (endOffset > reply.Length)
+            {
+                endOffset = reply.Length;
+            }
+
             var order = reply[offset++] << 8 | reply[offset++];
 
             var preference = reply[offset++] << 8 | reply[offset++];
 
-            var flags = DnsTool.ReadCharacterString(reply, ref offset);
+            var flags = DnsTool.ReadCharacterString(reply, ref offset, endOffset);
 
-            var services = DnsTool.ReadCharacterString(reply, ref offset);
+            var services = DnsTool.ReadCharacterString(reply, ref offset, endOffset);
 
-            var regexp = DnsTool.ReadCharacterString(reply, ref offset);
+            var regexp = DnsTool.ReadCharacterString(reply, ref offset, endOffset);
 
             var replacement = "";
             DnsTool.GetQName(reply, ref offset, ref replacement);

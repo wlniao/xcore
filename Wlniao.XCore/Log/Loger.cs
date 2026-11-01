@@ -35,6 +35,24 @@ namespace Wlniao.Log
         /// 为None时表示未初始化，将在初始化后可用
         /// </summary>
         internal static LogLevel logLevel = LogLevel.None;
+
+        /// <summary>
+        /// 日志级别 → 控制台颜色的映射
+        /// </summary>
+        /// <param name="level">日志级别</param>
+        /// <returns>对应的控制台前景色</returns>
+        internal static ConsoleColor GetLevelColor(LogLevel level)
+        {
+            return level switch
+            {
+                LogLevel.Information => ConsoleColor.Gray,
+                LogLevel.Debug => ConsoleColor.White,
+                LogLevel.Error => ConsoleColor.Red,
+                LogLevel.Warning => ConsoleColor.DarkYellow,
+                LogLevel.Critical => ConsoleColor.Magenta,
+                _ => ConsoleColor.DarkGray
+            };
+        }
         /// <summary>
         /// 
         /// </summary>

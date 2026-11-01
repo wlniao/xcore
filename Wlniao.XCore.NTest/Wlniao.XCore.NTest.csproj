@@ -31,8 +31,15 @@
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
   </ItemGroup>
 
+  <!--
+    本工程自身占用了 Wlniao.XCore 命名空间（namespace Wlniao.XCore.NTest），
+    导致源码里写 Wlniao.XCore.Xxx 时编译器会优先解析成命名空间而不是同名类型 XCore（CS0435/CS0234）。
+    为被测程序集额外注册一个外部别名 xcore，需要访问 Wlniao.XCore 类型的测试文件里写：
+        extern alias xcore;   →   xcore::Wlniao.XCore.AcceptAnyServerCertificate
+    global 必须一并保留，否则其余按常规方式引用 XCore 类型的测试文件会全部编译失败。
+  -->
   <ItemGroup>
-    <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" />
+    <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" Aliases="global,xcore" />
   </ItemGroup>
 
   <ItemGroup>

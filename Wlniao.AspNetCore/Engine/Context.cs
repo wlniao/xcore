@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Unicode;
@@ -79,7 +80,8 @@ namespace Wlniao.Engine
                 {
                     return true;
                 }
-                return Request.IsHttps;
+                // 未初始化时 Request 为空，不能直接访问
+                return Request != null && Request.IsHttps;
             }
         }
 
@@ -90,23 +92,27 @@ namespace Wlniao.Engine
         {
             get
             {
-                var clientIp =
-                    (Request.HttpContext.Connection.RemoteIpAddress != null &&
-                     !Request.HttpContext.Connection.RemoteIpAddress.IsIPv4MappedToIPv6)
-                        ? Request.HttpContext.Connection.RemoteIpAddress?.ToString()
-                        : Request.HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
+                string clientIp = string.Empty;
+                // 未初始化时 Request 为空，仅能依赖转发头
+                if (Request != null)
+                {
+                    var remoteIp = Request.HttpContext.Connection.RemoteIpAddress;
+                    clientIp = remoteIp != null && !remoteIp.IsIPv4MappedToIPv6
+                        ? remoteIp.ToString()
+                        : remoteIp?.MapToIPv4().ToString() ?? string.Empty;
+                }
                 if (!HeaderInput.TryGetValue("x-forwarded-for", out var forwardedIp) ||
                     string.IsNullOrEmpty(forwardedIp))
-                    return clientIp ?? string.Empty;
+                    return clientIp;
                 // 通过代理网关部署时，获取"x-forwarded-for"传递的真实IP
-                foreach (var ip in forwardedIp.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
+                foreach (var ip in forwardedIp.Split(',', StringSplitOptions.RemoveEmptyEntries))
                 {
                     if (ip == "::1" || ip == "127.0.0.1" || !StringUtil.IsIP(ip)) continue;
                     clientIp = ip;
                     break;
                 }
 
-                return clientIp ?? string.Empty;
+                return clientIp;
             }
         }
 
@@ -165,6 +171,13 @@ namespace Wlniao.Engine
         /// </summary>
         private HttpResponse Response { get; set; }
 
+        /// <summary>
+        /// 初始化状态：0=未开始，1=已初始化（含正在初始化）。
+        /// 用 Interlocked 维护而非普通布尔：本方法在多个 await 之后写入状态，
+        /// 单纯的「读布尔 + 赋值」在并发重入时无法保证只执行一次。
+        /// </summary>
+        private int _initState;
+
 
         /// <summary>
         /// 
@@ -186,15 +199,45 @@ namespace Wlniao.Engine
         }
 
         /// <summary>
-        /// 
+        /// 初始化请求上下文。同一实例只初始化一次，并发或重复调用直接跳过。
         /// </summary>
+        /// <remarks>
+        /// 不变量：<c>_initState != 0</c> ⇔ 已完整初始化。任何未走完流程的退出路径（异常、
+        /// 被 <see cref="Continue"/> 中断）都必须把它复位为 0，否则会留下一个
+        /// ConsumerId/SKey 为空却被视为「已初始化」的 Context，后续调用将永远跳过初始化。
+        /// </remarks>
         /// <param name="httpRequest"></param>
         public async Task InitAsync(HttpRequest httpRequest)
         {
-            if (this.HeaderInput.Count > 0)
+            // 抢占式置位：只有第一个调用方能把它从 0 改成 1，其余调用方（含并发重入）直接返回。
+            // 不能在方法开头「先判断后赋值」，那样两个并发调用会同时通过检查各跑一遍。
+            if (Interlocked.CompareExchange(ref _initState, 1, 0) != 0)
             {
                 return; //重复初始化时直接跳过
             }
+
+            try
+            {
+                await InitCoreAsync(httpRequest);
+            }
+            catch
+            {
+                // 初始化未成功：完全回到「可重试」的初始状态。
+                // Continue 必须一并恢复——三条失败分支都会先把它置 false 再抛；若不恢复，
+                // 重试会在 InitCoreAsync 的 if (!Continue) 处静默早退，得到一个
+                // ConsumerId/SKey 为空却被视为「已初始化」的 Context，比直接报错更危险。
+                Interlocked.Exchange(ref _initState, 0);
+                Continue = true;
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 上下文初始化的实际流程。不含幂等控制，由 <see cref="InitAsync"/> 保证只执行一次。
+        /// </summary>
+        /// <param name="httpRequest"></param>
+        private async Task InitCoreAsync(HttpRequest httpRequest)
+        {
             if (httpRequest.Headers.Count > 0)
             {
                 // 处理请求头内容
@@ -209,24 +252,44 @@ namespace Wlniao.Engine
             {
                 try
                 {
-                    Body = await new StreamReader(httpRequest.Body).ReadToEndAsync();
-                    if (string.IsNullOrEmpty(Body))
+                    // 启用缓冲，保证请求体可被重复读取（Form 解析及业务层 GetPostString 均依赖此行为）
+                    httpRequest.EnableBuffering();
+                    using (var reader = new StreamReader(httpRequest.Body, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
                     {
-                        using var reader = new StreamReader(httpRequest.Body, System.Text.Encoding.UTF8);
                         Body = await reader.ReadToEndAsync();
                     }
                 }
-                catch
+                catch (Exception e)
                 {
-                    var buffer = new byte[(int)httpRequest.ContentLength];
-                    await httpRequest.Body.ReadExactlyAsync(buffer, 0, buffer.Length);
-                    Body = System.Text.Encoding.UTF8.GetString(buffer);
+                    Loger.Debug($"Read body: {e.Message}");
+                    try
+                    {
+                        if (httpRequest.Body.CanSeek)
+                        {
+                            httpRequest.Body.Position = 0;
+                        }
+                        var buffer = new byte[(int)(httpRequest.ContentLength ?? 0)];
+                        await httpRequest.Body.ReadExactlyAsync(buffer, 0, buffer.Length);
+                        Body = System.Text.Encoding.UTF8.GetString(buffer);
+                    }
+                    catch
+                    {
+                        Body = string.Empty;
+                    }
+                }
+                finally
+                {
+                    // 回退流位置，避免后续读取（Form、业务层）拿到空内容
+                    if (httpRequest.Body.CanSeek)
+                    {
+                        httpRequest.Body.Position = 0;
+                    }
                 }
 
                 try
                 {
                     // 兼容处理Form提交的内容
-                    foreach (var item in httpRequest.Form!)
+                    foreach (var item in httpRequest.Form)
                     {
                         Query.TryAdd(item.Key, item.Value.FirstOrDefault()?.ToString() ?? string.Empty);
                     }
@@ -264,6 +327,11 @@ namespace Wlniao.Engine
             Response = httpRequest.HttpContext.Response;
             if (!this.Continue)
             {
+                // 调用方在调用 InitAsync 之前就要求中断：此时租户信息尚未加载，属于「未完成初始化」。
+                // 状态位必须在进入时就被抢占置 1（见 InitAsync），所以此处不主动复位的话，
+                // 半初始化的实例（ConsumerId/SKey 全空）会被后续调用当成「已初始化」直接跳过。
+                // 复位后保持不变量：状态非 0 ⇔ 完整初始化；再次调用会重跑一遍，幂等无副作用。
+                Interlocked.Exchange(ref _initState, 0);
                 return;
             }
             if (LoadConsumerInfo != null)
@@ -291,7 +359,14 @@ namespace Wlniao.Engine
                 Host = HeaderInput.GetString("x-domain", httpRequest.Host.Host);
             }
 
-            if (!this.Continue) return;
+            if (!this.Continue)
+            {
+                // 已被判定为不继续处理的请求，不再执行后续安全认证。
+                // 与上一处同理：安全认证未完成即不算初始化完成，必须复位状态位，
+                // 否则 SKey 为空的实例会被当成已初始化（旧注释所称「状态已由 InitAsync 置位」不成立）。
+                Interlocked.Exchange(ref _initState, 0);
+                return;
+            }
             {
                 if (SafetyCertification != null)
                 {

@@ -20,6 +20,7 @@
 
 ===============================================================================*/
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
@@ -112,6 +113,7 @@ namespace Wlniao
         /// <param name="dic"></param>
         /// <param name="key"></param>
         /// <param name="value"></param>
+        [Obsolete("Dictionary<string,string>.TryAdd 实例方法优先于本扩展方法，本方法实际不会被调用，请直接使用实例方法。", DiagnosticId = "XCORE0006")]
         public static void TryAdd(this Dictionary<string, string> dic, string key, string value)
         {
             if (dic != null && !dic.ContainsKey(key))
@@ -125,6 +127,7 @@ namespace Wlniao
 		/// <param name="dic"></param>
 		/// <param name="key"></param>
 		/// <param name="value"></param>
+		[Obsolete("Dictionary<string,object>.TryAdd 实例方法优先于本扩展方法，本方法实际不会被调用，请直接使用实例方法。", DiagnosticId = "XCORE0006")]
 		public static void TryAdd(this Dictionary<string, object> dic, string key, object value)
 		{
 			if (dic != null && !dic.ContainsKey(key))

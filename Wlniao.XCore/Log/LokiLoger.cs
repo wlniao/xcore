@@ -670,15 +670,7 @@ namespace Wlniao.Log
             {
                 if (Loger.LogLocal == "console")
                 {
-                    var color = logLevel switch
-                    {
-                        LogLevel.Information => ConsoleColor.Gray,
-                        LogLevel.Debug => ConsoleColor.White,
-                        LogLevel.Error => ConsoleColor.Red,
-                        LogLevel.Warning => ConsoleColor.DarkYellow,
-                        LogLevel.Critical => ConsoleColor.Magenta,
-                        _ => ConsoleColor.DarkGray
-                    };
+                    var color = Loger.GetLevelColor(logLevel);
                     Loger.Console(string.Format("{0} => {1}", DateTools.Format(entrie.time), entrie.line), color);
                 }
                 else if (Loger.LogLocal == "file")

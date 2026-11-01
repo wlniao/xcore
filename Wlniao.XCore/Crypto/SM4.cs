@@ -187,20 +187,37 @@ namespace Wlniao.Crypto
 			PUT_ULONG_BE(ulbuf[32], output, 12);
 		}
 
-		private byte[] padding(byte[] input, int mode)
+		/// <summary>
+		/// PKCS#7 填充：把数据补齐到 16 字节分组的整数倍（长度为整数倍时补满一个完整分组）。
+		/// 带有完整的合法性校验（长度、填充字节一致性）。
+		/// </summary>
+		/// <param name="input">待填充数据</param>
+		/// <returns>填充后的数据</returns>
+		public static byte[] Pkcs7Pad(byte[] input)
+		{
+			return padding(input, SM4_ENCRYPT);
+		}
+
+		/// <summary>
+		/// 去除 PKCS#7 填充，并校验填充字节的合法性
+		/// </summary>
+		/// <param name="input">已填充的数据</param>
+		/// <returns>去掉填充后的原始数据</returns>
+		public static byte[] Pkcs7Unpad(byte[] input)
+		{
+			return padding(input, SM4_DECRYPT);
+		}
+
+		private static byte[] padding(byte[] input, int mode)
 		{
 			if (input == null)
 			{
 				throw new ArgumentNullException(nameof(input), "sm4 padding input can't null");
 			}
-			if (input.Length == 0)
-			{
-				if (mode == SM4_DECRYPT) throw new ArgumentException("sm4 dec padding input can't empty");
-				return input; // 加密时空输入无需填充（但会被处理为16字节填充）
-			}
 
 			if (mode == SM4_ENCRYPT)
 			{
+				// 空数据同样要补满一个分组（16 个 0x10）：0 % 16 == 0，下面算出 p = 16
 				var p = 16 - input.Length % 16;
 				// 当p=0时，填充16字节（0x10）,PKCS#7 填充标准：当输入长度为分组长度的整数倍时，必须填充一个完整的分组（16 字节，每个字节为0x10）
 				p = p == 0 ? 16 : p; 
@@ -214,6 +231,12 @@ namespace Wlniao.Crypto
 			}
 			else
 			{
+				// 已填充数据的长度必须是分组长度的整数倍，否则说明数据不是 PKCS#7 密文
+				// （空数据同理不合法：合法密文至少包含一个完整分组）
+				if (input.Length == 0 || input.Length % 16 != 0)
+				{
+					throw new ArgumentException("sm4 padding input length must be a non-zero multiple of 16", nameof(input));
+				}
 				var p = input[^1];
 				// 校验填充有效性：p必须在1~16之间，且最后p个字节均为p
 				if (p < 1 || p > 16)

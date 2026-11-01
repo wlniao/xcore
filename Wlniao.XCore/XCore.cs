@@ -160,6 +160,110 @@ namespace Wlniao
         /// 托管的SSL证书检查服务
         /// </summary>
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback = ServerCertificateCustomValidation;
+
+        /// <summary>
+        /// 全局 TLS 服务端证书放行开关的配置项名称（环境变量同名者优先于 xcore.config）
+        /// </summary>
+        internal const string AcceptAnyServerCertificateKey = "WLN_ACCEPT_ANY_CERT";
+
+        /// <summary>
+        /// -1 表示尚未解析；0/1 表示最终取值。
+        /// 用 int 而非 bool? 是为了保证读写原子性（Nullable&lt;bool&gt; 的读写不保证原子）
+        /// </summary>
+        private static int _acceptAnyServerCertificate = -1;
+
+        /// <summary>
+        /// “全部放行”的告警是否已输出过（进程内仅一次）
+        /// </summary>
+        private static int _acceptAnyServerCertificateWarned = 0;
+
+        /// <summary>
+        /// 全局统一的 TLS 服务端证书放行开关，默认 false（收紧，按标准链校验）
+        /// </summary>
+        /// <remarks>
+        /// <para><b>false</b>（默认）：<see cref="ServerCertificateCustomValidation"/> 先按标准链校验，通过才放行；
+        /// 未通过时仅放行内置受信任的根 CA / 二级 CA 指纹。过期、域名不匹配、自签、链不完整都会被拒绝。
+        /// 这是安全默认值 —— 历史版本是无条件放行，现改为必须显式开启才放行。</para>
+        /// <para><b>true</b>：<see cref="ServerCertificateCustomValidation"/> 对任何服务端证书无条件放行，
+        /// 过期、域名不匹配、自签、链不完整都会被接受。仅在对接内部自签证书又不想逐台导 CA 时才启用，
+        /// 风险是中间人可以用任意证书冒充目标站点。</para>
+        /// <para>取值来源按优先级：先取代码显式赋值；未显式赋值时，首次读取按配置项
+        /// <c>WLN_ACCEPT_ANY_CERT</c>（环境变量优先，其次 xcore.config）解析一次并缓存 ——
+        /// 因此运行期修改配置文件不会自动生效，需要重启或代码赋值。
+        /// 解析规则是「只有显式肯定值才放行」：<c>1/true/yes/on</c>（不分大小写）放行，
+        /// 空值与无法识别的取值一律收紧，避免配置笔误变成全局放行。</para>
+        /// <para>开关实现在 <see cref="ServerCertificateCustomValidation"/> 内部，所以所有复用该策略的
+        /// HttpClient / SocketsHttpHandler（XApi、LokiLoger、HttpClientManager 等）统一受控。
+        /// 若调用方自行替换了 <see cref="ServerCertificateCustomValidationCallback"/>，本开关不再生效。</para>
+        /// </remarks>
+        public static bool AcceptAnyServerCertificate
+        {
+            get
+            {
+                var value = System.Threading.Volatile.Read(ref _acceptAnyServerCertificate);
+                if (value < 0)
+                {
+                    value = ResolveAcceptAnyServerCertificate() ? 1 : 0;
+                    System.Threading.Volatile.Write(ref _acceptAnyServerCertificate, value);
+                }
+                return value == 1;
+            }
+            set => System.Threading.Volatile.Write(ref _acceptAnyServerCertificate, value ? 1 : 0);
+        }
+
+        /// <summary>
+        /// 按配置解析放行开关。默认收紧：只有配置显式给出肯定值才放行，
+        /// 空值与无法识别的取值一律收紧 —— 宁可与目标站点握手失败，也不把开关误开成全局放行。
+        /// </summary>
+        private static bool ResolveAcceptAnyServerCertificate()
+        {
+            return ParseAcceptAnyServerCertificate(Config.GetConfigs(AcceptAnyServerCertificateKey, bool.FalseString));
+        }
+
+        /// <summary>
+        /// 把配置项的文本取值解析为放行开关，仅显式肯定值（1/true/yes/on，不分大小写）放行，其余一律收紧。
+        /// 抽出独立方法是为了让解析规则可以被单元测试直接覆盖（<see cref="ResolveAcceptAnyServerCertificate"/> 依赖进程级配置，无法逐用例注入）。
+        /// </summary>
+        /// <param name="configured">配置项取值，可为 null / 空白</param>
+        internal static bool ParseAcceptAnyServerCertificate(string? configured)
+        {
+            if (string.IsNullOrWhiteSpace(configured))
+            {
+                return false;
+            }
+            switch (configured.Trim().ToLowerInvariant())
+            {
+                case "1":
+                case "true":
+                case "yes":
+                case "on":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// 进程内首次命中“全部放行”时输出一次告警，便于发现无人知晓的全局 TLS 放行
+        /// </summary>
+        private static void WarnAcceptAnyServerCertificateOnce()
+        {
+            // Exchange 先置位再写日志：即便日志链路本身要走 HTTPS（如 LokiLoger）也不会递归重复告警
+            if (System.Threading.Interlocked.Exchange(ref _acceptAnyServerCertificateWarned, 1) == 0)
+            {
+                try
+                {
+                    Loger.Warn("TLS 证书校验当前处于“全部放行”状态（XCore.AcceptAnyServerCertificate=true）："
+                        + "任意服务端证书都会被接受，存在中间人攻击风险。"
+                        + "如需收紧请设置 XCore.AcceptAnyServerCertificate=false，"
+                        + "或配置 " + AcceptAnyServerCertificateKey + "=false。");
+                }
+                catch
+                {
+                    // 证书回调里不允许向外抛异常，日志失败不影响握手判定
+                }
+            }
+        }
         
         /// <summary>
         /// 基础的JSON序列化选项
@@ -180,6 +284,12 @@ namespace Wlniao
         /// <returns></returns>
         internal static bool ServerCertificateCustomValidation(HttpRequestMessage requestMessage, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors sslErrors)
         {
+            // 全局放行开关（默认收紧）：命中则跳过后续一切校验
+            if (AcceptAnyServerCertificate)
+            {
+                WarnAcceptAnyServerCertificateOnce();
+                return true;
+            }
             if (sslErrors == SslPolicyErrors.None)
             {
                 return true;
@@ -204,6 +314,23 @@ namespace Wlniao
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// 旧式 TLS 回调（object + X509Certificate）到框架统一证书策略的适配器
+        /// </summary>
+        /// <param name="sender">回调发起方，框架策略不使用</param>
+        /// <param name="certificate">服务端证书</param>
+        /// <param name="chain">证书链</param>
+        /// <param name="sslErrors">校验错误</param>
+        /// <returns>是否接受该证书</returns>
+        /// <remarks>
+        /// SocketsHttpHandler.SslOptions.RemoteCertificateValidationCallback 用的是旧式委托签名，
+        /// 与 <see cref="ServerCertificateCustomValidation"/> 不同，这里做适配以免各处各写一份 lambda。
+        /// </remarks>
+        internal static bool ValidateServerCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslErrors)
+        {
+            return ServerCertificateCustomValidation(null!, certificate as X509Certificate2, chain, sslErrors);
         }
 
         #region 系统信息

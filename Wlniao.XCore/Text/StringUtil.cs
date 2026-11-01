@@ -31,9 +31,17 @@ namespace Wlniao.Text
     /// <summary>
     /// 字符串操作工具类
     /// </summary>
-    public abstract class StringUtil
+    public abstract partial class StringUtil
     {
         private static readonly Regex HtmlReg = new Regex("<[^>]*>");
+
+        /// <summary>
+        /// 匹配 html 文档中 title 标签的正则表达式
+        /// </summary>
+        /// <returns></returns>
+        [GeneratedRegex("<title>(.*)</title>")]
+        private static partial Regex HtmlTitleRegex();
+
         /// <summary>
         /// 检查字符串是否是 null 或者空白字符。不同于.net自带的string.IsNullOrEmpty，多个空格在这里也返回true。
         /// </summary>
@@ -170,10 +178,9 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="html"></param>
         /// <returns></returns>
-        // ReSharper disable once UnusedMember.Global
-        public string GetHtmlTitle(string html)
+        public static string GetHtmlTitle(string html)
         {
-            var match = Regex.Match(html, "<title>(.*)</title>");
+            var match = HtmlTitleRegex().Match(html);
             if (match.Groups.Count == 2) return match.Groups[1].Value;
             return "(unknown)";
         }

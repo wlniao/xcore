@@ -1715,7 +1715,7 @@ namespace Wlniao.IO
                 else
                 {
                     dbchars++;
-                    if ((sbyte)Convert.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)Convert.Identity(0xF7) && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xFE))
+                    if (unchecked((sbyte)0xA1) <= rawtext[i] && rawtext[i] <= unchecked((sbyte)0xF7) && unchecked((sbyte)0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= unchecked((sbyte)0xFE))
                     {
                         gbchars++;
                         totalfreq += 500;
@@ -1769,7 +1769,7 @@ namespace Wlniao.IO
                 else
                 {
                     dbchars++;
-                    if ((sbyte)Convert.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)Convert.Identity(0xF7) && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xFE))
+                    if (unchecked((sbyte)0xA1) <= rawtext[i] && rawtext[i] <= unchecked((sbyte)0xF7) && unchecked((sbyte)0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= unchecked((sbyte)0xFE))
                     {
                         gbchars++;
                         totalfreq += 500;
@@ -1786,7 +1786,7 @@ namespace Wlniao.IO
                             gbfreq += 200;
                         }
                     }
-                    else if ((sbyte)Convert.Identity(0x81) <= rawtext[i] && rawtext[i] <= (sbyte)Convert.Identity(0xFE) && (((sbyte)Convert.Identity(0x80) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xFE)) || ((sbyte)0x40 <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)0x7E)))
+                    else if (unchecked((sbyte)0x81) <= rawtext[i] && rawtext[i] <= unchecked((sbyte)0xFE) && ((unchecked((sbyte)0x80) <= rawtext[i + 1] && rawtext[i + 1] <= unchecked((sbyte)0xFE)) || ((sbyte)0x40 <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)0x7E)))
                     {
                         gbchars++;
                         totalfreq += 500;
@@ -1938,7 +1938,7 @@ namespace Wlniao.IO
                 if (rawtext[i] < 0)
                 {
                     dbchars++;
-                    if ((sbyte)Convert.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)Convert.Identity(0xF9) && (((sbyte)0x40 <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)0x7E) || ((sbyte)Convert.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xFE))))
+                    if (unchecked((sbyte)0xA1) <= rawtext[i] && rawtext[i] <= unchecked((sbyte)0xF9) && (((sbyte)0x40 <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)0x7E) || (unchecked((sbyte)0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= unchecked((sbyte)0xFE))))
                     {
                         bfchars++;
                         totalfreq += 500;
@@ -1999,7 +1999,7 @@ namespace Wlniao.IO
                 {
                     // high bit set
                     dbchars++;
-                    if (i + 3 < rawtextlen && (sbyte)Convert.Identity(0x8E) == rawtext[i] && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xB0) && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 2] && rawtext[i + 2] <= (sbyte)Convert.Identity(0xFE) && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 3] && rawtext[i + 3] <= (sbyte)Convert.Identity(0xFE))
+                    if (i + 3 < rawtextlen && unchecked((sbyte)0x8E) == rawtext[i] && unchecked((sbyte)0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= unchecked((sbyte)0xB0) && unchecked((sbyte)0xA1) <= rawtext[i + 2] && rawtext[i + 2] <= unchecked((sbyte)0xFE) && unchecked((sbyte)0xA1) <= rawtext[i + 3] && rawtext[i + 3] <= unchecked((sbyte)0xFE))
                     {
                         // Planes 1 - 16
 
@@ -2008,7 +2008,7 @@ namespace Wlniao.IO
                         // These are all less frequent chars so just ignore freq
                         i += 3;
                     }
-                    else if ((sbyte)Convert.Identity(0xA1) <= rawtext[i] && rawtext[i] <= (sbyte)Convert.Identity(0xFE) && (sbyte)Convert.Identity(0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= (sbyte)Convert.Identity(0xFE))
+                    else if (unchecked((sbyte)0xA1) <= rawtext[i] && rawtext[i] <= unchecked((sbyte)0xFE) && unchecked((sbyte)0xA1) <= rawtext[i + 1] && rawtext[i + 1] <= unchecked((sbyte)0xFE))
                     {
                         cnschars++;
                         totalfreq += 500;
@@ -2196,12 +2196,14 @@ namespace Wlniao.IO
         /// <returns>返回 0 至 100 之间的可能性</returns>
         private static int UnicodeProbability(sbyte[] rawtext)
         {
-            //int score = 0;
-            //int i, rawtextlen = 0;
-            //int goodbytes = 0, asciibytes = 0;
+            // BOM 占两个字节：空入参或单字节入参不可能带 BOM，
+            // 直接索引 rawtext[1] 会越界异常，把「识别编码」变成对短文本的不确定崩溃。
+            if (rawtext == null || rawtext.Length < 2)
+            {
+                return 0;
+            }
 
-
-            if (((sbyte)Convert.Identity(0xFE) == rawtext[0] && (sbyte)Convert.Identity(0xFF) == rawtext[1]) || ((sbyte)Convert.Identity(0xFF) == rawtext[0] && (sbyte)Convert.Identity(0xFE) == rawtext[1]))
+            if ((unchecked((sbyte)0xFE) == rawtext[0] && unchecked((sbyte)0xFF) == rawtext[1]) || (unchecked((sbyte)0xFF) == rawtext[0] && unchecked((sbyte)0xFE) == rawtext[1]))
             {
                 return 100;
             }
