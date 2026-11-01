@@ -32,7 +32,12 @@
         {
             // SPF RR
 
-            var text = DnsTool.ReadCharacterString(reply, ref offset);
+            var endOffset = offset + rdLength;
+            if (endOffset > reply.Length)
+            {
+                endOffset = reply.Length;
+            }
+            var text = DnsTool.ReadCharacterString(reply, ref offset, endOffset);
 
             return new DnsRecord_SPF(name, text, ttl);
         }

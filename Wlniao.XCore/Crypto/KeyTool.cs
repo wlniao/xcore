@@ -192,7 +192,7 @@ namespace Wlniao.Crypto
         /// SubjectPublicKeyInfo ::= SEQUENCE { algorithm AlgorithmIdentifier, subjectPublicKey BIT STRING }
         /// SM2 场景下 subjectPublicKey 就是 04||X||Y。
         /// </remarks>
-        internal static byte[] ParseSpki(byte[] der)
+        public static byte[] ParseSpki(byte[] der)
         {
             if (der == null || der.Length == 0)
             {
@@ -217,7 +217,7 @@ namespace Wlniao.Crypto
         /// 其中 privateKey 内容为 RFC 5915 的 ECPrivateKey：
         /// ECPrivateKey ::= SEQUENCE { version INTEGER, privateKey OCTET STRING, ... }
         /// </remarks>
-        internal static byte[] ParsePkcs8(byte[] der)
+        public static byte[] ParsePkcs8(byte[] der)
         {
             if (der == null || der.Length == 0)
             {

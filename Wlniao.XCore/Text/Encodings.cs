@@ -3,7 +3,7 @@
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：字符编码处理
 ================================================================================
- 
+
     Copyright 2015 XieChaoyi
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,11 @@ namespace Wlniao.Text
         private static System.Text.Encoding gb2312 = null;
 
         /// <summary>
+        /// 缺少 CodePages 编码提供器时的提示文案
+        /// </summary>
+        private const string RegisterProviderTip = "Please register by \"System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);\" first!";
+
+        /// <summary>
         /// ASCII编码
         /// </summary>
         public static System.Text.Encoding ASCII => System.Text.Encoding.ASCII;
@@ -54,66 +59,12 @@ namespace Wlniao.Text
         /// <summary>
         /// GBK编码
         /// </summary>
-        public static System.Text.Encoding GBK
-        {
-            get
-            {
-                var testRegisterProvider = true;
-                reTest:
-                try
-                {
-                    gbk ??= System.Text.Encoding.GetEncoding("gbk");
-                }
-                catch (Exception ex)
-                {
-                    if (testRegisterProvider && ex.Message.Contains("Encoding.RegisterProvider"))
-                    {
-                        testRegisterProvider = false;
-                        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-                        goto reTest;
-                    }
-                    else
-                    {
-                        throw new Exception(
-                            "Please register by \"System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);\" first!");
-                    }
-                }
-
-                return gbk;
-            }
-        }
+        public static System.Text.Encoding GBK => gbk ??= GetEncodingCore("gbk");
 
         /// <summary>
         /// GB2312编码
         /// </summary>
-        public static System.Text.Encoding GB2312
-        {
-            get
-            {
-                var testRegisterProvider = true;
-                reTest:
-                try
-                {
-                    gb2312 ??= System.Text.Encoding.GetEncoding("gb2312");
-                }
-                catch (Exception ex)
-                {
-                    if (testRegisterProvider && ex.Message.Contains("Encoding.RegisterProvider"))
-                    {
-                        testRegisterProvider = false;
-                        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-                        goto reTest;
-                    }
-                    else
-                    {
-                        throw new Exception(
-                            "Please register by \"System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);\" first!");
-                    }
-                }
-
-                return gb2312;
-            }
-        }
+        public static System.Text.Encoding GB2312 => gb2312 ??= GetEncodingCore("gb2312");
 
         /// <summary>
         /// 根据名称返回编码
@@ -122,22 +73,34 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static System.Text.Encoding GetEncoding(string name)
         {
+            return GetEncodingCore(name);
+        }
+
+        /// <summary>
+        /// 编码获取的唯一实现：未注册 CodePages 提供器时先注册再重试一次，两次都失败则原样抛出原因。
+        /// </summary>
+        /// <param name="name">编码名称</param>
+        /// <returns>对应的编码实例</returns>
+        private static System.Text.Encoding GetEncodingCore(string name)
+        {
+            var testRegisterProvider = true;
+            reTest:
             try
             {
                 return System.Text.Encoding.GetEncoding(name);
             }
             catch (Exception ex)
             {
-                if (ex.Message.Contains("Encoding.RegisterProvider"))
+                // 只有「提供器未注册」这一种失败才值得注册后重试；
+                // 其余失败（编码名拼错、平台不支持等）注册什么提供器都没用。
+                if (testRegisterProvider && ex.Message.Contains("Encoding.RegisterProvider"))
                 {
+                    testRegisterProvider = false;
                     System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-                    return System.Text.Encoding.GetEncoding(name);
+                    goto reTest;
                 }
-                else
-                {
-                    throw new Exception(
-                        "Please register by \"System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);\" first!");
-                }
+                // 抛出时保留原始错误信息，避免把「编码名不存在」误诊成「请先注册提供器」
+                throw new ArgumentException($"{RegisterProviderTip} 原始错误：{ex.Message}", nameof(name), ex);
             }
         }
     }

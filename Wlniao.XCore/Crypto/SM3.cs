@@ -83,6 +83,11 @@ namespace Wlniao.Crypto
 
             XBufOff = t.XBufOff;
             ByteCount = t.ByteCount;
+
+            Array.Copy(t.v, 0, v, 0, v.Length);
+            Array.Copy(t.v_, 0, v_, 0, v_.Length);
+            Array.Copy(t.X, 0, X, 0, X.Length);
+            xOff = t.xOff;
         }
         /// <summary>
         /// 用字节块更新消息摘要
@@ -323,6 +328,19 @@ namespace Wlniao.Crypto
             bs[++off] = (byte)(n);
         }
         /// <summary>
+        /// 写入到大端（Span 版本）
+        /// </summary>
+        /// <param name="n"></param>
+        /// <param name="bs"></param>
+        /// <param name="off"></param>
+        private void IntToBigEndian(int n, Span<byte> bs, int off)
+        {
+            bs[off] = (byte)(Helper.URShift(n, 24));
+            bs[++off] = (byte)(Helper.URShift(n, 16));
+            bs[++off] = (byte)(Helper.URShift(n, 8));
+            bs[++off] = (byte)(n);
+        }
+        /// <summary>
         /// 关闭摘要，产生最终的摘要值。doFinal调用使摘要复位。
         /// </summary>
         /// <param name="output"></param>
@@ -330,6 +348,14 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public int DoFinal(byte[] output, int outOff)
         {
+            if (output == null)
+            {
+                throw new ArgumentNullException(nameof(output));
+            }
+            if (outOff < 0 || outOff > output.Length - DigestLength)
+            {
+                throw new ArgumentException($"输出缓冲区从 {outOff} 起至少需要 {DigestLength} 字节", nameof(outOff));
+            }
             Finish();
             for (var i = 0; i < 8; i++)
             {
@@ -345,14 +371,16 @@ namespace Wlniao.Crypto
         /// <returns></returns>
         public int DoFinal(Span<byte> output)
         {
+            if (output.Length < DigestLength)
+            {
+                throw new ArgumentException($"输出缓冲区至少需要 {DigestLength} 字节", nameof(output));
+            }
             Finish();
-            var buffer = new byte[output.Length];
             for (var i = 0; i < 8; i++)
             {
-                IntToBigEndian(v[i], buffer, i * 4);
+                IntToBigEndian(v[i], output, i * 4);
             }
             Reset();
-            output = new Span<byte>(buffer);
             return DigestLength;
         }
         /// <summary>

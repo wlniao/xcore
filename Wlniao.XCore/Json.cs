@@ -228,7 +228,13 @@ namespace Wlniao
         /// <summary>
         /// 将 JsonNode 递归转换为 object 图（AOT 安全，无任何反射）
         /// </summary>
-        private static object? JsonNodeToObject(JsonNode? node)
+        /// <remarks>
+        /// 对外暴露的原因：<see cref="DeserializeToDic(string)"/> 只把顶层 JSON 对象摊平成字典，
+        /// 而多层 Json → object 图（含嵌套字典与列表）是通用需求；
+        /// 且本实现全程走 JsonNode API，零反射、AOT 安全。
+        /// </remarks>
+        /// <returns>对应的 object 图：JsonValue→基元值，JsonObject→Dictionary&lt;string,object?&gt;，JsonArray→List&lt;object?&gt;</returns>
+        public static object? JsonNodeToObject(JsonNode? node)
         {
             if (node is null)
             {

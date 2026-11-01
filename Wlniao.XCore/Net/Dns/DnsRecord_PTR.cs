@@ -1,24 +1,23 @@
 ﻿using System;
-using System.Net;
 
 namespace Wlniao.Net.Dns
 {
     /// <summary>
-    /// PTR record class.
+    /// PTR record class. PTR 记录的数据部分是一个域名（指针），不是 IP 地址。
     /// </summary>
     internal class DnsRecord_PTR : DnsRecord
     {
-        private IPAddress m_IP = null;
+        private readonly string m_Alias;
 
         /// <summary>
         /// Default constructor.
         /// </summary>
         /// <param name="name">DNS domain name that owns a resource record.</param>
-        /// <param name="ip">IP address.</param>
+        /// <param name="alias">Pointer domain name.</param>
         /// <param name="ttl">TTL value.</param>
-        public DnsRecord_PTR(string name, IPAddress ip, int ttl) : base(name, DnsRecordType.A, ttl)
+        public DnsRecord_PTR(string name, string alias, int ttl) : base(name, DnsRecordType.PTR, ttl)
         {
-            m_IP = ip;
+            m_Alias = alias;
         }
 
 
@@ -32,15 +31,18 @@ namespace Wlniao.Net.Dns
         /// <param name="offset">Current offset in reply data.</param>
         /// <param name="rdLength">Resource record data length.</param>
         /// <param name="ttl">Time to live in seconds.</param>
-        public static DnsRecord_A Parse(string name, byte[] reply, ref int offset, int rdLength, int ttl)
+        public static DnsRecord_PTR Parse(string name, byte[] reply, ref int offset, int rdLength, int ttl)
         {
-            // IPv4 = byte byte byte byte
-
-            var ip = new byte[rdLength];
-            Array.Copy(reply, offset, ip, 0, rdLength);
-            offset += rdLength;
-
-            return new DnsRecord_A(name, new IPAddress(ip), ttl);
+            // PTR = <domain-name>
+            var alias = "";
+            if (DnsTool.GetQName(reply, ref offset, ref alias))
+            {
+                return new DnsRecord_PTR(name, alias, ttl);
+            }
+            else
+            {
+                throw new ArgumentException("Invalid PTR resource record data !");
+            }
         }
 
         #endregion
@@ -49,14 +51,13 @@ namespace Wlniao.Net.Dns
         #region Properties Implementation
 
         /// <summary>
-        /// Gets host IP address.
+        /// Gets pointer domain name.
         /// </summary>
-        public IPAddress IP
+        public string Alias
         {
-            get { return m_IP; }
+            get { return m_Alias; }
         }
 
         #endregion
-
     }
 }

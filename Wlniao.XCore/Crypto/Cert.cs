@@ -82,7 +82,7 @@ namespace Wlniao.Crypto
         /// <param name="label">标记名，如 PRIVATE KEY / RSA PRIVATE KEY</param>
         /// <param name="der">DER 字节</param>
         /// <returns>PEM 文本</returns>
-        private static string ToPem(string label, byte[] der)
+        public static string ToPem(string label, byte[] der)
         {
             var base64 = System.Convert.ToBase64String(der);
             var builder = new StringBuilder(base64.Length + base64.Length / 64 * 2 + 64);

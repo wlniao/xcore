@@ -89,10 +89,7 @@ namespace Wlniao
             var sData = System.Convert.FromBase64String(data);
             if (privateKey.Contains("BEGIN RSA PRIVATE KEY") && !privateKey.Contains("BEGIN PRIVATE KEY"))
             {
-                // PKCS#1 私钥。
-                // 历史实现此处把签名算法名 "SHA1withRSA" 当作 cipher 名称传给 CipherUtilities，
-                // 而该类不支持该名称（实测抛 SecurityUtilityException: Cipher SHA1withRSA not recognised.），
-                // 因此这条分支过去根本无法使用。现按语意本意改为 PKCS#1 v1.5 填充解密。
+                // PKCS#1 私钥，按 PKCS#1 v1.5 填充解密。
                 using var rsa = CreateRsaFromPem(privateKey);
                 return encoding.GetString(rsa.Decrypt(sData, RSAEncryptionPadding.Pkcs1));
             }
@@ -239,13 +236,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string Sha1(string str)
         {
-            if (string.IsNullOrEmpty(str))
-            {
-                return "";
-            }
-            var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
-            var dataHashed = SHA1.Create().ComputeHash(dataToHash);//Hash运算
-            return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
+            return HashToHex(SHA1.Create(), str);
         }
         /// <summary>
         /// 获取SHA256值
@@ -254,13 +245,7 @@ namespace Wlniao
         /// <returns></returns>
         public static string Sha256(string str)
         {
-            if (string.IsNullOrEmpty(str))
-            {
-                return "";
-            }
-            var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
-            var dataHashed = SHA256.Create().ComputeHash(dataToHash);
-            return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
+            return HashToHex(SHA256.Create(), str);
         }
         /// <summary>
         /// 获取SHA512值
@@ -269,13 +254,30 @@ namespace Wlniao
         /// <returns></returns>
         public static string Sha512(string str)
         {
+            return HashToHex(SHA512.Create(), str);
+        }
+
+        /// <summary>
+        /// Sha1 / Sha256 / Sha512 的唯一实现：空串返回空串，其余按 ASCII 编码取摘要并转大写十六进制。
+        /// </summary>
+        /// <remarks>
+        /// 保持 ASCII 编码（而非 UTF8）是刻意为之：改成 UTF8 会让含非 ASCII 字符的输入摘要值发生变化。
+        /// </remarks>
+        /// <param name="algorithm">哈希算法实例，由本方法负责释放</param>
+        /// <param name="str">待摘要的字符串</param>
+        /// <returns>大写十六进制摘要；入参为空时返回空串</returns>
+        private static string HashToHex(HashAlgorithm algorithm, string str)
+        {
             if (string.IsNullOrEmpty(str))
             {
                 return "";
             }
-            var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
-            var dataHashed = SHA512.Create().ComputeHash(dataToHash);
-            return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
+            using (algorithm)
+            {
+                var dataToHash = Encoding.ASCII.GetBytes(str); //将str转换成byte[]
+                var dataHashed = algorithm.ComputeHash(dataToHash);//Hash运算
+                return BitConverter.ToString(dataHashed).Replace("-", "");//将运算结果转换成string
+            }
         }
 
         /// <summary>
@@ -421,6 +423,66 @@ namespace Wlniao
             return Encoding.UTF8.GetString(buffer);
         }
         /// <summary>
+        /// 构造 AES 实例，并把密钥 / IV 补齐到 32 / 16 字节。
+        /// </summary>
+        /// <remarks>
+        /// 以下三条是既定格式约定，不是可随意优化的实现细节：
+        /// <list type="bullet">
+        /// <item>IV 传空串时补成 16 个 0x00（全零 IV）。CBC 下相同明文前缀会产生相同密文，<b>不具备语义安全性</b>；</item>
+        /// <item>密钥不足 32 字节（AES-256）时用 '\0' 补齐。补齐不增加熵，短密钥的强度仍按原始长度计算；</item>
+        /// <item>密钥与 IV 按 ASCII 取字节，非 ASCII 字符会退化为 '?'。</item>
+        /// </list>
+        /// 这三条决定了密文的字节形态，修改任意一条都会让已落库的数据和外部系统持有的密文无法解密。
+        /// 新业务需要随机 IV 或强密钥派生时，请另起独立 API，不要改动本方法。
+        /// </remarks>
+        /// <param name="sKey">加密密钥</param>
+        /// <param name="iv">偏移量</param>
+        /// <returns>已配置好 Key / IV / Padding 的 AES 实例</returns>
+        private static Aes CreateAes(string sKey, string iv)
+        {
+            var aes = Aes.Create();
+            aes.Key = Encoding.ASCII.GetBytes(FitLength(sKey, 32));
+            aes.IV = Encoding.ASCII.GetBytes(FitLength(iv, 16));
+            aes.Padding = PaddingMode.PKCS7;
+            return aes;
+        }
+
+        /// <summary>
+        /// 把字符串补齐（或截断）到指定长度：不足补 '\0'，超出截断。
+        /// </summary>
+        /// <remarks>
+        /// 补 '\0' 且超长静默截断是既定约定：结果会直接作为 AES 密钥 / IV 的字节序列参与运算，
+        /// 换成其他填充字符会让同一份密钥算出不同密文，导致存量数据无法解密。
+        /// </remarks>
+        /// <param name="value">源字符串</param>
+        /// <param name="length">目标长度</param>
+        /// <returns>定长字符数组</returns>
+        private static char[] FitLength(string value, int length)
+        {
+            var buffer = new char[length];
+            for (var i = 0; i < length && i < value.Length; i++)
+            {
+                buffer[i] = value[i];
+            }
+            return buffer;
+        }
+
+        /// <summary>
+        /// 把 SM4 的密钥 / IV 补齐到 16 字节（不足补 '0'，超出截断）。
+        /// </summary>
+        /// <remarks>
+        /// 补的是字符 '0'（0x30）而非零字节 '\0'，与 AES 那套补位规则不同，这是 SM4 接口的既定约定，
+        /// 改动会让存量 SM4 密文和外部对接方的计算结果全部错位。
+        /// 另需注意：补齐后按 UTF-8 取字节，SM4 只使用前 16 字节——密钥含非 ASCII 字符时会在多字节字符中间被截断，请只用 ASCII。
+        /// </remarks>
+        /// <param name="key">密钥或偏移量</param>
+        /// <returns>16 字节的密钥材料</returns>
+        private static byte[] FitKey16(string key)
+        {
+            return Encoding.UTF8.GetBytes((key + "0000000000000000")[..16]);
+        }
+
+        /// <summary>
         /// 加密函数
         /// </summary>
         /// <param name="pToEncrypt">需要加密的字符串</param>
@@ -436,22 +498,7 @@ namespace Wlniao
 
             try
             {
-                var aes = Aes.Create();
-                var key = new char[32];
-                for (var i = 0; i < key.Length && i < sKey.Length; i++)
-                {
-                    key[i] = sKey[i];
-                }
-
-                aes.Key = Encoding.ASCII.GetBytes(key);
-                var iv = new char[16];
-                for (var i = 0; i < iv.Length && i < IV.Length; i++)
-                {
-                    iv[i] = IV[i];
-                }
-
-                aes.IV = Encoding.ASCII.GetBytes(iv);
-                aes.Padding = PaddingMode.PKCS7;
+                var aes = CreateAes(sKey, IV);
                 var inputByteArray = Encoding.UTF8.GetBytes(pToEncrypt);
                 using var ms = new MemoryStream();
                 using var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
@@ -480,20 +527,7 @@ namespace Wlniao
             }
             try
             {
-                var aes = Aes.Create();
-                var key = new char[32];
-                for (var i = 0; i < key.Length && i < sKey.Length; i++)
-                {
-                    key[i] = sKey[i];
-                }
-                aes.Key = Encoding.ASCII.GetBytes(key);
-                var iv = new char[16];
-                for (var i = 0; i < iv.Length && i < sIV.Length; i++)
-                {
-                    iv[i] = sIV[i];
-                }
-                aes.IV = Encoding.ASCII.GetBytes(iv);
-                aes.Padding = PaddingMode.PKCS7;
+                var aes = CreateAes(sKey, sIV);
                 var inputByteArray = System.Convert.FromBase64String(pToDecrypt);
                 using var ms = new MemoryStream();
                 using var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write);
@@ -668,7 +702,7 @@ namespace Wlniao
             {
                 return "";
             }
-            var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+            var keyBytes = FitKey16(secretKey);
             var plainBytes = Encoding.UTF8.GetBytes(plainText);
             var encBytes = new SM4().EncryptECB(plainBytes, keyBytes, isPadding);
             return Convert.BytesToHexString(encBytes);
@@ -686,7 +720,7 @@ namespace Wlniao
             {
                 return "";
             }
-            var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+            var keyBytes = FitKey16(secretKey);
             var plainBytes = Encoding.UTF8.GetBytes(plainText);
             var encBytes = new SM4().EncryptECB(plainBytes, keyBytes, isPadding);
             return System.Convert.ToBase64String(encBytes);
@@ -710,7 +744,7 @@ namespace Wlniao
             }
             try
             {
-                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var keyBytes = FitKey16(secretKey);
                 var encBytes = Helper.Decode(encText);
                 var plainBytes = new SM4().DecryptECB(encBytes, keyBytes, isPadding);
                 return Encoding.UTF8.GetString(plainBytes);
@@ -736,7 +770,7 @@ namespace Wlniao
             }
             try
             {
-                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var keyBytes = FitKey16(secretKey);
                 var encBytes = Helper.Decode(encText);
                 var sm4 = new SM4();
                 var plainBytes = sm4.DecryptECB(encBytes, keyBytes, isPadding);
@@ -765,8 +799,8 @@ namespace Wlniao
             }
             try
             {
-                var ivBytes = Encoding.UTF8.GetBytes((iv + "0000000000000000")[..16]);
-                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var ivBytes = FitKey16(iv);
+                var keyBytes = FitKey16(secretKey);
                 var plainBytes = Encoding.UTF8.GetBytes(plainText);
                 var sm4 = new SM4();
                 var encBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
@@ -794,8 +828,8 @@ namespace Wlniao
             }
             try
             {
-                var ivBytes = Encoding.UTF8.GetBytes((iv + "0000000000000000")[..16]);
-                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var ivBytes = FitKey16(iv);
+                var keyBytes = FitKey16(secretKey);
                 var plainBytes = Encoding.UTF8.GetBytes(plainText);
                 var sm4 = new SM4();
                 var encBytes = sm4.EncryptCBC(plainBytes, keyBytes, ivBytes, isPadding);
@@ -823,8 +857,8 @@ namespace Wlniao
             }
             try
             {
-                var ivBytes = Encoding.UTF8.GetBytes((iv + "0000000000000000")[..16]);
-                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var ivBytes = FitKey16(iv);
+                var keyBytes = FitKey16(secretKey);
                 var encBytes = Helper.Decode(encText);
                 var sm4 = new SM4();
                 var plainBytes = sm4.DecryptCBC(encBytes, keyBytes, ivBytes, isPadding);
@@ -852,8 +886,8 @@ namespace Wlniao
             }
             try
             {
-                var ivBytes = Encoding.UTF8.GetBytes((iv + "0000000000000000")[..16]);
-                var keyBytes = Encoding.UTF8.GetBytes((secretKey + "0000000000000000")[..16]);
+                var ivBytes = FitKey16(iv);
+                var keyBytes = FitKey16(secretKey);
                 var encBytes = Helper.Decode(encText);
                 var sm4 = new SM4();
                 var plainBytes = sm4.DecryptCBC(encBytes, keyBytes, ivBytes, isPadding);

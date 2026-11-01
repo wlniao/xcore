@@ -52,10 +52,15 @@
 			*/
 
             // CPU
-            var cpu = DnsTool.ReadCharacterString(reply, ref offset);
+            var endOffset = offset + rdLength;
+            if (endOffset > reply.Length)
+            {
+                endOffset = reply.Length;
+            }
+            var cpu = DnsTool.ReadCharacterString(reply, ref offset, endOffset);
 
             // OS
-            var os = DnsTool.ReadCharacterString(reply, ref offset);
+            var os = DnsTool.ReadCharacterString(reply, ref offset, endOffset);
 
             return new DnsRecord_HINFO(name, cpu, os, ttl);
         }

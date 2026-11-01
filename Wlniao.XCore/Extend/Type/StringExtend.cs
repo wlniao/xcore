@@ -14,6 +14,10 @@ namespace Wlniao
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
+        /// <remarks>
+        /// 注意：本方法语义等同 BCL 的 <see cref="string.IsNullOrEmpty(string)"/>（纯空格字符串视为非空）。
+        /// 而 <see cref="StringUtil.IsNullOrEmpty"/> 会把纯空格也判定为空，两者不可混用。
+        /// </remarks>
         public static bool IsNullOrEmpty(this string input)
         {
             return string.IsNullOrEmpty(input);
@@ -34,7 +38,7 @@ namespace Wlniao
         /// <returns></returns>
         public static bool IsMobile(this string input)
         {
-            return input != null && StringUtil.IsNumber(input) && input.Length == 11 && input.StartsWith("1");
+            return StringUtil.IsMobile(input);
         }
         /// <summary>
         /// 是否为邮箱地址
@@ -43,7 +47,7 @@ namespace Wlniao
         /// <returns></returns>
         public static bool IsEmail(this string input)
         {
-            return input != null && Regex.IsMatch(input, @"^\w+@\w+\.\w+$");
+            return StringUtil.IsEmail(input);
         }
         /// <summary>
         /// 分割字符串（不包含空字符串）

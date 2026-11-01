@@ -1,0 +1,30 @@
+﻿# Wlniao.XCore 仓库级编辑器约定
+# 目的：统一编码为 UTF-8 + BOM，杜绝 GBK / UTF-8 无 BOM 混写导致的注释乱码。
+
+root = true
+
+# 默认：UTF-8 + BOM，CRLF，缩进 4 空格
+[*]
+end_of_line = crlf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = false
+charset = utf-8-bom
+
+# C# 源码
+[*.cs]
+charset = utf-8-bom
+
+# 解决方案 / 工程 / 清单文件：Visual Studio 要求 UTF-8 BOM
+[*.{sln,csproj,props,targets}]
+charset = utf-8-bom
+indent_size = 2
+
+# JSON / Markdown / YAML 保持无 BOM（部分解析器和工具链不接受 BOM）
+[*.{json,md,yml,yaml}]
+charset = utf-8
+
+# 生成物与版本库内部文件不参与
+[*.{dll,exe,pdb,snk,png,jpg,ico,pfx,key,crt,cer,p12}]
+charset = unset

@@ -5,7 +5,10 @@ namespace Wlniao.Net.Dns
     /// <summary>
     /// MX record class.
     /// </summary>
-    internal class DnsRecord_MX : DnsRecord
+    /// <remarks>
+    /// 排序语义为按 Preference 升序（MX 优先级数值越小越优先）。
+    /// </remarks>
+    internal class DnsRecord_MX : DnsRecord, IComparable
     {
         private int m_Preference = 0;
         private string m_Host = "";
