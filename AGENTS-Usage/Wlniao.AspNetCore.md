@@ -1,7 +1,7 @@
-# AGENTS.md 使用模板 · Wlniao.AspNetCore
+# Wlniao.AspNetCore · API 参考手册
 
-> **怎么用**：把本文件复制到项目根目录并改名为 `AGENTS.md`（与 `Wlniao.XCore.md` 一起用，后者覆盖通用工具类型）。
-> 本文签名已与 Wlniao.AspNetCore 10.0.0 源码逐条核对。
+> 本文是**参考手册**，不是 `AGENTS.md`。执行约定见项目根 `AGENTS.md`；通用工具类型（配置/缓存/加密/时间/JSON）见同目录 `Wlniao.XCore.md`。
+> 依据源码版本 **10.0.1**。签名以源码与包内 XML 注释为准，本文省略了部分重载。
 
 ## 0. 包与兼容边界
 
@@ -12,10 +12,14 @@ dotnet add package Wlniao.AspNetCore   # 自动依赖 Wlniao.XCore
 | 项 | 值 |
 |---|---|
 | 目标框架 | `net8.0` / `net10.0`（`FrameworkReference Microsoft.AspNetCore.App`） |
-| AOT | `IsAotCompatible=true` |
+| AOT | 程序集标 `IsAotCompatible=true`，但**并非所有 API 都可静态分析**，详见 §4 的标注 |
 | 本项目角色 | **只做宿主与 HTTP 编排**：监听、TLS、参数解析、会话、限流、错误页都已有实现，不要重写 |
 
-## 1. 强制要求
+> ⚠️ AOT 的两处硬伤：`AddBusiness` 标了 `[RequiresUnreferencedCode]`（反射扫程序集）；
+> `Json(object)` / `OutSuccess(object)` 走运行时类型序列化（内部已 `UnconditionalSuppressMessage` 抑制警告，
+> 但 AOT 下仍可能得到 `{}`）。启用 `PublishAot` 的项目请改用显式服务注册 + 具名 DTO。
+
+## 1. 类型选择对照
 
 | 场景 | 唯一选择 | 禁止做法 |
 |---|---|---|
@@ -74,7 +78,7 @@ public class OrderController : XCoreController
     [Route("order/detail")]
     public IActionResult Detail()
     {
-        var id = GetRequest("id");                    // GET/FORM 统一入口
+        var id = GetRequestNoSecurity("id");          // 见 §4「GetRequest 的安全标记」再决定用哪个
         if (string.IsNullOrEmpty(id)) return ErrorMsg("缺少参数 id");
         OpenUseTime();                                // 响应头输出 X-UseTime
         return Json(_svc.Get(id));                    // 走 XCore.JsonSerializerOptions
@@ -94,29 +98,71 @@ public class OrderService : IOrderService
 }
 ```
 
+> AOT 项目：`Json(object)` 是运行时类型序列化，建议改为 `JsonStr(Json.Serialize(dto, MyCtx.Default.Dto))`，
+> 或直接 `return Content(Json.Serialize(dto, ...), "application/json")`。
+
 ## 3. 三个必须先知道的约定
 
 **① 监听与 TLS 由 `UseWlniao` 决定**
 端口取 `WLN_LISTEN_PORT`（默认 5000）；`xcore/server.crt` + `xcore/server.key`（可用 `WLN_TLS_CRT` / `WLN_TLS_KEY` 改路径）同时存在时自动加开 TLS 端口
 `WLN_TLS_PORT`（默认同 HTTP 端口，不同则双端口并存，协议 Http1/2/3）。**不要自己再调 `UseKestrel` / `UseHttps`**，否则会与框架监听冲突。
 
-**② 失败信息不一定返回 JSON**
-`ErrorMsg` 与 `UseErrorHandling` 都按「`POST` 或带 `do=` 参数 → JSON；其余 → HTML 错误页」判断。
-前端 AJAX 请求请带 `do=1` 或使用 POST，否则拿到的是 HTML。
+**② 失败信息不一定返回 JSON，且两个入口的判据不同**
+
+| 入口 | 返回 JSON 的条件 | 否则 |
+|---|---|---|
+| `ErrorMsg(...)`、`OnActionExecuted` 的安全拦截 | 请求 URL 带 `do` 查询参数（`OnActionExecuting` 里取 `Request.Query["do"]`） | HTML 错误页 |
+| `app.UseErrorHandling(...)` | 请求方法为 `POST` **或** 带 `do` 参数 | HTML 错误页 |
+
+即 **POST 但不带 `do=` 时，`ErrorMsg` 返回的依然是 HTML**。前端 AJAX 的失败分支请带 `do=1`，或用 `XApiController.OutMessage`。
+
+两处的 JSON 形状也不一样：`ErrorMsg` 是 `{ success:false, message }`（无 `data`），
+安全拦截是 `{ success:false, message, data:"" }`。
 
 **③ `XApiController` 的 `token` 必须在构造函数里赋值**
 未赋值时 `Check` 直接失败返回（`data="200"`，message="通讯密钥未配置"）。
 校验内容：`sign == SM3(timestamp + data + token)`，且要求 `timestamp + 3600 >= now`
 （**只拦过期，不拦超前**，客户端时钟可超前任意秒数）。
 
+### `XApiController` 报文形状（成功与失败不同，客户端要分开解析）
+
 ```csharp
 IActionResult? Check(Func<Dictionary<string, object>, IActionResult> func)
 // 入参：timestamp(Unix 秒) + data(SM4EncryptECBToHex 的 JSON) + sign(SM3(timestamp+data+token))
-// 失败时统一 Json(ApiResult<object>) 输出，注意失败码字段不统一：
-//   未配 token → data="200"；缺参 → data="202"
-//   过期 → code="203"；签名错 → code="205"；解密失败 → code="206"；异常 → code="401"
-// 成功 → 把 data 解密成 Dictionary<string, object> 传给 func
 ```
+
+**失败**：`return Json(result)`，即序列化 `ApiResult<object>`（`node`/`debuger`/`ExtendData` 是 `[JsonIgnore]`，不进报文）。
+失败码不统一，前两个塞在 `data`、其余塞在 `code`：
+
+| 场景 | 字段 | 值 |
+|---|---|---|
+| 未配置 token | `data` | `"200"` |
+| 缺 data / sign / timestamp | `data` | `"202"` |
+| 请求过期 | `code` | `"203"` |
+| 签名错误 | `code` | `"205"` |
+| 解密失败 | `code` | `"206"` |
+| 解密成功但反序列化失败 | `code` | `"207"` |
+| 其它异常 | `code` | `"401"` |
+
+**成功**：`OutSuccess(...)` / `OutMessage(...)` / `OutDefault()` 走的是**手拼字典**，不是 `ApiResult`：
+
+```csharp
+new Dictionary<string, object>
+{
+    ["node"] = result.node,          // 这里 node 会输出（与失败报文不同）
+    ["code"] = result.code,          // 成功固定 "0"
+    ["tips"] = result.tips,
+    ["data"] = Encryptor.SM4EncryptECBToHex(txt, token),   // ⚠️ data 是 SM4 密文
+    ["success"] = result.success,
+    ["message"] = ...,               // 空则按 success 取 "success" / "unkown error"
+    ["debuger"] = result.debuger     // 仅非空时才加
+}
+```
+
+> ⚠️ 三条容易写错的地方：
+> 1. **成功的 `data` 是密文，失败的 `data` 是明文状态码**——客户端必须按 `success` 分流；
+> 2. 成功时 `code="0"`（字符串零），不是 `"200"`；
+> 3. `OutSuccess` 序列化 `data` 用的是反射重载，AOT 下可能得到 `{}`。
 
 ## 4. API 手册
 
@@ -153,6 +199,11 @@ void AddBusiness(this IServiceCollection service, string? assemblyFile = null)
 void AddEngineBusiness(this IServiceCollection service)   // IContext → Context
 ```
 
+> ⚠️ **`AddBusiness` 不是 AOT/裁剪安全的**：源码标了
+> `[RequiresUnreferencedCode("...Assembly.LoadFrom/GetTypes/GetCustomAttributes/GetInterfaces...")]`。
+> 启用 `PublishAot` 或单文件发布时，调用方会收到 IL2026/IL3050 警告，且被裁剪的类型不会被注册。
+> 这类项目请改为显式 `services.AddScoped<IOrderService, OrderService>()`。
+
 ```csharp
 ServiceLifetime LifeTime   // Transient（默认）/ Scoped / Singleton
 new BusinessServiceAttribute(ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
@@ -163,31 +214,31 @@ new BusinessServiceAttribute(ServiceLifetime serviceLifetime = ServiceLifetime.T
 
 ```csharp
 // —— 请求参数（均为 protected）——
-string GetRequest(string key, string defaultValue = "")     // GET/FORM；见下方安全标记说明
-string GetRequestSecurity(string key, string defaultValue = "")   // 真实过滤掉敏感字符后返回
-string GetRequestNoSecurity(string key, string defaultValue = "") // 原样返回，不做任何标记
-string GetRequestDecode(string key, string defaultValue = "")     // 等同 GetRequest
+string GetRequest(string key, string defaultValue = "")          // GET/FORM；见下方安全标记说明
+string GetRequestSecurity(string key, string defaultValue = "")  // 与 GetRequest 同源，会做安全标记
+string GetRequestNoSecurity(string key, string defaultValue = "")// 原样返回，不做任何标记
+string GetRequestDecode(string key, string defaultValue = "")    // 与 GetRequest 同源
 int    GetRequestInt(string key)
-string PostRequest(string key, string defaultValue = "")    // 表单 / JSON 体 / Query 合并
+string PostRequest(string key, string defaultValue = "")         // 表单 / JSON 体 / Query 合并
 Task<string> PostRequestAsync(string key, string defaultValue = "")
 int    PostRequestInt(string key)
-string HeaderRequest(string key, string defaultValue = "")  // 请求头，不区分大小写
-string GetPostString()                                      // POST 原始报文
-string GetCookies(string key)                               // Cookie，不区分大小写
+string HeaderRequest(string key, string defaultValue = "")       // 请求头，不区分大小写
+string GetPostString()                                           // POST 原始报文
+string GetCookies(string key)                                    // Cookie，不区分大小写
 
 // —— 响应输出 ——
 void OpenUseTime()                       // 启用耗时统计 → 响应头 X-UseTime
 void DebugMessage(string message)        // → 响应头 X-Debug
-ActionResult Json(object data)           // 走 XCore.JsonSerializerOptions，中文不转义
+ActionResult Json(object data)           // 走 XCore.JsonSerializerOptions，中文不转义（反射序列化）
 ActionResult Json(object? data, Encoding encoding)
-ActionResult JsonStr(string jsonStr)     // 直接输出 JSON 字符串
+ActionResult JsonStr(string jsonStr)     // 直接输出 JSON 字符串（AOT 友好）
 ActionResult JsonStr(string jsonStr, Encoding encoding)
-ActionResult ErrorMsg(string? message = null)   // do=/POST 返回 JSON，否则 HTML 错误页
+ActionResult ErrorMsg(string? message = null)   // 带 do= 返回 JSON，否则 HTML 错误页
 ActionResult RedirectWait(string url, int seconds)   // 带倒计时跳转页
 
 // —— 可覆盖的错误页模板 ——
 protected string errorTitle / errorIcon / errorHtml
-protected bool   RequestSecurity   // 默认 true，关掉则 GetRequest 不过滤
+protected bool   RequestSecurity   // 默认 true，关掉则 GetRequest 不打安全标记
 protected string method / errorMsg
 
 // —— 请求信息 ——
@@ -202,9 +253,9 @@ string TraceId       // 取 wln-trace-id，无则生成，并从响应头 X-Trac
 ```
 
 > ⚠️ **`GetRequest` 是"检测并拦截"，不是"过滤后返回"**：内部会把含 `; / ( ) [ ] { } % * ! ' . < > "`
-> 的参数值判定为不安全，置 `RequestSecurity = false`，然后原样返回该值。
+> 的参数值判定为不安全，置 `RequestSecurity = false`，然后**原样返回该值**。
 > `OnActionExecuted` 发现 `RequestSecurity == false` 时读取配置 `NoSecurityMessage`：
-> 配了就把**整个响应**替换成这条文案（HTML 或 JSON），请求等于直接失败；没配则正常返回。
+> 配了就把**整个响应**替换成这条文案（带 `do=` 是 JSON，否则 HTML），请求等于直接失败；没配则正常返回。
 > **注意点号也在名单里**——邮箱、IP、小数、带 `.html` 的路径都会命中。这类接口请改用
 > `GetRequestNoSecurity`，或干脆不配置 `NoSecurityMessage`。
 
@@ -213,11 +264,11 @@ string TraceId       // 取 wln-trace-id，无则生成，并从响应头 X-Trac
 ```csharp
 protected string token = null;                       // 构造时赋值 SM4 通讯密钥（16 字符），一般取自 Config
 protected ApiResult<object> result = new() { node = XCore.WebNode, message = "" };
+```
 
-IActionResult? Check(Func<Dictionary<string, object>, IActionResult> func)
-// 校验 timestamp(Unix 秒) + data(SM4 密文) + sign(SM3(timestamp+data+token))，解密后把参数字典交给 func
-// 失败输出 Json(result)：未配 token→data="200"、缺参→data="202"、过期→code="203"、
-// 签名错→code="205"、解密失败→code="206"、异常→code="401"（字段不统一，客户端两个都要判）
+`Check(...)` 与报文形状见 §3；`ApiResult<T>` 的字段说明见 `Wlniao.XCore.md` §5。
+
+```csharp
 IActionResult OutSuccess(object obj) / OutSuccess(object obj, bool tips) / OutSuccess(string str)
 IActionResult OutMessage(string message, string code = null)
 IActionResult OutDefault() / OutDefault(bool tips)   // 按 result 当前状态输出
@@ -318,7 +369,7 @@ new EngineException(string message, Exception innerException)
 ```csharp
 IApplicationBuilder UseErrorHandling(this IApplicationBuilder app, Action<ErrorHandlingOptions> configureOptions)
 // ErrorHandlingOptions.StatusCode = 502（默认）
-// 异常信息写入响应头 X-Wlniao-Debug；POST 或 do= 请求返回 JSON，其余返回 HTML 错误页
+// 异常信息写入响应头 X-Wlniao-Debug；POST 或带 do= 的请求返回 JSON，其余返回 HTML 错误页
 ```
 
 ### Wlniao.Middleware.UseRateLimit 限流
@@ -348,7 +399,7 @@ bool PreferDistributedStore       // 优先用分布式存储
 ```csharp
 Task<HttpResponseMessage> DevProxy.Http(HttpRequest request, string target)   // 开发期 HTTP/WebSocket 反向代理
 class Mvc.Routing.ContainsKeyConstraint(params string[] keys)                // 路由约束：路由值须为指定键之一
-class Mvc.Routing.LocalhostConstraint                                        // 路由约束：仅本机可访问（拦截 swagger 用）
+class Mvc.Routing.LocalhostConstraint                                        // ⚠️ 名不副实：无本机判断，实际是路由值为 "swagger" 时拒绝
 interface Engine.IRuntime { bool InitStart(); }                              // 启动初始化钩子
 ```
 
@@ -365,9 +416,12 @@ interface Engine.IRuntime { bool InitStart(); }                              // 
 | `throw new Exception("...")` 交给框架 | `return ErrorMsg("...")` / `OutMessage(...)` | 前端拿到 HTML 或 502 |
 | 每个 Action 里 try/catch | `app.UseErrorHandling(...)` 一次兜底 | 重复代码、漏捕获 |
 | `XApiController` 不赋 `token` | 构造函数里 `token = Config.GetConfigs("ApiToken")` | `Check` 直接失败返回，业务函数不会执行 |
+| 认为 POST 就一定拿到 JSON | 失败请求带 `do=1`，或用 `OutMessage` | `ErrorMsg` 只看 `do`，POST 也返 HTML |
+| 客户端统一按 `code` 判断加密接口结果 | 先看 `success`：成功 `code="0"` 且 `data` 为密文 | 成功/失败报文形状不同 |
 | `ctx.InputDeserialize<T>()` | `ctx.InputDeserialize(MyCtx.Default.T)` | 编译失败（无该重载） |
 | 反射式读取 `IContext.Output` | `OutputSerializeCallback` 统一接管 | AOT 下失效 |
 | 登录态塞进 `HttpContext.Items` | `EngineSession.Encode/Decode` | 无法跨节点/跨进程 |
+| AOT 项目里用 `AddBusiness` + `Json(obj)` | 显式注册 + `JsonStr(Json.Serialize(dto, ctx))` | IL2026/IL3050 警告，运行期丢数据 |
 
 ## 6. 配置项速查（本包新增）
 
@@ -382,7 +436,7 @@ interface Engine.IRuntime { bool InitStart(); }                              // 
 | `WLN_RATE_WHITEKEYS` / `WLN_RATE_BLACKKEYS` | — | IP 白 / 黑名单 |
 | `NoSecurityMessage` | — | 参数被判定不安全时的拦截文案（配置后会把整个响应替换掉，见 §4 `GetRequest` 说明） |
 
-> 其余配置（端口、时区、缓存、日志、TLS 放行开关 `WLN_ACCEPT_ANY_CERT`）见 `Wlniao.XCore.md`。
+> 其余配置（端口、时区、缓存、日志、TLS 放行开关 `WLN_ACCEPT_ANY_CERT`）见 `Wlniao.XCore.md` §7。
 
 ## 7. 提交前自检
 
@@ -390,6 +444,8 @@ interface Engine.IRuntime { bool InitStart(); }                              // 
 - [ ] 新业务类是否标了 `[BusinessService]` 并实现了接口？
 - [ ] 新 Action 是否继承框架控制器基类，参数是否走 `GetRequest`/`PostRequest` 系列？
 - [ ] 失败路径是否用 `ErrorMsg` / `OutMessage` 返回，而不是抛异常？
+- [ ] AJAX 失败分支是否带了 `do=1`（否则拿到 HTML）？
 - [ ] 新增外部可访问接口是否评估过限流（`UseRateLimit` 白名单是否需要调整）？
 - [ ] 加密通讯接口是否属于 `XApiController` 且 `token` 已赋值？
-- [ ] 对外 HTTP 调用是否确认过 `XCore.AcceptAnyServerCertificate` 仍为默认的 `false`（默认收紧，不要为了绕开自签证书问题整体打开）？
+- [ ] 对外 HTTP 调用是否确认过 `XCore.AcceptAnyServerCertificate` 仍为默认的 `false`？
+- [ ] 若启用 `PublishAot`：是否已把 `AddBusiness` 换成显式注册、`Json(obj)` 换成源生成序列化？

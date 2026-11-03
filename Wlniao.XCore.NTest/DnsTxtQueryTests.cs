@@ -268,7 +268,7 @@ namespace NTest
             using var cts = new System.Threading.CancellationTokenSource(500);
 
             Assert.ThrowsAsync<System.OperationCanceledException>(async () =>
-                await dns.GetTXTAsync("timeout.example.com", cts.Token));
+                await dns.GetTXTAsync("timeout.example.com", cts.Token)).GetAwaiter().GetResult();
         }
     }
 }

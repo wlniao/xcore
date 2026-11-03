@@ -138,9 +138,10 @@ namespace Wlniao
                 Console.WriteLine("    Version          " + Version);
                 Console.WriteLine("");
                 Console.WriteLine("\r\nModules:");
-                Console.WriteLine("    OpenApi          Load Finish");
+                Console.WriteLine("    Caching          Load Finish");
                 Console.WriteLine("    XServer          Load Finish");
                 Console.WriteLine("    HttpEngine       Load Finish");
+                Console.WriteLine("    Crypto/Log/Net   Load Finish");
                 Console.WriteLine("");
                 Console.WriteLine("    Startup Elapsed  " + startupElapsed.ToString("F2") + "ms");
                 if (_init_use_ms >= 0)

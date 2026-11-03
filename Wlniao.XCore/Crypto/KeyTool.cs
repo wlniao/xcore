@@ -186,6 +186,52 @@ namespace Wlniao.Crypto
         }
 
         /// <summary>
+        /// 由 SM2 私钥推导对应公钥（Q = dG，依据 GB/T 32918.1-2016）
+        /// </summary>
+        /// <param name="privateKey">私钥字节，d 的大端表示（允许带前导 0x00）</param>
+        /// <returns>公钥 04||X||Y，共 65 字节</returns>
+        public static byte[] GetPublicKeyFromPrivateKey(byte[] privateKey)
+        {
+            if (privateKey == null || privateKey.Length == 0)
+            {
+                throw new ArgumentException("私钥数据为空", nameof(privateKey));
+            }
+            var d = new BigInteger(privateKey, isUnsigned: true, isBigEndian: true);
+            var point = Sm2Curve.Multiply(ToValidScalar(d, nameof(privateKey)), Sm2Curve.G);
+            return Sm2Curve.Encode(point);
+        }
+
+        /// <summary>
+        /// 由 SM2 私钥推导对应公钥（Q = dG，依据 GB/T 32918.1-2016）
+        /// </summary>
+        /// <param name="privateKey">私钥字符串，Hex（奇数长度自动前补 0）或 Base64，与 <see cref="KeyType.Generate"/> 构造的解析规则一致</param>
+        /// <returns>公钥小写 Hex，04 开头共 130 个字符</returns>
+        public static string GetPublicKeyFromPrivateKey(string privateKey)
+        {
+            if (string.IsNullOrWhiteSpace(privateKey))
+            {
+                throw new ArgumentException("私钥数据为空", nameof(privateKey));
+            }
+            var pubkey = GetPublicKeyFromPrivateKey(Decode(privateKey));
+            return System.Convert.ToHexString(pubkey).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// 校验私钥标量可参与推导：d=0 会得到无穷远点、d≥n 超出曲线阶，
+        /// 都无法构成合法密钥对，直接给出明确错误而不是让曲线运算兜底。
+        /// 范围取 [1, n-1]，与 <see cref="Sm2Curve.RandomScalar"/> 的取值范围一致
+        /// （国标严格定义是 [1, n-2]，n-1 在数学上同样可推导，按宽松口径处理）。
+        /// </summary>
+        private static BigInteger ToValidScalar(BigInteger d, string paramName)
+        {
+            if (d.Sign <= 0 || d >= Sm2Curve.N)
+            {
+                throw new ArgumentException("私钥不在合法范围 [1, n-1] 内，无法推导公钥", paramName);
+            }
+            return d;
+        }
+
+        /// <summary>
         /// 从 SPKI(SubjectPublicKeyInfo) 结构中取出公钥点
         /// </summary>
         /// <remarks>

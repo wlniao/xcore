@@ -1,7 +1,8 @@
-# AGENTS.md 使用模板 · Wlniao.XCore
+# Wlniao.XCore · API 参考手册
 
-> **怎么用**：把本文件复制到项目根目录并改名为 `AGENTS.md`（已有 AGENTS.md 时并入「依赖约定」章节）。
-> 文中签名均已与 Wlniao.XCore 10.0.0 源码逐条核对——**照抄本文件，不要按 .NET 习惯推测 API**。
+> 本文是**参考手册**，不是 `AGENTS.md`。执行约定（该做什么、不该做什么）见项目根 `AGENTS.md`。
+> 依据源码版本 **10.0.1**（`dotnet list package --include-transitive` 可核对实际引用版本）。
+> 签名以源码与包内 XML 注释为准；本文省略了部分重载，标注「另有重载」处请自行确认。
 
 ## 0. 包与兼容边界
 
@@ -19,11 +20,9 @@ dotnet add package Wlniao.XCore
 > ⚠️ `Wlniao.XCore` 是**程序集名 = 类名**（`Wlniao.XCore` 类是运行环境入口），
 > 业务代码里 `Wlniao.XCore.xxx` 解析到的是类而不是命名空间。引用运行环境用 `Wlniao.XCore.ListenPort` 这类写法。
 
-## 1. 强制要求
+## 1. 类型选择对照
 
-缓存、时间、加密、HTTP 访问等场景优先使用下列类型；**缓存与日志只面向统一入口，不要关心具体实现**（后端由配置切换）。
-
-| 场景 | 唯一选择 | 禁止做法 |
+| 场景 | 首选 | 避免 |
 |---|---|---|
 | IO / 路径 | `Wlniao.IO.PathTool`、`Wlniao.IO.FileEx` | `Directory.GetCurrentDirectory()` 自行拼路径 |
 | 运行环境 | `Wlniao.XCore` | `Environment.GetEnvironmentVariable` 直读配置 |
@@ -37,6 +36,9 @@ dotnet add package Wlniao.XCore
 | 缓存 | `Wlniao.Caching.Cache` | 自建静态 `Dictionary` 缓存 |
 | JSON | `Wlniao.Json` | `new JsonSerializerOptions()` 各自一套 |
 
+上表是默认选择，不是绝对禁令。确有必要偏离时（例如已用 `int.TryParse` 明确处理失败分支），
+在代码处写一行注释说明原因。
+
 ## 2. 三个必须先知道的约定
 
 **① `Convert` 与 `System.Convert` 重名**
@@ -47,7 +49,7 @@ dotnet add package Wlniao.XCore
 未命中且未给默认值时返回 `""`。判空用 `string.IsNullOrEmpty`，`== null` 永远不成立。
 
 **③ 配置读取顺序：环境变量（key 全大写） → `xcore.config` → 默认值**
-即 `WLN_NODE` 的环境变量会屏蔽配置文件里的同名项。给默认值时用 `GetConfigs("key", "默认值")`。
+即 `WLN_NODE` 的环境变量会屏蔽配置文件里的同名项。给默认值用 `GetConfigs("key", "默认值")`。
 
 ## 3. NativeAOT 与 JSON（最容易踩坑）
 
@@ -74,7 +76,7 @@ Json.StrictTrimDiagnostics = true;   // 未覆盖类型直接抛 NotSupportedExc
 其它 AOT 硬性要求：
 
 - **禁止匿名类型参与序列化**（`new { a = 1 }` 无元数据，AOT 下必丢）→ 用具名 DTO 或 `Dictionary<string, object>`；
-- `Cache.Set<T>` / `Cache.Get<T>` 必须传 `JsonTypeInfo<T>`（见下），没有免元数据的泛型重载；
+- `Cache.Set<T>` / `Cache.Get<T>` 必须传 `JsonTypeInfo<T>`，没有免元数据的泛型重载；
 - 反射式 API（`Type.GetProperties` 遍历赋值等）在 AOT 下不可用，改用显式映射。
 
 ## 4. 快速上手
@@ -93,7 +95,7 @@ Loger.Topic("order", $"create order node={node}");
 
 // 缓存：统一入口，后端由 WLN_CACHE 决定（auto/redis/file/memory）
 Cache.Set("cfg:" + node, "1", 3600);
-var v = Cache.Get("cfg:" + node);
+if (Cache.Exists("cfg:" + node)) { Loger.Debug("cfg cached: " + Cache.Get("cfg:" + node)); }
 
 // 时间：统一走 DateTools，时区由 WLN_TIMEZONE 控制（默认东八区）
 var now = DateTools.GetNow();
@@ -123,19 +125,22 @@ string GetEnvironment(string key, string defaultValue = "") // 只读环境变�
 bool   SetConfigs(string key, string value = "")            // 写配置文件，value 为空表示删除
 string GetEncrypt(string key, string secret, string def = null)  // 读 SM4 加密存储的配置项
 bool   SetEncrypt(string key, string value, string secret)       // 加密后写入配置
-void   Read(string path) / bool Write(Dictionary<string,string> dic, string path)  // 手动加载/落盘
+void   Read(string path)                                    // 手动加载配置
+bool   Write(Dictionary<string, string> dic, string path)    // 手动落盘
 ```
 
 ### Wlniao.Convert 类型转换（失败返回默认值，不抛异常）
 
 ```csharp
 int     ToInt(object obj)      // "12"、"12.5"、12.9f → 12（截断，非四舍五入）
-int     ToInt(float|double|decimal number)
-long    ToLong(object|string obj)
+int     ToInt(float number)
+int     ToInt(double number)
+int     ToInt(decimal number)
+long    ToLong(object obj)     // 另有 ToLong(string)
 double  ToDouble(string str)
-decimal ToDecimal(string str)  / ToDecimal(string str, decimal defaultValue)
+decimal ToDecimal(string str)  // 另有 ToDecimal(string, decimal defaultValue)
 float   ToFloat(string str, float defaultValue = 0)
-bool    ToBool(object|string obj)   // "1"/"true"/"yes" 等为真
+bool    ToBool(object obj)     // "1"/"true"/"yes" 等为真；另有 ToBool(string)
 byte[]  ToBytes(Stream stream)
 int[]   ToIntArray(string myids)    // "1,2,3" → [1,2,3]
 Stream  ToStream(object obj)        // object/byte[] → Stream
@@ -160,7 +165,7 @@ string Webroxy             // 代理地址（Webroxy）
 string SessionEncryptKey   // 会话密钥，未配置时按节点/主机/库名派生
 JsonSerializerOptions JsonSerializerOptions   // 全局 JSON 选项（中文不转义）
 
-bool   AcceptAnyServerCertificate            // 全局 TLS 放行开关，默认 false（收紧，见下）
+bool   AcceptAnyServerCertificate            // 全局 TLS 放行开关，默认 false（收紧）
 Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>
        ServerCertificateCustomValidationCallback   // 全库统一的证书校验委托
 
@@ -169,24 +174,23 @@ void   Info()    // 打印启动横幅与运行信息
 ```
 
 > ✅ **TLS 默认收紧**：`AcceptAnyServerCertificate` 默认 `false`，按标准链校验，
-> 过期 / 域名不符 / 自签 / 链不完整都会被拒绝。升级后若依赖旧的全放行行为，需按下式显式开启。
+> 过期 / 域名不符 / 自签 / 链不完整都会被拒绝。
+> 放行态（`true`）下：任何服务端证书都被接受，仅首次命中时打一条 Warn；
+> 收紧态（`false`）下：标准链校验通过即放行，未通过时仅放行内置受信任根 CA / 二级 CA 指纹。
+> 配置项解析规则为「只有显式肯定值才放行」：`1/true/yes/on`（不分大小写）放行，
+> 空值与无法识别的取值一律收紧 —— 笔误不会误开成全局放行。
+> 若业务自行替换了 `ServerCertificateCustomValidationCallback`，本开关不再生效。
 
 ```csharp
 XCore.AcceptAnyServerCertificate = true;    // 代码方式
 // 或配置 WLN_ACCEPT_ANY_CERT=true（环境变量优先，只解析一次，改配置需重启）
 ```
 
-> 放行态（`true`）下：任何服务端证书都会被接受，仅首次命中时打一条 Warn；
-> 收紧态（`false`，默认）下：标准链校验通过即放行，未通过时仅放行内置受信任根 CA / 二级 CA 指纹。
-> 配置项解析规则为「只有显式肯定值才放行」：`1/true/yes/on`（不分大小写）放行，
-> 空值与无法识别的取值一律收紧 —— 笔误不会误开成全局放行。
-> 若业务自行替换了 `ServerCertificateCustomValidationCallback`，本开关不再生效。
-
 ### Wlniao.Log.Loger 日志
 
 ```csharp
 void Topic(string topic, string message, LogLevel logLevel = LogLevel.Information, bool consoleLocal = true)
-                                   // 带主题标签，Agent 按模块分主题记录的首选
+                                   // 带主题标签，按模块分主题记录的首选
 void Debug(string message)         // 另有 Info / Warn / Error / Fatal(string message)
 void Console(string message, ConsoleColor color = ConsoleColor.White)   // 直接写控制台（不进日志后端）
 void SetLogger(ILogProvider provider)   // 自定义日志后端
@@ -197,20 +201,29 @@ string LogLocal { get; }           // 本地日志目录
 
 ### Wlniao.DateTools 时间（时区由 `WLN_TIMEZONE` 控制，默认 8）
 
+返回值都是**无时区（`Kind=Unspecified`）且已按配置时区偏移**的时间。
+
 ```csharp
-long     GetUnix()                                   // 当前 Unix 秒，另有 GetUnix(string) / GetUnix(DateTime)
-DateTime GetNow()                                    // 当前时间（Kind=Unspecified，已按配置时区偏移）
-DateTime Convert(long unixtime) / Convert(string)    // → 无时区本地时间
-DateTime ConvertToUtc(long) / ConvertToUtc(string)   // → UTC
-string   ConvertToGMT(long unixtime = 0)             // → RFC 1123 格式
-string   Format(string format = "yyyy-MM-dd HH:mm:ss")
+long     GetUnix()                                    // 当前 Unix 秒；另有 GetUnix(string) / GetUnix(DateTime)
+DateTime GetNow()                                     // 当前时间（Kind=Unspecified）
+DateTime Convert(long unixtime)                       // → 无时区本地时间；另有 Convert(string)
+DateTime ConvertToUtc(long unixtime)                  // → UTC；另有 ConvertToUtc(string)
+DateTime ConvertGmtToUtc(string gmt)                  // RFC 1123 → UTC
+string   ConvertToGMT(long unixtime = 0)              // → RFC 1123 格式
+string   Format(string format = "yyyy-MM-dd HH:mm:ss")                        // 当前时间
 string   Format(DateTime time, string format = "yyyy-MM-dd HH:mm:ss")
-string   FormatUnix(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")   // 0/负值返回 ""
-string   FormatUnixToUtc(long, string) / FormatUnixToLocal(long, string)
-string   FormatUtc(string) / FormatLocal(string) / FormatDate(string format = "yyyy-MM-dd")
-long     GetDayStart(long unixtime)   // 当日起点（按配置时区），另有 GetUtcDayStart
-DayOfWeek GetDayOfWeek() / GetDayOfWeek(long)
-int      TimeZone                     // 当前时区偏移小时数
+string   FormatUtc(string format = "yyyy-MM-dd HH:mm:ss")                     // 当前 UTC
+string   FormatLocal(string format = "yyyy-MM-dd HH:mm:ss")                   // 服务器本地时区（不走配置）
+string   FormatTimeZone(int timezone, string format = "yyyy-MM-dd HH:mm:ss")  // 指定时区
+string   FormatDate(string format = "yyyy-MM-dd")
+string   FormatUnix(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")     // 0/负值返回 ""
+string   FormatUnixToUtc(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
+string   FormatUnixToLocal(long unixtime, string format = "yyyy-MM-dd HH:mm:ss")
+string   FormatUnixToTimeZone(long unixtime, int timezone, string format = "yyyy-MM-dd HH:mm:ss")
+long     GetDayStart(long unixtime)   // 当日起点（按配置时区）
+long     GetUtcDayStart(long unixtime)
+DayOfWeek GetDayOfWeek()              // 另有 GetDayOfWeek(long)
+int      TimeZone                     // 当前时区偏移小时数（首次访问时读配置并缓存）
 ```
 
 ### Wlniao.Encryptor 加解密
@@ -219,9 +232,12 @@ int      TimeZone                     // 当前时区偏移小时数
 // —— SM4 对称（密钥不足 16 字节补 '0'，超出截断）——
 string SM4EncryptECBToHex(string plainText, string secretKey, bool isPadding = true)
 string SM4DecryptECBFromHex(string encText, string secretKey, bool isPadding = true)
-string SM4EncryptECBToBase64 / SM4DecryptECBFromBase64(string, string, bool isPadding = true)
-string SM4EncryptCBCToHex / SM4DecryptCBCFromHex(string, string secretKey, string iv, bool isPadding = true)
-string SM4EncryptCBCToBase64 / SM4DecryptCBCFromBase64(string, string secretKey, string iv, bool isPadding = true)
+string SM4EncryptECBToBase64(string plainText, string secretKey, bool isPadding = true)
+string SM4DecryptECBFromBase64(string encText, string secretKey, bool isPadding = true)
+string SM4EncryptCBCToHex(string plainText, string secretKey, string iv, bool isPadding = true)
+string SM4DecryptCBCFromHex(string encText, string secretKey, string iv, bool isPadding = true)
+string SM4EncryptCBCToBase64(string plainText, string secretKey, string iv, bool isPadding = true)
+string SM4DecryptCBCFromBase64(string encText, string secretKey, string iv, bool isPadding = true)
 
 // —— SM2 非对称 ——
 string SM2EncryptByPublicKey(string plainText, string publicKey, bool base64 = false)
@@ -252,6 +268,30 @@ string VerbatimEncrypt(string txt, int crypt = 6338) / VerbatimDecrypt(string tx
 
 > 摘要类方法传**空串返回空串**；其余按 ASCII 编码计算——含中文的输入请自己先转 UTF-8 字节再算。
 
+### Wlniao.Crypto 密钥工具（KeyTool / SM2 实例）
+
+```csharp
+var tool = new KeyTool();                       // 生成新密钥对
+tool.GenerateKey(out byte[] pubkey, out byte[] privkey);
+tool.OutHex(out string pubHex, out string privHex);   // 小写 Hex，公钥 04 开头 130 字符
+tool.PublicKey / tool.PrivateKey                // 字节形态
+
+// 由 SM2 私钥推导公钥（Q = dG，GB/T 32918.1）
+byte[] KeyTool.GetPublicKeyFromPrivateKey(byte[] privateKey)   // → 04||X||Y 共 65 字节
+string KeyTool.GetPublicKeyFromPrivateKey(string privateKey)   // → 小写 Hex 共 130 字符
+// 字符串版接受 Hex（奇数长度自动前补 0）或 Base64，解析规则与 KeyType.Generate 一致
+
+KeyTool.ParsePkcs8(byte[] der) / KeyTool.ParseSpki(byte[] der)  // PKCS#8 / SPKI 提取
+
+var sm2 = new SM2(pubkey, privkey);             // 亦支持 (string, string, KeyType) 构造
+sm2.Encrypt(data) / sm2.Decrypt(data)           // 默认 C1C2C3，可传 SM2Mode.C1C3C2
+sm2.Sign(msg) / sm2.VerifySign(msg, sign)       // 默认 ASN.1 DER；*WithRsAsn1 为 r||s 64 字节
+```
+
+> 私钥标量必须落在 `[1, n-1]`，越界（全 0、超出曲线阶）抛 `ArgumentException`，不会得到非法公钥。
+> 只拿到对方私钥需要公钥时，**用 `KeyTool.GetPublicKeyFromPrivateKey` 推导**，不要自己拼字节或引入第三方库；
+> `SignWithRsAsn1` 名字里虽有 Asn1，返回的其实是去掉 DER 包装后的 r||s 定长拼接（历史命名，勿望文生义）。
+
 ### Wlniao.Text.StringUtil 文本
 
 ```csharp
@@ -261,15 +301,23 @@ string CreateLongId()               // 36 位：yyyyMMddHHmmssffffff + 0000 + 12
 string CreateRndStr(int length)     // 纯数字随机串
 string CreateRndStrE(int length)    // 数字+小写字母随机串
 
-bool   IsIP(string ip) / IsIPv4 / IsIPv6 / IsEmail / IsMobile / IsIdentity / IsNumber
-bool   IsNullOrEmpty(string str) / HasText(string str)
-bool   IsChineseLetter(string) / IsAbcNumberAndChineseLetter(string) / IsColorValue(string)
-bool   IsSafeSqlString(string) / string GetSafeSqlString(string) / GetSafeSqlString(string, bool tolower)
-string UrlEncode(string) / UrlEncodeSymbol(string) / UrlDecode(string)     // 另有带 encoding 的重载
-string UTF8ToHexString(string s) / HexStringToUTF8(string hex)
-string CutString(object|string str, int length)     // 截断并补 "..."
-string GetCamelCase(string) / GetTitleCase(string) / GetHtmlTitle(string)
-string GetTypeName(Type) / GetTypeFullName(Type) / GetGenericTypeWithArgs(Type)   // 无反射泛型拼装
+bool IsIP(string ip) / IsIPv4(string ip) / IsIPv6(string ip)
+bool IsEmail(string str) / IsMobile(string str) / IsIdentity(string str) / IsNumber(string str)
+bool IsNullOrEmpty(string str) / HasText(string str)
+bool IsChineseLetter(string str) / IsAbcNumberAndChineseLetter(string str) / IsColorValue(string aColor)
+bool IsSafeSqlString(string str)
+string GetSafeSqlString(string str) / GetSafeSqlString(string str, bool tolower)
+
+string UrlEncode(string str) / UrlEncode(string str, string encoding)
+string UrlEncodeSymbol(string str)
+string UrlDecode(string str) / UrlDecode(string str, string encoding)
+string UTF8ToHexString(string utf8String) / HexStringToUTF8(string hexString)
+
+string CutString(object str, int length)     // 截断并补 "..."
+string CutString(string str, int length)
+string GetCamelCase(string str) / GetTitleCase(string str) / GetHtmlTitle(string html)
+string GetTypeName(string typeFullName) / GetTypeName(Type t) / GetTypeFullName(Type t)
+string GetGenericTypeWithArgs(Type t)        // 无反射泛型拼装
 ```
 
 ### Wlniao.Text.Encodings 编码
@@ -281,7 +329,7 @@ Encoding GetEncoding(string name)   // 未注册 CodePages 时自动注册后重
 ### Wlniao.Caching.Cache 缓存（后端 `WLN_CACHE`：auto/redis/file/memory）
 
 ```csharp
-bool   Set(string key, string value, int expireSeconds = 86400)          // 秒；传 0 表示立即过期，长期缓存请给大值
+bool   Set(string key, string value, int expireSeconds = 86400)   // 秒；传 0 = 立即过期
 bool   Set<T>(string key, T obj, JsonTypeInfo<T> typeInfo, int expireSeconds = 86400)
 string Get(string key)                 // 缺项返回 ""
 string GetAllowNull(string key)        // 缺项返回 null
@@ -297,22 +345,29 @@ string CachePath { get; set; }                           // file 后端目录
 ### Wlniao.IO.PathTool / FileEx 文件
 
 ```csharp
-string PathTool.Map(params string[] relativePath)   // 相对程序根目录 → 绝对路径：PathTool.Map("logs","a.log")
+string PathTool.Map(params string[] relativePath)    // 相对程序根目录 → 绝对路径：PathTool.Map("logs","a.log")
 string PathTool.JoinPath(string path1, string path2) // 跨平台拼接，不依赖根目录
 
-string FileEx.Read(string absolutePath)                  // 自动识别 BOM/编码
-string FileEx.Read(string absolutePath, Encoding enc)
-string FileEx.ReadUTF8String(string absolutePath)
-string[] FileEx.ReadAllLines(string absolutePath)        // 另有带 Encoding 重载
-byte[] FileEx.ReadByte(string absolutePath)
+string   FileEx.Read(string absolutePath)                  // 自动识别 BOM/编码
+string   FileEx.Read(string absolutePath, Encoding encoding)
+string   FileEx.ReadUTF8String(string absolutePath)
+string[] FileEx.ReadAllLines(string absolutePath)          // 另有 (string, Encoding) 重载
+byte[]   FileEx.ReadByte(string absolutePath)
 Encoding FileEx.GetEncoding(string absolutePath)
-void   FileEx.Write(string absolutePath, string fileContent)                    // 目录不存在会创建
-void   FileEx.Write(string absolutePath, string fileContent, bool autoCreateDir)
-void   FileEx.Write(string absolutePath, string fileContent, Encoding enc)
-void   FileEx.WriteByte / WriteStream / Append(string, string) / Append(string, string, Encoding)
-void   FileEx.Delete / Move / Copy(src, dest) / Copy(src, dest, bool overwrite)
-bool   FileEx.Exists(string absolutePath)
-// ⚠️ FileEx.Zip / UnZip 已标记 Obsolete 且必然抛 NotImplementedException —— 请改用 System.IO.Compression.ZipFile
+
+void FileEx.Write(string absolutePath, string fileContent)                        // 目录不存在会创建
+void FileEx.Write(string absolutePath, string fileContent, bool autoCreateDir)
+void FileEx.Write(string absolutePath, string fileContent, Encoding encoding)
+void FileEx.WriteByte(string absolutePath, byte[] buffer)
+void FileEx.WriteStream(string absolutePath, Stream stream)
+void FileEx.Append(string absolutePath, string fileContent)
+void FileEx.Append(string absolutePath, string fileContent, Encoding encoding)
+
+void FileEx.Delete(string absolutePath)
+void FileEx.Move(string sourceFileName, string destFileName)
+void FileEx.Copy(string sourceFileName, string destFileName)                      // 另有 (…, bool overwrite)
+bool FileEx.Exists(string absolutePath)
+// ⚠️ FileEx.Zip / UnZip 已标记 Obsolete 且必然抛 NotImplementedException —— 改用 System.IO.Compression.ZipFile
 ```
 
 ### Wlniao.Net.ApiClient HTTP（同步 + 异步成对）
@@ -356,7 +411,7 @@ using var client = handler.CreateHttpClient();   // 或 handler.CreateHandler() 
 ```csharp
 new DnsTool()                        // 系统 DNS
 new DnsTool(string serverIpOrHost)   // 指定 DNS
-new DnsTool(IPAddress[] serverIPs) / new DnsTool(IPEndPoint[] servers)
+new DnsTool(IPAddress[] serverIPs)   // 另有 new DnsTool(IPEndPoint[] servers)
 
 IPAddress  GetIPAddressDefault(string qname)                    // A，失败回退 AAAA
 Task<IPAddress> GetIPAddressDefaultAsync(string qname)
@@ -364,7 +419,7 @@ IPAddress  GetIPAddress(string qname, DnsRecordType type = DnsRecordType.A)
 string     GetCNAME(string qname)
 string     GetTXT(string qname)                                 // 多段已自动拼接
 string[]   GetTXTs(string qname)
-Task<string>  GetTXTAsync(string qname, CancellationToken ct = default)
+Task<string>   GetTXTAsync(string qname, CancellationToken ct = default)
 Task<string[]> GetTXTsAsync(string qname, CancellationToken ct = default)
 const int  TimeoutMilliseconds = 15000
 ```
@@ -399,22 +454,52 @@ bool   HasError      // 只读：Code != 200（不序列化）
 Result<T> SetData(T data)                              // Code=200 且赋值 Data
 Result<T> SetMessage(string message)                   // 仅改 Message，不动 Code
 Result<T> SetMessage(string message, int statusCode)   // 同时改 Code
-Result<T> SetStatusCode(int statusCode) / SetSuccess()
+Result<T> SetStatusCode(int statusCode)
+Result<T> SetSuccess()
 // —— 静态快捷方法 ——
-Result<T> OutSuccess(T data, int statusCode = 200)
-Result<T> OutMessage(string message, int statusCode, T data = default)
+static Result<T> OutSuccess(T data, int statusCode = 200)
+static Result<T> OutMessage(string message, int statusCode, T data = default)
 ```
+
+### `Wlniao.ApiResult<T>` API 响应封装（`XApiController` 的默认返回体）
+
+与 `Result<T>` 是两套东西：`Result<T>` 用 `Code == 200` 判成功；`ApiResult<T>` 用布尔 `success` + 字符串 `code`。
+
+```csharp
+string message          // 服务端提示消息
+bool   success          // 是否成功（默认 false）
+bool   tips             // 消息可否直接展示给用户
+string code             // 业务状态码（字符串，默认 ""）
+string traceid          // 链路追踪 ID
+T      data             // 业务数据
+
+// —— 以下三个 [JsonIgnore]，只在服务端内存里可见，不进报文 ——
+string node             // 产生消息的节点名，构造时取 XCore.WebNode
+string debuger          // 调试消息
+Dictionary<string, object> ExtendData
+
+new ApiResult<T>()                                      // node=WebNode, code="", message="", success=false
+new ApiResult<T>(string Message, bool Success = false)
+new ApiResult<T>(string Node, string Code, string Message, bool Success = false)
+```
+
+> ⚠️ `node` / `debuger` / `ExtendData` 标了 `[JsonIgnore]`：给日志和内部流程用，**不会出现在 JSON 里**。
+> 想让客户端拿到这类信息，显式放进 `data`。
 
 ### `Wlniao.Pager<T>` 数据分页
 
 ```csharp
-bool success      // 默认 true
-string message    // 未赋值时按 rows/total 自动生成
-int total / size / page      // size 默认 10（<=0 视为 10），page 从 1 开始
-int skip          // 只读：(page-1)*size
+bool   success      // 默认 true
+string message      // 未赋值时按 rows/total 自动生成
+int    total
+int    size         // 默认 10（<=0 视为 10）
+int    page         // 从 1 开始
+int    skip         // 只读：(page-1)*size
 List<T> rows
-Pager<T> PutIn(List<T> source, int page = 1, int size = 10)                  // 传全量，自动切页
-Pager<T> Format(List<T> data, int total, int page, int size = 0)             // 已切好页，只补元数据
+
+// ⚠️ 两个都是静态方法，不是实例链式调用
+static Pager<T> PutIn(List<T> source, int page = 1, int size = 10)          // 传全量，自动切页
+static Pager<T> Format(List<T> data, int total, int page, int size = 0)     // 已切好页，只补元数据
 ```
 
 ### Wlniao.Runtime.XCoreException 内部异常（带状态码）
@@ -437,10 +522,12 @@ new XCoreException(string message, int statusCode, Exception innerException)
 | `new HttpClient()` | `ApiClient.Get(url)` / `HttpClientManager.SharedInstance` | 连接池/DNS 失效、证书策略不一致 |
 | `var v = Config.GetConfigs("k"); if (v == null)` | `if (string.IsNullOrEmpty(v))` | 缺项返回 `""`，判空永不成立 |
 | `Convert.ToInt(x)` + `using System;` | `Wlniao.Convert.ToInt(x)` | CS0104 二义性 |
-| `app.UseHttps()` 自行配证书 | `UseWlniao()`（见 AspNetCore 模板） | 绕过 `WLN_TLS_PORT` 双端口逻辑 |
+| `new HttpClient(new CustomHttpClientHandler{...})` | `new CustomHttpClientHandler{...}.CreateHttpClient()` | 它已是工厂不是处理器，不编译 |
 | 为省事直接打开 TLS 全放行 | 装自签 CA 到信任库，或仅对内网域名定向放行 | 全放行中间人可伪造任意站点 |
+| 自拼公钥字节 / 为取公钥引 BouncyCastle | `KeyTool.GetPublicKeyFromPrivateKey(privateKey)` | 手拼易错且无法对齐国标向量 |
 | `Cache.Set("k", v, 0)` 想表示"永久" | 传足够大的秒数（如 `365*86400`） | `0` 是"立即过期"，写完就读不到 |
 | `FileEx.Zip(path)` | `System.IO.Compression.ZipFile` | 必抛 NotImplementedException |
+| `Pager<T>.PutIn(...)` 当成实例方法链式调用 | `Pager<T>.PutIn(list, page, size)` 静态调用 | 编译失败 |
 
 ## 7. 配置项速查
 
@@ -455,7 +542,7 @@ new XCoreException(string message, int statusCode, Exception innerException)
 | `WLN_CACHE` | `auto` | `auto`/`redis`/`file`/`memory` |
 | `WLN_REDIS_HOST` / `WLN_REDIS_PORT` / `WLN_REDIS_DB` / `WLN_REDIS` | — | Redis 连接 |
 | `WLN_LOG_TYPE` / `WLN_LOG_LEVEL` / `WLN_LOG_PATH` / `WLN_LOG_LOCAL` / `WLN_LOG_INTERVAL` / `WLN_LOG_SERVER` | — | 日志后端与级别 |
-| `WLN_ACCEPT_ANY_CERT` | `false` | 全局 TLS 放行开关（`1/true/yes/on` 才放行），见 §5 |
+| `WLN_ACCEPT_ANY_CERT` | `false` | 全局 TLS 放行开关（`1/true/yes/on` 才放行） |
 | `Webroxy` | — | 出网代理 |
 | `XServerId` | — | 服务器标识 |
 | `SessionEncryptKey` | 自动派生 | 会话加密密钥 |
@@ -466,5 +553,8 @@ new XCoreException(string message, int statusCode, Exception innerException)
 - [ ] 新 DTO 参与 JSON 序列化，是否在 `JsonSerializerContext` 里登记了 `[JsonSerializable]`？
 - [ ] 用了 `Cache.Get<T>`，是否传了 `JsonTypeInfo<T>`？
 - [ ] 对外 HTTPS 调用的服务，是否误把 `XCore.AcceptAnyServerCertificate` 设成了 `true`？
+- [ ] 需要「SM2 私钥 → 公钥」时是否用 `KeyTool.GetPublicKeyFromPrivateKey`，而不是自拼公钥字节？
 - [ ] 异常路径是否返回 `Result<T>.OutMessage(...)` 而不是抛到框架外？
 - [ ] 日志是否用 `Loger.Topic("模块名", ...)`，而不是拼字符串进 `Info`？
+- [ ] 分页是否用 `Pager<T>.PutIn(...)` 静态调用，而不是 `new Pager<T>().PutIn(...)`？
+- [ ] 设 `expireSeconds` 时是否确认过 `0` 的语义（立即过期，不是永久）？
