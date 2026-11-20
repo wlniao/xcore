@@ -1,7 +1,7 @@
 # Wlniao.XCore · API 参考手册
 
 > 本文是**参考手册**，不是 `AGENTS.md`。执行约定（该做什么、不该做什么）见项目根 `AGENTS.md`。
-> 依据源码版本 **10.0.1**（`dotnet list package --include-transitive` 可核对实际引用版本）。
+> 依据源码版本 **10.0.2**（`dotnet list package --include-transitive` 可核对实际引用版本）。
 > 签名以源码与包内 XML 注释为准；本文省略了部分重载，标注「另有重载」处请自行确认。
 
 ## 0. 包与兼容边界
@@ -347,6 +347,8 @@ string CachePath { get; set; }                           // file 后端目录
 ```csharp
 string PathTool.Map(params string[] relativePath)    // 相对程序根目录 → 绝对路径：PathTool.Map("logs","a.log")
 string PathTool.JoinPath(string path1, string path2) // 跨平台拼接，不依赖根目录
+bool   PathTool.EnsureDir(string dir)                // 10.0.2 新增：建目录；已存在或空路径返回 false，本次新建返回 true
+// ⚠️ EnsureDir 不调 Map：相对路径按进程当前目录解析，要落在程序根目录请先 PathTool.Map(...)
 
 string   FileEx.Read(string absolutePath)                  // 自动识别 BOM/编码
 string   FileEx.Read(string absolutePath, Encoding encoding)
@@ -502,13 +504,20 @@ static Pager<T> PutIn(List<T> source, int page = 1, int size = 10)          // �
 static Pager<T> Format(List<T> data, int total, int page, int size = 0)     // 已切好页，只补元数据
 ```
 
-### Wlniao.Runtime.XCoreException 内部异常（带状态码）
+### Wlniao.Runtime.XCoreException / MessageException 内部异常（带状态码）
 
 ```csharp
 int StatusCode { get; }
 new XCoreException(string message, int statusCode)
 new XCoreException(string message, int statusCode, Exception innerException)
+
+new MessageException(string message, int statusCode)                       // 10.0.2 新增
+new MessageException(string message, int statusCode, Exception innerException)
 ```
+
+两者都直接继承 `Exception`，互不继承，`catch` 不能互相替代。
+`MessageException` 当前用于 `EngineSession.Decode` 的认证失败（`Authorization error`，`StatusCode=0`）；
+`XCoreException` 的既有调用方（Redis 相关）不变。
 
 ## 6. 反例 → 正例
 

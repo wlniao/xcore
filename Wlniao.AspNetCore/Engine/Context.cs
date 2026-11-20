@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Wlniao.Log;
 using Wlniao.Text;
+using Wlniao.Runtime;
 
 namespace Wlniao.Engine
 {
@@ -416,6 +417,9 @@ namespace Wlniao.Engine
 
                     Session.Decode(Authorization, ConsumerSecretKey, ConsumerId);
                 }
+                catch (Wlniao.Runtime.MessageException)
+                {
+                }
                 catch (Exception e)
                 {
                     Loger.Debug($"EngineSession.Decode: {e.Message}[{ConsumerId}]");
@@ -427,6 +431,9 @@ namespace Wlniao.Engine
                 try
                 {
                     Session = await IdentityAuthentication.Invoke(Request) ?? new EngineSession();
+                }
+                catch (Wlniao.Runtime.MessageException)
+                {
                 }
                 catch (Exception e)
                 {

@@ -1,7 +1,7 @@
 # AGENTS.md
 
 本项目引用 Wlniao 框架：`Wlniao.XCore`，Web 项目再加 `Wlniao.AspNetCore`。
-本文按包版本 **10.0.1** 编写，只写「必须遵守什么」，不写 API 清单。
+本文按包版本 **10.0.2** 编写，只写「必须遵守什么」，不写 API 清单。
 
 - 完整签名查 `Reference/Wlniao/Wlniao.XCore.md`、`Reference/Wlniao/Wlniao.AspNetCore.md`，**按需检索，不要整篇预读**。
 - 本文与源码冲突时，以源码 / 包内 XML 注释为准，并顺手修正对应文档。
@@ -24,7 +24,7 @@ dotnet publish -c Release -r linux-x64 -p:PublishAot=true     # AOT 发布
 dotnet list package --include-transitive                       # 核对实际引用的 Wlniao 版本
 ```
 
-> 最后一条显示的 Wlniao 版本若不是 10.0.1，先停下确认差异（重点看 `ApiResult`、
+> 最后一条显示的 Wlniao 版本若不是 10.0.2，先停下确认差异（重点看 `ApiResult`、
 > `XApiController` 报文形状、`AddBusiness` 的 AOT 标注），不要照本文硬套。
 
 ## 3. 边界
@@ -127,6 +127,7 @@ AOT 下**静默输出 `{}`**，不报错但数据全丢。禁匿名类型参与�
 | `Cache.Set("k", v, 0)` 想表示"永久" | 传足够大的秒数 | `0` 是"立即过期"，写完读不到 |
 | 自拼 SM2 公钥字节 / 引 BouncyCastle | `KeyTool.GetPublicKeyFromPrivateKey(privateKey)` | 手拼易错，第三方库违反零依赖约定 |
 | `FileEx.Zip(path)` | `System.IO.Compression.ZipFile` | 必抛 `NotImplementedException` |
+| `Directory.CreateDirectory(dir)` 后自行判断是否新建 | `PathTool.EnsureDir(dir)` | 已存在或空路径返回 `false`，本次新建返回 `true`；不做 `Map`，相对路径按进程当前目录解析 |
 | `new HttpClient(new CustomHttpClientHandler{...})` | `new CustomHttpClientHandler{...}.CreateHttpClient()` | 它已是工厂不是处理器，不编译 |
 | （Web）业务类标了 `[BusinessService]` 却没实现接口 | 实现接口（如 `IOrderService`） | 静默不注册，运行期拿不到服务 |
 | （Web）每个 Action 里 try/catch | `app.UseErrorHandling(...)` 一次兜底 | 重复代码、漏捕获 |

@@ -111,11 +111,9 @@ namespace Wlniao.Engine
                 var btxt = Wlniao.Crypto.Helper.Decode(authorization);
                 var bkey = System.Text.Encoding.UTF8.GetBytes((consumerSecretKey + "0000000000000000")[..16]);
                 var data = System.Text.Encoding.UTF8.GetString(sm4.DecryptECB(btxt, bkey, true)).Split(',');
-                if (data.Length < 4 || string.IsNullOrEmpty(data[1]) || (!string.IsNullOrEmpty(data[2]) &&
-                                                                         !string.IsNullOrEmpty(currentConsumerId) &&
-                                                                         data[2] != currentConsumerId))
+                if (data.Length < 4 || string.IsNullOrEmpty(data[1]) || (!string.IsNullOrEmpty(data[2]) && !string.IsNullOrEmpty(currentConsumerId) && data[2] != currentConsumerId))
                 {
-                    throw new Exception("Authorization error");
+                    throw new Wlniao.Runtime.MessageException("Authorization error", 0);
                 }
                 else
                 {
@@ -164,7 +162,7 @@ namespace Wlniao.Engine
             }
             catch
             {
-                throw new Exception("Authorization error");
+                throw new Wlniao.Runtime.MessageException("Authorization error", 0);
             }
         }
 

@@ -133,5 +133,20 @@ namespace Wlniao.IO
             }
             return Map(path);
         }
+        
+        /// <summary>
+        /// 建目录（已存在则跳过）
+        /// </summary>
+        /// <param name="dir">目录路径</param>
+        /// <returns>返回是否本次新建</returns>
+        public static bool EnsureDir(string dir)
+        {
+            if (string.IsNullOrEmpty(dir) || System.IO.Directory.Exists(dir))
+            {
+                return false;
+            }
+            System.IO.Directory.CreateDirectory(dir);
+            return true;
+        }
     }
 }

@@ -1,7 +1,7 @@
 # Wlniao.AspNetCore · API 参考手册
 
 > 本文是**参考手册**，不是 `AGENTS.md`。执行约定见项目根 `AGENTS.md`；通用工具类型（配置/缓存/加密/时间/JSON）见同目录 `Wlniao.XCore.md`。
-> 依据源码版本 **10.0.1**。签名以源码与包内 XML 注释为准，本文省略了部分重载。
+> 依据源码版本 **10.0.2**。签名以源码与包内 XML 注释为准，本文省略了部分重载。
 
 ## 0. 包与兼容边界
 
@@ -347,7 +347,7 @@ Dictionary<string, string> ExtData
 string Encode(string consumerSecretKey, string currentConsumerId = null,
               int expireSeconds = 7200, bool base64 = false)     // 会话 → 令牌
 void   Decode(string authorization, string consumerSecretKey,
-              string currentConsumerId = null)                    // 令牌 → 会话（失败抛 Authorization error）
+              string currentConsumerId = null)                    // 令牌 → 会话（失败抛 Wlniao.Runtime.MessageException("Authorization error", 0)）
 ```
 
 ### Wlniao.Engine.ConsumerInfo 多租户信息
@@ -363,6 +363,11 @@ int StatusCode { get; }
 new EngineException(string message, int statusCode)
 new EngineException(string message, Exception innerException)
 ```
+
+`IContext.InitAsync` 用它透传状态码（804：加载租户失败；805：安全认证失败）。
+`IContext.AuthAsync` 只静默捕获 `EngineException`；其它异常（含 `EngineSession.Decode`
+抛出的 `Wlniao.Runtime.MessageException`）会落入通用 `catch` 并写 Debug 日志。
+`MessageException` 与 `EngineException` 无继承关系，`catch` 不能互相替代。
 
 ### Wlniao.Middleware.UseErrorHandling 异常兜底
 
