@@ -138,13 +138,15 @@ namespace Wlniao.XServer
             {
                 txt = Wlniao.Json.Serialize(obj);
             }
-            var dic = new Dictionary<string, object>();
-            dic.Add("node", result.node);
-            dic.Add("code", result.code);
-            dic.Add("tips", result.tips);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
-            dic.Add("success", result.success);
-            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            var dic = new Dictionary<string, object>
+            {
+                { "node", result.node },
+                { "code", result.code },
+                { "tips", result.tips },
+                { "data", Encryptor.SM4EncryptECBToHex(txt, token) },
+                { "success", result.success },
+                { "message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message }
+            };
             if (!string.IsNullOrEmpty(result.debuger))
             {
                 dic.Add("debuger", result.debuger);

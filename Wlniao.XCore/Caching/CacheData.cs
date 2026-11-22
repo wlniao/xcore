@@ -33,6 +33,10 @@ namespace Wlniao.Caching
         /// </summary>
         public DateTime Expire { get; set; }
         /// <summary>
+        /// 最近访问时间，用于超限时做近似 LRU 淘汰
+        /// </summary>
+        public DateTime LastAccess { get; set; } = DateTime.UtcNow;
+        /// <summary>
         /// 
         /// </summary>
         public string Value { get; set; }

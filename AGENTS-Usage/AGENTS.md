@@ -55,6 +55,8 @@ dotnet list package --include-transitive                       # 核对实际引
 | 时间处理 | `Wlniao.DateTools` | `DateTime.Now`（时区不受 `WLN_TIMEZONE` 控制） |
 | 加密解密 | `Wlniao.Encryptor`、`Wlniao.Crypto` | 自拼密钥补位 / 引 BouncyCastle |
 | 文字处理 | `Wlniao.Text.StringUtil` | 自写正则判手机号/邮箱 |
+| 字典取值 / 合并 | `Wlniao.DictionaryExtend`、`Wlniao.StringExtend` | 自写 `TryGetValue` + 类型转换 / 分割 |
+| 正则 / URL / MIME | `Wlniao.Pattern.Regex`、`Wlniao.Text.UrlHelper`、`Wlniao.MimeMapping` | 自写正则、手写 MIME 表 |
 | 缓存 | `Wlniao.Caching.Cache` | 自建静态 `Dictionary` 缓存 |
 | JSON | `Wlniao.Json` | `new JsonSerializerOptions()` 各自一套 |
 
@@ -72,6 +74,7 @@ dotnet list package --include-transitive                       # 核对实际引
 `Json.Serialize/Deserialize` 的反射重载带 `[RequiresUnreferencedCode]`/`[RequiresDynamicCode]`，
 AOT 下**静默输出 `{}`**，不报错但数据全丢。禁匿名类型参与序列化；`Cache.Get<T>`/`Set<T>` 必须传 `JsonTypeInfo<T>`。
 排障时 `Json.StrictTrimDiagnostics = true` 可把静默丢数据变成 `NotSupportedException`。
+已登记类型清单见 `Wlniao.XCore.md` §3「已定义的常用源生成类型」，先复用再自建。
 
 **④ `Cache.Set(key, value, 0)` 是「立即过期」**
 第三个参数是秒数，`0` 不是「永久」。想长期缓存给足够大的值（如 `365*86400`）。
@@ -110,8 +113,10 @@ AOT 下**静默输出 `{}`**，不报错但数据全丢。禁匿名类型参与�
 - 校验式 `sign == SM3(timestamp + data + token)`，`timestamp` 只拦过期不拦超前；
 - **成功与失败报文形状不同**：成功走手拼字典且 `data` 为 SM4 密文、`code="0"`；失败走 `ApiResult<object>` 且 `data` 为明文状态码。客户端必须分开解析。
 
-**AOT 注意**：`AddBusiness` 标了 `[RequiresUnreferencedCode]`；`Json(object)`/`OutSuccess(object)` 走反射序列化。
-启用了 AOT 就改用显式注册 + 具名 DTO，不要指望这两条路径。
+**AOT 注意**：`AddBusiness` 标了 `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]`；
+`Json(object)`/`OutSuccess(object)` 在反射可用时走反射序列化（嵌套匿名类型/DTO 也能输出）；
+反射禁用的 AOT 环境优先按运行时类型解析 `JsonTypeInfo`，未登记类型抛 `NotSupportedException`。
+启用了 AOT 就改用显式注册 + 具名 DTO 并登记源生成上下文，不要指望这两条路径。
 
 ## 7. 反例 → 正例
 
@@ -136,7 +141,8 @@ AOT 下**静默输出 `{}`**，不报错但数据全丢。禁匿名类型参与�
 ## 8. 提交前自检
 
 - [ ] 是否新增了 `DateTime.Now`、`new HttpClient()`、`int.Parse`、`Console.WriteLine`？→ 换成框架类型
-- [ ] 新 DTO 参与 JSON 序列化，是否登记了 `[JsonSerializable]`？
+- [ ] 写校验 / 字典取值 / 正则 / MIME / Hex / GeoHash 前，是否先查过 `Wlniao.XCore.md` §5「已集成的常用扩展方法与帮助类」？
+- [ ] 新 DTO 参与 JSON 序列化，是否先查过内置清单、未覆盖才自建 `[JsonSerializable]` 上下文？
 - [ ] 用了 `Cache.Get<T>`，是否传了 `JsonTypeInfo<T>`？
 - [ ] 是否误把 `XCore.AcceptAnyServerCertificate` 设成了 `true`？
 - [ ] 需要「SM2 私钥 → 公钥」时是否用 `KeyTool.GetPublicKeyFromPrivateKey`？

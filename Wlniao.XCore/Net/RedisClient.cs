@@ -54,7 +54,7 @@ namespace Wlniao.Net
         /// <summary>
         /// Socket 是否正在使用 Nagle 算法。
         /// </summary>
-        public bool NoDelaySocket { get; set; } = false;
+        public bool NoDelaySocket { get; set; } = true;
         
         /// <summary>
         /// 
@@ -71,6 +71,9 @@ namespace Wlniao.Net
         private const int MaxConnections = 30; // 最大连接数限制
         
         private const int ConnectionTimeoutSeconds = 120; // 2分钟超时
+
+        // 单条 Redis 命令的发送/接收超时
+        private const int SocketTimeoutSeconds = 5;
         
         // 获取连接的最大等待时间（秒）
         private const int GetConnectionMaxWaitSeconds = 5;
@@ -440,11 +443,12 @@ namespace Wlniao.Net
             {
                 lock (_lock)
                 {
+                    CleanupInvalidSockets();
                     if (_socketList.Count < MaxConnections)
                     {
                         break;
                     }
-                    
+
                     // 检查是否有可用连接
                     foreach (var s in _socketList.OrderBy(a => a.LastUse))
                     {
@@ -456,98 +460,79 @@ namespace Wlniao.Net
                         }
                     }
                 }
-                
+
                 // 检查是否超时
                 if ((DateTime.Now - startTime).TotalSeconds > GetConnectionMaxWaitSeconds)
                 {
                     throw new XCoreException($"Redis: 获取连接超时，等待时间超过 {GetConnectionMaxWaitSeconds} 秒，当前连接数: {_socketList.Count}, 最大连接数: {MaxConnections}", 500);
                 }
-                
+
                 // 等待后重试
                 System.Threading.Thread.Sleep(WaitRetryIntervalMs);
             }
-            
-            // 在锁外创建新连接（避免在锁内执行网络IO）
+
+            // 在锁外创建并复用同一个 socket 对象（避免在锁内执行网络IO）
             var connMsg = "Redis connection configuration error: not config server";
-            var newsocket = new WlnSocket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            newsocket.Using = true;
-            newsocket.LastUse = DateTime.Now.Ticks;
-            newsocket.NoDelay = NoDelaySocket;
-            
-            try
+
+            foreach (var endPoint in EndPointList)
             {
-                foreach (var endPoint in EndPointList)
+                var newsocket = new WlnSocket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                {
+                    Using = true,
+                    LastUse = DateTime.Now.Ticks,
+                    NoDelay = NoDelaySocket,
+                    SendTimeout = SocketTimeoutSeconds * 1000,
+                    ReceiveTimeout = SocketTimeoutSeconds * 1000
+                };
+                try
                 {
                     newsocket.Connect(endPoint);
-                    if (newsocket.Connected)
+                    if (!newsocket.Connected)
                     {
-                        break;
+                        newsocket.Close();
+                        newsocket.Dispose();
+                        connMsg = "Redis connection configuration error: connect failed";
+                        continue;
                     }
+
+                    // 认证和数据库选择
+                    if (!string.IsNullOrEmpty(Password))
+                    {
+                        if (string.IsNullOrEmpty(Username))
+                        {
+                            Username = "default";
+                        }
+                        if (!ResToBool(SendCommand(newsocket, RedisCommand.Auth, Encoding.GetBytes(Username), Encoding.GetBytes(Password))))
+                        {
+                            throw new XCoreException("Redis: client password is error!", 500);
+                        }
+                    }
+
+                    if (SelectDb > 0)
+                    {
+                        if (!ResToBool(SendCommand(newsocket, RedisCommand.Select, Encoding.GetBytes(SelectDb.ToString()))))
+                        {
+                            throw new XCoreException("Redis: client database select error!", 500);
+                        }
+                    }
+
+                    // 重置使用标记，因为SendCommand会将其设置为false
+                    newsocket.Using = true;
+                    newsocket.LastUse = DateTime.Now.Ticks;
+                    return newsocket;
                 }
-            }
-            catch (Exception ex)
-            {
-                connMsg = "Redis connection configuration error: " + ex.Message;
-                Log.Loger.Error(connMsg);
-            }
-            
-            if (!newsocket.Connected)
-            {
-                // 确保连接失败时释放资源
-                try
+                catch
                 {
+                    newsocket.Catch = true;
                     newsocket.Close();
                     newsocket.Dispose();
+                    throw;
                 }
-                catch { /* 忽略清理异常 */ }
-                throw new XCoreException(connMsg, 500);
             }
-            
-            // 认证和数据库选择
-            try
-            {
-                if (!string.IsNullOrEmpty(Password))
-                {
-                    if (string.IsNullOrEmpty(Username))
-                    {
-                        Username = "default";
-                    }
-                    if (!ResToBool(SendCommand(newsocket, RedisCommand.Auth, Encoding.GetBytes(Username), Encoding.GetBytes(Password))))
-                    {
-                        throw new XCoreException("Redis: client password is error!", 500);
-                    }
-                }
-                
-                if (SelectDb > 0)
-                {
-                    if (!ResToBool(SendCommand(newsocket, RedisCommand.Select, Encoding.GetBytes(SelectDb.ToString()))))
-                    {
-                        throw new XCoreException("Redis: client database select error!", 500);
-                    }
-                }
-                
-                // 重置使用标记，因为SendCommand会将其设置为false
-                newsocket.Using = true;
-                newsocket.LastUse = DateTime.Now.Ticks;
-                
-                return newsocket;
-            }
-            catch
-            {
-                // 确保认证或数据库选择失败时释放资源
-                try
-                {
-                    if (newsocket.Connected)
-                    {
-                        newsocket.Shutdown(SocketShutdown.Both);
-                    }
-                    newsocket.Close();
-                    newsocket.Dispose();
-                }
-                catch { /* 忽略清理异常 */ }
-                throw;
-            }
+
+            throw new XCoreException(connMsg, 500);
         }
+
         
         /// <summary>
         /// 释放连接回连接池
@@ -686,16 +671,114 @@ namespace Wlniao.Net
             {
                 var rev = new byte[4086];
                 var count = socket.Receive(rev, rev.Length, SocketFlags.None);
-                if (count > 0)
+                if (count <= 0)
                 {
-                    buffer.AddRange(rev.Take(count));
+                    break;
                 }
-                if (count < rev.Length)
+                buffer.AddRange(rev.Take(count));
+                var bytes = buffer.ToArray();
+                if (TryReadRespItem(bytes, 0, bytes.Length, out _) && buffer.Count >= 2)
                 {
                     break;
                 }
             }
             return buffer.ToArray();
+        }
+
+        /// <summary>
+        /// 判断 Redis RESP 响应是否已完整接收（支持 Simple/Error/Integer/Bulk/Array）
+        /// </summary>
+        private static bool TryReadRespItem(byte[] data, int offset, int length, out int consumed)
+        {
+            consumed = 0;
+            if (offset >= length)
+            {
+                return false;
+            }
+            var type = (char)data[offset];
+            if (type == '+' || type == '-' || type == ':')
+            {
+                for (var i = offset; i < length; i++)
+                {
+                    if (data[i] == '\n')
+                    {
+                        consumed = i - offset + 1;
+                        return true;
+                    }
+                }
+                return false;
+            }
+            if (type == '$')
+            {
+                var lineEnd = -1;
+                for (var i = offset; i < length; i++)
+                {
+                    if (data[i] == '\n')
+                    {
+                        lineEnd = i;
+                        break;
+                    }
+                }
+                if (lineEnd < 0 || !int.TryParse(System.Text.Encoding.ASCII.GetString(data, offset + 1, lineEnd - offset - 2), out var bulkLength))
+                {
+                    return false;
+                }
+                if (bulkLength < 0)
+                {
+                    // RESP null bulk：$-1\r\n，只有头行，没有数据体
+                    consumed = lineEnd - offset + 1;
+                    return true;
+                }
+                var end = lineEnd + 1 + bulkLength + 2;
+                if (end > length)
+                {
+                    return false;
+                }
+                consumed = end - offset;
+                return true;
+            }
+            if (type == '*')
+            {
+                var lineEnd = -1;
+                for (var i = offset; i < length; i++)
+                {
+                    if (data[i] == '\n')
+                    {
+                        lineEnd = i;
+                        break;
+                    }
+                }
+                if (lineEnd < 0 || !int.TryParse(System.Text.Encoding.ASCII.GetString(data, offset + 1, lineEnd - offset - 2), out var count))
+                {
+                    return false;
+                }
+                if (count <= 0)
+                {
+                    consumed = lineEnd - offset + 1;
+                    return true;
+                }
+                var pos = lineEnd + 1;
+                for (var i = 0; i < count; i++)
+                {
+                    if (!TryReadRespItem(data, pos, length, out var itemLength))
+                    {
+                        return false;
+                    }
+                    pos += itemLength;
+                }
+                consumed = pos - offset;
+                return true;
+            }
+            // 未知协议前缀按行结束处理，避免异常响应导致接收循环卡死
+            for (var i = offset; i < length; i++)
+            {
+                if (data[i] == '\n')
+                {
+                    consumed = i - offset + 1;
+                    return true;
+                }
+            }
+            return false;
         }
         #endregion
 

@@ -22,43 +22,43 @@ namespace Wlniao.Engine
     [BusinessService(LifeTime = ServiceLifetime.Transient)]
     public class Context : IContext
     {
-    
+
         /// <summary>
         /// 是否初始化
         /// </summary>
         public bool Continue  { get; set; } = true;
-        
+
         /// <summary>
         /// 当前请求会话密钥
         /// </summary>
         public string SKey { get; set; }
-        
+
         /// <summary>
         /// 当前请求域名
         /// </summary>
         public string Host { get; set; }
-        
+
         /// <summary>
         /// 请求输入内容
         /// </summary>
         public string Body { get; set; }
-        
+
         /// <summary>
         /// 请求输入参数
         /// </summary>
         public Dictionary<string, string> Query { get; set; }
-        
+
         /// <summary>
         /// 请求输入头信息
         /// </summary>
         public Dictionary<string, string> HeaderInput { get; set; }
-        
+
         /// <summary>
         /// 请求输出头信息
         /// </summary>
         public Dictionary<string, string> HeaderOutput { get; set; }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public object Output { get; set; }
 
@@ -126,17 +126,17 @@ namespace Wlniao.Engine
         /// 多租户系统标识
         /// </summary>
         public string ConsumerId { get; set; }
-        
+
         /// <summary>
         /// 多租户系统安全密钥
         /// </summary>
         public string ConsumerSecretKey { get; set; }
-        
+
         /// <summary>
         /// 多租户系统对外公钥
         /// </summary>
         public string ConsumerPublicKey { get; set; }
-    
+
         /// <summary>
         /// 多租户系统安全私钥
         /// </summary>
@@ -146,29 +146,29 @@ namespace Wlniao.Engine
         /// 当前登录认证信息
         /// </summary>
         public EngineSession Session { get; set; }
-        
+
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public Func<HttpRequest, Task<ConsumerInfo>> LoadConsumerInfo { get; set; }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public Func<HttpRequest, Task<EngineSession>> IdentityAuthentication { get; set; }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public Func<HttpRequest, Task<string>> SafetyCertification { get; set; }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private HttpRequest Request { get; set; }
-        
+
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private HttpResponse Response { get; set; }
 
@@ -181,7 +181,7 @@ namespace Wlniao.Engine
 
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public Context()
         {
@@ -247,7 +247,7 @@ namespace Wlniao.Engine
                     HeaderInput.TryAdd(item.Key, item.Value.FirstOrDefault()?.ToString() ?? string.Empty);
                 }
             }
-            
+
             // 模式匹配进行判断
             if (httpRequest is { Method: "POST", ContentLength: > 0 })
             {
@@ -300,7 +300,7 @@ namespace Wlniao.Engine
                     // ignored
                 }
             }
-            
+
             // 兼容处理Query提交的内容
             if (httpRequest.Query?.Count > 0)
             {
@@ -309,7 +309,7 @@ namespace Wlniao.Engine
                     Query.TryAdd(item.Key, item.Value.FirstOrDefault()?.ToString() ?? string.Empty);
                 }
             }
-            
+
             // 取出身份验证令牌
             if (HeaderInput.TryGetValue("authorization", out var authorization) && !string.IsNullOrEmpty(authorization))
             {
@@ -401,7 +401,7 @@ namespace Wlniao.Engine
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         public async Task AuthAsync()
@@ -443,7 +443,7 @@ namespace Wlniao.Engine
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
@@ -509,15 +509,13 @@ namespace Wlniao.Engine
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public Func<HttpResponse, IActionResult>? AuthFailed { get; set; }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "OutputSerialize 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析具体类型，与 XCore.Json 逃生舱语义一致")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "OutputSerialize 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析具体类型，与 XCore.Json 逃生舱语义一致")]
         public IActionResult OutputSerialize<T>(T output)
         {
             foreach (var kv in HeaderOutput)
@@ -525,24 +523,24 @@ namespace Wlniao.Engine
                 Response.Headers.TryAdd(kv.Key, kv.Value);
             }
 
-            var json = output as string ?? Wlniao.Json.Serialize(output, JsonSerializerOptions);
+            var json = output as string ?? Wlniao.Mvc.ResponseJson.Serialize(output, JsonSerializerOptions);
             if (OutputSerializeCallback != null)
             {
                 return OutputSerializeCallback(json);
             }
-            
-            return string.IsNullOrEmpty(SKey) 
-                ? new ContentResult { Content = json, ContentType = HeaderOutput.GetString("Content-Type", "application/json") } 
+
+            return string.IsNullOrEmpty(SKey)
+                ? new ContentResult { Content = json, ContentType = HeaderOutput.GetString("Content-Type", "application/json") }
                 : new ContentResult { Content = Wlniao.Encryptor.SM4EncryptECBToHex(json, SKey), ContentType = "text/plain" };
         }
-        
+
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public Func<IActionResult>? AuthFailedCallback { get; set; }
-        
+
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public Func<string, IActionResult>? OutputSerializeCallback { get; set; }
 

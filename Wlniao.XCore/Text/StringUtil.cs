@@ -1,4 +1,4 @@
-﻿/*==============================================================================
+/*==============================================================================
     文件名称：StringUtil.cs
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：对常见字符串操作方法的封装
@@ -41,6 +41,25 @@ namespace Wlniao.Text
         /// <returns></returns>
         [GeneratedRegex("<title>(.*)</title>")]
         private static partial Regex HtmlTitleRegex();
+
+        [GeneratedRegex(@"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\']")]
+        private static partial Regex SqlUnsafeCharsRegex();
+
+        [GeneratedRegex("<script.*?</script>", System.Text.RegularExpressions.RegexOptions.Singleline)]
+        private static partial Regex ScriptBlockRegex();
+
+        [GeneratedRegex("^[\u4e00-\u9fa5]$")]
+        private static partial Regex SingleChineseCharRegex();
+
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Regex> HoldTagRegexCache = new();
+
+        private static readonly Regex TokenSeperatorRegex = new("[,;.!?'，。？：；‘’！“”—……、《》<>{}【】]", System.Text.RegularExpressions.RegexOptions.IgnorePatternWhitespace);
+
+        [GeneratedRegex(@"\\u[0123456789abcdef]{4}", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+        private static partial Regex UnicodeEscapeRegex();
+
+        [GeneratedRegex("[^\u4e00-\u9fa5]")]
+        private static partial Regex NonChineseCharsRegex();
 
         /// <summary>
         /// 检查字符串是否是 null 或者空白字符。不同于.net自带的string.IsNullOrEmpty，多个空格在这里也返回true。
@@ -490,7 +509,7 @@ namespace Wlniao.Text
             {
                 return str;
             }
-            return Regex.Replace(str, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\']", "");
+            return SqlUnsafeCharsRegex().Replace(str, "");
         }
         /// <summary>
         /// 获取安全的Sql参数值
@@ -501,9 +520,9 @@ namespace Wlniao.Text
         public static string GetSafeSqlString(string str, bool tolower)
         {
             if (tolower)
-                return Regex.Replace(str, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\']", "").ToLower();
+                return SqlUnsafeCharsRegex().Replace(str, "").ToLower();
             else
-                return Regex.Replace(str, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\']", "");
+                return SqlUnsafeCharsRegex().Replace(str, "");
         }
         /// <summary>
         /// 是否为ip
@@ -521,11 +540,12 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static bool IsIPv4(string ip)
         {
-            if (string.IsNullOrEmpty(ip))
+            if (string.IsNullOrEmpty(ip) || ip.Split('.').Length != 4)
             {
                 return false;
             }
-            return Regex.IsMatch(ip, @"^((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$");
+            return System.Net.IPAddress.TryParse(ip, out var address)
+                && address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork;
         }
         /// <summary>
         /// 是否为IPv6地址
@@ -1056,6 +1076,21 @@ namespace Wlniao.Text
             return CloseHtml(unclosedHtml);
         }
 
+        private static readonly string[] HtmlCloseTags = { "strong", "b", "i", "u", "em", "font", "span", "label", "pre", "td", "th", "tr", "tbody", "table", "li", "ul", "ol", "h1", "h2", "h3", "h4", "h5", "h6", "p", "div" };
+        private static readonly Regex[] HtmlCloseOpenRegex;
+        private static readonly Regex[] HtmlCloseCloseRegex;
+
+        static StringUtil()
+        {
+            HtmlCloseOpenRegex = new Regex[HtmlCloseTags.Length];
+            HtmlCloseCloseRegex = new Regex[HtmlCloseTags.Length];
+            for (var i = 0; i < HtmlCloseTags.Length; i++)
+            {
+                HtmlCloseOpenRegex[i] = new Regex("<" + HtmlCloseTags[i] + "[^>]*>", RegexOptions.IgnoreCase);
+                HtmlCloseCloseRegex[i] = new Regex("</" + HtmlCloseTags[i] + ">", RegexOptions.IgnoreCase);
+            }
+        }
+
         /// <summary>
         /// 关闭未结束的 html 标签
         /// (TODO 本方法临时使用，待重写)
@@ -1065,23 +1100,18 @@ namespace Wlniao.Text
         public static string CloseHtml(string unClosedHtml)
         {
             if (unClosedHtml == null) return "";
-            var arrTags = new[] { "strong", "b", "i", "u", "em", "font", "span", "label", "pre", "td", "th", "tr", "tbody", "table", "li", "ul", "ol", "h1", "h2", "h3", "h4", "h5", "h6", "p", "div" };
-
-            for (var i = 0; i < arrTags.Length; i++)
+            for (var i = 0; i < HtmlCloseTags.Length; i++)
             {
-
-                var re = new Regex("<" + arrTags[i] + "[^>]*>", RegexOptions.IgnoreCase);
-                var openCount = re.Matches(unClosedHtml).Count;
+                var openCount = HtmlCloseOpenRegex[i].Matches(unClosedHtml).Count;
                 if (openCount == 0) continue;
 
-                re = new Regex("</" + arrTags[i] + ">", RegexOptions.IgnoreCase);
-                var closeCount = re.Matches(unClosedHtml).Count;
+                var closeCount = HtmlCloseCloseRegex[i].Matches(unClosedHtml).Count;
 
                 var unClosedCount = openCount - closeCount;
 
                 for (var k = 0; k < unClosedCount; k++)
                 {
-                    unClosedHtml += "</" + arrTags[i] + ">";
+                    unClosedHtml += "</" + HtmlCloseTags[i] + ">";
                 }
             }
 
@@ -1182,7 +1212,7 @@ namespace Wlniao.Text
         public static string ResetScript(string html)
         {
 
-            var reg = new Regex("<script.*?</script>", RegexOptions.Singleline);
+            var reg = ScriptBlockRegex();
 
             var mlist = reg.Matches(html);
             var sb = new StringBuilder();
@@ -1531,7 +1561,7 @@ namespace Wlniao.Text
         {
             if (!string.IsNullOrEmpty(html))
             {
-                html = Regex.Replace(html, "<[^>]*>", "");
+                html = HtmlReg.Replace(html, "");
                 html = html.Replace("&nbsp;", " ");
             }
             return html;
@@ -1552,7 +1582,8 @@ namespace Wlniao.Text
                 }
                 // <(?!((/?\s?li\b)|(/?\s?ul\b)|(/?\s?a\b)|(/?\s?img\b)|(/?\s?br\b)|(/?\s?span\b)|(/?\s?b\b)))[^>]+> 
                 var regStr = string.Format(@"<(?!((/?\s?{0})))[^>]+>", string.Join(@"\b)|(/?\s?", holdTags));
-                var reg = new Regex(regStr, RegexOptions.CultureInvariant | RegexOptions.Multiline | RegexOptions.IgnoreCase);
+                var reg = HoldTagRegexCache.GetOrAdd(regStr, pattern =>
+                    new Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Multiline | RegexOptions.IgnoreCase));
 
                 return reg.Replace(html, "");
             }
@@ -1725,7 +1756,7 @@ namespace Wlniao.Text
         public static string Chs2Pinyin(string chrstr)
         {
             // 匹配中文字符
-            var regex = new Regex("^[\u4e00-\u9fa5]$");
+            var regex = SingleChineseCharRegex();
             var pyString = "";
             var noWChar = chrstr.ToCharArray();
             for (var j = 0; j < noWChar.Length; j++)
@@ -1748,7 +1779,7 @@ namespace Wlniao.Text
         public static string Chs2PinyinSplit(string chrstr)
         {
             // 匹配中文字符
-            var regex = new Regex("^[\u4e00-\u9fa5]$");
+            var regex = SingleChineseCharRegex();
             var pyString = "";
             var noWChar = chrstr.ToCharArray();
             for (var j = 0; j < noWChar.Length; j++)
@@ -1843,7 +1874,7 @@ namespace Wlniao.Text
         {
             if (string.IsNullOrEmpty(str))
                 return 0;
-            var seperatorReg = new Regex("[,;.!?'，。？：；‘’！“”—……、《》<>{}【】]", RegexOptions.IgnorePatternWhitespace);
+            var seperatorReg = TokenSeperatorRegex;
             return seperatorReg.Matches(str).Count;
         }        
         /// <summary>
@@ -1901,7 +1932,7 @@ namespace Wlniao.Text
 
             var outStr = unicodeString;
 
-            var re = new Regex("\\\\u[0123456789abcdef]{4}", RegexOptions.IgnoreCase);
+            var re = UnicodeEscapeRegex();
             var mc = re.Matches(unicodeString);
             foreach (Match ma in mc)
             {
@@ -1999,7 +2030,7 @@ namespace Wlniao.Text
         /// <returns>检测到敏感词时，Result.IsValid为false，且Result.Errors为命中关键字列表</returns>
         public static ApiResult<string> CheckSensitiveWordsZhcn(string content, string blackwords, int times)
         {
-            return CheckSensitiveWords(Regex.Replace(content, "[^\u4e00-\u9fa5]", ""), blackwords, times);
+            return CheckSensitiveWords(NonChineseCharsRegex().Replace(content, ""), blackwords, times);
         }
 
         /// <summary>

@@ -87,6 +87,11 @@ namespace Wlniao.Tasker
         /// </summary>
         public static ConnectionMultiplexer Reconnect()
         {
+            try
+            {
+                instance?.Dispose();
+            }
+            catch { }
             instance = null;
             nextconnect = DateTime.MinValue;
             return Instance;
@@ -124,7 +129,7 @@ namespace Wlniao.Tasker
             {
                 return;
             }
-			Task.Run(() =>
+			Task.Run(async () =>
 			{
 				var index = "tasker_queue_" + topic;
 				while (true)
@@ -133,25 +138,24 @@ namespace Wlniao.Tasker
                     {
                         if (Instance == null || !instance.IsConnected)
                         {
+                            await Task.Delay(delay).ConfigureAwait(false);
                             continue;
                         }
                         var db = Instance.GetDatabase(Caching.Redis.Select);
                         var now = DateTools.GetUnix();
                         var tran = db.CreateTransaction();
+                        var pendingPublish = new List<RedisValue>();
                         foreach (var s in db.SortedSetRangeByRankWithScores(index, 0, maxqueue, Order.Ascending))
                         {
                             if (s.Score < begin)
                             {
-                                tran.SortedSetRemoveAsync(index, s.Element);
+                                // 事务命令只入队，ExecuteAsync 之后才会完成
+                                _ = tran.SortedSetRemoveAsync(index, s.Element);
                             }
                             else if (s.Score <= now)
                             {
                                 try
                                 {
-                                    if (s.Score > begin)
-                                    {
-                                        db.PublishAsync(new RedisChannel(index, RedisChannel.PatternMode.Auto), s.Element, CommandFlags.None);
-                                    }
                                     var key = "tasker_tl" + topic + "_" + s.Element.ToString();
                                     if (db.KeyExists(key))
                                     {
@@ -167,27 +171,39 @@ namespace Wlniao.Tasker
                                         if (times.Count > 0)
                                         {
                                             var value = string.Join(",", times.OrderBy(o => o).ToArray());
-                                            tran.StringSetAsync(key, value, TimeSpan.FromSeconds(times.LastOrDefault() + 1));
-                                            tran.SortedSetAddAsync(index, s.Element, times[0]);
+                                            _ = tran.StringSetAsync(key, value, TimeSpan.FromSeconds(times.LastOrDefault() + 1));
+                                            _ = tran.SortedSetAddAsync(index, s.Element, times[0]);
                                         }
                                         else
                                         {
-                                            tran.KeyDeleteAsync(key);
-                                            tran.SortedSetRemoveAsync(index, s.Element);
+                                            _ = tran.KeyDeleteAsync(key);
+                                            _ = tran.SortedSetRemoveAsync(index, s.Element);
                                         }
                                     }
                                     else
                                     {
-                                        tran.SortedSetRemoveAsync(index, s.Element);
+                                        _ = tran.SortedSetRemoveAsync(index, s.Element);
                                     }
                                 }
                                 catch
                                 {
                                     // ignored
                                 }
+                                if (s.Score > begin)
+                                {
+                                    pendingPublish.Add(s.Element);
+                                }
                             }
                         }
-                        tran.Execute();
+
+                        // 先提交状态变更；成功后再发布，避免订阅方先于状态更新执行或任务重复发布
+                        if (await tran.ExecuteAsync().ConfigureAwait(false))
+                        {
+                            foreach (var element in pendingPublish)
+                            {
+                                await db.PublishAsync(new RedisChannel(index, RedisChannel.PatternMode.Auto), element, CommandFlags.None).ConfigureAwait(false);
+                            }
+                        }
                     }
 					catch (Exception ex)
 					{
@@ -196,7 +212,7 @@ namespace Wlniao.Tasker
 					}
 					finally
 					{
-						Task.Delay(delay).Wait();
+						await Task.Delay(delay).ConfigureAwait(false);
 					}
 				}
 			});
@@ -216,11 +232,11 @@ namespace Wlniao.Tasker
             {
                 watcher.TryAdd(topic, DateTime.MinValue);
             }
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 while (Instance == null)
                 {
-                    Task.Delay(300).Wait();
+                    await Task.Delay(300).ConfigureAwait(false);
                 }
                 ISubscriber subscriber = null;
                 var channel = new RedisChannel("tasker_queue_" + topic, RedisChannel.PatternMode.Literal);
@@ -262,7 +278,7 @@ namespace Wlniao.Tasker
                         subscriber = null;
                         Loger.Topic("Tasker", "Tasker subscribe " + topic + " error, please check if Redis connection is correct.", Log.LogLevel.Debug, true);
                     }
-                    Task.Delay(3000).Wait();
+                    await Task.Delay(3000).ConfigureAwait(false);
                 }
 
                 if (subscriber == null)

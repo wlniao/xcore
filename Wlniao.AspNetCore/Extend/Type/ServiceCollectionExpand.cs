@@ -8,7 +8,7 @@
     services.AddBusiness("Eming.Biz.dll");
 
 ================================================================================
- 
+
     Copyright 2014 XieChaoyi
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,6 +44,7 @@ namespace Wlniao
         /// <param name="service"></param>
         /// <param name="assemblyFile">要注册的DLL名称</param>
         [RequiresUnreferencedCode("AddBusiness 在运行时动态加载程序集并反射扫描 BusinessService 特性（Assembly.LoadFrom/GetTypes/GetCustomAttributes/GetInterfaces），trim/单文件/AOT 下无法静态分析，调用方需保证相关类型未被裁剪")]
+        [RequiresDynamicCode("AddBusiness 依赖运行时程序集加载与反射生成服务注册，NativeAOT 下不可用；请改用显式 AddScoped/AddTransient/AddSingleton 注册")]
         public static void AddBusiness(this IServiceCollection service, string? assemblyFile = null)
         {
             Type[]? types = null;

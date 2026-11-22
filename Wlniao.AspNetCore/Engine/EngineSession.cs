@@ -63,6 +63,10 @@ namespace Wlniao.Engine
         public string Encode(string consumerSecretKey, string currentConsumerId = null, int expireSeconds = 7200,
             bool base64 = false)
         {
+            if (string.IsNullOrEmpty(consumerSecretKey))
+            {
+                throw new Wlniao.Runtime.MessageException("Authorization error", 0);
+            }
             var extend = new Dictionary<string, string>();
             if (!string.IsNullOrEmpty(Name))
             {
@@ -105,6 +109,10 @@ namespace Wlniao.Engine
         /// <param name="currentConsumerId"></param>
         public void Decode(string authorization, string consumerSecretKey, string currentConsumerId = null)
         {
+            if (string.IsNullOrEmpty(consumerSecretKey))
+            {
+                throw new Wlniao.Runtime.MessageException("Authorization error", 0);
+            }
             try
             {
                 var sm4 = new Wlniao.Crypto.SM4();

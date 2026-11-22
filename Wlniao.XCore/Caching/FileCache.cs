@@ -20,9 +20,11 @@
 
 ===============================================================================*/
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 using Wlniao.IO;
 using Wlniao.Log;
 
@@ -34,6 +36,128 @@ namespace Wlniao.Caching
     public class FileCache
     {
         private static string _path = null;
+        /// <summary>
+        /// L1 内存层：避免每次 Get/Exists 都读磁盘（按剩余有效期缓存）
+        /// </summary>
+        private static readonly ConcurrentDictionary<string, L1Entry> _l1 = new();
+        private const int L1MaxCount = 10000;
+        /// <summary>L1 内存层累计命中次数（诊断/测试用，跨线程安全）</summary>
+        private static long _l1HitCount;
+        /// <summary>L1 内存层累计未命中次数（诊断/测试用，跨线程安全）</summary>
+        private static long _l1MissCount;
+
+        private sealed class L1Entry
+        {
+            public long ExpireUnix;
+            public string Value;
+            public long FileWriteUnix;
+            public long FileLength;
+        }
+
+        private static void L1Set(string key, string value, long expireUnix, string filePath = null)
+        {
+
+            if (_l1.Count >= L1MaxCount)
+            {
+                var now = DateTools.GetUnix();
+                foreach (var kv in _l1)
+                {
+                    if (kv.Value.ExpireUnix <= now)
+                    {
+                        _l1.TryRemove(kv.Key, out _);
+                    }
+                }
+                // 仍超限则按插入序丢弃一部分（Dictionary 枚举序近似插入序，够用）
+                if (_l1.Count >= L1MaxCount)
+                {
+                    var drop = _l1.Count - L1MaxCount + 1;
+                    foreach (var kv in _l1)
+                    {
+                        if (drop-- <= 0) break;
+                        _l1.TryRemove(kv.Key, out _);
+                    }
+                }
+            }
+            var entry = new L1Entry { ExpireUnix = expireUnix, Value = value ?? "" };
+            if (!string.IsNullOrEmpty(filePath) && System.IO.File.Exists(filePath))
+            {
+                var fi = new FileInfo(filePath);
+                entry.FileWriteUnix = fi.LastWriteTimeUtc.Ticks;
+                entry.FileLength = fi.Length;
+            }
+            _l1[key] = entry;
+        }
+
+        private static bool L1TryGet(string key, out string value, out bool expired, string filePath = null)
+        {
+            value = null;
+            expired = false;
+            var hit = false;
+            if (_l1.TryGetValue(key, out var e))
+            {
+                if (!string.IsNullOrEmpty(filePath))
+                {
+                    var fi = new FileInfo(filePath);
+                    if (!fi.Exists)
+                    {
+                        _l1.TryRemove(key, out _);
+                    }
+                    else if (fi.LastWriteTimeUtc.Ticks != e.FileWriteUnix || fi.Length != e.FileLength)
+                    {
+                        // 其他进程/实例已更新共享缓存文件，禁用本进程陈旧副本
+                        _l1.TryRemove(key, out _);
+                    }
+                    else if (e.ExpireUnix > DateTools.GetUnix())
+                    {
+                        value = e.Value;
+                        hit = true;
+                    }
+                    else
+                    {
+                        expired = true;
+                        _l1.TryRemove(key, out _);
+                    }
+                }
+                else if (e.ExpireUnix > DateTools.GetUnix())
+                {
+                    value = e.Value;
+                    hit = true;
+                }
+                else
+                {
+                    expired = true;
+                    _l1.TryRemove(key, out _);
+                }
+            }
+            if (hit)
+            {
+                Interlocked.Increment(ref _l1HitCount);
+            }
+            else
+            {
+                Interlocked.Increment(ref _l1MissCount);
+            }
+            return hit;
+        }
+
+        /// <summary>
+        /// L1 内存层累计命中次数（诊断/测试用）
+        /// </summary>
+        public static long L1HitCount => Interlocked.Read(ref _l1HitCount);
+
+        /// <summary>
+        /// L1 内存层累计未命中次数（诊断/测试用）
+        /// </summary>
+        public static long L1MissCount => Interlocked.Read(ref _l1MissCount);
+
+        /// <summary>
+        /// 清零 L1 命中统计（诊断/测试用）
+        /// </summary>
+        public static void ResetL1Statistics()
+        {
+            Interlocked.Exchange(ref _l1HitCount, 0);
+            Interlocked.Exchange(ref _l1MissCount, 0);
+        }
         /// <summary>
         /// 缓存文件目录
         /// </summary>
@@ -89,6 +213,7 @@ namespace Wlniao.Caching
                 var writer = new StreamWriter(fs, Wlniao.Text.Encodings.UTF8);
                 writer.Write(data);
                 writer.Flush();
+                L1Set(key, value, DateTools.GetUnix() + expireSeconds, file);
                 return true;
             }
             catch (Exception ex)
@@ -122,6 +247,7 @@ namespace Wlniao.Caching
         {
             try
             {
+                _l1.TryRemove(key, out _);
                 var fs = GetKeyPath(key);
                 if (System.IO.File.Exists(fs))
                 {
@@ -146,12 +272,17 @@ namespace Wlniao.Caching
             try
             {
                 var fs = GetKeyPath(key);
+                if (L1TryGet(key, out _, out _, fs))
+                {
+                    return true;
+                }
                 if (System.IO.File.Exists(fs))
                 {
                     var text = FileEx.ReadUTF8String(fs);
                     var data = text.Split('#', 2, StringSplitOptions.RemoveEmptyEntries);
                     if (Convert.ToLong(data[0]) > DateTools.GetUnix())
                     {
+                        L1Set(key, data.Length > 1 ? data[1] : "", Convert.ToLong(data[0]), fs);
                         return true;
                     }
                     System.IO.File.Delete(fs);
@@ -173,13 +304,19 @@ namespace Wlniao.Caching
             try
             {
                 var fs = GetKeyPath(key);
+                if (L1TryGet(key, out var cached, out _, fs))
+                {
+                    return cached;
+                }
                 if (System.IO.File.Exists(fs))
                 {
                     var text = FileEx.ReadUTF8String(fs);
                     var data = text.Split('#', 2, StringSplitOptions.RemoveEmptyEntries);
                     if (Convert.ToLong(data[0]) > DateTools.GetUnix())
                     {
-                        return data[1];
+                        var value = data.Length > 1 ? data[1] : "";
+                        L1Set(key, value, Convert.ToLong(data[0]), fs);
+                        return value;
                     }
                     System.IO.File.Delete(fs);
                 }

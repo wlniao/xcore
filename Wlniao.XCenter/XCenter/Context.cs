@@ -293,31 +293,32 @@ namespace Wlniao.XCenter
             try
             {
                 var stream = Convert.ToStream(Encoding.UTF8.GetBytes(reqStr));
-                var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
                 var resStr = "";
-                using (var client = new System.Net.Http.HttpClient(handler))
+                var client = Wlniao.Net.HttpClientManager.SharedInstance;
+                using (var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path))
                 {
-                    var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path);
                     request.Headers.Date = DateTime.Now;
                     request.Content = new System.Net.Http.StreamContent(stream);
                     request.Content.Headers.Add("Content-Type", "application/json");
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-TraceId", msgid);
-                    var response = client.Send(request);
-                    resStr = response.Content.ReadAsStringAsync().Result;
-                    if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                    request.Headers.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                    request.Headers.TryAddWithoutValidation("X-TraceId", msgid);
+                    using (var response = client.Send(request))
                     {
-                        Loger.Topic("authify", $"msgid:{msgid},authify:/{path}{Environment.NewLine}请确认接口访问是否正常： => {resStr}",
-                            LogLevel.Error, true);
-                        throw new XCoreException(resStr, (int)response.StatusCode);
-                    }
-                    else
-                    {
-                        Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
-                    }
-                    if (response.Headers.Contains("X-UseTime"))
-                    {
-                        utime = response.Headers.GetValues("X-UseTime").FirstOrDefault();
+                        resStr = response.Content.ReadAsStringAsync().Result;
+                        if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                        {
+                            Loger.Topic("authify", $"msgid:{msgid},authify:/{path}{Environment.NewLine}请确认接口访问是否正常： => {resStr}",
+                                LogLevel.Error, true);
+                            throw new XCoreException(resStr, (int)response.StatusCode);
+                        }
+                        else
+                        {
+                            Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
+                        }
+                        if (response.Headers.Contains("X-UseTime"))
+                        {
+                            utime = response.Headers.GetValues("X-UseTime").FirstOrDefault();
+                        }
                     }
                 }
                 if (string.IsNullOrEmpty(utime))
@@ -387,24 +388,25 @@ namespace Wlniao.XCenter
                 try
                 {
                     var stream = Convert.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
-                    var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                    using (var client = new System.Net.Http.HttpClient(handler))
+                    var client = Wlniao.Net.HttpClientManager.SharedInstance;
+                    using (var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path))
                     {
-                        var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path);
                         reqest.Headers.Date = DateTime.Now;
                         reqest.Content = new System.Net.Http.StreamContent(stream);
                         reqest.Content.Headers.Add("Content-Type", "application/json");
-                        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                        client.DefaultRequestHeaders.TryAddWithoutValidation("X-TraceId", msgid);
-                        var respose = client.Send(reqest);
-                        resStr = respose.Content.ReadAsStringAsync().Result;
-                        if (respose.Headers.Contains("X-TraceId"))
+                        reqest.Headers.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                        reqest.Headers.TryAddWithoutValidation("X-TraceId", msgid);
+                        using (var respose = client.Send(reqest))
                         {
-                            rlt.traceid = respose.Headers.GetValues("X-TraceId").FirstOrDefault();
-                        }
-                        if (respose.Headers.Contains("X-UseTime"))
-                        {
-                            utime = respose.Headers.GetValues("X-UseTime").FirstOrDefault();
+                            resStr = respose.Content.ReadAsStringAsync().Result;
+                            if (respose.Headers.Contains("X-TraceId"))
+                            {
+                                rlt.traceid = respose.Headers.GetValues("X-TraceId").FirstOrDefault();
+                            }
+                            if (respose.Headers.Contains("X-UseTime"))
+                            {
+                                utime = respose.Headers.GetValues("X-UseTime").FirstOrDefault();
+                            }
                         }
                     }
                     if (string.IsNullOrEmpty(utime))

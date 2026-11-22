@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using Wlniao;
+using Wlniao.Caching;
 using Wlniao.Crypto;
 using Wlniao.Net;
 using Wlniao.Text;
@@ -161,5 +162,32 @@ public class AuditFixesTests
         using var client = handler.CreateHttpClient();
         Assert.That(client, Is.Not.Null);
         Assert.That(actualIp, Is.Null, "尚未发起请求时不应触发回调");
+    }
+
+    [Test]
+    public void FileCache_L1_KeepsHitAfterDiskBackfill()
+    {
+        var key = "UnitTest_FileCache_L1_" + Guid.NewGuid().ToString("N");
+        try
+        {
+            Assert.That(FileCache.Set(key, "value", 60), Is.True);
+            Assert.That(FileCache.Get(key), Is.EqualTo("value"));
+            // 第二次读取必须命中 L1，而不是因为回填时缺失文件指纹被反复判为失效
+            Assert.That(FileCache.Get(key), Is.EqualTo("value"));
+            Assert.That(FileCache.Exists(key), Is.True);
+
+            // 命中计数断言：Set 后重置统计，随后两次 Get + 一次 Exists 都必须命中 L1。
+            // 若指纹校验静默失效（如回填时缺失 filePath），每次读取都会被判为未命中并读盘，
+            // 此处 MissCount 必大于 0，用计数把"值正确但每次读盘"的退化路径暴露出来。
+            FileCache.ResetL1Statistics();
+            Assert.That(FileCache.Get(key), Is.EqualTo("value"));
+            Assert.That(FileCache.Exists(key), Is.True);
+            Assert.That(FileCache.L1HitCount, Is.EqualTo(2), "Get 与 Exists 都应命中 L1");
+            Assert.That(FileCache.L1MissCount, Is.EqualTo(0), "L1 不应静默未命中并反复读盘");
+        }
+        finally
+        {
+            FileCache.Del(key);
+        }
     }
 }

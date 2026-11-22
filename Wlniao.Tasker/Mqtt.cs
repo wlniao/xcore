@@ -1,7 +1,7 @@
 ﻿using MQTTnet;
 using MQTTnet.Protocol;
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Buffers;
@@ -52,7 +52,7 @@ namespace Wlniao.Tasker
         /// <summary>
         /// 订阅任务缓存
         /// </summary>
-        private readonly Dictionary<string, Action<Context>> _subscribe = [];
+        private readonly ConcurrentDictionary<string, Action<Context>> _subscribe = [];
         /// <summary>
         /// 订阅事件
         /// </summary>
@@ -67,13 +67,9 @@ namespace Wlniao.Tasker
             {
                 throw new Exception("事件名称包含不允许的特殊字符");
             }
-            else if (_subscribe.ContainsKey(topic))
-            {
-                _subscribe[topic] = func;
-            }
             else
             {
-                _subscribe.TryAdd(topic, func);
+                _subscribe[topic] = func;
             }
         }
         /// <summary>
@@ -94,7 +90,7 @@ namespace Wlniao.Tasker
                         _client.UnsubscribeAsync(unsubscribeOptions).Wait();
                     }
 
-                    return _subscribe.Remove(topic);
+                    return _subscribe.TryRemove(topic, out _);
                 }
             }
             catch (Exception ex)
@@ -124,7 +120,7 @@ namespace Wlniao.Tasker
         /// </summary>
         public void Start()
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 var pubkey = Config.GetConfigs("MQTT_KEY_PUBLIC");
                 var optionsBuilder = new MqttClientOptionsBuilder();
@@ -172,23 +168,30 @@ namespace Wlniao.Tasker
                         .WithWillQualityOfServiceLevel(willBuilder.Build().QualityOfServiceLevel);
                 }
                 optionsBuilder.WithClientId(clientId); //设置客户端序列号
-                var time = 0;
+                var failures = 0;
                 while (true)
                 {
                     try
                     {
                         if (_client is not { IsConnected: true })
                         {
-                            time++;
+                            failures++;
+                            try
+                            {
+                                _client?.Dispose();
+                            }
+                            catch { }
                             var factory = new MqttClientFactory();
-                            _client = factory.CreateMqttClient();
-                            _client.ConnectedAsync += OnMqttClientConnected;
-                            _client.DisconnectedAsync += OnMqttClientDisconnected;
-                            _client.ApplicationMessageReceivedAsync += OnMqttClientApplicationMessageReceived;
-                            var result = _client.ConnectAsync(optionsBuilder.Build(), CancellationToken.None).Result;
+                            var client = factory.CreateMqttClient();
+                            client.ConnectedAsync += OnMqttClientConnected;
+                            client.DisconnectedAsync += OnMqttClientDisconnected;
+                            client.ApplicationMessageReceivedAsync += OnMqttClientApplicationMessageReceived;
+                            _client = client;
+                            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                            var result = await client.ConnectAsync(optionsBuilder.Build(), timeout.Token).ConfigureAwait(false);
                             if (result.ResultCode == MqttClientConnectResultCode.Success)
                             {
-                                time = 0;
+                                failures = 0;
                                 if (string.IsNullOrEmpty(pubkey) && !string.IsNullOrEmpty(result.ReasonString))
                                 {
                                     Normal = false;
@@ -197,37 +200,39 @@ namespace Wlniao.Tasker
                                 }
                                 if (Normal)
                                 {
-                                    _client.PublishAsync(BuildMessage("watcher/connected", new { ClientId = clientId }));
+                                    await client.PublishAsync(BuildMessage("watcher/connected", new { ClientId = clientId })).ConfigureAwait(false);
                                 }
                                 foreach (var topic in _subscribe.Keys)
                                 {
-                                    _client.SubscribeAsync(topic, MqttQualityOfServiceLevel.AtLeastOnce);
+                                    await client.SubscribeAsync(topic, MqttQualityOfServiceLevel.AtLeastOnce).ConfigureAwait(false);
                                     if (Normal)
                                     {
-                                        _client.PublishAsync(BuildMessage("watcher/subscribe", new { ClientId = clientId, Topic = topic }));
+                                        await client.PublishAsync(BuildMessage("watcher/subscribe", new { ClientId = clientId, Topic = topic })).ConfigureAwait(false);
                                     }
                                 }
                             }
-
                         }
                     }
                     catch (MQTTnet.Exceptions.MqttProtocolViolationException ex)
                     {
-                        if (time == 1)
+                        if (failures == 1)
                         {
                             Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        if (time == 1)
+                        if (failures == 1)
                         {
                             Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
                         }
                     }
                     finally
                     {
-                        Thread.Sleep(200);
+                        var delay = _client is { IsConnected: true }
+                            ? 5000
+                            : Math.Min(200 * Math.Pow(2, Math.Max(0, failures - 1)), 60000);
+                        await Task.Delay(TimeSpan.FromMilliseconds(delay)).ConfigureAwait(false);
                     }
                 }
             });
@@ -253,7 +258,7 @@ namespace Wlniao.Tasker
         private Task OnMqttClientApplicationMessageReceived(MqttApplicationMessageReceivedEventArgs e)
         {
             var topic = e.ApplicationMessage.Topic;
-            var func = _subscribe.GetValueOrDefault(topic);
+            _subscribe.TryGetValue(topic, out var func);
             if (func == null)
             {
                 Loger.Warn($"{e.ApplicationMessage.Topic}暂未注册");

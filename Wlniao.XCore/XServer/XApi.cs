@@ -97,6 +97,7 @@ namespace Wlniao.XServer
                 var txt = dataJson;
                 var utime = "";
                 var start = DateTime.Now;
+                var debugLog = Loger.LogLevel <= Log.LogLevel.Debug;
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
                 var resStr = "";
                 var reqStr = new System.Text.Json.Nodes.JsonObject
@@ -149,14 +150,19 @@ namespace Wlniao.XServer
                 {
                     utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 }
-                var logs = $"msgid:{traceid}, {uri.AbsolutePath}[usetime:{utime}]{Environment.NewLine} >>> {txt}";
+                var logs = debugLog
+                    ? $"msgid:{traceid}, {uri.AbsolutePath}[usetime:{utime}]{Environment.NewLine} >>> {txt}"
+                    : "";
                 if (string.IsNullOrEmpty(resStr))
                 {
                     rlt.tips = true;
                     rlt.code = "101";
                     rlt.debuger = url + "[Error]";
                     rlt.message = "通讯异常，网络异常或请求错误";
-                    logs += "\n <<< " + rlt.message;
+                    if (debugLog)
+                    {
+                        logs += "\n <<< " + rlt.message;
+                    }
                 }
                 else
                 {
@@ -174,7 +180,10 @@ namespace Wlniao.XServer
                     {
                         rlt.code = "104";
                         rlt.message = "远端输出格式不满足本地要求";
-                        logs += "\n <<< " + rlt.message;
+                        if (debugLog)
+                        {
+                            logs += "\n <<< " + rlt.message;
+                        }
                         //log.Origin(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
                     }
                     else
@@ -221,10 +230,16 @@ namespace Wlniao.XServer
                             rlt.code = "105";
                             rlt.message = "远端暂无返回内容";
                         }
-                        logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + (string.IsNullOrEmpty(plaintext) ? "\"\"" : plaintext) + "}";
+                        if (debugLog)
+                        {
+                            logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + (string.IsNullOrEmpty(plaintext) ? "\"\"" : plaintext) + "}";
+                        }
                     }
                 }
-                Loger.Topic(node, logs, Log.LogLevel.Debug, true);
+                if (debugLog)
+                {
+                    Loger.Topic(node, logs, Log.LogLevel.Debug, true);
+                }
             }
             return rlt;
         }

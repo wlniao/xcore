@@ -3,7 +3,7 @@
     适用环境：CoreCLR 5.0,.NET Framework 6.0/8.0/10.0
     功能描述：Json序列化、反序列化工具
 ================================================================================
- 
+
     Copyright 2014 XieChaoyi
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -210,7 +210,7 @@ namespace Wlniao
         [RequiresDynamicCode(AotMessage)]
         public static string Serialize<T>(T obj, JsonSerializerOptions options = null)
         {
-            EnsureCovered(typeof(T), nameof(Serialize));
+            EnsureCovered(obj?.GetType() ?? typeof(T), nameof(Serialize));
             return JsonSerializer.Serialize<T>(obj, DegradeOptions(options ?? XCore.JsonSerializerOptions));
         }
 

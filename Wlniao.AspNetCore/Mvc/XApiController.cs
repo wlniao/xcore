@@ -86,7 +86,7 @@ namespace Wlniao.Mvc
                         }
                         else
                         {
-                            return func?.Invoke(req ?? new Dictionary<string, object>());
+                            return func?.Invoke(req ?? []);
                         }
                     }
                 }
@@ -117,8 +117,6 @@ namespace Wlniao.Mvc
         /// <param name="obj"></param>
         /// <returns></returns>
         [NonAction]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "OutSuccess(object) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "OutSuccess(object) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public IActionResult OutSuccess(object obj)
         {
             result.code = "0";
@@ -135,7 +133,7 @@ namespace Wlniao.Mvc
             }
             else
             {
-                txt = Wlniao.Json.Serialize(obj);
+                txt = ResponseJson.Serialize(obj);
             }
             var dic = new Dictionary<string, object>
             {
@@ -202,8 +200,6 @@ namespace Wlniao.Mvc
         /// </summary>
         /// <returns></returns>
         [NonAction]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "OutDefault 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "OutDefault 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public IActionResult OutDefault()
         {
             string? txt;
@@ -217,7 +213,7 @@ namespace Wlniao.Mvc
             }
             else
             {
-                txt = Wlniao.Json.Serialize(result.data);
+                txt = ResponseJson.Serialize(result.data);
             }
             if (string.IsNullOrEmpty(result.code))
             {

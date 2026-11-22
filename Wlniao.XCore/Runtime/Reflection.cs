@@ -3,7 +3,7 @@
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：封装了反射的常用操作方法
 ================================================================================
- 
+
     Copyright 2015 XieChaoyi
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -93,7 +93,7 @@ namespace Wlniao.Runtime
             return GetInstance(type);
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
@@ -111,13 +111,13 @@ namespace Wlniao.Runtime
             return list.ToArray();
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="currentObject"></param>
         /// <param name="propertyName"></param>
         /// <returns></returns>
         [RequiresDynamicCode("Uses reflection to get property values")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072", Justification = "Reflection over object is intentional and safe for this library")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072", Justification = "兼容旧版反射 API；本类不保证 AOT/裁剪安全，业务代码应迁移到源生成元数据")]
         public static object GetPropertyValue(object currentObject, string propertyName)
         {
             if (currentObject == null) return null;
@@ -127,17 +127,17 @@ namespace Wlniao.Runtime
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="currentObject"></param>
         /// <param name="propertyName"></param>
         /// <param name="propertyValue"></param>
         [RequiresUnreferencedCode("Uses reflection to set property values")]
         [RequiresDynamicCode("Uses reflection to set property values")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Reflection over object is intentional and safe for this library")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062", Justification = "Reflection over object is intentional and safe for this library")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070", Justification = "Reflection over object is intentional and safe for this library")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072", Justification = "Reflection over object is intentional and safe for this library")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "兼容旧版反射 API；本类不保证 AOT/裁剪安全，业务代码应迁移到源生成元数据")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062", Justification = "兼容旧版反射 API；本类不保证 AOT/裁剪安全，业务代码应迁移到源生成元数据")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070", Justification = "兼容旧版反射 API；本类不保证 AOT/裁剪安全，业务代码应迁移到源生成元数据")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072", Justification = "兼容旧版反射 API；本类不保证 AOT/裁剪安全，业务代码应迁移到源生成元数据")]
         public static void SetPropertyValue(object currentObject, string propertyName, object propertyValue)
         {
             if (currentObject == null)
@@ -243,7 +243,7 @@ namespace Wlniao.Runtime
             if (p.PropertyType.IsConstructedGenericType == false)
                 return p.PropertyType.FullName;
             var pGenericType = p.PropertyType.GetGenericTypeDefinition();
-            var genericTypeName = pGenericType.FullName.Split('`')[0];            
+            var genericTypeName = pGenericType.FullName.Split('`')[0];
             var ts = p.PropertyType.GenericTypeArguments;
             string args = null;
             foreach (var at in ts)
@@ -307,7 +307,7 @@ namespace Wlniao.Runtime
             return methods.ToArray();
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="t"></param>
         /// <param name="attributeType"></param>
@@ -329,7 +329,7 @@ namespace Wlniao.Runtime
             return null;
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="memberInfo"></param>
         /// <param name="attributeType"></param>
@@ -345,7 +345,7 @@ namespace Wlniao.Runtime
             return null;
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="memberInfo"></param>
         /// <returns></returns>
@@ -361,7 +361,7 @@ namespace Wlniao.Runtime
             return attributes.ToArray();
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="memberInfo"></param>
         /// <param name="attributeType"></param>
@@ -378,7 +378,7 @@ namespace Wlniao.Runtime
             return attributes.ToArray();
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>

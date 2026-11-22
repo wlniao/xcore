@@ -25,6 +25,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Wlniao.Net
@@ -39,8 +40,9 @@ namespace Wlniao.Net
         /// </summary>
         /// <param name="url">请求的Url</param>
         /// <param name="webroxy">代理服务器地址</param>
+        /// <param name="cancellationToken">取消令牌</param>
         /// <returns></returns>
-        public static async Task<string> GetAsync(string url, string webroxy = null)
+        public static async Task<string> GetAsync(string url, string webroxy = null, CancellationToken cancellationToken = default)
         {
             var logs = "";
             try
@@ -57,22 +59,25 @@ namespace Wlniao.Net
                 }
 
                 logs += "URL: " + url + Environment.NewLine;
-                
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                
+
                 if (!string.IsNullOrEmpty(webroxy))
                 {
                     request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
                 }
 
-                var response = await HttpClientManager.SharedInstance.SendAsync(request);
-                foreach (var hd in response.Headers)
+                using var response = await HttpClientManager.SharedInstance.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
-                    logs += hd.Key + ": " + string.Join(",", hd.Value) + Environment.NewLine;
+                    foreach (var hd in response.Headers)
+                    {
+                        logs += hd.Key + ": " + string.Join(",", hd.Value) + Environment.NewLine;
+                    }
                 }
-                var content = await response.Content.ReadAsStringAsync();
-                
+                var content = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
                 return content;
             }
             catch (AggregateException e)
@@ -107,8 +112,9 @@ namespace Wlniao.Net
         /// <param name="postData"></param>
         /// <param name="contentType"></param>
         /// <param name="webroxy">代理服务器地址</param>
+        /// <param name="cancellationToken">取消令牌</param>
         /// <returns></returns>
-        public static async Task<string> PostAsync(string url, string postData, string contentType = "application/json", string webroxy = null)
+        public static async Task<string> PostAsync(string url, string postData, string contentType = "application/json", string webroxy = null, CancellationToken cancellationToken = default)
         {
             var logs = "";
             try
@@ -123,10 +129,10 @@ namespace Wlniao.Net
                     url = webroxy + uri.PathAndQuery;
                 }
                 logs += "URL: " + url + Environment.NewLine;
-                
+
                 var stream = Wlniao.Convert.ToStream(string.IsNullOrEmpty(postData) ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(postData));
                 var content = new StreamContent(stream);
-                var request = new HttpRequestMessage(HttpMethod.Post, url)
+                using var request = new HttpRequestMessage(HttpMethod.Post, url)
                 {
                     Content = content
                 };
@@ -136,15 +142,18 @@ namespace Wlniao.Net
                 {
                     request.Headers.TryAddWithoutValidation("X-Webroxy", uri.Host);
                 }
-                
-                var response = await HttpClientManager.SharedInstance.SendAsync(request);
-                foreach (var hd in response.Headers)
+
+                using var response = await HttpClientManager.SharedInstance.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
-                    logs += hd.Key + ": " + string.Join(",", hd.Value) + Environment.NewLine;
+                    foreach (var hd in response.Headers)
+                    {
+                        logs += hd.Key + ": " + string.Join(",", hd.Value) + Environment.NewLine;
+                    }
                 }
-                return response.StatusCode == System.Net.HttpStatusCode.OK 
-                    ? await response.Content.ReadAsStringAsync() 
-                    : throw new Exception("StatusCode:" + response.StatusCode + " " + await response.Content.ReadAsStringAsync());
+                return response.StatusCode == System.Net.HttpStatusCode.OK
+                    ? await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false)
+                    : throw new Exception("StatusCode:" + response.StatusCode + " " + await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
             }
             catch (AggregateException e)
             {

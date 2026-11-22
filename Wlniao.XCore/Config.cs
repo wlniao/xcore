@@ -2,8 +2,7 @@
     文件名称：Config.cs
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：读取、修改配置文件的辅助类
-================================================================================
- 
+
     Copyright 2015 XieChaoyi
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +17,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-===============================================================================*/
+==============================================================================*/
 using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using Wlniao.IO;
 using Wlniao.Log;
 
@@ -33,7 +33,9 @@ namespace Wlniao
     /// </summary>
     /// <remarks>
     /// 每行包括键和值，中间的分隔符默认是英文冒号。
-    /// 如果某行以双斜杠 // 或井号 # 开头，就表示此行内容是注释
+    /// 如果某行以双斜杠 // 或井号 # 开头，就表示此行内容是注释。
+    /// 读路径基于 _config 引用快照（copy-on-write），不持锁；
+    /// 写路径在锁内克隆并整体替换引用，磁盘 IO 在锁外执行。
     /// </remarks>
     public class Config
     {
@@ -42,11 +44,31 @@ namespace Wlniao
         /// </summary>
         private static Dictionary<string, string> _env = null;
         /// <summary>
-        /// 环境变量内容
+        /// 配置表（只读快照可无锁并发读；写入方必须走 MutateConfig 做 copy-on-write）
         /// </summary>
-        private static Dictionary<string, string> _config = null;
+        private static volatile Dictionary<string, string> _config = null;
         /// <summary>
-        /// 
+        /// 存在尚未落盘的内存变更（GetConfigsAutoWrite 等延迟回写）
+        /// </summary>
+        private static volatile bool _configDirty = false;
+        /// <summary>
+        /// 配置版本号；每次内存变更递增，用于避免旧快照覆盖新快照
+        /// </summary>
+        private static long _configVersion = 0;
+        /// <summary>
+        /// 配置回写串行锁；磁盘 IO 不占用 XCore.Lock
+        /// </summary>
+        private static readonly object _configFlushLock = new object();
+        /// <summary>
+        /// 上次延迟回写时间（UTC ticks）
+        /// </summary>
+        private static long _lastConfigFlushTicks = 0;
+        /// <summary>
+        /// 延迟回写最小间隔：1 秒（避免启动期批量 GetSetting 触发 N 次整文件写）
+        /// </summary>
+        private const long ConfigFlushIntervalTicks = TimeSpan.TicksPerSecond;
+        /// <summary>
+        ///
         /// </summary>
         private static string _file = null;
         /// <summary>
@@ -75,7 +97,7 @@ namespace Wlniao
                 return _file;
             }
         }
-        
+
         /// <summary>
         /// 重置配置文件内容
         /// </summary>
@@ -83,6 +105,7 @@ namespace Wlniao
         {
             _env = new Dictionary<string, string>();
             _config = null;
+            _configDirty = false;
         }
         /// <summary>
         /// 获取设置信息（优先查找环境变量，再查找xcore.config中配置，默认值非null时向xcore.config中写入默认值）
@@ -152,84 +175,185 @@ namespace Wlniao
         }
 
         /// <summary>
-        /// 获取 ConfigFile 中某项的值
+        /// 获取 ConfigFile 中某项的值（读路径不持锁，基于引用快照）
         /// </summary>
         /// <param name="key">项的名称</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>返回一个字符串值</returns>
         public static string GetConfigs(string key, string defaultValue = null)
         {
-            var val = GetEnvironment(key.ToUpper());
-            if (string.IsNullOrEmpty(val))
-            {
-                if (_config == null)
-                {
-                    Read(FileName);
-                }
-                if (_config != null && _config.TryGetValue(key, out var configs))
-                {
-                    return configs;
-                }
-                else if (_config != null && _config.ContainsKey(key.ToUpper()))
-                {
-                    return _config[key.ToUpper()];
-                }
-                else if (defaultValue != null)
-                {
-                    return defaultValue;
-                }
-                else
-                {
-                    return "";
-                }
-            }
-            else
+            var val = GetEnvironment(key);
+            if (!string.IsNullOrEmpty(val))
             {
                 return val;
             }
+            var cfg = _config;
+            if (cfg == null)
+            {
+                EnsureConfigLoaded();
+                cfg = _config;
+            }
+            if (TryGetConfig(cfg, key, out var configs))
+            {
+                return configs;
+            }
+            // 顺带消化延迟回写（不阻塞本次读）
+            TryFlushConfig(force: false);
+            return defaultValue ?? "";
         }
         /// <summary>
-        /// 获取 ConfigFile 中某项的值
+        /// 获取 ConfigFile 中某项的值（缺项时写入默认值，回写按间隔节流）
         /// </summary>
         /// <param name="key">项的名称</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns>返回一个字符串值</returns>
         private static string GetConfigsAutoWrite(string key, string defaultValue = null)
         {
-            if (_config == null)
+            var cfg = _config;
+            if (cfg == null)
             {
-                Read(FileName);
+                EnsureConfigLoaded();
+                cfg = _config;
             }
-            if (_config != null && _config.TryGetValue(key, out var write))
+            if (cfg != null && TryGetConfig(cfg, key, out var write))
             {
                 return write;
             }
-            else if (_config != null && _config.ContainsKey(key.ToUpper()))
+            if (cfg == null)
             {
-                return _config[key.ToUpper()];
-            }
-            else if(string.IsNullOrEmpty(defaultValue))
-            {
-                lock (XCore.Lock)
-                {
-                    if (_config == null)
-                    {
-                        return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
-                    }
-                    _config.Add(key, defaultValue);
-                    Write(_config, FileName);
-                }
                 return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
             }
-            else
+            var value = defaultValue ?? "";
+            MutateConfig(c => c[key] = value, forceFlush: false);
+            return value;
+        }
+
+        private static void EnsureConfigLoaded()
+        {
+            if (_config != null)
             {
-                lock (XCore.Lock)
-                {
-                    _config.Add(key, defaultValue);
-                    Write(_config, FileName);
-                }
-                return string.IsNullOrEmpty(defaultValue) ? "" : defaultValue;
+                return;
             }
+            lock (XCore.Lock)
+            {
+                if (_config == null)
+                {
+                    Read(FileName);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 锁内克隆并替换 _config（copy-on-write），锁外按需落盘。
+        /// </summary>
+        private static bool MutateConfig(Action<Dictionary<string, string>> mutate, bool forceFlush)
+        {
+            Dictionary<string, string> snapshot;
+            long version;
+            lock (XCore.Lock)
+            {
+                if (_config == null)
+                {
+                    Read(FileName);
+                }
+                if (_config == null)
+                {
+                    return false;
+                }
+                var next = new Dictionary<string, string>(_config, StringComparer.OrdinalIgnoreCase);
+                mutate(next);
+                _config = next;
+                _configDirty = true;
+                version = Interlocked.Increment(ref _configVersion);
+                snapshot = next;
+            }
+            if (forceFlush)
+            {
+                return FlushConfigSnapshot(snapshot, version);
+            }
+            TryFlushConfig(force: false);
+            return true;
+        }
+
+        private static void TryFlushConfig(bool force)
+        {
+            if (!_configDirty)
+            {
+                return;
+            }
+            if (!force)
+            {
+                var now = DateTime.UtcNow.Ticks;
+                var last = Interlocked.Read(ref _lastConfigFlushTicks);
+                if (now - last < ConfigFlushIntervalTicks)
+                {
+                    return;
+                }
+            }
+            Dictionary<string, string> snapshot;
+            long version;
+            lock (XCore.Lock)
+            {
+                if (!_configDirty || _config == null)
+                {
+                    return;
+                }
+                snapshot = new Dictionary<string, string>(_config, StringComparer.OrdinalIgnoreCase);
+                version = Volatile.Read(ref _configVersion);
+                _configDirty = false;
+                Interlocked.Exchange(ref _lastConfigFlushTicks, DateTime.UtcNow.Ticks);
+            }
+
+            // 磁盘 IO 不持有 XCore.Lock；串行执行并避免旧快照覆盖新快照
+            lock (_configFlushLock)
+            {
+                if (Volatile.Read(ref _configVersion) > version)
+                {
+                    _configDirty = true;
+                    return;
+                }
+                if (!Write(snapshot, FileName))
+                {
+                    // 落盘失败保持脏标记，下次继续尝试
+                    _configDirty = true;
+                }
+            }
+        }
+
+        private static bool FlushConfigSnapshot(Dictionary<string, string> snapshot, long version)
+        {
+            lock (_configFlushLock)
+            {
+                if (Volatile.Read(ref _configVersion) > version)
+                {
+                    _configDirty = true;
+                    return false;
+                }
+                var ok = Write(snapshot, FileName);
+                if (ok)
+                {
+                    _configDirty = false;
+                    Interlocked.Exchange(ref _lastConfigFlushTicks, DateTime.UtcNow.Ticks);
+                }
+                else
+                {
+                    _configDirty = true;
+                }
+                return ok;
+            }
+        }
+
+        private static bool TryGetConfig(Dictionary<string, string> cfg, string key, out string value)
+        {
+            if (cfg != null)
+            {
+                if (cfg.TryGetValue(key, out value))
+                {
+                    return true;
+                }
+            }
+            value = null;
+            return false;
         }
         /// <summary>
         /// 获取环境变量值
@@ -243,17 +367,32 @@ namespace Wlniao
             {
                 lock (XCore.Lock)
                 {
-                    _env = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                    var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
-                    while (en.MoveNext())
+                    if (_env == null || _env.Count == 0)
                     {
-                        _env.TryAdd(en.Key.ToString().ToUpper(), en.Value.ToString());
+                        var env = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
+                        while (en.MoveNext())
+                        {
+                            env.TryAdd(en.Key.ToString().ToUpper(), en.Value.ToString());
+                        }
+                        _env = env;
                     }
                 }
             }
 
             return _env.GetValueOrDefault(key, defaultValue);
         }
+        /// <summary>
+        /// 重新加载环境变量快照；用于容器/宿主运行时新增或修改环境变量的场景
+        /// </summary>
+        public static void ReloadEnvironment()
+        {
+            lock (XCore.Lock)
+            {
+                _env = null;
+            }
+        }
+
         /// <summary>
         /// 设置 xcore.config 中某项的值
         /// </summary>
@@ -262,13 +401,8 @@ namespace Wlniao
         /// <returns>返回结果</returns>
         public static bool SetConfigs(string key, string value = "")
         {
-            if (_config == null)
-            {
-                Read(FileName);
-            }
-            _config.PutValue(key, value);
-			return Write(_config, FileName);
-		}
+            return MutateConfig(c => c.PutValue(key, value), forceFlush: true);
+        }
         /// <summary>
         /// 设置 xcore.config 中某项的值
         /// </summary>
@@ -278,16 +412,11 @@ namespace Wlniao
         /// <returns>返回结果</returns>
         public static bool SetEncrypt(string key, string value, string secret)
         {
-            if (_config == null)
-            {
-                Read(FileName);
-            }
             if (!string.IsNullOrEmpty(secret))
             {
                 value = Wlniao.Encryptor.SM4EncryptECBToHex(value, secret, true);
             }
-            _config.PutValue(key, value);
-            return Write(_config, FileName);
+            return MutateConfig(c => c.PutValue(key, value), forceFlush: true);
         }
 
 		/// <summary>
@@ -297,18 +426,17 @@ namespace Wlniao
 		/// <returns>返回结果</returns>
 		public static bool Remove(string key)
         {
-            if (_config == null)
+            var cfg = _config;
+            if (cfg == null)
             {
                 return true;
             }
-            var tmpKey = _config.Keys.FirstOrDefault(o => string.Equals(o, key, StringComparison.CurrentCultureIgnoreCase));
+            var tmpKey = cfg.Keys.FirstOrDefault(o => string.Equals(o, key, StringComparison.CurrentCultureIgnoreCase));
             if (string.IsNullOrEmpty(tmpKey))
             {
                 return true;
             }
-            _config.Remove(tmpKey);
-            Write(_config, FileName);
-            return true;
+            return MutateConfig(c => c.Remove(tmpKey), forceFlush: true);
         }
         /// <summary>
         /// 读取配置文件，返回一个 Dictionary，键值都是字符串
@@ -320,11 +448,12 @@ namespace Wlniao
             lock (XCore.Lock)
             {
                 _config = FileEx.Exists(path) ? Convert.ToDictionary(FileEx.Read(path)) : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                _configDirty = false;
             }
         }
 
         /// <summary>
-        /// 将 Dictionary 对象持久化到磁盘
+        /// 将 Dictionary 对象持久化到磁盘（使用传入的 dic 快照，不读共享字段）
         /// </summary>
         /// <param name="dic">一个 Dictionary</param>
         /// <param name="path">配置文件的路径(相对路径，相对于项目的根目录)</param>
@@ -332,12 +461,12 @@ namespace Wlniao
         {
             try
             {
-                if (_config != null)
+                if (dic != null)
                 {
                     var sb = new StringBuilder();
-                    foreach (var pair in _config.OrderBy(o => o.Key))
+                    foreach (var pair in dic.OrderBy(o => o.Key))
                     {
-                        if (_config.ContainsKey("yaml"))
+                        if (dic.ContainsKey("yaml"))
                         {
                             if (pair.Key == "yaml")
                             {

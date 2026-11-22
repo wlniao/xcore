@@ -1,4 +1,4 @@
-﻿/*==============================================================================
+/*==============================================================================
     文件名称：Redis.cs
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：Redis驱动类
@@ -23,6 +23,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Wlniao.Caching
@@ -33,6 +34,8 @@ namespace Wlniao.Caching
     public static class InMemory
     {
         private static readonly ConcurrentDictionary<string, CacheData> Cache = new();
+        private static int setOps;
+        private static readonly object cleanupLock = new();
 
 
         /// <summary>
@@ -43,16 +46,18 @@ namespace Wlniao.Caching
         /// <param name="expireSeconds"></param>
         public static bool Set(string key, string value, int expireSeconds = 86400)
         {
-            var expire = DateTime.Now.AddSeconds(expireSeconds);
-            Cache.AddOrUpdate(key, new CacheData { Expire = expire, Value = value ?? ""}, (k, old) => {
+            var expire = DateTime.UtcNow.AddSeconds(expireSeconds);
+            Cache.AddOrUpdate(key, new CacheData { Expire = expire, Value = value ?? "", LastAccess = DateTime.UtcNow }, (k, old) => {
                 old.Value = value ?? "";
                 old.Expire = expire;
+                old.LastAccess = DateTime.UtcNow;
                 return old;
             });
 
-            // 每100次设置操作清理一次，或者缓存大小超过8000时清理
-            if (Cache.Count % 100 == 0 || Cache.Count > 8000)
+            // 每 100 次 Set 触发一次抽样清理（ConcurrentDictionary.Count 为 O(n)，不能在热路径上判断）
+            if (System.Threading.Interlocked.Increment(ref setOps) >= 100)
             {
+                System.Threading.Interlocked.Exchange(ref setOps, 0);
                 CleanupExpiredAndLimitSize();
             }
             return true;
@@ -70,17 +75,19 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static bool Set<T>(string key, T obj, JsonTypeInfo<T> typeInfo, int expireSeconds = 86400)
         {
-            var expire = DateTime.Now.AddSeconds(expireSeconds);
+            var expire = DateTime.UtcNow.AddSeconds(expireSeconds);
             var value = JsonSerializer.Serialize(obj, typeInfo);
-            Cache.AddOrUpdate(key, new CacheData { Expire = expire, Value = value}, (k, old) => {
+            Cache.AddOrUpdate(key, new CacheData { Expire = expire, Value = value, LastAccess = DateTime.UtcNow }, (k, old) => {
                 old.Value = value;
                 old.Expire = expire;
+                old.LastAccess = DateTime.UtcNow;
                 return old;
             });
 
-            // 每100次设置操作清理一次，或者缓存大小超过8000时清理
-            if (Cache.Count % 100 == 0 || Cache.Count > 8000)
+            // 每 100 次 Set 触发一次抽样清理（ConcurrentDictionary.Count 为 O(n)，不能在热路径上判断）
+            if (System.Threading.Interlocked.Increment(ref setOps) >= 100)
             {
+                System.Threading.Interlocked.Exchange(ref setOps, 0);
                 CleanupExpiredAndLimitSize();
             }
             return true;
@@ -110,7 +117,15 @@ namespace Wlniao.Caching
             else if (keys.EndsWith('*'))
             {
                 var tmp = keys.TrimEnd('*');
-                return (from key in Cache.Keys where key.StartsWith(tmp) select Cache.TryRemove(key, out _)).FirstOrDefault();
+                var removed = 0;
+                foreach (var key in Cache.Keys)
+                {
+                    if (key.StartsWith(tmp) && Cache.TryRemove(key, out _))
+                    {
+                        removed++;
+                    }
+                }
+                return removed > 0;
             }
             else
             {
@@ -124,15 +139,15 @@ namespace Wlniao.Caching
         /// <param name="key"></param>
         public static bool Exists(string key)
         {
-            if (!Cache.ContainsKey(key)) return false;
-            if (Cache[key].Expire > DateTime.Now)
+            if (!Cache.TryGetValue(key, out var val))
+            {
+                return false;
+            }
+            if (val.Expire > DateTime.UtcNow)
             {
                 return true;
             }
-            else
-            {
-                Del(key);
-            }
+            Del(key);
             return false;
         }
 
@@ -144,8 +159,9 @@ namespace Wlniao.Caching
         {
             if(Cache.TryGetValue(key, out var val))
             {
-                if (val.Expire > DateTime.Now)
+                if (val.Expire > DateTime.UtcNow)
                 {
+                    val.LastAccess = DateTime.UtcNow;
                     return val.Value ?? "";
                 }
                 else
@@ -164,8 +180,9 @@ namespace Wlniao.Caching
         {
             if(Cache.TryGetValue(key, out var val))
             {
-                if (val.Expire > DateTime.Now)
+                if (val.Expire > DateTime.UtcNow)
                 {
+                    val.LastAccess = DateTime.UtcNow;
                     return val.Value;
                 }
                 else
@@ -188,8 +205,9 @@ namespace Wlniao.Caching
         {
             if(Cache.TryGetValue(key, out var val))
             {
-                if (val.Expire > DateTime.Now)
+                if (val.Expire > DateTime.UtcNow)
                 {
+                    val.LastAccess = DateTime.UtcNow;
                     return JsonSerializer.Deserialize(val.Value, typeInfo);
                 }
                 else
@@ -205,8 +223,8 @@ namespace Wlniao.Caching
         /// </summary>
         public static void CleanupExpired()
         {
-            var expiredKeys = Cache.Where(x => x.Value.Expire <= DateTime.Now).Select(x => x.Key).ToList();
-            foreach(var key in expiredKeys)
+            var now = DateTime.UtcNow;
+            foreach (var key in Cache.Where(x => x.Value.Expire <= now).Select(x => x.Key))
             {
                 Del(key);
             }
@@ -218,21 +236,36 @@ namespace Wlniao.Caching
         /// <param name="maxCacheSize">最大缓存项数，默认10000</param>
         public static void CleanupExpiredAndLimitSize(int maxCacheSize = 10000)
         {
-            // 先清理过期项
-            CleanupExpired();
-            
-            // 如果缓存仍然过大，删除最久未使用的项
-            if (Cache.Count > maxCacheSize)
+            // 避免并发清理叠加放大
+            if (!System.Threading.Monitor.TryEnter(cleanupLock))
             {
-                var sortedKeys = Cache.OrderBy(x => x.Value.Expire) // 按过期时间排序，最早过期的在前
-                                  .Take(Cache.Count - maxCacheSize) // 取出超出数量的部分
-                                  .Select(x => x.Key)
-                                  .ToList();
-                
-                foreach(var key in sortedKeys)
+                return;
+            }
+            try
+            {
+                CleanupExpired();
+
+                // 超限时按最近访问时间做近似 LRU 淘汰；仅在清理路径执行
+                var count = Cache.Count;
+                if (count > maxCacheSize)
                 {
-                    Del(key);
+                    var excess = count - maxCacheSize;
+                    foreach (var key in Cache.OrderBy(x => x.Value.LastAccess).Select(x => x.Key))
+                    {
+                        if (excess <= 0)
+                        {
+                            break;
+                        }
+                        if (Del(key))
+                        {
+                            excess--;
+                        }
+                    }
                 }
+            }
+            finally
+            {
+                System.Threading.Monitor.Exit(cleanupLock);
             }
         }
         
@@ -242,7 +275,7 @@ namespace Wlniao.Caching
         /// <returns>返回缓存总数和过期项数</returns>
         public static (int totalCount, int expiredCount) GetCacheStats()
         {
-            var expiredCount = Cache.Count(x => x.Value.Expire <= DateTime.Now);
+            var expiredCount = Cache.Count(x => x.Value.Expire <= DateTime.UtcNow);
             return (Cache.Count, expiredCount);
         }
     }

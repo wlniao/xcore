@@ -15,6 +15,13 @@ namespace Wlniao.XCenter
     public class XSession
     {
         /// <summary>
+        /// 会话扩展数据序列化选项；编码器构建成本较高，必须复用
+        /// </summary>
+        private static readonly JsonSerializerOptions JsonSerializerOptions = new()
+        {
+            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+        };
+        /// <summary>
         /// 
         /// </summary>
         public string sid = "";
@@ -226,7 +233,7 @@ namespace Wlniao.XCenter
                         obj.TryAdd(kv.Key, kv.Value);
                     }
                 }
-                var ext = System.Text.Json.JsonSerializer.Serialize(obj, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
+                var ext = System.Text.Json.JsonSerializer.Serialize(obj, JsonSerializerOptions);
                 plain += "," + UserSid + "," + StringUtil.UTF8ToHexString(ext);
             }
             if (string.IsNullOrEmpty(apptoken))

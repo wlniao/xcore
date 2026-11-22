@@ -83,6 +83,16 @@ namespace Wlniao.Log
         
         // CancellationTokenSource用于取消后台任务
         private static CancellationTokenSource _cancellationTokenSource;
+
+        // 后台推送任务只启动一次
+        private static bool _consumerStarted;
+        private static readonly object _consumerLock = new();
+
+        // Loki 不可用时的全局退避时间；避免失败批次重入队后立即打满网络
+        private static DateTime _globalBackoffUntilUtc = DateTime.MinValue;
+
+        // Loki 推送错误使用文件日志，便于服务化部署排查
+        private static readonly FileLoger _errorLoger = new(LogLevel.Error);
         
         // 最大批量大小
         private const int MaxBatchSize = 100;
@@ -145,28 +155,63 @@ namespace Wlniao.Log
             {
                 orgId = org_id.Trim();
             }
-            if (this.Interval > 0 && !string.IsNullOrEmpty(serverHost))
+            if (!string.IsNullOrEmpty(serverHost))
             {
-                Task.Run(async () =>
+                StartConsumer(this.Interval);
+            }
+        }
+
+        /// <summary>
+        /// 启动唯一的后台推送任务；日志调用只负责入队，不再同步外发
+        /// </summary>
+        private static void StartConsumer(int interval)
+        {
+            var emptyDelay = interval > 0 ? Math.Min(interval, 10) * 1000 : 1000;
+            lock (_consumerLock)
+            {
+                if (_consumerStarted)
                 {
-                    while (!_cancellationTokenSource.Token.IsCancellationRequested)
+                    return;
+                }
+                _consumerStarted = true;
+            }
+            Task.Run(async () =>
+            {
+                while (!_cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    List<LokiStream> batch = null;
+                    try
                     {
-                        try
+                        if (DateTime.UtcNow < _globalBackoffUntilUtc)
                         {
-                            await WriteAsync("", null, LogLevel.None, true, _cancellationTokenSource.Token);
-                            await Task.Delay(Interval * 1000, _cancellationTokenSource.Token);
+                            await Task.Delay(1000, _cancellationTokenSource.Token).ConfigureAwait(false);
+                            continue;
                         }
-                        catch (OperationCanceledException)
+                        batch = DequeueBatch(MaxBatchSize);
+                        if (batch.Count > 0)
                         {
-                            break;
+                            await PushBatchAsync(batch, _cancellationTokenSource.Token).ConfigureAwait(false);
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            LokiErrorLog("Background task exception: " + ex.Message);
+                            await Task.Delay(emptyDelay, _cancellationTokenSource.Token).ConfigureAwait(false);
                         }
                     }
-                }, _cancellationTokenSource.Token);
-            }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (batch?.Count > 0)
+                        {
+                            RequeueBatch(batch);
+                        }
+                        LokiErrorLog("Background task exception: " + ex.Message);
+                        await Task.Delay(emptyDelay, _cancellationTokenSource.Token).ConfigureAwait(false);
+                    }
+                }
+            }, _cancellationTokenSource.Token);
         }
 
         /// <summary>
@@ -189,29 +234,25 @@ namespace Wlniao.Log
         /// <param name="push">是否立即回写</param>
         /// <param name="level">日志写入级别</param>
         /// <param name="cancellationToken">取消令牌</param>
-        private async Task WriteAsync(string topic, LokiEntrie entrie, LogLevel level = LogLevel.None, bool push = false, CancellationToken cancellationToken = default)
+        private Task WriteAsync(string topic, LokiEntrie entrie, LogLevel level = LogLevel.None, bool push = false, CancellationToken cancellationToken = default)
         {
             try
             {
-                LokiStream item = null;
                 if (entrie != null && !string.IsNullOrEmpty(topic))
                 {
-                    item = CreateLokiStream(topic, entrie, level);
-                }
-                
-                if (push || this.Interval <= 0)
-                {
-                    await PushLogsAsync(item, cancellationToken).ConfigureAwait(false);
-                }
-                else if (item != null)
-                {
-                    EnqueueItem(item);
+                    var item = CreateLokiStream(topic, entrie, level);
+                    if (!string.IsNullOrEmpty(item.Server))
+                    {
+                        EnqueueItem(item);
+                        StartConsumer(this.Interval);
+                    }
                 }
             }
             catch (Exception ex)
             {
                 LokiErrorLog("Exception:" + ex.Message);
             }
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -222,7 +263,9 @@ namespace Wlniao.Log
             var item = new LokiStream
             {
                 stream = new Dictionary<string, string> { { "service_name", XCore.WebNode } },
-                values = new List<string[]> { new string[] { entrie.ts, entrie.line } }
+                values = new List<string[]> { new string[] { entrie.ts, entrie.line } },
+                Server = serverHost,
+                OrgId = orgId
             };
             
             if (levels.Contains(topic))
@@ -272,17 +315,60 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// 从队列中获取批量日志
+        /// 从队列中获取同一推送目标的一批日志；不同 server/orgId 的日志重新入队
         /// </summary>
-        private List<LokiStream> DequeueBatch(int batchSize)
+        private static List<LokiStream> DequeueBatch(int batchSize)
         {
             var batch = new List<LokiStream>();
             lock (_queueLock)
             {
-                var count = Math.Min(batchSize, queue.Count);
-                for (var i = 0; i < count; i++)
+                if (queue.Count == 0)
                 {
-                    batch.Add(queue.Dequeue());
+                    return batch;
+                }
+
+                var all = new List<LokiStream>();
+                while (queue.Count > 0 && all.Count < MaxQueueSize)
+                {
+                    all.Add(queue.Dequeue());
+                }
+
+                var groups = new Dictionary<string, List<LokiStream>>(StringComparer.Ordinal);
+                foreach (var item in all)
+                {
+                    if (item == null)
+                    {
+                        continue;
+                    }
+                    var key = (item.Server ?? "") + "\n" + (item.OrgId ?? "");
+                    if (!groups.TryGetValue(key, out var group))
+                    {
+                        group = new List<LokiStream>();
+                        groups[key] = group;
+                    }
+                    if (group.Count < batchSize)
+                    {
+                        group.Add(item);
+                    }
+                    else
+                    {
+                        queue.Enqueue(item);
+                    }
+                }
+
+                foreach (var group in groups.Values)
+                {
+                    if (batch.Count == 0)
+                    {
+                        batch = group;
+                    }
+                    else
+                    {
+                        foreach (var item in group)
+                        {
+                            queue.Enqueue(item);
+                        }
+                    }
                 }
             }
             return batch;
@@ -291,7 +377,7 @@ namespace Wlniao.Log
         /// <summary>
         /// 将日志重新加入队列（失败时）
         /// </summary>
-        private void RequeueBatch(List<LokiStream> batch)
+        private static void RequeueBatch(List<LokiStream> batch)
         {
             if (batch == null || batch.Count == 0) return;
             
@@ -310,30 +396,32 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// 推送日志到Loki
+        /// 后台推送一批日志到Loki；失败时重新入队
         /// </summary>
-        private async Task PushLogsAsync(LokiStream currentItem, CancellationToken cancellationToken)
+        private static async Task PushBatchAsync(List<LokiStream> batch, CancellationToken cancellationToken)
         {
-            var batch = DequeueBatch(MaxBatchSize);
-            
-            if (currentItem != null)
+            if (batch == null || batch.Count == 0)
             {
-                batch.Insert(0, currentItem);
+                return;
             }
-            
-            if (batch.Count == 0) return;
-            
+
+            var server = batch[0].Server;
+            var orgId = batch[0].OrgId;
+            if (string.IsNullOrEmpty(server))
+            {
+                return;
+            }
+
             var dto = new LokiDto { streams = batch };
-            
             var success = false;
             var retryCount = 0;
-            
+
             while (!success && retryCount < MaxRetryCount)
             {
                 try
                 {
-                    success = await SendToLokiAsync(dto, cancellationToken).ConfigureAwait(false);
-                    
+                    success = await SendToLokiAsync(dto, server, orgId, cancellationToken).ConfigureAwait(false);
+
                     if (!success)
                     {
                         retryCount++;
@@ -354,7 +442,7 @@ namespace Wlniao.Log
                 {
                     retryCount++;
                     LokiErrorLog($"Push failed (attempt {retryCount}): {ex.Message}");
-                    
+
                     if (retryCount < MaxRetryCount)
                     {
                         var delay = (int)Math.Pow(2, retryCount) * 100;
@@ -362,67 +450,54 @@ namespace Wlniao.Log
                     }
                 }
             }
-            
+
             if (!success)
             {
-                // 失败时重新加入队列
+                // 失败时重新加入队列，并设置全局退避
+                _globalBackoffUntilUtc = DateTime.UtcNow.AddSeconds(30);
                 RequeueBatch(batch);
-            }
-            else
-            {
-                // 如果队列还有较多数据，继续处理
-                lock (_queueLock)
-                {
-                    if (queue.Count > MaxBatchSize / 2)
-                    {
-                        _ = Task.Run(async () =>
-                        {
-                            await WriteAsync("", null, LogLevel.None, true, cancellationToken).ConfigureAwait(false);
-                        }, cancellationToken);
-                    }
-                }
             }
         }
 
         /// <summary>
         /// 发送日志到Loki服务器
         /// </summary>
-        private async Task<bool> SendToLokiAsync(LokiDto dto, CancellationToken cancellationToken)
+        private static async Task<bool> SendToLokiAsync(LokiDto dto, string server, string orgId, CancellationToken cancellationToken)
         {
             try
             {
                 var content = SerializeLokiDto(dto);
-                
+
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 cts.CancelAfter(TimeSpan.FromSeconds(30));
-                
-                var request = new HttpRequestMessage(HttpMethod.Post, serverHost + "/loki/api/v1/push");
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, server + "/loki/api/v1/push");
                 if (!string.IsNullOrEmpty(orgId))
                 {
                     request.Headers.TryAddWithoutValidation("X-Scope-OrgID", orgId);
                 }
-                
+
                 // 使用Gzip压缩减少传输数据量
                 var compressedContent = CompressContent(content);
                 request.Content = new ByteArrayContent(compressedContent);
                 request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
                 request.Content.Headers.ContentEncoding.Add("gzip");
-                
-                var response = await _httpClient.SendAsync(request, cts.Token).ConfigureAwait(false);
-                
+
+                using var response = await _httpClient.SendAsync(request, cts.Token).ConfigureAwait(false);
+
                 if (response.StatusCode == System.Net.HttpStatusCode.NoContent || response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     return true;
                 }
-                
+
                 var errmsg = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 LokiErrorLog($"Push Result: {errmsg} [{dto.streams.Count}]");
-                
+
                 if (errmsg.Contains("loghttp.LogProtoStream"))
                 {
-                    await _httpClient.GetAsync(serverHost + "/ready", cts.Token).ConfigureAwait(false);
+                    using var readyResponse = await _httpClient.GetAsync(server + "/ready", cts.Token).ConfigureAwait(false);
                 }
-                
+
                 return false;
             }
             catch (Exception ex)
@@ -435,7 +510,7 @@ namespace Wlniao.Log
         /// <summary>
         /// Gzip压缩内容
         /// </summary>
-        private byte[] CompressContent(string content)
+        private static byte[] CompressContent(string content)
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(content);
             using var output = new MemoryStream();
@@ -449,15 +524,15 @@ namespace Wlniao.Log
         /// <summary>
         /// 记录Loki错误日志
         /// </summary>
-        private void LokiErrorLog(string message)
+        private static void LokiErrorLog(string message)
         {
             try
             {
-                flog.Error($"[LokiError] {message}");
+                _errorLoger.Error($"[LokiError] {message}");
             }
             catch
             {
-                // 忽略文件日志错误
+                // 忽略日志错误
             }
         }
 
@@ -682,19 +757,38 @@ namespace Wlniao.Log
         }
 
         /// <summary>
-        /// 立即回写
+        /// 立即回写当前队列；显式 Flush 允许同步等待
         /// </summary>
         public void Flush()
         {
-            Write("", null, LogLevel.None, true);
+            FlushAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
-        /// 异步立即回写
+        /// 异步立即回写当前队列
         /// </summary>
         public async Task FlushAsync(CancellationToken cancellationToken = default)
         {
-            await WriteAsync("", null, LogLevel.None, true, cancellationToken);
+            while (true)
+            {
+                var batch = DequeueBatch(MaxBatchSize);
+                if (batch.Count == 0)
+                {
+                    return;
+                }
+                await PushBatchAsync(batch, cancellationToken).ConfigureAwait(false);
+                if (DateTime.UtcNow < _globalBackoffUntilUtc)
+                {
+                    return;
+                }
+                lock (_queueLock)
+                {
+                    if (queue.Count == 0)
+                    {
+                        return;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -747,6 +841,16 @@ namespace Wlniao.Log
             /// 日志内容
             /// </summary>
             public List<string[]> values { get; set; }
+            /// <summary>
+            /// 推送目标（不参与 Loki 序列化）
+            /// </summary>
+            [System.Text.Json.Serialization.JsonIgnore]
+            internal string Server { get; set; }
+            /// <summary>
+            /// 租户 ID（不参与 Loki 序列化）
+            /// </summary>
+            [System.Text.Json.Serialization.JsonIgnore]
+            internal string OrgId { get; set; }
         }
 
         /// <summary>

@@ -1,7 +1,7 @@
 # Wlniao.XCore · API 参考手册
 
 > 本文是**参考手册**，不是 `AGENTS.md`。执行约定（该做什么、不该做什么）见项目根 `AGENTS.md`。
-> 依据源码版本 **10.0.2**（`dotnet list package --include-transitive` 可核对实际引用版本）。
+> 依据源码版本 **10.0.3**（`dotnet list package --include-transitive` 可核对实际引用版本）。
 > 签名以源码与包内 XML 注释为准；本文省略了部分重载，标注「另有重载」处请自行确认。
 
 ## 0. 包与兼容边界
@@ -33,6 +33,8 @@ dotnet add package Wlniao.XCore
 | 时间处理 | `Wlniao.DateTools` | `DateTime.Now`（时区不受 `WLN_TIMEZONE` 控制） |
 | 加密解密 | `Wlniao.Encryptor`、`Wlniao.Crypto` | 自拼密钥补位 / 引 BouncyCastle |
 | 文字处理 | `Wlniao.Text.StringUtil`、`Wlniao.Text` 其它类 | 自写正则判手机号/邮箱 |
+| 字典取值 / 合并 | `Wlniao.DictionaryExtend`、`Wlniao.StringExtend` | 自写 `TryGetValue` + 类型转换 / 分割 |
+| 正则 / URL / MIME | `Wlniao.Pattern.Regex`、`Wlniao.Text.UrlHelper`、`Wlniao.MimeMapping` | 自写正则、手写 MIME 表 |
 | 缓存 | `Wlniao.Caching.Cache` | 自建静态 `Dictionary` 缓存 |
 | JSON | `Wlniao.Json` | `new JsonSerializerOptions()` 各自一套 |
 
@@ -66,12 +68,25 @@ internal partial class MyJsonContext : JsonSerializerContext { }
 var json = Json.Serialize(dto, MyJsonContext.Default.OrderDto);
 var dto2 = Json.Deserialize<OrderDto>(json, MyJsonContext.Default.OrderDto);
 
-// ② 复用库内置上下文（内置/常用类型已被覆盖，可先用它判断）
-if (Json.IsCovered(typeof(OrderDto))) { /* 内置上下文已覆盖，反射重载在 AOT 下也安全 */ }
+// ② 已登记类型直接复用内置上下文（清单见本节下方）
+var builtInJson = Json.Serialize(dict, JsonContext.Instance.DictionaryStringString);
+var dictBack = Json.Deserialize(builtInJson, JsonContext.Instance.DictionaryStringString);
 
 // ③ 排查期开关：把"静默丢数据"变成"启动即失败"（默认 false）
 Json.StrictTrimDiagnostics = true;   // 未覆盖类型直接抛 NotSupportedException，并给出迁移指引
 ```
+
+`Json.Serialize` 的严格诊断按对象运行时类型（`obj.GetType()`）判断覆盖，`T=object` 不再自动放行；
+但嵌套属性类型不递归检查，重要 DTO 仍应显式传 `JsonTypeInfo<T>`。
+
+### 已定义的常用源生成类型（先复用，再自建）
+
+`Wlniao.JsonContext`（命名空间 `Wlniao`）是 XCore 内置上下文，**统一用 `JsonContext.Instance`，不要用生成的 `Default`**（`Default` 缺少中文不转义 / `JsonNode` 选项）。已登记类型与属性名：
+
+- 字典 / 集合：`DictionaryStringString`（`Dictionary<string,string>`）、`DictionaryStringObject`、`DictionaryStringJsonElement`；对应列表 `ListDictionaryStringString`、`ListDictionaryStringObject`、`ListDictionaryStringJsonElement`；另有 `ListObject`、`Object`、`String`、`Int32`、`Int64`、`Boolean`、`DateTime`。
+- `Result<T>`：`ResultObject`、`ResultInt32`、`ResultInt64`、`ResultBoolean`、`ResultString`；以及 `ResultDictionaryStringString`、`ResultDictionaryStringObject`、`ResultDictionaryStringJsonElement`、`ResultListDictionaryStringString`、`ResultListDictionaryStringObject`、`ResultListDictionaryStringJsonElement`。
+
+未登记的类型（自有 DTO、`EngineSession`、`ConsumerInfo` 等）仍需自建 `[JsonSerializable]` 上下文；可用 `Json.IsCovered(type)` 先确认。仅引用 `Wlniao.XCenter` 时另有 `Wlniao.XCenter.JsonContext.Default`：`Context`、`EmiContext`、`Enum`、`ListEnum`、`Account`、`ApiResultString`（公共类型不重复登记）。
 
 其它 AOT 硬性要求：
 
@@ -121,9 +136,10 @@ var ok = Result<object>.OutSuccess(new Dictionary<string, object> { ["id"] = 1 }
 ```csharp
 string GetConfigs(string key, string defaultValue = null)   // 环境变量 → xcore.config → 默认值；缺项返回 ""
 string GetSetting(string key, string defaultValue = null)   // 同上，但缺项时把默认值回写配置文件
-string GetEnvironment(string key, string defaultValue = "") // 只读环境变量（key 自动大写）
+string GetEnvironment(string key, string defaultValue = "") // 只读环境变量快照（忽略大小写）
+void   ReloadEnvironment()                                 // 运行时新增/修改环境变量后刷新快照
 bool   SetConfigs(string key, string value = "")            // 写配置文件，value 为空表示删除
-string GetEncrypt(string key, string secret, string def = null)  // 读 SM4 加密存储的配置项
+string GetEncrypt(string key, string secret, string defaultValue = null)  // 读 SM4 加密存储的配置项
 bool   SetEncrypt(string key, string value, string secret)       // 加密后写入配置
 void   Read(string path)                                    // 手动加载配置
 bool   Write(Dictionary<string, string> dic, string path)    // 手动落盘
@@ -143,7 +159,7 @@ float   ToFloat(string str, float defaultValue = 0)
 bool    ToBool(object obj)     // "1"/"true"/"yes" 等为真；另有 ToBool(string)
 byte[]  ToBytes(Stream stream)
 int[]   ToIntArray(string myids)    // "1,2,3" → [1,2,3]
-Stream  ToStream(object obj)        // object/byte[] → Stream
+Stream  ToStream(byte[] bytes)      // 仅接受 byte[]，无 object 重载
 ```
 
 ### Wlniao.XCore 运行环境与全局开关
@@ -154,7 +170,7 @@ string ListenUrls          // 监听地址（WLN_LISTEN_URLS，默认 http://*:{
 string WebNode             // 节点名（WLN_NODE，默认 xcore）
 string WebHost             // 对外访问地址（WLN_HOST，默认 http://127.0.0.1:{ListenPort}）
 string XServerId           // 服务器 ID（XServerId）
-string StartupRoot         // 程序根目录（WLN_STARTUP_ROOT，自动剥掉 /bin）
+string StartupRoot         // 程序根目录（只读环境变量快照 WLN_STARTUP_ROOT，不读 xcore.config；自动剥掉 /bin）
 string StartupTime         // 启动时间（格式化字符串）
 string Version             // XCore 版本号
 string ProgramVersion      // 当前程序版本号
@@ -266,7 +282,7 @@ string Base64Encrypt(string str) / Base64Decrypt(string str)
 string VerbatimEncrypt(string txt, int crypt = 6338) / VerbatimDecrypt(string txt, int crypt = 6338)  // 可逆混淆，非安全加密
 ```
 
-> 摘要类方法传**空串返回空串**；其余按 ASCII 编码计算——含中文的输入请自己先转 UTF-8 字节再算。
+> 摘要编码注意：`Sha1/Sha256/Sha512` 按 **ASCII** 编码计算（含非 ASCII 字符会截断），`SM3Encrypt` / `HmacSM3` / `HmacSHA1` / `Md5Encryptor16/32` 按 **UTF-8** 计算。跨语言对账时务必用字节重载或自行统一编码，不要依赖默认行为。
 
 ### Wlniao.Crypto 密钥工具（KeyTool / SM2 实例）
 
@@ -331,8 +347,8 @@ Encoding GetEncoding(string name)   // 未注册 CodePages 时自动注册后重
 ```csharp
 bool   Set(string key, string value, int expireSeconds = 86400)   // 秒；传 0 = 立即过期
 bool   Set<T>(string key, T obj, JsonTypeInfo<T> typeInfo, int expireSeconds = 86400)
-string Get(string key)                 // 缺项返回 ""
-string GetAllowNull(string key)        // 缺项返回 null
+string Get(string key)                 // 缺项返回 ""（memory/redis 后端）；file 后端走 FileCache.Get 缺项返回 null
+string GetAllowNull(string key)        // 缺项返回 null（file/redis 后端实际直接委托底层，与 Get 行为相同）
 T      Get<T>(string key, JsonTypeInfo<T> typeInfo)      // ⚠️ 必须传元数据，无免参重载
 bool   Del(string key) / Exists(string key)
 void   UseRedis(string connstr = null)                   // 手动切换后端
@@ -341,6 +357,22 @@ bool   LocalSet(string key, string value)                // 进程内本地缓�
 string LocalGet(string key, int expireSeconds = 86400)
 string CachePath { get; set; }                           // file 后端目录
 ```
+
+### Wlniao.Caching.FileCache 文件缓存（file 后端的底层实现，带 L1 内存层）
+
+```csharp
+bool   Set(string key, string value, int expireSeconds = 86400)
+bool   Set<T>(string key, T obj, JsonTypeInfo<T> typeInfo, int expireSeconds = 86400)  // ⚠️ 必须传元数据
+string Get(string key)                                  // 缺项返回 null
+T      Get<T>(string key, JsonTypeInfo<T> typeInfo)
+bool   Del(string key) / Exists(string key)
+```
+
+说明：
+
+- L1 内存层：`Get`/`Exists` 优先读内存，未命中才读盘回填；目录由 `WLN_CACHE_PATH` 控制
+- **多进程一致性**：L1 条目带文件指纹（写入时间 + 长度），其他进程/实例更新共享缓存文件后，本进程的陈旧 L1 副本会被自动判失效并重新读盘，无需手动清理
+- 命中统计（诊断/测试用）：`long FileCache.L1HitCount` / `L1MissCount` 为进程级累计值，`ResetL1Statistics()` 清零。回归测试建议用计数断言而非仅断言返回值——只验值正确无法发现"L1 静默未命中、每次读盘"的退化路径
 
 ### Wlniao.IO.PathTool / FileEx 文件
 
@@ -376,12 +408,14 @@ bool FileEx.Exists(string absolutePath)
 
 ```csharp
 string       Get(string url, string webroxy = null)
-Task<string> GetAsync(string url, string webroxy = null)
+Task<string> GetAsync(string url, string webroxy = null, CancellationToken cancellationToken = default)
 string       Post(string url, string postData, string contentType = "application/json", string webroxy = null)
-Task<string> PostAsync(string url, string postData, string contentType = "application/json", string webroxy = null)
+Task<string> PostAsync(string url, string postData, string contentType = "application/json", string webroxy = null, CancellationToken cancellationToken = default)
 string       Post(string url, Stream stream, string webroxy = null)
 Task<string> PostAsync(string url, Stream stream, string webroxy = null)
-// 返回响应正文；业务层自行判断是否成功。未传 webroxy 时取配置 Webroxy
+// 未传 webroxy 时取配置 Webroxy。
+// ⚠️ Get 系列不论状态码都返回响应正文，由调用方自行判断；
+//    Post 系列非 200 会直接抛 Exception（含状态码与响应正文），需自行 catch
 ```
 
 ### Wlniao.Net.HttpClientManager / CustomHttpClientHandler 连接级管控
@@ -394,6 +428,8 @@ new HttpClientManager(TimeSpan? dnsRefreshInterval = null, TimeSpan? retireGrace
 // dnsRefreshInterval 默认 12 分钟；retireGrace 默认 1 分钟 = 旧实例退役后保留多久再释放，
 // 期间在途请求可继续跑完；传 TimeSpan.Zero 表示刷新后立即释放（会掐断在途请求）
 void Dispose()
+// 共享/实例 HttpClient 均有整体默认 Timeout = 30 秒、ConnectTimeout = 10 秒、
+// MaxConnectionsPerServer = 200；CustomHttpClientHandler 默认 PooledConnectionLifetime = 5 分钟
 
 // —— CustomHttpClientHandler：处理器工厂（SocketsHttpHandler 密封，无法继承）——
 var handler = new CustomHttpClientHandler
@@ -504,6 +540,57 @@ static Pager<T> PutIn(List<T> source, int page = 1, int size = 10)          // �
 static Pager<T> Format(List<T> data, int total, int page, int size = 0)     // 已切好页，只补元数据
 ```
 
+### 已集成的常用扩展方法与帮助类（先查这里，别重写）
+
+下列扩展方法都在 `Wlniao` 命名空间，`using Wlniao;` 即可用；写校验、取值、编码前先在这里找。
+
+**字典取值 / 合并**（`DictionaryExtend`；除注明外，`Dictionary<string,string>` 与 `Dictionary<string,object>` 均有）
+
+```csharp
+string GetString(key, defaultVal = "", allowEmpty = false)
+object GetValue(key, defaultVal = "", allowEmpty = false)          // 仅 Dictionary<string,object>
+T      GetValue<T>(key[, Default], JsonTypeInfo<T> typeInfo)       // 仅 Dictionary<string,object>；AOT 安全
+int GetInt32 / long GetInt64 / decimal GetDecimal / double GetDouble / float GetFloat / bool GetBoolean
+void PutValue(key, value)       // 覆盖写
+void PutOnlyEmpty(key, value)   // 仅缺项或空值时写入
+Dictionary<string, object> ToDictionary<T>(this T obj, JsonTypeInfo<T> typeInfo)   // AOT 安全
+```
+
+`GetString` 默认把空串当缺项返回 `defaultVal`，需保留空串时传 `allowEmpty: true`。
+
+**字符串 / 集合 / 枚举**
+
+```csharp
+bool IsMobile() / IsEmail() / IsNotNullAndEmpty()   // StringExtend；IsNullOrEmpty() 与 StringUtil.IsNullOrEmpty() 不同（后者把空格算空）
+string[] SplitBy(params string[] separator)         // 去空项，默认按 ","
+string RemoveBOM()
+IEnumerable<T> DistinctBy(keySelector)              // .NET 6+ BCL 已有同名
+string GetDescription(bool nameInstead = true)      // EnumExtend；反射实现，AOT 慎用
+```
+
+`StringUtil` 另有 `Ellipsis(s, l, endStr)`（按字节截断补省略号）、`RemoveHtmlTag` / `RemoveHtmlTagWithHold`、`Chs2Pinyin*`；ID / 随机串用 `CreateId` / `CreateMinId` / `CreateLongId` / `CreateRndStr`，框架没有雪花 ID 实现。
+
+**正则 / URL / MIME**
+
+```csharp
+Wlniao.Pattern.Regex.IsMatch(input, pattern[, matchTimeout])
+Wlniao.Pattern.Regex.Url / Email / Currency / NegativeCurrency / Img    // 现成常量；Url 已防 ReDoS，勿自拼嵌套量词
+Wlniao.Text.UrlHelper.IsFullUrl(url) / UrlHasExt(url) / TrimUrlExt(url) / CompareUrlWithoutExt(a, b)
+Wlniao.MimeMapping.GetMimeMapping(fileName) / AddMapping(ext, mime)
+```
+
+**编码 / 地理 / 运行时**
+
+```csharp
+Wlniao.Crypto.Helper.Decode(data)       // 自动识别 Hex / Base64 → byte[]
+Wlniao.Crypto.Helper.Encode(bytes, hex = true)
+Wlniao.Convert.ToHex(num, chars) / DeHex(str, chars)   // 任意进制互转，chars 为进制字符表（如 "0123456789abcdef"），非字节 Hex
+Wlniao.Convert.BytesToHexString / HexStringToBytes / IntToHex(int, mod) / HexToInt
+Wlniao.GeoTool.Encode(lat, lng, precision = 12) / Decode(geohash) / GetDistance(lat1, lng1, lat2, lng2)  // 米
+Wlniao.Runtime.SysInfo.IsLinux / IsWindows / OSX / IsWeb / IsConsole / IsService / IsWinForm
+Wlniao.Runtime.Lang.Get(key[, defaultStr]) / Get(lang, key, defaultStr) / GetLang() / GetLangName(lang) / GetSupportedLang()
+```
+
 ### Wlniao.Runtime.XCoreException / MessageException 内部异常（带状态码）
 
 ```csharp
@@ -549,8 +636,13 @@ new MessageException(string message, int statusCode, Exception innerException)
 | `WLN_STARTUP_ROOT` | 当前目录 | 程序根目录（`/bin` 之后被截断） |
 | `WLN_TIMEZONE` | `8` | 时区偏移小时 |
 | `WLN_CACHE` | `auto` | `auto`/`redis`/`file`/`memory` |
-| `WLN_REDIS_HOST` / `WLN_REDIS_PORT` / `WLN_REDIS_DB` / `WLN_REDIS` | — | Redis 连接 |
+| `WLN_CACHE_PATH` | `{StartupRoot}/xcore/caches` | FileCache 目录（L1 文件缓存层） |
+| `WLN_REDIS_HOST` / `WLN_REDIS_PORT` / `WLN_REDIS_DB` / `WLN_REDIS` | 端口默认 `6379` | Redis 连接 |
+| `WLN_REDIS_USER` / `WLN_REDIS_PASS` | — | Redis 账号密码（SM4 加密存储，经 `GetEncrypt` 读取） |
 | `WLN_LOG_TYPE` / `WLN_LOG_LEVEL` / `WLN_LOG_PATH` / `WLN_LOG_LOCAL` / `WLN_LOG_INTERVAL` / `WLN_LOG_SERVER` | — | 日志后端与级别 |
+| `WLN_LOG_ORGID` | — | Loki 日志的 OrgId（`WLN_LOG_TYPE=loki` 时） |
+| `WLN_DEVTEST` | — | 置 `true` 开发测试态（`XCore.IsDevTest`） |
+| `WLN_CONNSTR_TYPE` / `WLN_CONNSTR_NAME` / `WLN_CONNSTR_HOST` / `WLN_CONNSTR_UID` / `WLN_CONNSTR_PWD` / `WLN_CONNSTR_*` | 见 `DbConnectInfo` | 数据库连接（另含 `WLN_CONNSTR_READONLY`/`MYSQL`/`SQLITE`/`SQLSERVER`）；`SessionEncryptKey` 派生依赖 `TYPE`/`NAME` |
 | `WLN_ACCEPT_ANY_CERT` | `false` | 全局 TLS 放行开关（`1/true/yes/on` 才放行） |
 | `Webroxy` | — | 出网代理 |
 | `XServerId` | — | 服务器标识 |

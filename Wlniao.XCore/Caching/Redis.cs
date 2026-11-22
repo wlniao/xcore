@@ -164,12 +164,12 @@ namespace Wlniao.Caching
             return instance;
         }
         /// <summary>
-        /// 
+        /// 获取缓存值
         /// </summary>
         /// <param name="key"></param>
-        /// <param name="usePool"></param>
+        /// <param name="usePool">默认 true，复用共享连接池；需要独立短连接时显式传 false</param>
         /// <returns></returns>
-        public static string Get(string key, bool usePool = false)
+        public static string Get(string key, bool usePool = true)
         {
             try
             {

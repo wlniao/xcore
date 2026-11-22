@@ -19,7 +19,7 @@
     limitations under the License.
 ===============================================================================*/
 using System;
-using System.Linq;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Wlniao.Text;
 using Encoding = System.Text.Encoding;
@@ -58,15 +58,24 @@ namespace Wlniao.Net
         /// 
         /// </summary>
         public int TimeOutSeconds = 10;
-        private static readonly object _lock = new object();
-        private static readonly List<WlnSocket> _sockets = new List<WlnSocket>();
-        
+        private static readonly ConcurrentDictionary<string, WlnSocketPool> _socketPools = new();
+        private static readonly ConcurrentDictionary<string, (System.Net.IPAddress Address, DateTime Expires)> _dnsCache = new();
+
+        // DNS 缓存上限；防止任意 host 字符串导致字典无限增长
+        private const int DnsCacheMaxCount = 2048;
+
         // 定期清理过期连接的时间间隔（秒）
-        private static readonly int CLEANUP_INTERVAL_SECONDS = 30;
-        private static DateTime _lastCleanup = DateTime.UtcNow;
-        
+        private const int CLEANUP_INTERVAL_SECONDS = 30;
+
         // 最大重试次数
-        private static readonly int MAX_RETRY_COUNT = 10;
+        private const int MAX_RETRY_COUNT = 10;
+
+        private sealed class WlnSocketPool
+        {
+            public readonly object Lock = new();
+            public readonly List<WlnSocket> Sockets = new();
+            public DateTime LastCleanup = DateTime.UtcNow;
+        }
         
         /// <summary>
         /// 从连接池获取一个实例
@@ -77,38 +86,40 @@ namespace Wlniao.Net
         /// <returns></returns>
         public static WlnSocket GetSocket(string host, int port, int timeOutSeconds = 10)
         {
-            var ipaddress = StringUtil.IsIP(host) ? System.Net.IPAddress.Parse(host) : new Net.Dns.DnsTool().GetIPAddressDefault(host);
+            var ipaddress = ResolveHost(host);
             if (ipaddress.IsIPv4MappedToIPv6)
             {
                 ipaddress = ipaddress.MapToIPv4();
             }
             var endpoint = new System.Net.IPEndPoint(ipaddress, port);
-            
-            // 先在锁内查找可用连接
+            var pool = GetSocketPool(endpoint);
+            var endpointKey = endpoint.ToString();
+
+            // 先在分片锁内查找可用连接
             WlnSocket availableSocket = null;
-            
-            lock (_lock)
+
+            lock (pool.Lock)
             {
                 // 定期清理过期的连接
-                if ((DateTime.UtcNow - _lastCleanup).TotalSeconds > CLEANUP_INTERVAL_SECONDS)
+                if ((DateTime.UtcNow - pool.LastCleanup).TotalSeconds > CLEANUP_INTERVAL_SECONDS)
                 {
-                    CleanupUnusedSockets();
-                    _lastCleanup = DateTime.UtcNow;
+                    CleanupUnusedSockets(pool);
+                    pool.LastCleanup = DateTime.UtcNow;
                 }
-                
+
                 // 查找可用连接，使用重试机制避免无限循环
                 var retryCount = 0;
                 while (retryCount < MAX_RETRY_COUNT)
                 {
                     var foundInvalid = false;
-                    
-                    // 使用ToList()避免集合修改导致的枚举异常
-                    foreach (var socket in _sockets.Where(s => !s.Using).OrderBy(a => a.LastUse).ToList())
+
+                    // 分片池内线性扫描即可，避免每次 GetSocket 都排序/分配
+                    foreach (var socket in pool.Sockets)
                     {
                         if (socket.Catch || !socket.Connected)
                         {
                             // 清理无效连接
-                            _sockets.Remove(socket);
+                            pool.Sockets.Remove(socket);
                             try
                             {
                                 if (socket.Connected)
@@ -125,8 +136,8 @@ namespace Wlniao.Net
                             foundInvalid = true;
                             break;
                         }
-                        
-                        if (!socket.Using && socket.RemoteEndPoint!.ToString() == endpoint.ToString() && socket.Connected && socket.LastUse < DateTools.GetUnix() - 15)
+
+                        if (!socket.Using && socket.RemoteEndPoint!.ToString() == endpointKey && socket.Connected)
                         {
                             socket.Using = true;
                             socket.LastUse = DateTools.GetUnix();
@@ -134,17 +145,17 @@ namespace Wlniao.Net
                             break;
                         }
                     }
-                    
+
                     if (availableSocket != null)
                     {
                         break;
                     }
-                    
+
                     if (!foundInvalid)
                     {
                         break;
                     }
-                    
+
                     retryCount++;
                 }
             }
@@ -165,10 +176,10 @@ namespace Wlniao.Net
                 newsocket.SendTimeout = timeOutSeconds * 1000;
                 newsocket.ReceiveTimeout = timeOutSeconds * 1000;
                 
-                // 将新连接加入池
-                lock (_lock)
+                // 将新连接加入分片池
+                lock (pool.Lock)
                 {
-                    _sockets.Add(newsocket);
+                    pool.Sockets.Add(newsocket);
                 }
                 
                 return newsocket;
@@ -345,14 +356,84 @@ namespace Wlniao.Net
         }
         
         /// <summary>
+        /// 解析主机地址；成功结果短 TTL 缓存，失败时允许短暂复用旧结果
+        /// </summary>
+        private static System.Net.IPAddress ResolveHost(string host)
+        {
+            if (StringUtil.IsIP(host))
+            {
+                return System.Net.IPAddress.Parse(host);
+            }
+            var key = host.Trim().ToLowerInvariant();
+            if (_dnsCache.TryGetValue(key, out var cached) && cached.Expires > DateTime.UtcNow)
+            {
+                return cached.Address;
+            }
+            var address = new Net.Dns.DnsTool().GetIPAddressDefault(host);
+            if (address != null)
+            {
+                if (_dnsCache.Count >= DnsCacheMaxCount)
+                {
+                    TrimDnsCache();
+                }
+                _dnsCache[key] = (address, DateTime.UtcNow.AddSeconds(60));
+                return address;
+            }
+            if (_dnsCache.TryGetValue(key, out var stale))
+            {
+                return stale.Address;
+            }
+            throw new System.Net.Sockets.SocketException((int)System.Net.Sockets.SocketError.HostNotFound);
+        }
+
+        /// <summary>
+        /// 淘汰过期/最早的 DNS 缓存项，避免任意 host 导致缓存无限增长
+        /// </summary>
+        private static void TrimDnsCache()
+        {
+            var now = DateTime.UtcNow;
+            var removed = 0;
+            foreach (var kv in _dnsCache)
+            {
+                if (kv.Value.Expires <= now && _dnsCache.TryRemove(kv.Key, out _))
+                {
+                    removed++;
+                }
+            }
+            if (_dnsCache.Count < DnsCacheMaxCount)
+            {
+                return;
+            }
+            var entries = new List<KeyValuePair<string, (System.Net.IPAddress Address, DateTime Expires)>>(_dnsCache);
+            entries.Sort((a, b) => a.Value.Expires.CompareTo(b.Value.Expires));
+            var excess = _dnsCache.Count - DnsCacheMaxCount + 1;
+            foreach (var kv in entries)
+            {
+                if (excess <= 0)
+                {
+                    break;
+                }
+                if (_dnsCache.TryRemove(kv.Key, out _))
+                {
+                    excess--;
+                }
+            }
+        }
+
+        private static WlnSocketPool GetSocketPool(System.Net.IPEndPoint endpoint)
+        {
+            return _socketPools.GetOrAdd(endpoint.ToString(), _ => new WlnSocketPool());
+        }
+
+        /// <summary>
         /// 清理未使用的Socket连接
         /// </summary>
-        private static void CleanupUnusedSockets()
+        private static void CleanupUnusedSockets(WlnSocketPool pool)
         {
             var now = DateTools.GetUnix();
             var socketsToRemove = new List<WlnSocket>();
-            
-            foreach (var socket in _sockets)
+
+            foreach (var socket in pool.Sockets)
             {
                 // 清理超过5分钟未使用的连接
                 if (!socket.Using && (now - socket.LastUse) > 300) // 300秒 = 5分钟
@@ -365,12 +446,12 @@ namespace Wlniao.Net
                     socketsToRemove.Add(socket);
                 }
             }
-            
+
             foreach (var socket in socketsToRemove)
             {
                 try
                 {
-                    _sockets.Remove(socket);
+                    pool.Sockets.Remove(socket);
                     if (socket.Connected)
                     {
                         socket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
@@ -384,16 +465,18 @@ namespace Wlniao.Net
                 }
             }
         }
-        
+
         /// <summary>
         /// 定期清理整个连接池
         /// </summary>
         public static void CleanupPool()
         {
-            lock (_lock)
+            foreach (var pool in _socketPools.Values)
             {
-                CleanupUnusedSockets();
-                _lastCleanup = DateTime.UtcNow;
+                lock (pool.Lock)
+                {
+                    CleanupUnusedSockets(pool);
+                }
             }
         }
     }

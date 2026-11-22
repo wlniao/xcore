@@ -70,7 +70,7 @@ namespace Wlniao.Mvc
         /// </summary>
         internal const string ErrorHtml = "<html><head><title>{{errorTitle}}</title><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\" /><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"user-scalable=no,width=device-width,initial-scale=1.0\"/></head><body onselectstart=\"return false\" style=\"text-align:center;background:#f9f9f9\"><div><img src=\"{{errorIcon}}\" style=\"width:9rem;margin-top:9rem;\"></div><div style=\"color:#999999;font-family:Segoe UI, Segoe UI Midlevel, Segoe WP, Arial, Sans-Serif;padding:1rem\">{{errorMsg}}</div></body></html>";
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="filterContext"></param>
         public override void OnActionExecuting(ActionExecutingContext filterContext)
@@ -79,11 +79,9 @@ namespace Wlniao.Mvc
             base.OnActionExecuting(filterContext);
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="context"></param>
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "OnActionExecuted 内序列化运行时类型（object/匿名类型）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "OnActionExecuted 内序列化运行时类型（object/匿名类型）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public override void OnActionExecuted(ActionExecutedContext context)
         {
             if(context.HttpContext.WebSockets.IsWebSocketRequest)
@@ -92,7 +90,11 @@ namespace Wlniao.Mvc
             }
             if (!RequestSecurity)
             {
-                errorMsg = Config.GetConfigs("NoSecurityMessage");
+                errorMsg = Config.GetConfigs("NoSecurityMessage", "请求参数包含非法字符");
+                if (string.IsNullOrEmpty(errorMsg))
+                {
+                    errorMsg = "请求参数包含非法字符";
+                }
             }
 
             if (!Response.HasStarted && start > DateTime.MinValue)
@@ -129,7 +131,12 @@ namespace Wlniao.Mvc
                 context.Result = new ContentResult
                 {
                     ContentType = "text/json",
-                    Content = Wlniao.Json.Serialize(new { success = false, message = errorMsg, data = "" })
+                    Content = Wlniao.Json.Serialize(new Dictionary<string, object>
+                    {
+                        { "success", false },
+                        { "message", errorMsg },
+                        { "data", "" }
+                    }, Wlniao.JsonContext.Instance.DictionaryStringObject)
                 };
             }
         }
@@ -155,7 +162,7 @@ namespace Wlniao.Mvc
             }
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="url"></param>
         /// <param name="seconds"></param>
@@ -171,8 +178,6 @@ namespace Wlniao.Mvc
         /// <param name="data"></param>
         /// <returns></returns>
         [NonAction]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Json(object) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "Json(object) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public new ActionResult Json(object data)
         {
             var jsonStr = "";
@@ -184,7 +189,7 @@ namespace Wlniao.Mvc
                     jsonStr = data.ToString();
                     break;
                 default:
-                    jsonStr = JsonSerializer.Serialize(data, XCore.JsonSerializerOptions);
+                    jsonStr = ResponseJson.Serialize(data);
                     break;
             }
 
@@ -197,8 +202,6 @@ namespace Wlniao.Mvc
         /// <param name="encoding"></param>
         /// <returns></returns>
         [NonAction]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Json(object?, Encoding) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "Json(object?, Encoding) 序列化运行时类型（object）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public ActionResult Json(object? data, Encoding encoding)
         {
             var jsonStr = "";
@@ -210,7 +213,7 @@ namespace Wlniao.Mvc
                     jsonStr = data.ToString();
                     break;
                 default:
-                    jsonStr = JsonSerializer.Serialize(data, XCore.JsonSerializerOptions);
+                    jsonStr = ResponseJson.Serialize(data);
                     break;
             }
 
@@ -243,8 +246,6 @@ namespace Wlniao.Mvc
         /// <param name="message"></param>
         /// <returns></returns>
         [NonAction]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "ErrorMsg 序列化运行时类型（object/匿名类型）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "ErrorMsg 序列化运行时类型（object/匿名类型）的 HTTP 响应负载，AOT 下无法静态分析，与 XCore.Json 逃生舱语义一致")]
         public ActionResult ErrorMsg(string? message = null)
         {
             if (string.IsNullOrEmpty(message))
@@ -261,7 +262,11 @@ namespace Wlniao.Mvc
             }
             else
             {
-                return Content(Wlniao.Json.Serialize(new { success = false, message = message }), "application/json", Encoding.UTF8);
+                return Content(Wlniao.Json.Serialize(new Dictionary<string, object>
+                {
+                    { "success", false },
+                    { "message", message }
+                }, Wlniao.JsonContext.Instance.DictionaryStringObject), "application/json", Encoding.UTF8);
             }
         }
         /// <summary>
@@ -305,7 +310,7 @@ namespace Wlniao.Mvc
 
             return defaultValue.Trim();
         }
-        
+
 
         /// <summary>
         /// 获取请求参数（过滤非安全字符）
@@ -317,7 +322,7 @@ namespace Wlniao.Mvc
         protected string GetRequestSecurity(string key, string defaultValue = "")
         {
             defaultValue = GetRequestNoSecurity(key, defaultValue);
-            var str = System.Text.RegularExpressions.Regex.Replace(defaultValue, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\'|\.|<|>]", "").Replace("\"", "");
+            var str = MyRegex().Replace(defaultValue, "").Replace("\"", "");
             if (str != defaultValue)
             {
                 RequestSecurity = false;
@@ -432,7 +437,7 @@ namespace Wlniao.Mvc
             return strPost;
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private string? strPost = null;
         private Dictionary<string, object>? ctxPost = null;
@@ -759,5 +764,57 @@ namespace Wlniao.Mvc
 
         [System.Text.RegularExpressions.GeneratedRegex(@"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\'|\.|<|>]")]
         private static partial System.Text.RegularExpressions.Regex MyRegex();
+    }
+
+    internal static class ResponseJson
+    {
+        internal static string Serialize(object? obj, JsonSerializerOptions? options = null)
+        {
+            if (obj is null)
+            {
+                return "null";
+            }
+            // Context.JsonSerializerOptions 允许业务方覆盖；与默认选项不同时走反射路径以保持选项语义
+            if (options != null && !ReferenceEquals(options, Wlniao.XCore.JsonSerializerOptions))
+            {
+                return SerializeWithCustomOptions(obj, obj.GetType(), options);
+            }
+            // 反射可用：源生成命中优先（更快、选项一致），嵌套 object 成员解析失败时回退反射，
+            // 避免「已登记根类型 + 未登记匿名/DTO」在 CoreCLR 下被源生成解析器直接抛错。
+            var typeInfo = Wlniao.JsonContext.Instance.GetTypeInfo(obj.GetType());
+            if (typeInfo != null)
+            {
+                try
+                {
+                    return System.Text.Json.JsonSerializer.Serialize(obj, typeInfo);
+                }
+                catch (NotSupportedException) when (System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault)
+                {
+                    // 嵌套未登记类型：落到下方反射路径（与旧 Wlniao.Json.Serialize 语义一致）
+                }
+            }
+            // 反射禁用（AOT/裁剪）：源生成未覆盖立即失败，避免静默输出 {}
+            if (!System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault)
+            {
+                throw new NotSupportedException(
+                    $"裁剪/AOT 环境下无法安全序列化类型 '{obj.GetType().FullName}'（HTTP 响应负载）。"
+                    + "该类型未被 Wlniao.JsonContext 覆盖；请改用具名 DTO + [JsonSerializable] 上下文后传 JsonTypeInfo。");
+            }
+            return SerializeWithReflection(obj);
+        }
+
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "仅在 JsonSerializer.IsReflectionEnabledByDefault 为 true 的分支调用；反射被禁用的 AOT 环境在调用前已抛出 NotSupportedException")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "仅在 JsonSerializer.IsReflectionEnabledByDefault 为 true 的分支调用；反射被禁用的 AOT 环境在调用前已抛出 NotSupportedException")]
+        private static string SerializeWithReflection(object obj)
+        {
+            return System.Text.Json.JsonSerializer.Serialize(obj, Wlniao.XCore.JsonSerializerOptions);
+        }
+
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "自定义 JsonSerializerOptions 需要按运行时类型反射序列化，以保持业务方可覆盖输出格式")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "自定义 JsonSerializerOptions 需要按运行时类型反射序列化，以保持业务方可覆盖输出格式")]
+        private static string SerializeWithCustomOptions(object obj, Type type, JsonSerializerOptions options)
+        {
+            return System.Text.Json.JsonSerializer.Serialize(obj, type, options);
+        }
     }
 }

@@ -160,22 +160,19 @@ namespace Wlniao.Net.Dns
             }
             else
             {
-                IPAddress address = null;
                 try
                 {
-                    System.Net.Dns.GetHostAddressesAsync(qname).ContinueWith((task) =>
+                    var addresses = System.Net.Dns.GetHostAddresses(qname);
+                    if (addresses != null && addresses.Length > 0)
                     {
-                        if (task.Status == System.Threading.Tasks.TaskStatus.RanToCompletion && task.Result != null && task.Result.Length > 0)
-                        {
-                            address = task.Result[0];
-                        }
-                    }).Wait();
+                        return addresses[0];
+                    }
                 }
                 catch (System.Exception e)
                 {
                     Wlniao.Log.Loger.Error($"DNS解析异常: {e.Message}, 堆栈: {e.StackTrace}");
                 }
-                return address;
+                return null;
             }
             return null;
         }

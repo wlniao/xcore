@@ -763,12 +763,7 @@ namespace Wlniao.XServer
                     {
                         request.Content = new StreamContent(new MemoryStream(postData));
                     }
-                    var res = new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.InternalServerError };
-                    client.SendAsync(request).ContinueWith((requestTask) =>
-                    {
-                        res = requestTask.Result;
-                    }).Wait();
-                    return res;
+                    return client.SendAsync(request).GetAwaiter().GetResult();
                 }
             }
             private static bool delete(string path, Hashtable headers = null)
@@ -796,10 +791,8 @@ namespace Wlniao.XServer
                 {
                     if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                     {
-                        resp.Content.ReadAsStringAsync().ContinueWith((readTask) =>
-                        {
-                            return Convert.ToInt(readTask.Result);
-                        }).Wait();
+                        var usageText = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        return Convert.ToInt(usageText);
                     }
                 }
                 catch (Exception ex)
@@ -851,20 +844,17 @@ namespace Wlniao.XServer
                     var resp = newWorker("GET", DL + bucketname);
                     if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                     {
-                        resp.Content.ReadAsStringAsync().ContinueWith(a =>
+                        var str = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        str = str.Replace("\t", "\\");
+                        str = str.Replace("\n", "\\");
+                        var ss = str.Split('\\');
+                        var i = 0;
+                        while (i < ss.Length)
                         {
-                            var str = a.Result;
-                            str = str.Replace("\t", "\\");
-                            str = str.Replace("\n", "\\");
-                            var ss = str.Split('\\');
-                            var i = 0;
-                            while (i < ss.Length)
-                            {
-                                var fi = new FolderItem(ss[i], ss[i + 1], int.Parse(ss[i + 2]), int.Parse(ss[i + 3]));
-                                AL.Add(fi);
-                                i += 4;
-                            }
-                        }).Wait();
+                            var fi = new FolderItem(ss[i], ss[i + 1], int.Parse(ss[i + 2]), int.Parse(ss[i + 3]));
+                            AL.Add(fi);
+                            i += 4;
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -940,10 +930,7 @@ namespace Wlniao.XServer
                 var resp = newWorker("GET", DL + bucketname + path);
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    resp.Content.ReadAsStreamAsync().ContinueWith((readTask) =>
-                    {
-                        return readTask.Result;
-                    }).Wait();
+                    return resp.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
                 }
                 return null;
             }
@@ -1139,24 +1126,18 @@ namespace Wlniao.XServer
                         }
                     }
                     var msg = "";
-                    var res = new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.InternalServerError };
-                    client.SendAsync(request).ContinueWith((requestTask) =>
+                    var res = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (res.StatusCode != System.Net.HttpStatusCode.OK)
                     {
-                        res = requestTask.Result;
-                        if (res.StatusCode != System.Net.HttpStatusCode.OK)
+                        var errBody = res.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        if (!string.IsNullOrEmpty(errBody))
                         {
-                            res.Content.ReadAsStringAsync().ContinueWith((readTask) =>
-                            {
-                                if (!string.IsNullOrEmpty(readTask.Result))
-                                {
-                                    var doc = new System.Xml.XmlDocument();
-                                    doc.LoadXml(readTask.Result);
-                                    msg = doc.GetElementsByTagName("Message")[0].InnerText;
-                                    Log.Loger.Debug("XStorage Aliyun：" + msg);
-                                }
-                            }).Wait();
+                            var doc = new System.Xml.XmlDocument();
+                            doc.LoadXml(errBody);
+                            msg = doc.GetElementsByTagName("Message")[0].InnerText;
+                            Log.Loger.Debug("XStorage Aliyun：" + msg);
                         }
-                    }).Wait();
+                    }
                     message = msg;
                     return res;
                 }
@@ -1437,24 +1418,18 @@ namespace Wlniao.XServer
                         request.Headers.TryAddWithoutValidation(kv.Key.ToString(), kv.Value.ToString());
                     }
                     var msg = "";
-                    var res = new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.InternalServerError };
-                    client.SendAsync(request).ContinueWith((requestTask) =>
+                    var res = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (res.StatusCode != System.Net.HttpStatusCode.OK)
                     {
-                        res = requestTask.Result;
-                        if (res.StatusCode != System.Net.HttpStatusCode.OK)
+                        var errBody = res.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        if (!string.IsNullOrEmpty(errBody))
                         {
-                            res.Content.ReadAsStringAsync().ContinueWith((readTask) =>
-                            {
-                                if (!string.IsNullOrEmpty(readTask.Result))
-                                {
-                                    var doc = new System.Xml.XmlDocument();
-                                    doc.LoadXml(readTask.Result);
-                                    msg = doc.GetElementsByTagName("Message")[0].InnerText;
-                                    Log.Loger.Debug("XStorage QCloud：" + msg);
-                                }
-                            }).Wait();
+                            var doc = new System.Xml.XmlDocument();
+                            doc.LoadXml(errBody);
+                            msg = doc.GetElementsByTagName("Message")[0].InnerText;
+                            Log.Loger.Debug("XStorage QCloud：" + msg);
                         }
-                    }).Wait();
+                    }
                     message = msg;
                     return res;
                 }

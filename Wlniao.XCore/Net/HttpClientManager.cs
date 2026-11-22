@@ -115,7 +115,11 @@ namespace Wlniao.Net
             // (HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors)，两者不兼容，这里做适配。
             handler.SslOptions.RemoteCertificateValidationCallback = Wlniao.XCore.ValidateServerCertificate;
 
-            return new HttpClient(handler);
+            return new HttpClient(handler)
+            {
+                // 框架默认整体超时；特殊慢接口可在调用方使用 CTS/传入专用实例覆盖
+                Timeout = TimeSpan.FromSeconds(30)
+            };
         }
 
         /// <summary>

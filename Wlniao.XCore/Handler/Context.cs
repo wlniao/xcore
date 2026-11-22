@@ -1,4 +1,4 @@
-﻿/*-----------------------Copyright 2017 www.wlniao.com---------------------------
+/*-----------------------Copyright 2017 www.wlniao.com---------------------------
     文件名称：Wlniao\Handler\IContext.cs
     适用环境：NETCoreCLR 1.0/2.0
     最后修改：2017年12月12日 10:58:50
@@ -80,7 +80,7 @@ namespace Wlniao.Handler
         /// <returns></returns>
         public async Task<string> Handle()
         {
-            var rlt = Task.Run<string>(() => { return ""; });
+            var rlt = "";
             Result = new ApiResult<IResponse> { node = XCore.WebNode, code = "-1", success = false, message = "unkown error" };
             if (string.IsNullOrEmpty(ApiHost))
             {
@@ -185,14 +185,14 @@ namespace Wlniao.Handler
                             HttpResponseHeaders.Add(item.Key.ToLower(), em.Current);
                         }
                     }
-                    rlt = Task.Run<string>(() => { return responseBody; });
+                    rlt = responseBody;
                 }
                 finally
                 {
                     http?.Dispose();
                 }
             }
-            return await rlt;
+            return rlt;
         }
     }
 }

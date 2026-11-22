@@ -58,7 +58,7 @@ namespace Wlniao
         public static string Md5Encryptor32(string str)
         {
             var password = "";
-            var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str ?? ""));
+            var s = MD5.HashData(Encoding.UTF8.GetBytes(str ?? ""));
             foreach (var b in s)
             {
                 password += b.ToString("X2");
@@ -72,7 +72,7 @@ namespace Wlniao
         /// <returns>加密后的字符串</returns>
         public static string Md5Encryptor16(string str)
         {
-            var s = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(str ?? ""));
+            var s = MD5.HashData(Encoding.UTF8.GetBytes(str ?? ""));
             return BitConverter.ToString(s, 4, 8).Replace("-", "");
         }
 

@@ -69,16 +69,15 @@ namespace Wlniao.XServer
                 try
                 {
                     var stream = Convert.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
-                    var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = XCore.ServerCertificateCustomValidationCallback };
-                    using var client = new HttpClient(handler);
+                    var client = Wlniao.Net.HttpClientManager.SharedInstance;
                     Loger.Topic(apinode, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr, Log.LogLevel.Information, false);
-                    var request = new HttpRequestMessage(HttpMethod.Post, uri);
+                    using var request = new HttpRequestMessage(HttpMethod.Post, uri);
                     request.Headers.Date = DateTime.Now;
                     request.Content = new StreamContent(stream);
                     request.Content.Headers.Add("Content-Type", "application/json");
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-TraceId", traceid);
-                    var respose = client.Send(request);
+                    request.Headers.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
+                    request.Headers.TryAddWithoutValidation("X-TraceId", traceid);
+                    using var respose = client.Send(request);
                     resStr = respose.Content.ReadAsStringAsync().Result;
                     if (respose.Headers.Contains("X-UseTime"))
                     {

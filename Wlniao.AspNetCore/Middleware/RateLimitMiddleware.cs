@@ -448,10 +448,10 @@ namespace Wlniao.Middleware
             _whiteKeysSet = new HashSet<string>(_options.WhiteKeys ?? [], StringComparer.OrdinalIgnoreCase);
             _blackKeysSet = new HashSet<string>(_options.BlackKeys ?? [], StringComparer.OrdinalIgnoreCase);
             _trustedProxies = new TrustedProxyMatcher(_options.TrustedProxies);
-            // 未配置或配置为 "*" 时保持历史行为；配置了却没有任何有效项时不退回信任全部，
-            // 而是 fail-closed（忽略 X-Forwarded-For），避免因配置笔误把伪造能力打开
-            _legacyTrustAll = _trustedProxies.MatchAll || !_trustedProxies.Configured;
-            if (!_legacyTrustAll && !_trustedProxies.Any)
+            // 仅显式配置 "*" 时信任全部；未配置或配置笔误一律 fail-closed（忽略 X-Forwarded-For），
+            // 避免默认部署把伪造客户端 IP 的能力打开
+            _legacyTrustAll = _trustedProxies.MatchAll;
+            if (_trustedProxies.Configured && !_trustedProxies.Any)
             {
                 Log.Loger.Warn("RateLimit: TrustedProxies 未包含任何有效的 IP / CIDR，X-Forwarded-For 将不被采信");
             }
@@ -682,13 +682,20 @@ namespace Wlniao.Middleware
                         TimeSpan.FromSeconds(_options.TimeWindow)
                     );
                 }
-                catch
+                catch (Exception ex)
                 {
+                    // 分布式限流失败时降级为本地限流；限频记录，避免故障风暴刷日志
+                    if (Interlocked.Increment(ref distributedFallbackCount) % 100 == 1)
+                    {
+                        Wlniao.Log.Loger.Warn($"RateLimit distributed store fallback: {ex.Message}");
+                    }
                 }
             }
 
             return CheckLocalRateLimit(key);
         }
+
+        private static int distributedFallbackCount;
 
         private bool CheckLocalRateLimit(string key)
         {

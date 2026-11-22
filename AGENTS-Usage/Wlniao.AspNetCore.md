@@ -1,7 +1,7 @@
 # Wlniao.AspNetCore · API 参考手册
 
 > 本文是**参考手册**，不是 `AGENTS.md`。执行约定见项目根 `AGENTS.md`；通用工具类型（配置/缓存/加密/时间/JSON）见同目录 `Wlniao.XCore.md`。
-> 依据源码版本 **10.0.2**。签名以源码与包内 XML 注释为准，本文省略了部分重载。
+> 依据源码版本 **10.0.3**。签名以源码与包内 XML 注释为准，本文省略了部分重载。
 
 ## 0. 包与兼容边界
 
@@ -15,9 +15,12 @@ dotnet add package Wlniao.AspNetCore   # 自动依赖 Wlniao.XCore
 | AOT | 程序集标 `IsAotCompatible=true`，但**并非所有 API 都可静态分析**，详见 §4 的标注 |
 | 本项目角色 | **只做宿主与 HTTP 编排**：监听、TLS、参数解析、会话、限流、错误页都已有实现，不要重写 |
 
-> ⚠️ AOT 的两处硬伤：`AddBusiness` 标了 `[RequiresUnreferencedCode]`（反射扫程序集）；
-> `Json(object)` / `OutSuccess(object)` 走运行时类型序列化（内部已 `UnconditionalSuppressMessage` 抑制警告，
-> 但 AOT 下仍可能得到 `{}`）。启用 `PublishAot` 的项目请改用显式服务注册 + 具名 DTO。
+> ⚠️ AOT 的两处硬伤：`AddBusiness` 标了 `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]`（反射扫程序集）；
+> `Json(object)` / `OutSuccess(object)` 等响应入口按运行时类型序列化：
+> 反射可用时已登记 `Wlniao.JsonContext` 的类型优先走源生成，仅未登记成员回退反射；
+> 反射禁用的 AOT 环境（含 `PublishTrimmed` 且 `JsonSerializerIsReflectionDisabledByDefault=true`）下
+> 未登记类型会抛 `NotSupportedException`（不再静默输出 `{}`）。
+> 启用 `PublishAot` 的项目请改用显式服务注册 + 具名 DTO 并登记源生成上下文。
 
 ## 1. 类型选择对照
 
@@ -141,8 +144,10 @@ IActionResult? Check(Func<Dictionary<string, object>, IActionResult> func)
 | 请求过期 | `code` | `"203"` |
 | 签名错误 | `code` | `"205"` |
 | 解密失败 | `code` | `"206"` |
-| 解密成功但反序列化失败 | `code` | `"207"` |
 | 其它异常 | `code` | `"401"` |
+
+> `code="207"`（反序列化失败）在当前实现中不可达：入参字典在解密前已初始化为空，
+> 反序列化异常被内层 `catch` 吞掉后以空字典进入业务函数——客户端不会收到 207，业务端需自行校验必要参数存在。
 
 **成功**：`OutSuccess(...)` / `OutMessage(...)` / `OutDefault()` 走的是**手拼字典**，不是 `ApiResult`：
 
@@ -162,7 +167,7 @@ new Dictionary<string, object>
 > ⚠️ 三条容易写错的地方：
 > 1. **成功的 `data` 是密文，失败的 `data` 是明文状态码**——客户端必须按 `success` 分流；
 > 2. 成功时 `code="0"`（字符串零），不是 `"200"`；
-> 3. `OutSuccess` 序列化 `data` 用的是反射重载，AOT 下可能得到 `{}`。
+> 3. `OutSuccess` 序列化 `data` 按运行时类型解析：反射禁用的 AOT 下未登记类型抛 `NotSupportedException`（建议改传具名 DTO 或登记源生成上下文）。
 
 ## 4. API 手册
 
@@ -200,7 +205,8 @@ void AddEngineBusiness(this IServiceCollection service)   // IContext → Contex
 ```
 
 > ⚠️ **`AddBusiness` 不是 AOT/裁剪安全的**：源码标了
-> `[RequiresUnreferencedCode("...Assembly.LoadFrom/GetTypes/GetCustomAttributes/GetInterfaces...")]`。
+> `[RequiresUnreferencedCode("...Assembly.LoadFrom/GetTypes/GetCustomAttributes/GetInterfaces...")]` 与
+> `[RequiresDynamicCode("...NativeAOT 下不可用...")]`。
 > 启用 `PublishAot` 或单文件发布时，调用方会收到 IL2026/IL3050 警告，且被裁剪的类型不会被注册。
 > 这类项目请改为显式 `services.AddScoped<IOrderService, OrderService>()`。
 
@@ -214,8 +220,8 @@ new BusinessServiceAttribute(ServiceLifetime serviceLifetime = ServiceLifetime.T
 
 ```csharp
 // —— 请求参数（均为 protected）——
-string GetRequest(string key, string defaultValue = "")          // GET/FORM；见下方安全标记说明
-string GetRequestSecurity(string key, string defaultValue = "")  // 与 GetRequest 同源，会做安全标记
+string GetRequest(string key, string defaultValue = "")          // GET/FORM；检测非法字符并标记，但原样返回
+string GetRequestSecurity(string key, string defaultValue = "")  // GET/FORM；返回过滤后的值，同样会标记
 string GetRequestNoSecurity(string key, string defaultValue = "")// 原样返回，不做任何标记
 string GetRequestDecode(string key, string defaultValue = "")    // 与 GetRequest 同源
 int    GetRequestInt(string key)
@@ -238,7 +244,7 @@ ActionResult RedirectWait(string url, int seconds)   // 带倒计时跳转页
 
 // —— 可覆盖的错误页模板 ——
 protected string errorTitle / errorIcon / errorHtml
-protected bool   RequestSecurity   // 默认 true，关掉则 GetRequest 不打安全标记
+protected bool   RequestSecurity   // 默认 true；检测到非法字符会置 false，并用拦截文案替换响应
 protected string method / errorMsg
 
 // —— 请求信息 ——
@@ -252,12 +258,13 @@ string GetPlatform   // wxwork / weixin / alipay / dingtalk / wlniao / wlnapp / 
 string TraceId       // 取 wln-trace-id，无则生成，并从响应头 X-TraceId 回传
 ```
 
-> ⚠️ **`GetRequest` 是"检测并拦截"，不是"过滤后返回"**：内部会把含 `; / ( ) [ ] { } % * ! ' . < > "`
+> ⚠️ **`GetRequest` 是"检测并拦截"，不是"过滤后返回"**：内部会把含 `; | / ( ) [ ] { } % * ! ' . < > "`
 > 的参数值判定为不安全，置 `RequestSecurity = false`，然后**原样返回该值**。
 > `OnActionExecuted` 发现 `RequestSecurity == false` 时读取配置 `NoSecurityMessage`：
-> 配了就把**整个响应**替换成这条文案（带 `do=` 是 JSON，否则 HTML），请求等于直接失败；没配则正常返回。
-> **注意点号也在名单里**——邮箱、IP、小数、带 `.html` 的路径都会命中。这类接口请改用
-> `GetRequestNoSecurity`，或干脆不配置 `NoSecurityMessage`。
+> 未配置或配置为空时使用默认文案 `请求参数包含非法字符`，并把**整个响应**替换成这条文案
+> （带 `do=` 是 JSON，否则 HTML），请求等于直接失败。
+> 需要过滤后的值时用 `GetRequestSecurity`（仍会触发拦截标记）；需要原样值且不想拦截时用 `GetRequestNoSecurity`。
+> **注意点号也在名单里**——邮箱、IP、小数、带 `.html` 的路径都会命中。
 
 ### Wlniao.Mvc.XApiController 加密通讯控制器（继承 XCoreController）
 
@@ -302,7 +309,10 @@ public EngineController(IContext ctx)
 
 protected Task<IActionResult> Invoke(Func<IContext, Task<IActionResult>> func, bool mustAuthentication = false)
 protected Task<IActionResult> Invoke(Func<IContext, Task<object>> func, bool mustAuthentication = false)
-// 自动链路：InitAsync(解析请求) → AuthAsync(身份认证) → mustAuthentication 校验 Session → func → OutputSerialize
+// 自动链路：InitAsync(解析请求) → AuthAsync(身份认证) → mustAuthentication 校验 Session → func
+// 两个重载的差异：Task<object> 重载的返回值经 OutputSerialize（有 SKey 时 SM4 加密）；
+//                 Task<IActionResult> 重载直接返回业务构造的 IActionResult，不经 OutputSerialize
+// 两个重载都会 catch 全部异常并返回 ErrorResult(400) —— 即 HTTP 200 + {"code":400}，不是 500
 // 认证失败：返回 401 JSON，或执行 AuthFailedCallback
 ```
 
@@ -345,10 +355,13 @@ string UserId / Name / Account / DepartmentIds
 Dictionary<string, string> ExtData
 
 string Encode(string consumerSecretKey, string currentConsumerId = null,
-              int expireSeconds = 7200, bool base64 = false)     // 会话 → 令牌
+              int expireSeconds = 7200, bool base64 = false)     // 会话 → 令牌（密钥为空抛 MessageException("Authorization error", 0)）
 void   Decode(string authorization, string consumerSecretKey,
-              string currentConsumerId = null)                    // 令牌 → 会话（失败抛 Wlniao.Runtime.MessageException("Authorization error", 0)）
+              string currentConsumerId = null)                    // 令牌 → 会话（密钥为空或失败均抛 Wlniao.Runtime.MessageException("Authorization error", 0)）
 ```
+
+> `EngineSession` / `ConsumerInfo` 未登记到 `Wlniao.JsonContext`，整体序列化需自建 `[JsonSerializable]` 上下文；
+> 内部 `ExtData` 用的是 `JsonContext.Instance.DictionaryStringString`（清单见 `Wlniao.XCore.md` §3）。
 
 ### Wlniao.Engine.ConsumerInfo 多租户信息
 
@@ -365,8 +378,8 @@ new EngineException(string message, Exception innerException)
 ```
 
 `IContext.InitAsync` 用它透传状态码（804：加载租户失败；805：安全认证失败）。
-`IContext.AuthAsync` 只静默捕获 `EngineException`；其它异常（含 `EngineSession.Decode`
-抛出的 `Wlniao.Runtime.MessageException`）会落入通用 `catch` 并写 Debug 日志。
+`IContext.AuthAsync` 静默捕获 `Wlniao.Runtime.MessageException`（含 `EngineSession.Decode` 的认证失败）；
+其它异常会落入通用 `catch` 并写 Debug 日志。`EngineSession.Decode` 在租户密钥为空时也直接抛该异常。
 `MessageException` 与 `EngineException` 无继承关系，`catch` 不能互相替代。
 
 ### Wlniao.Middleware.UseErrorHandling 异常兜底
@@ -374,7 +387,8 @@ new EngineException(string message, Exception innerException)
 ```csharp
 IApplicationBuilder UseErrorHandling(this IApplicationBuilder app, Action<ErrorHandlingOptions> configureOptions)
 // ErrorHandlingOptions.StatusCode = 502（默认）
-// 异常信息写入响应头 X-Wlniao-Debug；POST 或带 do= 的请求返回 JSON，其余返回 HTML 错误页
+// POST 或带 do= 的请求返回 JSON，其余返回 HTML 错误页
+// ⚠️ X-Wlniao-Debug 异常响应头仅在开发测试态（XCore.IsDevTest）写入，生产环境不输出
 ```
 
 ### Wlniao.Middleware.UseRateLimit 限流
@@ -392,6 +406,8 @@ int  BucketCapacity               // 令牌桶容量，0 时取 MaxRequests
 bool IsolationPath                // 不同目录分开计数
 string[] WhitePath                // 白名单目录，支持 /api* 前缀（WLN_RATE_WHITEPATH）
 string[] WhiteKeys / BlackKeys    // 白名单 / 黑名单 IP（WLN_RATE_WHITEKEYS / WLN_RATE_BLACKKEYS）
+string[] TrustedProxies           // 可信代理列表（支持 CIDR，IPv4/IPv6）；仅显式配置后才采信 X-Forwarded-For，
+                                  // 采信时从右向左回溯取第一个不可信跳作为客户端 IP（WLN_RATE_TRUSTED_PROXIES，显式 "*" 才信任全部）
 string   MessageTpl               // 拒绝响应模板，支持 {ClientKey}
 bool EnableCircuitBreaker         // 默认 true
 int  CircuitBreakerFailureThreshold / CircuitBreakerRecoveryTime   // 默认 5 次 / 30 秒
@@ -439,7 +455,8 @@ interface Engine.IRuntime { bool InitStart(); }                              // 
 | `WLN_RATE_MAX_REQUESTS` | `0` | 窗口内上限，0 不启用 |
 | `WLN_RATE_WHITEPATH` | — | 白名单目录（逗号分隔，支持 `/api*`） |
 | `WLN_RATE_WHITEKEYS` / `WLN_RATE_BLACKKEYS` | — | IP 白 / 黑名单 |
-| `NoSecurityMessage` | — | 参数被判定不安全时的拦截文案（配置后会把整个响应替换掉，见 §4 `GetRequest` 说明） |
+| `WLN_RATE_TRUSTED_PROXIES` | — | 可信代理列表；未配置时不采信 `X-Forwarded-For`，显式 `*` 才信任全部 |
+| `NoSecurityMessage` | `请求参数包含非法字符` | 参数被判定不安全时的拦截文案；未配置或为空也使用默认文案并阻断响应（见 §4 `GetRequest` 说明） |
 
 > 其余配置（端口、时区、缓存、日志、TLS 放行开关 `WLN_ACCEPT_ANY_CERT`）见 `Wlniao.XCore.md` §7。
 

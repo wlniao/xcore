@@ -37,7 +37,7 @@ namespace Wlniao.XCenter
         /// </summary>
         public bool AutoSetEmiCookie = true;
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="context"></param>
         public override void OnActionExecuted(ActionExecutedContext context)
@@ -74,12 +74,10 @@ namespace Wlniao.XCenter
             {
                 return CheckAuth((ctx) =>
                 {
-                    var host = UrlReferer;
-                    if (string.IsNullOrEmpty(host))
-                    {
-                        host = UrlHost;
-                    }
-                    return Content("<html><head><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\"><script>location.href='" + ctx.EmiHost + "/app/" + ctx.app + "?back=' + location.origin + '" + Request.Path.Value + "'</script></head></html>", "text/html");
+                    var emiHost = System.Web.HttpUtility.JavaScriptStringEncode(ctx.EmiHost ?? "");
+                    var app = System.Web.HttpUtility.JavaScriptStringEncode(ctx.app?.ToString() ?? "");
+                    var path = System.Web.HttpUtility.JavaScriptStringEncode(Request.Path.Value ?? "");
+                    return Content("<html><head><link rel=\"icon\" href=\"data:image/ico;base64,aWNv\"><script>location.href='" + emiHost + "/app/" + app + "?back=' + location.origin + '" + path + "'</script></head></html>", "text/html");
                 });
             }
             else
@@ -88,10 +86,11 @@ namespace Wlniao.XCenter
                 {
                     var path = "/" + (Request == null || Request.Path == null || string.IsNullOrEmpty(Request.Path.Value) ? "" : string.Join('/', Request.Path.Value.Split('/', StringSplitOptions.RemoveEmptyEntries).Skip(1)));
                     var html = "<!DOCTYPE html><html lang=zh-CN><head><meta charset=utf-8><script>var to = location.pathname.substr(1); var ehost = 'ehost'; var ticket = 'authx'; if (ehost) { localStorage.setItem('x-domain', ehost) } if (ticket) { localStorage.setItem('ticket', ticket) } history.replaceState(null, null, to); setTimeout(() => { location.reload() }, 100)</script></html>";
-                    html = html.Replace("'ehost'", "'" + ehost + "'").Replace("'authx'", "'" + xsession.BuildTicket() + "'");
-                    if (!string.IsNullOrEmpty(path) && path.IndexOf('\'') < 0)
+                    html = html.Replace("'ehost'", "'" + System.Web.HttpUtility.JavaScriptStringEncode(ehost ?? "") + "'")
+                               .Replace("'authx'", "'" + System.Web.HttpUtility.JavaScriptStringEncode(xsession.BuildTicket()?.ToString() ?? "") + "'");
+                    if (!string.IsNullOrEmpty(path))
                     {
-                        html = html.Replace("location.pathname.substr(1)", "'" + path + "'");
+                        html = html.Replace("location.pathname.substr(1)", "'" + System.Web.HttpUtility.JavaScriptStringEncode(path) + "'");
                     }
                     return Content(html, "text/html", System.Text.Encoding.UTF8);
                 });
@@ -278,7 +277,7 @@ namespace Wlniao.XCenter
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="code"></param>
         /// <param name="func"></param>
@@ -317,7 +316,7 @@ namespace Wlniao.XCenter
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="code"></param>
         /// <param name="organ"></param>
