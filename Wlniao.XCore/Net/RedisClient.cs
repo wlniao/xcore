@@ -31,7 +31,7 @@ namespace Wlniao.Net
     /// <summary>
     /// Redis客户端
     /// </summary>
-    public class RedisClient
+    public class RedisClient : IDisposable
     {
         /// <summary>
         /// 当前选中的数据库
@@ -211,7 +211,8 @@ namespace Wlniao.Net
                 {
                     return ResToBool(SetByPipeline(socket, byteKey, value, expire));
                 }
-                return ResToBool(SendCommand(socket, RedisCommand.Set, byteKey, value));
+                // expire<=0 与 InMemory/FileCache 对齐：立即过期（EXPIRE 0 会删键，写完读不到）
+                return ResToBool(SetByPipeline(socket, byteKey, value, 0));
             }
             catch
             {
@@ -349,7 +350,7 @@ namespace Wlniao.Net
         #region 通讯处理方法
         private void CleanupInvalidSockets()
         {
-            var socketsToRemove = _socketList.Where(s => s.Catch || !s.Connected || (DateTime.Now.Ticks - s.LastUse) > TimeSpan.FromSeconds(ConnectionTimeoutSeconds).Ticks).ToList();
+            var socketsToRemove = _socketList.Where(s => s.Catch || !s.Connected || (DateTime.UtcNow.Ticks - s.LastUse) > TimeSpan.FromSeconds(ConnectionTimeoutSeconds).Ticks).ToList();
             foreach (var socket in socketsToRemove)
             {
                 try
@@ -387,7 +388,7 @@ namespace Wlniao.Net
                         if (!s.Using && s.Connected && !s.Catch)
                         {
                             s.Using = true;
-                            s.LastUse = DateTime.Now.Ticks;
+                            s.LastUse = DateTime.UtcNow.Ticks;
                             socket = s;
                             break;
                         }
@@ -438,7 +439,7 @@ namespace Wlniao.Net
         private WlnSocket CreateNewConnection()
         {
             // 检查是否达到最大连接数限制
-            var startTime = DateTime.Now;
+            var startTime = DateTime.UtcNow;
             while (true)
             {
                 lock (_lock)
@@ -455,14 +456,14 @@ namespace Wlniao.Net
                         if (!s.Using && s.Connected && !s.Catch)
                         {
                             s.Using = true;
-                            s.LastUse = DateTime.Now.Ticks;
+                            s.LastUse = DateTime.UtcNow.Ticks;
                             return s;
                         }
                     }
                 }
 
                 // 检查是否超时
-                if ((DateTime.Now - startTime).TotalSeconds > GetConnectionMaxWaitSeconds)
+                if ((DateTime.UtcNow - startTime).TotalSeconds > GetConnectionMaxWaitSeconds)
                 {
                     throw new XCoreException($"Redis: 获取连接超时，等待时间超过 {GetConnectionMaxWaitSeconds} 秒，当前连接数: {_socketList.Count}, 最大连接数: {MaxConnections}", 500);
                 }
@@ -479,7 +480,7 @@ namespace Wlniao.Net
                 var newsocket = new WlnSocket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                 {
                     Using = true,
-                    LastUse = DateTime.Now.Ticks,
+                    LastUse = DateTime.UtcNow.Ticks,
                     NoDelay = NoDelaySocket,
                     SendTimeout = SocketTimeoutSeconds * 1000,
                     ReceiveTimeout = SocketTimeoutSeconds * 1000
@@ -518,7 +519,7 @@ namespace Wlniao.Net
 
                     // 重置使用标记，因为SendCommand会将其设置为false
                     newsocket.Using = true;
-                    newsocket.LastUse = DateTime.Now.Ticks;
+                    newsocket.LastUse = DateTime.UtcNow.Ticks;
                     return newsocket;
                 }
                 catch
@@ -555,7 +556,7 @@ namespace Wlniao.Net
                     
                     // 释放连接
                     socket.Using = false;
-                    socket.LastUse = DateTime.Now.Ticks;
+                    socket.LastUse = DateTime.UtcNow.Ticks;
                 }
             }
             catch { /* 忽略锁异常 */ }

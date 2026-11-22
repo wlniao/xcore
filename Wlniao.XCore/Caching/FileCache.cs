@@ -1,4 +1,4 @@
-﻿/*==============================================================================
+/*==============================================================================
     文件名称：FileCache.cs
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：文件缓存系统驱动类
@@ -52,6 +52,59 @@ namespace Wlniao.Caching
             public string Value;
             public long FileWriteUnix;
             public long FileLength;
+            /// <summary>
+            /// 写入时生成的代际戳；其他进程改写缓存文件会同时改写此戳，
+            /// 即使 LastWriteTime 与长度都没变也能识别内容变化。
+            /// </summary>
+            public string Stamp;
+        }
+
+        private static string GetStampPath(string filePath) => filePath + ".stamp";
+
+        private static string ReadStamp(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath))
+            {
+                return null;
+            }
+            try
+            {
+                var stampPath = GetStampPath(filePath);
+                return System.IO.File.Exists(stampPath) ? FileEx.ReadUTF8String(stampPath) : null;
+            }
+            catch
+            {
+                // 戳文件损坏/并发读取失败时退回 stat 指纹判断，不影响主流程
+                return null;
+            }
+        }
+
+        private static void WriteStamp(string filePath)
+        {
+            try
+            {
+                System.IO.File.WriteAllText(GetStampPath(filePath), Guid.NewGuid().ToString("N"));
+            }
+            catch (Exception ex)
+            {
+                Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
+            }
+        }
+
+        private static void DeleteStamp(string filePath)
+        {
+            try
+            {
+                var stampPath = GetStampPath(filePath);
+                if (System.IO.File.Exists(stampPath))
+                {
+                    System.IO.File.Delete(stampPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Loger.Error($"{ex.Message}{Environment.NewLine}{ex.StackTrace}");
+            }
         }
 
         private static void L1Set(string key, string value, long expireUnix, string filePath = null)
@@ -84,6 +137,24 @@ namespace Wlniao.Caching
                 var fi = new FileInfo(filePath);
                 entry.FileWriteUnix = fi.LastWriteTimeUtc.Ticks;
                 entry.FileLength = fi.Length;
+                entry.Stamp = ReadStamp(filePath);
+                // 与指纹同批回读磁盘值：并发 Set 时入参 value 可能是本地旧内容，
+                // 而 stamp/统计已属于后写进程——错配会让 L1 假命中陈旧值。
+                // 回读失败则放弃填充，下次访问走磁盘。
+                try
+                {
+                    var text = FileEx.ReadUTF8String(filePath);
+                    var data = text.Split('#', 2, StringSplitOptions.RemoveEmptyEntries);
+                    if (data.Length >= 1 && long.TryParse(data[0], out var diskExpire))
+                    {
+                        entry.ExpireUnix = diskExpire;
+                        entry.Value = data.Length > 1 ? data[1] : "";
+                    }
+                }
+                catch
+                {
+                    return;
+                }
             }
             _l1[key] = entry;
         }
@@ -105,6 +176,11 @@ namespace Wlniao.Caching
                     else if (fi.LastWriteTimeUtc.Ticks != e.FileWriteUnix || fi.Length != e.FileLength)
                     {
                         // 其他进程/实例已更新共享缓存文件，禁用本进程陈旧副本
+                        _l1.TryRemove(key, out _);
+                    }
+                    else if (!string.Equals(ReadStamp(filePath), e.Stamp, StringComparison.Ordinal))
+                    {
+                        // 时间戳与长度相同但代际戳变化（如同秒同长度覆盖写），同样失效
                         _l1.TryRemove(key, out _);
                     }
                     else if (e.ExpireUnix > DateTools.GetUnix())
@@ -158,6 +234,23 @@ namespace Wlniao.Caching
             Interlocked.Exchange(ref _l1HitCount, 0);
             Interlocked.Exchange(ref _l1MissCount, 0);
         }
+
+        /// <summary>
+        /// 主动失效本进程的 L1 副本；可供外部失效通道（如 Redis pub/sub 订阅回调）调用。
+        /// 未接入外部通道时，代际戳已能识别其他进程的文件改写。
+        /// </summary>
+        public static void Invalidate(string key)
+        {
+            _l1.TryRemove(key, out _);
+        }
+
+        /// <summary>
+        /// 清空本进程全部 L1 副本
+        /// </summary>
+        public static void InvalidateAll()
+        {
+            _l1.Clear();
+        }
         /// <summary>
         /// 缓存文件目录
         /// </summary>
@@ -202,7 +295,8 @@ namespace Wlniao.Caching
             try
             {
                 var file = GetKeyPath(key);
-                var data = (DateTools.GetUnix() + expireSeconds) + "#" + value;
+                var expireUnix = DateTools.GetUnix() + expireSeconds;
+                var data = expireUnix + "#" + value;
                 var parent = System.IO.Path.GetDirectoryName(file);
                 if (!System.IO.Directory.Exists(parent))
                 {
@@ -210,10 +304,12 @@ namespace Wlniao.Caching
                     System.IO.Directory.CreateDirectory(parent!);
                 }
                 using var fs = new FileStream(file, FileMode.Create, FileAccess.ReadWrite,FileShare.ReadWrite);
-                var writer = new StreamWriter(fs, Wlniao.Text.Encodings.UTF8);
+                using var writer = new StreamWriter(fs, Wlniao.Text.Encodings.UTF8);
                 writer.Write(data);
                 writer.Flush();
-                L1Set(key, value, DateTools.GetUnix() + expireSeconds, file);
+                // 代际戳在主文件写完后更新；并发 Set 时后写戳的一方会让先前的 L1 副本失效
+                WriteStamp(file);
+                L1Set(key, value, expireUnix, file);
                 return true;
             }
             catch (Exception ex)
@@ -253,6 +349,7 @@ namespace Wlniao.Caching
                 {
                     System.IO.File.Delete(fs);
                 }
+                DeleteStamp(fs);
                 return true;
             }
             catch (Exception ex)
@@ -286,6 +383,7 @@ namespace Wlniao.Caching
                         return true;
                     }
                     System.IO.File.Delete(fs);
+                    DeleteStamp(fs);
                 }
             }
             catch (Exception ex)
@@ -319,6 +417,7 @@ namespace Wlniao.Caching
                         return value;
                     }
                     System.IO.File.Delete(fs);
+                    DeleteStamp(fs);
                 }
             }
             catch (Exception ex)

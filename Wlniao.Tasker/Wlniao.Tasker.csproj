@@ -1,13 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>10.0.3</Version>
+		<Version>10.0.5</Version>
 		<Authors>XieChaoyi</Authors>
 		<Copyright>Copyright 2020 XieChaoyi</Copyright>
 		<Description>Wlniao XCore for CoreCLR Framework</Description>
 		<AssemblyName>Wlniao.Tasker</AssemblyName>
 		<RootNamespace>Wlniao.Tasker</RootNamespace>
 		<EnableNETAnalyzers>False</EnableNETAnalyzers>
+		<!-- 裁剪/AOT 分析器独立于 EnableNETAnalyzers：把 IL2xxx/IL3xxx 反射风险在编译期暴露出来（不声明 IsAotCompatible 兼容性） -->
+		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+		<EnableAotAnalyzer>true</EnableAotAnalyzer>
 		<IncludeSymbols>False</IncludeSymbols>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -31,7 +34,7 @@
 	<ItemGroup>
 		<PackageReference Include="MQTTnet" Version="5.2.0.1603" />
 		<PackageReference Include="StackExchange.Redis" Version="3.4.35" />
-	<PackageReference Include="Wlniao.XCore" Version="10.0.3" />
+	<PackageReference Include="Wlniao.XCore" Version="10.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>

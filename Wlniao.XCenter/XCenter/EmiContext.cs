@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Wlniao.Text;
 
@@ -124,7 +124,7 @@ namespace Wlniao.XCenter
                     if (check.success || check.message == "install")
                     {
                         emi.install = true;
-                        emi.register = DateTime.Now.AddMinutes(5);
+                        emi.register = DateTools.GetNow().AddMinutes(5);
                         if (check.data != null)
                         {
                             emi.cdn = check.data.GetString("cdn");
@@ -236,18 +236,23 @@ namespace Wlniao.XCenter
                 {
                     list.Add(new KeyValuePair<string, string>("app", app));
                 }
-                var start = DateTime.Now;
+                var start = DateTime.UtcNow;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
                 var json = Net.ApiClient.Get(uri.ToString());
                 if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
-                    Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + uri.Query + "[Get]\n <<< " + json);
+                    Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + uri.Query + "[Get]\n <<< " + json);
                 }
                 return json;
             }
             catch (Exception ex)
             {
-                return JsonSerializer.Serialize(new { code = "", success = false, message = "EMI服务器请求异常：" + ex.Message }, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) });
+                return Wlniao.Json.Serialize(new Dictionary<string, object>
+                {
+                    ["code"] = "",
+                    ["success"] = false,
+                    ["message"] = "EMI服务器请求异常：" + ex.Message
+                }, Wlniao.JsonContext.Instance.DictionaryStringObject);
             }
         }
         /// <summary>
@@ -267,14 +272,14 @@ namespace Wlniao.XCenter
                 {
                     list.Add(new KeyValuePair<string, string>("app", app));
                 }
-                var start = DateTime.Now;
+                var start = DateTime.UtcNow;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
                 var json = Net.ApiClient.Get(uri.ToString());
                 if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
-                    Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + uri.Query + "[Get]\n <<< " + json);
+                    Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + uri.Query + "[Get]\n <<< " + json);
                 }
-                return JsonSerializer.Deserialize<ApiResult<T>>(json, XCore.JsonSerializerOptions);
+                return ParseEmiResult<T>(json);
             }
             catch (Exception ex)
             {
@@ -300,19 +305,135 @@ namespace Wlniao.XCenter
                 {
                     list.Add(new KeyValuePair<string, string>("app", app));
                 }
-                var start = DateTime.Now;
+                var start = DateTime.UtcNow;
                 var uri = new Uri(CreateUrl(this, controller, action, list));
                 var json = Net.ApiClient.Post(uri.ToString(), postdata);
                 if (Wlniao.Log.Loger.LogLevel <= Wlniao.Log.LogLevel.Debug)
                 {
-                    Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + postdata + "\n <<< " + json);
+                    Wlniao.Log.Loger.Topic("emi", "msgid:" + StringUtil.CreateLongId() + "," + uri.Scheme + "://" + uri.Host + uri.AbsolutePath + "[usetime:" + DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n >>> " + postdata + "\n <<< " + json);
                 }
-                return JsonSerializer.Deserialize<ApiResult<T>>(json, XCore.JsonSerializerOptions);
+                return ParseEmiResult<T>(json);
             }
             catch (Exception e)
             {
                 return new ApiResult<T> { message = "EMI服务器请求异常：" + e.Message, data = default(T) };
             }
+        }
+
+        /// <summary>
+        /// 按 JsonNode 信封解析 EMI 响应：标量字段逐个读取，data 按 T 的已登记元数据转换。
+        /// 已登记类型零反射；未登记类型回退到带 RequiresUnreferencedCode 标注的 Json 逃生舱。
+        /// </summary>
+        private static ApiResult<T> ParseEmiResult<T>(string json)
+        {
+            if (string.IsNullOrEmpty(json))
+            {
+                return new ApiResult<T> { message = "EMI返回为空" };
+            }
+            if (JsonNode.Parse(json) is not JsonObject node)
+            {
+                return new ApiResult<T> { message = "EMI返回格式无效" };
+            }
+            var rlt = new ApiResult<T>();
+            if (node["message"] is JsonValue mv && mv.TryGetValue<string>(out var message))
+            {
+                rlt.message = message;
+            }
+            rlt.code = ReadEmiString(node["code"]);
+            if (node["traceid"] is JsonValue tv && tv.TryGetValue<string>(out var traceid))
+            {
+                rlt.traceid = traceid;
+            }
+            if (node["success"] is JsonValue sv && sv.TryGetValue<bool>(out var success))
+            {
+                rlt.success = success;
+            }
+            if (node["tips"] is JsonValue pv && pv.TryGetValue<bool>(out var tips))
+            {
+                rlt.tips = tips;
+            }
+            rlt.data = ConvertEmiData<T>(node["data"]);
+            return rlt;
+        }
+
+        /// <summary>
+        /// 读取 EMI 信封中的字符串标量；兼容数字 code（如 401）——旧反射路径遇数字会抛，
+        /// JsonNode 的 TryGetValue&lt;string&gt; 对数字返回 false，这里显式转换避免静默丢 code。
+        /// </summary>
+        private static string ReadEmiString(JsonNode node)
+        {
+            if (node is not JsonValue value)
+            {
+                return null;
+            }
+            if (value.TryGetValue<string>(out var s))
+            {
+                return s;
+            }
+            if (value.TryGetValue<long>(out var l))
+            {
+                return l.ToString();
+            }
+            if (value.TryGetValue<double>(out var d))
+            {
+                return d.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            if (value.TryGetValue<bool>(out var b))
+            {
+                return b ? "true" : "false";
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 转换 EMI 响应的 data 节点；覆盖当前实际使用的 T，未登记类型走反射逃生舱。
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "类型分支覆盖当前已登记的 T；未登记 T 的兜底走 Json 反射逃生舱，AOT 下由 StrictTrimDiagnostics 拦截")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "类型分支覆盖当前已登记的 T；未登记 T 的兜底走 Json 反射逃生舱，AOT 下由 StrictTrimDiagnostics 拦截")]
+        private static T ConvertEmiData<T>(JsonNode node)
+        {
+            if (node == null || node.GetValueKind() is JsonValueKind.Null or JsonValueKind.Undefined)
+            {
+                return default;
+            }
+            if (typeof(T) == typeof(string))
+            {
+                if (node is JsonValue strValue && strValue.TryGetValue<string>(out var s))
+                {
+                    return (T)(object)s;
+                }
+                return (T)(object)node.ToJsonString();
+            }
+            if (typeof(T) == typeof(bool))
+            {
+                if (node is JsonValue boolValue && boolValue.TryGetValue<bool>(out var b))
+                {
+                    return (T)(object)b;
+                }
+                return default;
+            }
+            if (typeof(T) == typeof(Dictionary<string, object>))
+            {
+                return (T)(object)JsonSerializer.Deserialize(node, Wlniao.JsonContext.Instance.DictionaryStringObject);
+            }
+            if (typeof(T) == typeof(List<Dictionary<string, object>>))
+            {
+                return (T)(object)JsonSerializer.Deserialize(node, Wlniao.JsonContext.Instance.ListDictionaryStringObject);
+            }
+            if (typeof(T) == typeof(Models.Enum))
+            {
+                return (T)(object)JsonSerializer.Deserialize(node, JsonContext.Instance.Enum);
+            }
+            if (typeof(T) == typeof(List<Models.Enum>))
+            {
+                return (T)(object)JsonSerializer.Deserialize(node, JsonContext.Instance.ListEnum);
+            }
+            if (typeof(T) == typeof(Models.Account))
+            {
+                return (T)(object)JsonSerializer.Deserialize(node, JsonContext.Instance.Account);
+            }
+            // 未登记类型：反射逃生舱（AOT 下 StrictTrimDiagnostics=true 可拦截静默丢数据）
+            return Wlniao.Json.Deserialize<T>(node.ToJsonString());
         }
 
         /// <summary>
@@ -343,13 +464,13 @@ namespace Wlniao.XCenter
                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     var res = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                    var result = JsonSerializer.Deserialize<ApiResult<string>>(res, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) }) ??
+                    var result = JsonSerializer.Deserialize(res, JsonContext.Instance.ApiResultString) ??
                                  new ApiResult<string> { message = "上传结果返回无效，请稍后再试" };
                     return result;
                 }
                 else
                 {
-                    throw new Exception("StatusCode:" + response.StatusCode + " " + response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
+                    throw new System.Net.Http.HttpRequestException("StatusCode:" + response.StatusCode + " " + response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
                 }
             }
             catch (Exception e)
@@ -589,15 +710,15 @@ namespace Wlniao.XCenter
         /// <returns></returns>
         public bool Log(string model, string key, string method, string organ, string sid, string content, string clientIp)
         {
-            return EmiPost<string>("app", "log", Wlniao.Json.Serialize(new
+            return EmiPost<string>("app", "log", Wlniao.Json.Serialize(new Dictionary<string, object>
             {
-                sid = sid,
-                key = key,
-                model = model,
-                method = method,
-                content = content,
-                clientip = clientIp
-            })).success;
+                ["sid"] = sid,
+                ["key"] = key,
+                ["model"] = model,
+                ["method"] = method,
+                ["content"] = content,
+                ["clientip"] = clientIp
+            }, Wlniao.JsonContext.Instance.DictionaryStringObject)).success;
         }
     }
 }

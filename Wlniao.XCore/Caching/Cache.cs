@@ -70,7 +70,10 @@ namespace Wlniao.Caching
         /// <param name="connstr"></param>
         public static void UseRedis(string connstr = null)
         {
-            ctype = CacheType.Redis;
+            lock (olock)
+            {
+                ctype = CacheType.Redis;
+            }
             if (!string.IsNullOrEmpty(connstr))
             {
                 Redis.UseConnStr(connstr);
@@ -84,7 +87,10 @@ namespace Wlniao.Caching
         /// <param name="password"></param>
         public static void UseRedis(string server, string username, string password)
         {
-            ctype = CacheType.Redis;
+            lock (olock)
+            {
+                ctype = CacheType.Redis;
+            }
             if (string.IsNullOrEmpty(server))
             {
                 Redis.Instance = null;
@@ -277,7 +283,7 @@ namespace Wlniao.Caching
         {
             if (_cachePath == null)
             {
-                throw new Exception("");
+                throw new Wlniao.Runtime.XCoreException("缓存路径未配置，无法执行本地文件缓存");
             }
             var fileInfo = new System.IO.FileInfo(CachePath + key);
             if (fileInfo.Exists && fileInfo.LastWriteTime.AddSeconds(expireSeconds) > DateTime.Now)

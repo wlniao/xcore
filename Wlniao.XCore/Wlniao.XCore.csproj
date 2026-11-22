@@ -1,6 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Version>10.0.3</Version>
+        <Version>10.0.5</Version>
         <Authors>XieChaoyi</Authors>
         <Copyright>Copyright 2020 XieChaoyi</Copyright>
         <Description>Wlniao XCore for CoreCLR Framework</Description>
@@ -36,9 +36,6 @@
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
         <IsTrimmable>True</IsTrimmable>
     </PropertyGroup>
-    <ItemGroup>
-        <Compile Remove="Handler\**" />
-    </ItemGroup>
 
     <ItemGroup>
         <None Include="..\wlniao.png">
@@ -49,7 +46,6 @@
             <Pack>True</Pack>
             <PackagePath>\</PackagePath>
         </None>
-        <None Remove="Handler\**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -67,8 +63,4 @@
         Crypto/SM3.cs        SM3 自有实现（GB/T 32905）
       一致性由 NTest/SM2InteropTests.cs 以 BouncyCastle 为参照实现做双向互操作校验。
     -->
-
-    <ItemGroup>
-      <EmbeddedResource Remove="Handler\**" />
-    </ItemGroup>
 </Project>

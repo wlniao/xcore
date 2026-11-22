@@ -153,7 +153,7 @@ namespace Wlniao.Net
                 }
                 return response.StatusCode == System.Net.HttpStatusCode.OK
                     ? await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false)
-                    : throw new Exception("StatusCode:" + response.StatusCode + " " + await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+                    : throw new System.Net.Http.HttpRequestException("StatusCode:" + response.StatusCode + " " + await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
             }
             catch (AggregateException e)
             {
@@ -190,7 +190,7 @@ namespace Wlniao.Net
                     url = webroxy + uri.PathAndQuery;
                 }
                 
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                using var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Headers.Date = DateTime.UtcNow;
                 request.Headers.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Wlniao-XCore-XServer", "beta"));
                 if (!string.IsNullOrEmpty(webroxy))
@@ -201,8 +201,8 @@ namespace Wlniao.Net
                 {
                     request.Content = new StreamContent(stream);
                 }
-                
-                var response = await HttpClientManager.SharedInstance.SendAsync(request);
+
+                using var response = await HttpClientManager.SharedInstance.SendAsync(request);
                 return await response.Content.ReadAsStringAsync();
             }
             catch (AggregateException e)

@@ -93,27 +93,15 @@ namespace Wlniao.Engine
         {
             get
             {
-                string clientIp = string.Empty;
-                // 未初始化时 Request 为空，仅能依赖转发头
-                if (Request != null)
+                // 未初始化时 Request 为空，仅能依赖直连地址
+                if (Request == null)
                 {
-                    var remoteIp = Request.HttpContext.Connection.RemoteIpAddress;
-                    clientIp = remoteIp != null && !remoteIp.IsIPv4MappedToIPv6
-                        ? remoteIp.ToString()
-                        : remoteIp?.MapToIPv4().ToString() ?? string.Empty;
+                    return string.Empty;
                 }
-                if (!HeaderInput.TryGetValue("x-forwarded-for", out var forwardedIp) ||
-                    string.IsNullOrEmpty(forwardedIp))
-                    return clientIp;
-                // 通过代理网关部署时，获取"x-forwarded-for"传递的真实IP
-                foreach (var ip in forwardedIp.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                {
-                    if (ip == "::1" || ip == "127.0.0.1" || !StringUtil.IsIP(ip)) continue;
-                    clientIp = ip;
-                    break;
-                }
-
-                return clientIp;
+                var remoteIp = Request.HttpContext.Connection.RemoteIpAddress;
+                HeaderInput.TryGetValue("x-forwarded-for", out var forwardedIp);
+                // fail-closed：与限流共用可信代理策略，未配置时不采信 X-Forwarded-For
+                return Wlniao.Middleware.ClientIpResolver.Resolve(remoteIp, forwardedIp);
             }
         }
 
@@ -466,12 +454,17 @@ namespace Wlniao.Engine
                 {
                     json = Encryptor.SM4DecryptECBFromHex(Body, SKey, true);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // ignored
+                    // SKey 已配置时解密失败必须报错，禁止回退明文解析（否则客户端发明文即可绕过加密）
+                    Loger.Debug($"SKey decrypt failed: {ex.Message}");
+                    throw new Wlniao.Runtime.MessageException("数据解密失败，请检查通讯密钥", 400);
                 }
-
-                return System.Text.Json.JsonSerializer.Deserialize<T>(string.IsNullOrEmpty(json) ? Body: json, typeInfo) ??
+                if (string.IsNullOrEmpty(json))
+                {
+                    throw new Wlniao.Runtime.MessageException("数据解密失败，请检查通讯密钥", 400);
+                }
+                return System.Text.Json.JsonSerializer.Deserialize<T>(json, typeInfo) ??
                        new T();
             }
         }

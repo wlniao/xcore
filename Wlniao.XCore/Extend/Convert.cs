@@ -227,7 +227,7 @@ namespace Wlniao
             {
                 return defaultValue;
             }
-            return float.Parse(str);
+            return float.Parse(str, System.Globalization.CultureInfo.InvariantCulture);
         }
         /// <summary>
         /// 将对象转换成长整数；如果不是长整数，则返回0
@@ -490,8 +490,8 @@ namespace Wlniao
                 return ip;
             }
             var ips = ip.SplitBy(".");
-            var low = int.Parse(ips[2]) * 256 + int.Parse(ips[3]);
-            var high = int.Parse(ips[0]) * 256 + int.Parse(ips[1]);
+            var low = Wlniao.Convert.ToInt(ips[2]) * 256 + Wlniao.Convert.ToInt(ips[3]);
+            var high = Wlniao.Convert.ToInt(ips[0]) * 256 + Wlniao.Convert.ToInt(ips[1]);
             ip = "::ffff:" + high.ToString("x") + ":" + low.ToString("x");
             return ip;
         }
@@ -516,7 +516,7 @@ namespace Wlniao
         /// <returns>如果不符合格式，则返回当前时间</returns>
         public static DateTime ToTime(object objTime)
         {
-            return ToTime(objTime, DateTime.Now);
+            return ToTime(objTime, DateTools.GetNow());
         }
         /// <summary>
         /// 将对象转换成 DateTime 形式，如果不符合格式，则返回第二个参数指定的时间

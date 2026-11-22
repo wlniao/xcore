@@ -96,7 +96,7 @@ namespace Wlniao.XServer
                 var uri = new Uri(url);
                 var txt = dataJson;
                 var utime = "";
-                var start = DateTime.Now;
+                var start = DateTime.UtcNow;
                 var debugLog = Loger.LogLevel <= Log.LogLevel.Debug;
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
                 var resStr = "";
@@ -107,19 +107,26 @@ namespace Wlniao.XServer
                     ["trace"] = traceid,
                     ["timestamp"] = now
                 }.ToJsonString(XCore.JsonSerializerOptions);
+                // 日志脱敏：不落盘 sign（拿到 sign 即可在时间窗内重放）
+                var reqLog = new System.Text.Json.Nodes.JsonObject
+                {
+                    ["data"] = encdata,
+                    ["trace"] = traceid,
+                    ["timestamp"] = now
+                }.ToJsonString(XCore.JsonSerializerOptions);
                 try
                 {
-                    Loger.Topic(node, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr, Log.LogLevel.Information, false);
+                    Loger.Topic(node, "msgid:" + traceid + ", " + url + "\n >>> " + reqLog, Log.LogLevel.Information, false);
                     
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     cts.CancelAfter(TimeSpan.FromSeconds(30));
                     
-                    var request = new HttpRequestMessage(HttpMethod.Post, uri);
-                    request.Headers.Date = DateTime.Now;
+                    using var request = new HttpRequestMessage(HttpMethod.Post, uri);
+                    request.Headers.Date = DateTime.UtcNow;
                     request.Headers.TryAddWithoutValidation("X-Wlniao-Trace", traceid);
                     request.Content = new StringContent(reqStr, System.Text.Encoding.UTF8, "application/json");
-                    
-                    var response = await _httpClient.SendAsync(request, cts.Token).ConfigureAwait(false);
+
+                    using var response = await _httpClient.SendAsync(request, cts.Token).ConfigureAwait(false);
                     resStr = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     
                     if (response.Headers.Contains("X-Wlniao-Trace"))
@@ -132,23 +139,23 @@ namespace Wlniao.XServer
                     }
                     if (string.IsNullOrEmpty(utime))
                     {
-                        utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                        utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                     }
                     Loger.Topic(node, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
                 }
                 catch (OperationCanceledException)
                 {
-                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                     Loger.Topic(node, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< 请求超时", Wlniao.Log.LogLevel.Error, true);
                 }
                 catch (Exception ex)
                 {
-                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                     Loger.Topic(node, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
                 }
                 if (string.IsNullOrEmpty(utime))
                 {
-                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 }
                 var logs = debugLog
                     ? $"msgid:{traceid}, {uri.AbsolutePath}[usetime:{utime}]{Environment.NewLine} >>> {txt}"
@@ -184,7 +191,7 @@ namespace Wlniao.XServer
                         {
                             logs += "\n <<< " + rlt.message;
                         }
-                        //log.Origin(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
+                        //log.Origin(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
                     }
                     else
                     {
@@ -198,6 +205,19 @@ namespace Wlniao.XServer
                         {
                             rlt.traceid = resObj.traceid;
                         }
+                        // 响应完整性：必须携带 sign 且与 SM3(data+token) 一致，防篡改/剥离
+                        var expectedSign = ApiSignGuard.SignResponse(resObj.data ?? "", token);
+                        if (string.IsNullOrEmpty(resObj.sign) || !ApiSignGuard.FixedTimeEquals(expectedSign, resObj.sign))
+                        {
+                            rlt.code = "108";
+                            rlt.message = "响应签名验证失败，报文可能被篡改";
+                            if (debugLog)
+                            {
+                                logs += "\n <<< " + rlt.message;
+                            }
+                        }
+                        else
+                        {
                         var plaintext = string.IsNullOrEmpty(resObj.data) ? "" : Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
                         if (!string.IsNullOrEmpty(plaintext))
                         {
@@ -233,6 +253,7 @@ namespace Wlniao.XServer
                         if (debugLog)
                         {
                             logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + (string.IsNullOrEmpty(plaintext) ? "\"\"" : plaintext) + "}";
+                        }
                         }
                     }
                 }

@@ -21,6 +21,7 @@
 ===============================================================================*/
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -33,9 +34,39 @@ namespace Wlniao.Caching
     /// </summary>
     public static class InMemory
     {
-        private static readonly ConcurrentDictionary<string, CacheData> Cache = new();
+        /// <summary>
+        /// 内部缓存条目：Value/Expire 只读，读路径仅用 Interlocked 更新 LRU 时间戳。
+        /// 不复用公开的可变 CacheData，避免 AddOrUpdate 回调里改写共享实例造成数据竞争。
+        /// </summary>
+        private sealed class MemoryCacheEntry
+        {
+            public readonly string Value;
+            public readonly DateTime Expire;
+            private long _lastAccessTicks;
+            public long LastAccessTicks => Interlocked.Read(ref _lastAccessTicks);
+
+            public MemoryCacheEntry(string value, DateTime expire, DateTime lastAccess)
+            {
+                Value = value;
+                Expire = expire;
+                Interlocked.Exchange(ref _lastAccessTicks, lastAccess.Ticks);
+            }
+
+            public void Touch(DateTime now) => Interlocked.Exchange(ref _lastAccessTicks, now.Ticks);
+        }
+
+        private static readonly ConcurrentDictionary<string, MemoryCacheEntry> Cache = new();
         private static int setOps;
         private static readonly object cleanupLock = new();
+
+        /// <summary>
+        /// 仅当条目仍是读到的那个实例时才删除，避免过期清理误删已被 Set 覆盖的新值
+        /// </summary>
+        private static bool TryRemoveIfSame(string key, MemoryCacheEntry entry)
+        {
+            return ((ICollection<KeyValuePair<string, MemoryCacheEntry>>)Cache)
+                .Remove(new KeyValuePair<string, MemoryCacheEntry>(key, entry));
+        }
 
 
         /// <summary>
@@ -46,13 +77,9 @@ namespace Wlniao.Caching
         /// <param name="expireSeconds"></param>
         public static bool Set(string key, string value, int expireSeconds = 86400)
         {
-            var expire = DateTime.UtcNow.AddSeconds(expireSeconds);
-            Cache.AddOrUpdate(key, new CacheData { Expire = expire, Value = value ?? "", LastAccess = DateTime.UtcNow }, (k, old) => {
-                old.Value = value ?? "";
-                old.Expire = expire;
-                old.LastAccess = DateTime.UtcNow;
-                return old;
-            });
+            var now = DateTime.UtcNow;
+            var expire = now.AddSeconds(expireSeconds);
+            Cache.AddOrUpdate(key, new MemoryCacheEntry(value ?? "", expire, now), (k, old) => new MemoryCacheEntry(value ?? "", expire, now));
 
             // 每 100 次 Set 触发一次抽样清理（ConcurrentDictionary.Count 为 O(n)，不能在热路径上判断）
             if (System.Threading.Interlocked.Increment(ref setOps) >= 100)
@@ -75,14 +102,10 @@ namespace Wlniao.Caching
         /// <returns></returns>
         public static bool Set<T>(string key, T obj, JsonTypeInfo<T> typeInfo, int expireSeconds = 86400)
         {
-            var expire = DateTime.UtcNow.AddSeconds(expireSeconds);
+            var now = DateTime.UtcNow;
+            var expire = now.AddSeconds(expireSeconds);
             var value = JsonSerializer.Serialize(obj, typeInfo);
-            Cache.AddOrUpdate(key, new CacheData { Expire = expire, Value = value, LastAccess = DateTime.UtcNow }, (k, old) => {
-                old.Value = value;
-                old.Expire = expire;
-                old.LastAccess = DateTime.UtcNow;
-                return old;
-            });
+            Cache.AddOrUpdate(key, new MemoryCacheEntry(value, expire, now), (k, old) => new MemoryCacheEntry(value, expire, now));
 
             // 每 100 次 Set 触发一次抽样清理（ConcurrentDictionary.Count 为 O(n)，不能在热路径上判断）
             if (System.Threading.Interlocked.Increment(ref setOps) >= 100)
@@ -147,7 +170,7 @@ namespace Wlniao.Caching
             {
                 return true;
             }
-            Del(key);
+            TryRemoveIfSame(key, val);
             return false;
         }
 
@@ -161,12 +184,12 @@ namespace Wlniao.Caching
             {
                 if (val.Expire > DateTime.UtcNow)
                 {
-                    val.LastAccess = DateTime.UtcNow;
+                    val.Touch(DateTime.UtcNow);
                     return val.Value ?? "";
                 }
                 else
                 {
-                    Del(key);
+                    TryRemoveIfSame(key, val);
                 }
             }
             return "";
@@ -182,12 +205,12 @@ namespace Wlniao.Caching
             {
                 if (val.Expire > DateTime.UtcNow)
                 {
-                    val.LastAccess = DateTime.UtcNow;
+                    val.Touch(DateTime.UtcNow);
                     return val.Value;
                 }
                 else
                 {
-                    Del(key);
+                    TryRemoveIfSame(key, val);
                 }
             }
             return null;
@@ -207,12 +230,12 @@ namespace Wlniao.Caching
             {
                 if (val.Expire > DateTime.UtcNow)
                 {
-                    val.LastAccess = DateTime.UtcNow;
+                    val.Touch(DateTime.UtcNow);
                     return JsonSerializer.Deserialize(val.Value, typeInfo);
                 }
                 else
                 {
-                    Del(key);
+                    TryRemoveIfSame(key, val);
                 }
             }
             return default(T);
@@ -224,9 +247,9 @@ namespace Wlniao.Caching
         public static void CleanupExpired()
         {
             var now = DateTime.UtcNow;
-            foreach (var key in Cache.Where(x => x.Value.Expire <= now).Select(x => x.Key))
+            foreach (var item in Cache.Where(x => x.Value.Expire <= now))
             {
-                Del(key);
+                TryRemoveIfSame(item.Key, item.Value);
             }
         }
         
@@ -250,13 +273,13 @@ namespace Wlniao.Caching
                 if (count > maxCacheSize)
                 {
                     var excess = count - maxCacheSize;
-                    foreach (var key in Cache.OrderBy(x => x.Value.LastAccess).Select(x => x.Key))
+                    foreach (var item in Cache.OrderBy(x => x.Value.LastAccessTicks))
                     {
                         if (excess <= 0)
                         {
                             break;
                         }
-                        if (Del(key))
+                        if (TryRemoveIfSame(item.Key, item.Value))
                         {
                             excess--;
                         }

@@ -1,7 +1,7 @@
 # Wlniao.AspNetCore · API 参考手册
 
 > 本文是**参考手册**，不是 `AGENTS.md`。执行约定见项目根 `AGENTS.md`；通用工具类型（配置/缓存/加密/时间/JSON）见同目录 `Wlniao.XCore.md`。
-> 依据源码版本 **10.0.3**。签名以源码与包内 XML 注释为准，本文省略了部分重载。
+> 依据源码版本 **10.0.5**。签名以源码与包内 XML 注释为准，本文省略了部分重载。
 
 ## 0. 包与兼容边界
 
@@ -124,7 +124,9 @@ public class OrderService : IOrderService
 
 **③ `XApiController` 的 `token` 必须在构造函数里赋值**
 未赋值时 `Check` 直接失败返回（`data="200"`，message="通讯密钥未配置"）。
-校验内容：`sign == SM3(timestamp + data + token)`，且要求 `timestamp + 3600 >= now`
+校验内容：`sign == SM3(timestamp + data + token)`（常量时间比较），且要求 `|now - timestamp| <= 3600`（双向时间窗，同时拒绝过期与超前时间戳）；
+同一 `sign` 在时间窗内只允许出现一次（进程内重放拦截，错误码 `208`）。
+响应报文携带 `sign = SM3(data + token)`，客户端 `XApi`/`TokenApi` 会强制校验（失败码 `108`）。
 （**只拦过期，不拦超前**，客户端时钟可超前任意秒数）。
 
 ### `XApiController` 报文形状（成功与失败不同，客户端要分开解析）
@@ -143,6 +145,8 @@ IActionResult? Check(Func<Dictionary<string, object>, IActionResult> func)
 | 缺 data / sign / timestamp | `data` | `"202"` |
 | 请求过期 | `code` | `"203"` |
 | 签名错误 | `code` | `"205"` |
+| 请求重放（同 sign 窗口内重复） | `code` | `"208"` |
+| 响应签名验证失败（客户端侧） | `code` | `"108"` |
 | 解密失败 | `code` | `"206"` |
 | 其它异常 | `code` | `"401"` |
 
@@ -456,6 +460,7 @@ interface Engine.IRuntime { bool InitStart(); }                              // 
 | `WLN_RATE_WHITEPATH` | — | 白名单目录（逗号分隔，支持 `/api*`） |
 | `WLN_RATE_WHITEKEYS` / `WLN_RATE_BLACKKEYS` | — | IP 白 / 黑名单 |
 | `WLN_RATE_TRUSTED_PROXIES` | — | 可信代理列表；未配置时不采信 `X-Forwarded-For`，显式 `*` 才信任全部 |
+| `WLN_RATE_CB_FALLBACK_MAX` | 0 | 熔断打开期间每窗口每键兜底配额；≤0 时自动取 `max(1, MaxRequests/4)` |
 | `NoSecurityMessage` | `请求参数包含非法字符` | 参数被判定不安全时的拦截文案；未配置或为空也使用默认文案并阻断响应（见 §4 `GetRequest` 说明） |
 
 > 其余配置（端口、时区、缓存、日志、TLS 放行开关 `WLN_ACCEPT_ANY_CERT`）见 `Wlniao.XCore.md` §7。

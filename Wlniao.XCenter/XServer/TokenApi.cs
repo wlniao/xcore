@@ -1,4 +1,4 @@
-﻿/*==============================================================================
+/*==============================================================================
     文件名称：TokenApi.cs
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：TokenApi服务端请求工具
@@ -21,6 +21,7 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -44,6 +45,8 @@ namespace Wlniao.XServer
         /// <param name="data"></param>
         /// <param name="traceid"></param>
         /// <returns></returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
         public static Wlniao.ApiResult<T> Request<T>(string apinode, string url, string token, object data, string traceid = "")
         {
             var now = DateTools.GetUnix().ToString();
@@ -60,19 +63,33 @@ namespace Wlniao.XServer
                     traceid = StringUtil.CreateLongId();
                 }
                 var uri = new Uri(url);
+                // 出站请求体（非 HTTP 响应）：按约定走 Wlniao.Json，不走 Mvc.ResponseJson
                 var txt = data is string ? data.ToString() : Json.Serialize(data);
                 var utime = "";
-                var start = DateTime.Now;
+                var start = DateTime.UtcNow;
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
                 var resStr = "";
-                var reqStr = Json.Serialize(new { sign = Encryptor.SM3Encrypt(now + encdata + token), data = encdata, trace = traceid, timestamp = now });
+                var reqStr = Json.Serialize(new Dictionary<string, object>
+                {
+                    ["sign"] = Encryptor.SM3Encrypt(now + encdata + token),
+                    ["data"] = encdata,
+                    ["trace"] = traceid,
+                    ["timestamp"] = now
+                }, Wlniao.JsonContext.Instance.DictionaryStringObject);
+                // 日志脱敏：不落盘 sign（拿到 sign 即可在时间窗内重放）
+                var reqLog = Json.Serialize(new Dictionary<string, object>
+                {
+                    ["data"] = encdata,
+                    ["trace"] = traceid,
+                    ["timestamp"] = now
+                }, Wlniao.JsonContext.Instance.DictionaryStringObject);
                 try
                 {
                     var stream = Convert.ToStream(System.Text.Encoding.UTF8.GetBytes(reqStr));
                     var client = Wlniao.Net.HttpClientManager.SharedInstance;
-                    Loger.Topic(apinode, "msgid:" + traceid + ", " + url + "\n >>> " + reqStr, Log.LogLevel.Information, false);
+                    Loger.Topic(apinode, "msgid:" + traceid + ", " + url + "\n >>> " + reqLog, Log.LogLevel.Information, false);
                     using var request = new HttpRequestMessage(HttpMethod.Post, uri);
-                    request.Headers.Date = DateTime.Now;
+                    request.Headers.Date = DateTime.UtcNow;
                     request.Content = new StreamContent(stream);
                     request.Content.Headers.Add("Content-Type", "application/json");
                     request.Headers.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
@@ -89,18 +106,18 @@ namespace Wlniao.XServer
                     }
                     if (string.IsNullOrEmpty(utime))
                     {
-                        utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                        utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                     }
                     Loger.Topic(apinode, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
                 }
                 catch (Exception ex)
                 {
-                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                     Loger.Topic(apinode, $"msgid:{traceid}, {url}[usetime:{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
                 }
                 if (string.IsNullOrEmpty(utime))
                 {
-                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 }
                 var logs = $"msgid:{traceid}, {uri.AbsolutePath}[usetime:{utime}]{Environment.NewLine} >>> {txt}";
                 if (string.IsNullOrEmpty(resStr))
@@ -116,15 +133,18 @@ namespace Wlniao.XServer
                     Wlniao.ApiResult<string> resObj = null;
                     try
                     {
-                        resObj = Json.Deserialize<Wlniao.ApiResult<string>>(resStr);
+                        resObj = System.Text.Json.JsonSerializer.Deserialize(resStr, Wlniao.XCenter.JsonContext.Instance.ApiResultString);
                     }
-                    catch { }
+                    catch (Exception dex)
+                    {
+                        Log.Loger.Debug("TokenApi response deserialize: " + dex.Message);
+                    }
                     if (resObj == null || (string.IsNullOrEmpty(resObj.node) && string.IsNullOrEmpty(resObj.code)))
                     {
                         rlt.code = "104";
                         rlt.message = "远端输出格式不满足本地要求";
                         logs += "\n <<< " + rlt.message;
-                        //log.Origin(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
+                        //log.Origin(apinode, "msgid:" + traceid + "," + uri.AbsolutePath + "[" + DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms]\n <<< " + rlt.message);
                     }
                     else
                     {
@@ -138,6 +158,16 @@ namespace Wlniao.XServer
                         {
                             rlt.traceid = resObj.traceid;
                         }
+                        // 响应完整性：必须携带 sign 且与 SM3(data+token) 一致，防篡改/剥离
+                        var expectedSign = ApiSignGuard.SignResponse(resObj.data ?? "", token);
+                        if (string.IsNullOrEmpty(resObj.sign) || !ApiSignGuard.FixedTimeEquals(expectedSign, resObj.sign))
+                        {
+                            rlt.code = "108";
+                            rlt.message = "响应签名验证失败，报文可能被篡改";
+                            logs += "\n <<< " + rlt.message;
+                        }
+                        else
+                        {
                         var plaintext = string.IsNullOrEmpty(resObj.data) ? "" : Wlniao.Encryptor.SM4DecryptECBFromHex(resObj.data, token);
                         if (!string.IsNullOrEmpty(plaintext))
                         {
@@ -171,8 +201,9 @@ namespace Wlniao.XServer
                             rlt.message = "远端暂无返回内容";
                         }
                         logs += "\r\n <<< {\"success\":" + rlt.success.ToString().ToLower() + ",\"message\":\"" + rlt.message + "\",\"code\":\"" + rlt.code + "\",\"data\":" + (string.IsNullOrEmpty(plaintext) ? "\"\"" : plaintext) + "}";
+                        }
+                        }
                     }
-                }
                 Loger.Topic(apinode, logs, Log.LogLevel.Debug, true);
             }
             return rlt;

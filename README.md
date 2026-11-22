@@ -124,7 +124,7 @@ BASE=https://gitee.com/wlniao/xcore/raw/master/AGENTS-Usage; mkdir -p Reference/
 
 ### 升级需留意的行为差异
 
-以下四条会影响已有代码的运行结果，升级时请逐条确认：
+以下六条会影响已有代码的运行结果，升级时请逐条确认：
 
 | 项 | 变化 | 影响 |
 |---|---|---|
@@ -132,10 +132,12 @@ BASE=https://gitee.com/wlniao/xcore/raw/master/AGENTS-Usage; mkdir -p Reference/
 | `XCore.AcceptAnyServerCertificate` | 默认 `false`（按标准链校验），仅 `1/true/yes/on` 才放行 | 依赖全局放行访问自签站点的服务需显式开启，否则握手失败 |
 | `"x@y.z".IsEmail()` | 判据统一委托 `StringUtil.IsEmail`：多级域名由 `false` 变 `true`，单字符 TLD 由 `true` 变 `false` | 以扩展方法做邮箱校验的表单，结论可能与升级前不同 |
 | `StringUtil.GetHtmlTitle` | 由实例方法改为静态方法 | 调用方式改为 `StringUtil.GetHtmlTitle(html)` |
+| `RateLimit` 默认不再采信 `X-Forwarded-For` | `TrustedProxies` 未配置时 fail-closed，限流键取直连地址；仅显式 `*` 才信任全部代理 | 依赖伪造 XFF 切换限流键的部署需设 `WLN_RATE_TRUSTED_PROXIES=*` 或列出可信代理；详见 `Wlniao.AspNetCore/CHANGELOG.md` |
+| `XCore.JsonSerializerOptions` | 由可写静态字段改为只读属性；整体替换改用 `SetJsonSerializerOptions(Func<…>)` / `ReloadJsonSerializerOptions()` | 源码里 `XCore.JsonSerializerOptions = …` 不再编译；运行期改选项请走工厂方法（会同步刷新 AOT 降级缓存） |
 
 ### 维护约定（文档贡献者）
 
-- 本文档组按 `Wlniao.XCore` / `Wlniao.AspNetCore` **10.0.1** 编写；改公共 API 时同步更新对应文件（`dotnet build` 不会发现文档不同步）。
+- 本文档组按 `Wlniao.XCore` / `Wlniao.AspNetCore` **10.0.5** 编写；改公共 API 时同步更新对应文件（`dotnet build` 不会发现文档不同步）。
 - 新增 API 补三处：手册的签名段落、反例对照（如有坑）、`AGENTS.md` 的自检清单（如属高频误用）。
 - AOT 标注必须与源码一致：源码标了 `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]` 的 API，手册里必须写明。
 - 手册只写「当前行为」，不写历史；泛型类型名用反引号包裹，不要写 `&lt;T&gt;` 实体；签名要能直接编译，不要省略参数名。

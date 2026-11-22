@@ -1,4 +1,4 @@
-﻿/*==============================================================================
+/*==============================================================================
     文件名称：ApiResult.cs
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：API返回信息的封装
@@ -74,6 +74,10 @@ namespace Wlniao
         /// 链路追踪ID
         /// </summary>
         public string traceid { get; set; }
+        /// <summary>
+        /// 响应完整性签名（SM3(data+token)），由 XApi/TokenApi 客户端校验
+        /// </summary>
+        public string sign { get; set; }
         /// <summary>
         /// 扩展数据
         /// </summary>

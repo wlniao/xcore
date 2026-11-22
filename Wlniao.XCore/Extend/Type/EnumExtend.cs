@@ -1,4 +1,4 @@
-﻿/*==============================================================================
+/*==============================================================================
     文件名称：IEnumerableExtend.cs
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：IEnumerable扩展
@@ -22,6 +22,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Wlniao
 {
@@ -36,6 +37,7 @@ namespace Wlniao
 		/// <param name="value">枚举值</param>
 		/// <param name="nameInstead">当枚举值没有定义DescriptionAttribute，是否使用枚举名代替，默认是使用</param>
 		/// <returns>枚举的Description</returns>
+		[RequiresUnreferencedCode("通过反射读取枚举字段上的 DescriptionAttribute，裁剪环境可能移除未被静态引用的枚举字段特性")]
 		public static string GetDescription(this Enum value, bool nameInstead = true)
 		{
 			var type = value.GetType();

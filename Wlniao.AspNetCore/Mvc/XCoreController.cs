@@ -99,7 +99,7 @@ namespace Wlniao.Mvc
 
             if (!Response.HasStarted && start > DateTime.MinValue)
             {
-                Response.Headers.TryAdd("X-UseTime", DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
+                Response.Headers.TryAdd("X-UseTime", DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms");
             }
 
             if (string.IsNullOrEmpty(errorMsg))
@@ -147,7 +147,7 @@ namespace Wlniao.Mvc
         [NonAction]
         public void OpenUseTime()
         {
-            start = DateTime.Now;
+            start = DateTime.UtcNow;
         }
         /// <summary>
         /// 输出调试消息
@@ -514,7 +514,10 @@ namespace Wlniao.Mvc
                                 #endregion 请求为其它类型
                             }
                         }
-                        catch { }
+                        catch (Exception pex)
+                        {
+                            Log.Loger.Debug("XCoreController parse body: " + pex.Message);
+                        }
                     }
 
                     foreach (var item in Request.Query.Keys)
@@ -522,7 +525,10 @@ namespace Wlniao.Mvc
                         ctxPost.TryAdd(item, StringUtil.UrlDecode(Request.Query[item].ToString().Trim()));
                     }
                 }
-                catch { }
+                catch (Exception pex)
+                {
+                    Log.Loger.Debug("XCoreController load input: " + pex.Message);
+                }
             }
             if (ctxPost != null)
             {
@@ -652,20 +658,10 @@ namespace Wlniao.Mvc
         {
             get
             {
-                var clientIp = Request.HttpContext.Connection.RemoteIpAddress is { IsIPv4MappedToIPv6: false } ? Request.HttpContext.Connection.RemoteIpAddress?.ToString() : Request.HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
-                if (Request.Headers.TryGetValue("x-forwarded-for", out var forwardedIp))
-                {
-                    // 通过代理网关部署时，获取"x-forwarded-for"传递的真实IP
-                    foreach (var ip in forwardedIp.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
-                    {
-                        if (ip != "::1" && ip != "127.0.0.1" && StringUtil.IsIP(ip))
-                        {
-                            clientIp = ip;
-                            break;
-                        }
-                    }
-                }
-                return clientIp ?? string.Empty;
+                // fail-closed：与限流共用可信代理策略，未配置时不采信 X-Forwarded-For
+                var remote = Request.HttpContext.Connection.RemoteIpAddress;
+                Request.Headers.TryGetValue("x-forwarded-for", out var forwardedIp);
+                return Wlniao.Middleware.ClientIpResolver.Resolve(remote, forwardedIp.ToString());
             }
         }
         /// <summary>
@@ -764,57 +760,5 @@ namespace Wlniao.Mvc
 
         [System.Text.RegularExpressions.GeneratedRegex(@"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\'|\.|<|>]")]
         private static partial System.Text.RegularExpressions.Regex MyRegex();
-    }
-
-    internal static class ResponseJson
-    {
-        internal static string Serialize(object? obj, JsonSerializerOptions? options = null)
-        {
-            if (obj is null)
-            {
-                return "null";
-            }
-            // Context.JsonSerializerOptions 允许业务方覆盖；与默认选项不同时走反射路径以保持选项语义
-            if (options != null && !ReferenceEquals(options, Wlniao.XCore.JsonSerializerOptions))
-            {
-                return SerializeWithCustomOptions(obj, obj.GetType(), options);
-            }
-            // 反射可用：源生成命中优先（更快、选项一致），嵌套 object 成员解析失败时回退反射，
-            // 避免「已登记根类型 + 未登记匿名/DTO」在 CoreCLR 下被源生成解析器直接抛错。
-            var typeInfo = Wlniao.JsonContext.Instance.GetTypeInfo(obj.GetType());
-            if (typeInfo != null)
-            {
-                try
-                {
-                    return System.Text.Json.JsonSerializer.Serialize(obj, typeInfo);
-                }
-                catch (NotSupportedException) when (System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault)
-                {
-                    // 嵌套未登记类型：落到下方反射路径（与旧 Wlniao.Json.Serialize 语义一致）
-                }
-            }
-            // 反射禁用（AOT/裁剪）：源生成未覆盖立即失败，避免静默输出 {}
-            if (!System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault)
-            {
-                throw new NotSupportedException(
-                    $"裁剪/AOT 环境下无法安全序列化类型 '{obj.GetType().FullName}'（HTTP 响应负载）。"
-                    + "该类型未被 Wlniao.JsonContext 覆盖；请改用具名 DTO + [JsonSerializable] 上下文后传 JsonTypeInfo。");
-            }
-            return SerializeWithReflection(obj);
-        }
-
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "仅在 JsonSerializer.IsReflectionEnabledByDefault 为 true 的分支调用；反射被禁用的 AOT 环境在调用前已抛出 NotSupportedException")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "仅在 JsonSerializer.IsReflectionEnabledByDefault 为 true 的分支调用；反射被禁用的 AOT 环境在调用前已抛出 NotSupportedException")]
-        private static string SerializeWithReflection(object obj)
-        {
-            return System.Text.Json.JsonSerializer.Serialize(obj, Wlniao.XCore.JsonSerializerOptions);
-        }
-
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "自定义 JsonSerializerOptions 需要按运行时类型反射序列化，以保持业务方可覆盖输出格式")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "自定义 JsonSerializerOptions 需要按运行时类型反射序列化，以保持业务方可覆盖输出格式")]
-        private static string SerializeWithCustomOptions(object obj, Type type, JsonSerializerOptions options)
-        {
-            return System.Text.Json.JsonSerializer.Serialize(obj, type, options);
-        }
     }
 }

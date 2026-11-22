@@ -37,6 +37,10 @@ namespace Wlniao.Runtime
         // 这个一定要放在第一行，以保证第一个加载
         private static Dictionary<string, Dictionary<string, string>> langSetting = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
         /// <summary>
+        /// 语言包加载锁（独立于 XCore.Lock，避免与其他组件互相阻塞）
+        /// </summary>
+        private static readonly object _langLock = new object();
+        /// <summary>
         /// 获取某 key 的语言值
         /// </summary>
         /// <param name="key"></param>
@@ -70,7 +74,7 @@ namespace Wlniao.Runtime
             }
             if (langSetting.Count == 0)
             {
-                lock (XCore.Lock)
+                lock (_langLock)
                 {
                     if (langSetting.Count == 0)
                     {
@@ -114,26 +118,32 @@ namespace Wlniao.Runtime
                 }
             }
 
-            if (langSetting[langStr].ContainsKey(key) && !string.IsNullOrEmpty(langSetting[langStr][key]))
+            // 读写共用 _langLock：初始化后仍有 TryAdd 写路径，Dictionary 读写并发不安全
+            lock (_langLock)
             {
-                return langSetting[langStr][key];
-            }
-            else if (defaultStr == null)
-            {
-                try
+                if (!langSetting.TryGetValue(langStr, out var pack))
                 {
-                    // 写入空行到语言包
-                    langSetting[langStr].TryAdd(key, defaultStr);
-                    Config.Write(langSetting[langStr], PathTool.Map(XCore.FrameworkRoot, "lang", langStr + ".ini"));
+                    pack = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    langSetting[langStr] = pack;
                 }
-                catch (Exception ex)
+                if (pack.TryGetValue(key, out var hit) && !string.IsNullOrEmpty(hit))
                 {
-                    Wlniao.Log.Loger.Error($"语言包写入异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+                    return hit;
                 }
-                return "{" + key + "}"; // 返回约定内容
-            }
-            else
-            {
+                if (defaultStr == null)
+                {
+                    try
+                    {
+                        // 写入空行到语言包
+                        pack.TryAdd(key, defaultStr);
+                        Config.Write(pack, PathTool.Map(XCore.FrameworkRoot, "lang", langStr + ".ini"));
+                    }
+                    catch (Exception ex)
+                    {
+                        Wlniao.Log.Loger.Error($"语言包写入异常: {ex.Message}, 堆栈: {ex.StackTrace}");
+                    }
+                    return "{" + key + "}"; // 返回约定内容
+                }
                 return defaultStr; // 返回用户默认内容
             }
         }
@@ -144,12 +154,15 @@ namespace Wlniao.Runtime
         public static List<Dictionary<string, string>> GetSupportedLang()
         {
             var list = new List<Dictionary<string, string>>();
-            foreach (var key in langSetting.Keys)
+            lock (_langLock)
             {
-                var pair = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                pair.TryAdd("Name", GetLangName(key));
-                pair.TryAdd("Value", key);
-                list.Add(pair);
+                foreach (var key in langSetting.Keys)
+                {
+                    var pair = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    pair.TryAdd("Name", GetLangName(key));
+                    pair.TryAdd("Value", key);
+                    list.Add(pair);
+                }
             }
             return list;
         }
@@ -160,9 +173,12 @@ namespace Wlniao.Runtime
         public static string GetLang()
         {
             var nativeLang = System.Globalization.CultureInfo.CurrentCulture.Name.ToLower();
-            if (langSetting.ContainsKey(nativeLang))
+            lock (_langLock)
             {
-                return nativeLang;
+                if (langSetting.ContainsKey(nativeLang))
+                {
+                    return nativeLang;
+                }
             }
             return defaultLang;
         }

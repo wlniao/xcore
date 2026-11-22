@@ -81,14 +81,15 @@ namespace Wlniao.Middleware
         public string[] BlackKeys { get; set; } = Config.GetConfigs("WLN_RATE_BLACKKEYS", "").SplitBy() ?? [];
 
         /// <summary>
-        /// 可信代理白名单（可选，默认空数组 = 保持历史行为）。
-        /// 支持单个 IP、CIDR 网段与通配符，如 "10.0.0.5"、"10.0.0.0/8"、"::1"、"*"，多项用逗号分隔。
+        /// 可信代理白名单（可选，默认空数组 = 不采信 X-Forwarded-For，fail-closed）。
+        /// 支持单个 IP、CIDR 网段与通配符，如 "10.0.0.5"、"10.0.0.0/8"、"::1"，多项用逗号分隔；
+        /// 仅显式配置 "*" 时才信任全部代理。
         /// 配置项：WLN_RATE_TRUSTED_PROXIES。
         /// <para>
-        /// 为空（或含 "*"）时：**无条件采信** X-Forwarded-For 的第一个有效 IP，与历史行为完全一致。
+        /// 为空：**一律不采信** X-Forwarded-For，客户端地址取直连对端（<c>Connection.RemoteIpAddress</c>）。
         /// </para>
         /// <para>
-        /// 非空时：仅当直连对端（<c>Connection.RemoteIpAddress</c>）命中白名单才采信该头，
+        /// 非空时：仅当直连对端命中白名单才采信该头，
         /// 否则一律使用直连地址；采信时自右向左回溯，取第一个不可信的跳作为客户端地址，
         /// 避免可信代理「追加而非覆盖」时攻击者预置伪造的最左项。
         /// </para>
@@ -114,6 +115,15 @@ namespace Wlniao.Middleware
         /// 熔断器恢复时间（默认：30秒）
         /// </summary>
         public int CircuitBreakerRecoveryTime { get; set; } = 30;
+
+        /// <summary>
+        /// 熔断打开期间的本地兜底配额（每 TimeWindow 内每键允许的请求数）。
+        /// ≤0 表示自动取 <c>max(1, MaxRequests/4)</c>，即正常配额的 1/4，至少 1 次。
+        /// 熔断打开时下游已不健康，必须比平时更严，否则攻击者诱发 5 次错误即可换取宽松窗口。
+        /// 配置项：WLN_RATE_CB_FALLBACK_MAX。
+        /// </summary>
+        public int CircuitBreakerFallbackMaxRequests { get; set; } =
+            Convert.ToInt(Config.GetSetting("WLN_RATE_CB_FALLBACK_MAX", "0"));
 
         /// <summary>
         /// 分布式限流存储（可选）
@@ -403,7 +413,8 @@ namespace Wlniao.Middleware
         private readonly HashSet<string> _blackKeysSet;
         private readonly TrustedProxyMatcher _trustedProxies;
         /// <summary>
-        /// 未配置可信代理（或配置为 "*"）时保持历史行为：无条件采信 X-Forwarded-For
+        /// 仅当显式配置 "*" 为可信代理时为 true：采信 X-Forwarded-For。
+        /// 未配置或配置笔误一律为 false（fail-closed），不采信该请求头。
         /// </summary>
         private readonly bool _legacyTrustAll;
         private readonly CircuitBreaker? _circuitBreaker;
@@ -431,6 +442,14 @@ namespace Wlniao.Middleware
         private readonly long[] _coarseWindows = new long[CoarseBucketCount];
         private readonly long[] _coarseCounts = new long[CoarseBucketCount];
         private readonly object _coarseLock = new();
+
+        /// <summary>
+        /// 状态创建分段锁：同一 key 的所有 GetState 调用串行化，
+        /// 使 GetOrCreate 的重读一定拿到真正落入缓存的实例（而非并发下落选的工厂产物）。
+        /// 固定 64 段避免按 key 建锁导致无界增长。
+        /// </summary>
+        private const int StateLockStripes = 64;
+        private readonly object[] _stateLocks = Enumerable.Range(0, StateLockStripes).Select(_ => new object()).ToArray();
 
         private long _pressureProbe;
         private volatile bool _cachePressure;
@@ -496,11 +515,13 @@ namespace Wlniao.Middleware
                 clientKey = GetClientKey(context);
                 var path = context.Request.Path.Value;
 
-                if (string.IsNullOrEmpty(clientKey) || _whiteKeysSet.Contains(clientKey))
+                // 空 clientKey（RemoteIpAddress 为 null）不能当白名单：落到固定兜底键参与限流
+                var rateKey = string.IsNullOrEmpty(clientKey) ? "unknown" : clientKey;
+                if (!string.IsNullOrEmpty(clientKey) && _whiteKeysSet.Contains(clientKey))
                 {
                     // 客户端白名单放行。与历史行为一致：同一标识同时出现在黑白名单时以白名单为准
                 }
-                else if (_blackKeysSet.Contains(clientKey))
+                else if (!string.IsNullOrEmpty(clientKey) && _blackKeysSet.Contains(clientKey))
                 {
                     // 黑名单语义是「封禁该标识」，优先级必须高于熔断状态、限流开关与路径白名单：
                     // 被拉黑的客户端即使在「未启用限流」「路径白名单」「熔断打开」时也必须继续被拦截。
@@ -508,19 +529,29 @@ namespace Wlniao.Middleware
                     allow = false;
                     blockedStatus = StatusCodes.Status428PreconditionRequired;
                 }
-                else if (_circuitBreaker?.IsOpen == true)
-                {
-                    // 熔断打开：跳过限流检查，且不更新熔断状态，等待恢复时间后半开自愈
-                    observeCircuit = false;
-                }
                 else if (_options.MaxRequests <= 0 || IsWhitePath(path))
                 {
-                    // 未启用限流 / 路径白名单：放行
+                    // 未启用限流 / 路径白名单：放行；熔断打开时不更新熔断状态
+                    if (_circuitBreaker?.IsOpen == true)
+                    {
+                        observeCircuit = false;
+                    }
                 }
-                else if (!await CheckRateLimitAsync(GetRateLimitKey(clientKey, path)))
+                else
                 {
-                    allow = false;
-                    blockedStatus = StatusCodes.Status429TooManyRequests;
+                    // 熔断打开：用更严格的本地兜底配额（默认 MaxRequests/4），而非跳过限流
+                    var circuitOpen = _circuitBreaker?.IsOpen == true;
+                    var limit = circuitOpen ? CircuitFallbackLimit() : _options.MaxRequests;
+                    if (!await CheckRateLimitAsync(GetRateLimitKey(rateKey, path), limit))
+                    {
+                        allow = false;
+                        blockedStatus = StatusCodes.Status429TooManyRequests;
+                    }
+                    if (circuitOpen)
+                    {
+                        // 熔断打开期间不更新熔断状态，等待恢复时间后半开自愈
+                        observeCircuit = false;
+                    }
                 }
             }
             catch (Exception ex)
@@ -670,7 +701,19 @@ namespace Wlniao.Middleware
             return key;
         }
 
-        private async Task<bool> CheckRateLimitAsync(string key)
+        /// <summary>
+        /// 熔断打开期间的兜底配额：显式配置优先，否则取正常配额的 1/4（至少 1）
+        /// </summary>
+        private int CircuitFallbackLimit()
+        {
+            if (_options.CircuitBreakerFallbackMaxRequests > 0)
+            {
+                return _options.CircuitBreakerFallbackMaxRequests;
+            }
+            return Math.Max(1, _options.MaxRequests / 4);
+        }
+
+        private async Task<bool> CheckRateLimitAsync(string key, int maxRequests)
         {
             if (_options.PreferDistributedStore && _options.DistributedStore != null && _options.DistributedStore.IsAvailable)
             {
@@ -678,7 +721,7 @@ namespace Wlniao.Middleware
                 {
                     return await _options.DistributedStore.TryAcquireAsync(
                         key, 
-                        _options.MaxRequests, 
+                        maxRequests, 
                         TimeSpan.FromSeconds(_options.TimeWindow)
                     );
                 }
@@ -692,28 +735,28 @@ namespace Wlniao.Middleware
                 }
             }
 
-            return CheckLocalRateLimit(key);
+            return CheckLocalRateLimit(key, maxRequests);
         }
 
         private static int distributedFallbackCount;
 
-        private bool CheckLocalRateLimit(string key)
+        private bool CheckLocalRateLimit(string key, int maxRequests)
         {
             // 缓存处于容量压力状态时，细粒度计数随时可能被压缩淘汰而失真，
             // 直接退化为粗粒度桶，避免「被攻击时限流静默失效」
             if (CacheUnderPressure())
             {
-                return CheckCoarseBucket(key);
+                return CheckCoarseBucket(key, maxRequests);
             }
 
             try
             {
                 return _options.Algorithm switch
                 {
-                    RateLimitAlgorithm.TokenBucket => CheckTokenBucket(key),
-                    RateLimitAlgorithm.FixedWindow => CheckFixedWindow(key),
-                    RateLimitAlgorithm.SlidingWindow => CheckSlidingWindow(key),
-                    _ => CheckTokenBucket(key),
+                    RateLimitAlgorithm.TokenBucket => CheckTokenBucket(key, maxRequests),
+                    RateLimitAlgorithm.FixedWindow => CheckFixedWindow(key, maxRequests),
+                    RateLimitAlgorithm.SlidingWindow => CheckSlidingWindow(key, maxRequests),
+                    _ => CheckTokenBucket(key, maxRequests),
                 };
             }
             catch (Exception ex)
@@ -721,7 +764,7 @@ namespace Wlniao.Middleware
                 // 缓存实现变更导致异常时同样退化为粗粒度桶，而不是直接 fail-open：
                 // 客户端标识（IP / X-Forwarded-For）攻击者可控，一旦放行就等于关掉限流
                 Log.Loger.Warn($"Rate limit storage: {ex.Message}, fallback to coarse bucket");
-                return CheckCoarseBucket(key);
+                return CheckCoarseBucket(key, maxRequests);
             }
         }
 
@@ -748,14 +791,15 @@ namespace Wlniao.Middleware
         /// 属于攻击场景下「宁可误伤也不放弃限流」的降级行为。
         /// </summary>
         /// <param name="key">限流键</param>
+        /// <param name="maxRequests">本窗口允许的最大请求数（熔断兜底时可小于正常配额）</param>
         /// <returns>是否放行</returns>
-        private bool CheckCoarseBucket(string key)
+        private bool CheckCoarseBucket(string key, int maxRequests)
         {
             var bucket = (int)((uint)key.GetHashCode() % CoarseBucketCount);
             var windowSeconds = Math.Max(1, _options.TimeWindow);
             var windowTicks = TimeSpan.TicksPerSecond * windowSeconds;
             var currentWindow = DateTime.UtcNow.Ticks / windowTicks;
-            var limit = Math.Max(1, _options.MaxRequests);
+            var limit = Math.Max(1, maxRequests);
 
             lock (_coarseLock)
             {
@@ -772,9 +816,9 @@ namespace Wlniao.Middleware
         /// <summary>
         /// 取得缓存中的唯一状态实例。GetOrCreate 并非原子操作，并发下多个线程可能各自
         /// 创建一份状态，必须以真正落入缓存的实例为准，否则计数会打在落选实例上导致限流偏松。
-        /// 注意：本方法只是把计数收敛到「缓存赢家」，仍不是严格原子——若线程 A 的 TryGetValue
-        /// 早于线程 B 的 Set 提交，A 仍可能拿到落选实例。窗口极窄，最坏结果是限流略松，
-        /// 对限流场景可接受；如需严格精确应改用原子计数器或分布式存储。
+        /// 通过按 key 哈希的分段锁把「创建 + 重读」串行化，同一 key 只会有一个赢家实例被返回。
+        /// 注意：计数本身的递增仍是实例内非原子操作，极端并发下限流可能略松；
+        /// 如需严格精确应改用原子计数器或分布式存储。
         /// </summary>
         /// <typeparam name="T">状态类型</typeparam>
         /// <param name="key">缓存键</param>
@@ -784,64 +828,78 @@ namespace Wlniao.Middleware
         /// <returns></returns>
         private T? GetState<T>(string key, Func<T> factory, int absoluteSeconds, int slidingSeconds = 0) where T : class
         {
-            _memoryCache.GetOrCreate(key, entry =>
+            var stripe = (uint)key.GetHashCode(StringComparison.Ordinal) % StateLockStripes;
+            lock (_stateLocks[stripe])
             {
-                entry.Size = 1;
-                if (slidingSeconds > 0)
+                if (_memoryCache.TryGetValue(key, out T? cached) && cached is not null)
                 {
-                    entry.SlidingExpiration = TimeSpan.FromSeconds(slidingSeconds);
+                    return cached;
                 }
-                else
+                _memoryCache.GetOrCreate(key, entry =>
                 {
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(absoluteSeconds);
-                }
-                return factory();
-            });
-
-            return _memoryCache.TryGetValue(key, out T? cached) ? cached : null;
+                    entry.Size = 1;
+                    if (slidingSeconds > 0)
+                    {
+                        entry.SlidingExpiration = TimeSpan.FromSeconds(slidingSeconds);
+                    }
+                    else
+                    {
+                        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(absoluteSeconds);
+                    }
+                    return factory();
+                });
+                // 同一 key 已被分段锁串行化，重读拿到的必是落入缓存的赢家实例
+                return _memoryCache.TryGetValue(key, out cached) ? cached : null;
+            }
         }
 
-        private bool CheckTokenBucket(string key)
+        private bool CheckTokenBucket(string key, int maxRequests)
         {
             var windowSeconds = Math.Max(1, _options.TimeWindow);
-            var bucket = GetState(key,
+            // 状态键带上配额：熔断兜底与正常限流配额不同，不能共享同一桶实例
+            var stateKey = maxRequests == _options.MaxRequests ? key : key + "_cb" + maxRequests;
+            var bucket = GetState(stateKey,
                 () =>
                 {
-                    var capacity = _options.BucketCapacity > 0 ? _options.BucketCapacity : _options.MaxRequests;
-                    return new TokenBucket((double)_options.MaxRequests / windowSeconds, capacity);
+                    var capacity = _options.BucketCapacity > 0 && maxRequests == _options.MaxRequests
+                        ? _options.BucketCapacity
+                        : maxRequests;
+                    return new TokenBucket((double)maxRequests / windowSeconds, Math.Max(1, capacity));
                 },
                 windowSeconds * 2,
                 slidingSeconds: windowSeconds * 2);
 
             // 取不到实例说明刚写入即被缓存压缩淘汰，此时不能当作「放行」，
             // 否则淘汰动作本身就成了绕过限流的手段
-            return bucket == null ? CheckCoarseBucket(key) : bucket.TryConsume();
+            return bucket == null ? CheckCoarseBucket(key, maxRequests) : bucket.TryConsume();
         }
 
-        private bool CheckFixedWindow(string key)
+        private bool CheckFixedWindow(string key, int maxRequests)
         {
             var windowSeconds = Math.Max(1, _options.TimeWindow);
             var windowTicks = TimeSpan.TicksPerSecond * windowSeconds;
-            var windowKey = $"{key}_{DateTime.UtcNow.Ticks / windowTicks}";
+            var suffix = maxRequests == _options.MaxRequests ? "" : "_cb" + maxRequests;
+            var windowKey = $"{key}{suffix}_{DateTime.UtcNow.Ticks / windowTicks}";
 
             var counter = GetState(windowKey, () => new WindowCounter(), windowSeconds * 2);
             if (counter == null)
             {
-                return CheckCoarseBucket(key);
+                return CheckCoarseBucket(key, maxRequests);
             }
 
-            return Interlocked.Increment(ref counter.Value) <= _options.MaxRequests;
+            return Interlocked.Increment(ref counter.Value) <= maxRequests;
         }
 
-        private bool CheckSlidingWindow(string key)
+        private bool CheckSlidingWindow(string key, int maxRequests)
         {
             var windowSeconds = Math.Max(1, _options.TimeWindow);
             var window = TimeSpan.FromSeconds(windowSeconds);
+            var stateKey = maxRequests == _options.MaxRequests ? key : key + "_cb" + maxRequests;
 
-            var queue = GetState(key, () => new Queue<DateTime>(), windowSeconds * 2, slidingSeconds: windowSeconds * 2);
+            var queue = GetState(stateKey, () => new Queue<DateTime>(), windowSeconds * 2, slidingSeconds: windowSeconds * 2);
             if (queue == null)
             {
-                return CheckCoarseBucket(key);
+                return CheckCoarseBucket(key, maxRequests);
             }
 
             var now = DateTime.UtcNow;
@@ -852,7 +910,7 @@ namespace Wlniao.Middleware
                     queue.Dequeue();
                 }
 
-                if (queue.Count >= _options.MaxRequests)
+                if (queue.Count >= maxRequests)
                 {
                     return false;
                 }
@@ -891,6 +949,56 @@ namespace Wlniao.Middleware
             var options = new RateLimitOptions();
             configureOptions(options);
             return app.UseMiddleware<RateLimitMiddleware>(options);
+        }
+    }
+
+    /// <summary>
+    /// 统一解析客户端 IP：与限流共用 WLN_RATE_TRUSTED_PROXIES 的 fail-closed 代理信任策略，
+    /// 未配置可信代理时不采信 X-Forwarded-For，防止伪造 XFF 绕过封禁/审计。
+    /// </summary>
+    public static class ClientIpResolver
+    {
+        private static readonly Lazy<TrustedProxyMatcher> Matcher = new(() =>
+            new TrustedProxyMatcher(Config.GetConfigs("WLN_RATE_TRUSTED_PROXIES", "").SplitBy() ?? []));
+
+        /// <summary>
+        /// 解析客户端 IP：直连对端不可信时忽略 XFF；可信时自右向左回溯取第一个不可信跳
+        /// </summary>
+        /// <param name="remoteIp">直连对端地址</param>
+        /// <param name="forwardedFor">X-Forwarded-For 头原文（可为 null）</param>
+        public static string Resolve(System.Net.IPAddress remoteIp, string forwardedFor)
+        {
+            var normalize = static (System.Net.IPAddress a) =>
+                a == null ? "" : a.IsIPv4MappedToIPv6 ? a.MapToIPv4().ToString() : a.ToString();
+            var direct = normalize(remoteIp);
+            var matcher = Matcher.Value;
+            // 未配置 / 配置无有效项 / 显式 "*"：与 RateLimit 一致
+            if (!matcher.Configured || matcher.MatchAll)
+            {
+                if (matcher.MatchAll && !string.IsNullOrEmpty(forwardedFor))
+                {
+                    foreach (var ip in forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    {
+                        if (ip == "::1" || ip == "127.0.0.1" || !StringUtil.IsIP(ip)) continue;
+                        return ip;
+                    }
+                }
+                return direct;
+            }
+            if (!matcher.IsTrusted(remoteIp) || string.IsNullOrEmpty(forwardedFor))
+            {
+                return direct;
+            }
+            var hops = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            for (var i = hops.Length - 1; i >= 0; i--)
+            {
+                if (!System.Net.IPAddress.TryParse(hops[i], out var hop) || matcher.IsTrusted(hop))
+                {
+                    continue;
+                }
+                return normalize(hop);
+            }
+            return direct;
         }
     }
 }

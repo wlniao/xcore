@@ -1,4 +1,4 @@
-﻿/*==============================================================================
+/*==============================================================================
     文件名称：XCore.cs
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：XCore内部运行信息及状态
@@ -27,6 +27,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Text.Unicode;
 using System.Text.Encodings.Web;
+using System.Threading;
 using Wlniao.Log;
 
 namespace Wlniao
@@ -37,7 +38,8 @@ namespace Wlniao
     public class XCore
     {
         /// <summary>
-        /// 单线程锁
+        /// 通用兼容锁（公开 API，保留以免破坏既有调用方）。
+        /// 框架内部各组件已改用各自的私有锁，不应再用本字段串联不同组件。
         /// </summary>
         public static object Lock = new();
         /// <summary>
@@ -266,14 +268,38 @@ namespace Wlniao
             }
         }
         
+        private static JsonSerializerOptions _jsonSerializerOptions = CreateJsonSerializerOptions();
+
         /// <summary>
-        /// 基础的JSON序列化选项
+        /// 基础的JSON序列化选项（只读快照；需要变更请调用 SetJsonSerializerOptions 整体替换）
         /// </summary>
-        public static JsonSerializerOptions JsonSerializerOptions = new ()
+        public static JsonSerializerOptions JsonSerializerOptions => Volatile.Read(ref _jsonSerializerOptions);
+
+        /// <summary>
+        /// 创建一套与框架默认行为一致的 JSON 选项（中文不转义、object 反序列化为 JsonNode）
+        /// </summary>
+        public static JsonSerializerOptions CreateJsonSerializerOptions() => new()
         {
-            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), //Json序列化的时候对中文进行处理
+            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
             UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonNode
         };
+
+        /// <summary>
+        /// 整体替换全局 JSON 选项。JsonSerializerOptions 一旦被使用即冻结，无法原地修改，
+        /// 因此通过工厂新建实例；同时刷新 Json 的降级 resolver 缓存，避免运行期替换后仍用旧快照。
+        /// </summary>
+        public static JsonSerializerOptions SetJsonSerializerOptions(Func<JsonSerializerOptions> factory)
+        {
+            var options = factory?.Invoke() ?? CreateJsonSerializerOptions();
+            Volatile.Write(ref _jsonSerializerOptions, options);
+            Json.ResetDegradeOptions();
+            return options;
+        }
+
+        /// <summary>
+        /// 恢复框架默认 JSON 选项
+        /// </summary>
+        public static void ReloadJsonSerializerOptions() => SetJsonSerializerOptions(CreateJsonSerializerOptions);
         
         /// <summary>
         /// 内置SSL证书检查服务（放通内部自签CA）
@@ -556,7 +582,9 @@ namespace Wlniao
         }
         
         /// <summary>
-        /// 根据配置信息计算得出相对固定的加密密钥
+        /// 会话加密密钥：优先读配置 SessionEncryptKey；未配置时生成进程级随机密钥，
+        /// 不再从 WebNode/WebHost 等可公开信息推导（否则知道部署配置即可离线复算）。
+        /// 多实例部署必须显式配置同一 SessionEncryptKey，否则各实例会话互不相通。
         /// </summary>
         public static string SessionEncryptKey
         {
@@ -569,7 +597,9 @@ namespace Wlniao
                 sessionEncryptKey = Config.GetConfigs("SessionEncryptKey");
                 if (string.IsNullOrEmpty(sessionEncryptKey))
                 {
-                    sessionEncryptKey = Encryptor.Md5Encryptor16(WebNode + WebHost + DbConnectInfo.WLN_CONNSTR_TYPE + DbConnectInfo.WLN_CONNSTR_NAME).ToLower();
+                    var bytes = new byte[16];
+                    System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
+                    sessionEncryptKey = System.Convert.ToHexString(bytes).ToLowerInvariant();
                 }
                 return sessionEncryptKey;
             }

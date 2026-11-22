@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -41,7 +42,7 @@ namespace Wlniao
         /// <summary>
         /// 裁剪/AOT 场景下的降级选项（含显式 TypeInfoResolver），按需延迟创建。
         /// </summary>
-        private static volatile JsonSerializerOptions? _degradeOptions;
+        private static JsonSerializerOptions? _degradeOptions;
 
         /// <summary>
         /// 裁剪 / AOT 严格诊断开关，默认 false（不改变任何现有行为）。
@@ -95,6 +96,14 @@ namespace Wlniao
         }
 
         /// <summary>
+        /// 全局 JSON 选项被整体替换后清空降级缓存（由 XCore.SetJsonSerializerOptions 调用）
+        /// </summary>
+        internal static void ResetDegradeOptions()
+        {
+            Volatile.Write(ref _degradeOptions, null);
+        }
+
+        /// <summary>
         /// 为反射式（逃生舱）重载补齐 TypeInfoResolver，避免裁剪/AOT 应用里硬抛 InvalidOperationException。
         /// </summary>
         /// <remarks>
@@ -104,8 +113,8 @@ namespace Wlniao
         /// 降级策略：优先使用源生成上下文 Wlniao.JsonContext（覆盖内置/常用类型，AOT 安全），
         /// 未覆盖的类型回退到反射解析器 DefaultJsonTypeInfoResolver（best-effort：被裁剪的成员可能丢失）。
         /// 常规 CoreCLR 应用（反射可用）下原样返回，保持原有语义且零额外开销。
-        /// 注意：缓存的降级选项是 XCore.JsonSerializerOptions 的一次性快照，
-        /// 若运行期再修改该静态字段，快照不会同步（裁剪场景下极少见）。
+        /// 缓存的降级选项是 XCore.JsonSerializerOptions 的一次性快照；
+        /// XCore.SetJsonSerializerOptions / ReloadJsonSerializerOptions 会调用 ResetDegradeOptions 同步刷新该快照。
         /// </remarks>
         [RequiresUnreferencedCode(AotMessage)]
         [RequiresDynamicCode(AotMessage)]
@@ -119,7 +128,13 @@ namespace Wlniao
             if (ReferenceEquals(options, XCore.JsonSerializerOptions))
             {
                 // 默认选项走缓存，避免每次调用都克隆 JsonSerializerOptions
-                return _degradeOptions ??= CloneWithResolver(options);
+                var cached = Volatile.Read(ref _degradeOptions);
+                if (cached is not null)
+                {
+                    return cached;
+                }
+                var created = CloneWithResolver(options);
+                return Interlocked.CompareExchange(ref _degradeOptions, created, null) ?? created;
             }
             return CloneWithResolver(options);
         }

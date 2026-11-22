@@ -1,10 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
 using Wlniao.Text;
 
 namespace Wlniao.XCenter
@@ -14,13 +12,6 @@ namespace Wlniao.XCenter
     /// </summary>
     public class XSession
     {
-        /// <summary>
-        /// 会话扩展数据序列化选项；编码器构建成本较高，必须复用
-        /// </summary>
-        private static readonly JsonSerializerOptions JsonSerializerOptions = new()
-        {
-            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-        };
         /// <summary>
         /// 
         /// </summary>
@@ -154,7 +145,7 @@ namespace Wlniao.XCenter
                     if (data.Length == 5)
                     {
                         var plain = StringUtil.HexStringToUTF8(data[4]);
-                        var kvs = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(plain, new System.Text.Json.JsonSerializerOptions { });
+                        var kvs = Wlniao.Json.Deserialize<Dictionary<string, string>>(plain, Wlniao.JsonContext.Instance.DictionaryStringString);
                         if (kvs != null)
                         {
                             foreach (var kv in kvs)
@@ -233,7 +224,7 @@ namespace Wlniao.XCenter
                         obj.TryAdd(kv.Key, kv.Value);
                     }
                 }
-                var ext = System.Text.Json.JsonSerializer.Serialize(obj, JsonSerializerOptions);
+                var ext = System.Text.Json.JsonSerializer.Serialize(obj, Wlniao.JsonContext.Instance.DictionaryStringObject);
                 plain += "," + UserSid + "," + StringUtil.UTF8ToHexString(ext);
             }
             if (string.IsNullOrEmpty(apptoken))

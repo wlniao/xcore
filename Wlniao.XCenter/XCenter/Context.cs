@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -267,6 +268,8 @@ namespace Wlniao.XCenter
         /// <param name="path"></param>
         /// <param name="data"></param>
         /// <returns></returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变，已文档化）；NativeAOT/裁剪环境需为具体 T 登记源生成上下文后迁移")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变，已文档化）；NativeAOT/裁剪环境需为具体 T 登记源生成上下文后迁移")]
         public static Result<T> AppData<T>(string path, object data)
         {
             if (string.IsNullOrEmpty(XCenterCertSn))
@@ -287,9 +290,16 @@ namespace Wlniao.XCenter
             var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
             var sm2Token = Wlniao.Encryptor.SM2EncryptByPublicKey(Encoding.ASCII.GetBytes(token), XCenterServerKey);
             var sign = Wlniao.Encryptor.Sm2SignWithPrivateKey(expireTime + sm2Token + encdata, XCenterPrivkey);
-            var reqStr = Wlniao.Json.Serialize(new { sn = XCenterCertSn, data = encdata, sign, token = sm2Token, expire = expireTime });
+            var reqStr = Wlniao.Json.Serialize(new Dictionary<string, object>
+            {
+                ["sn"] = XCenterCertSn,
+                ["data"] = encdata,
+                ["sign"] = sign,
+                ["token"] = sm2Token,
+                ["expire"] = expireTime
+            }, Wlniao.JsonContext.Instance.DictionaryStringObject);
             Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
-            var start = DateTime.Now;
+            var start = DateTime.UtcNow;
             try
             {
                 var stream = Convert.ToStream(Encoding.UTF8.GetBytes(reqStr));
@@ -297,7 +307,7 @@ namespace Wlniao.XCenter
                 var client = Wlniao.Net.HttpClientManager.SharedInstance;
                 using (var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path))
                 {
-                    request.Headers.Date = DateTime.Now;
+                    request.Headers.Date = DateTime.UtcNow;
                     request.Content = new System.Net.Http.StreamContent(stream);
                     request.Content.Headers.Add("Content-Type", "application/json");
                     request.Headers.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
@@ -323,9 +333,9 @@ namespace Wlniao.XCenter
                 }
                 if (string.IsNullOrEmpty(utime))
                 {
-                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 }
-                var resObj = Wlniao.Json.Deserialize<ApiResult<string>>(resStr);
+                var resObj = System.Text.Json.JsonSerializer.Deserialize(resStr, JsonContext.Instance.ApiResultString);
                 if (resObj != null && !string.IsNullOrEmpty(resObj.data))
                 {
                     var plainResult = Encryptor.SM4DecryptECBFromHex(resObj.data, token);
@@ -349,7 +359,7 @@ namespace Wlniao.XCenter
             }
             catch (Exception ex)
             {
-                utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                 Log.Loger.Topic("authify", $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
                 return Result<T>.OutMessage("后端接口请求异常", 121);
             }
@@ -363,6 +373,8 @@ namespace Wlniao.XCenter
         /// <param name="path"></param>
         /// <param name="data"></param>
         /// <returns></returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变，已文档化）；NativeAOT/裁剪环境需为具体 T 登记源生成上下文后迁移")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变，已文档化）；NativeAOT/裁剪环境需为具体 T 登记源生成上下文后迁移")]
         public Wlniao.ApiResult<T> ApiData<T>(string path, object data)
         {
             var rlt = new Wlniao.ApiResult<T>();
@@ -377,13 +389,20 @@ namespace Wlniao.XCenter
             {
                 var now = DateTools.GetUnix();
                 var utime = "";
-                var start = DateTime.Now;
+                var start = DateTime.UtcNow;
                 var msgid = StringUtil.CreateLongId();
                 var plainData = Wlniao.Json.Serialize(data);
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, apptoken);
                 var sign = Wlniao.Encryptor.SM3Encrypt(owner + app + encdata + now + apptoken);
                 var resStr = "";
-                var reqStr = Wlniao.Json.Serialize(new { app, oid = owner, sign, data = encdata, timestamp = now });
+                var reqStr = Wlniao.Json.Serialize(new Dictionary<string, object>
+                {
+                    ["app"] = app,
+                    ["oid"] = owner,
+                    ["sign"] = sign,
+                    ["data"] = encdata,
+                    ["timestamp"] = now
+                }, Wlniao.JsonContext.Instance.DictionaryStringObject);
                 Loger.Topic(app, $"msgid:{msgid},authify:/{path}{Environment.NewLine} >>> {reqStr}", Log.LogLevel.Information, false);
                 try
                 {
@@ -391,7 +410,7 @@ namespace Wlniao.XCenter
                     var client = Wlniao.Net.HttpClientManager.SharedInstance;
                     using (var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, AuthifyHost + path))
                     {
-                        reqest.Headers.Date = DateTime.Now;
+                        reqest.Headers.Date = DateTime.UtcNow;
                         reqest.Content = new System.Net.Http.StreamContent(stream);
                         reqest.Content.Headers.Add("Content-Type", "application/json");
                         reqest.Headers.TryAddWithoutValidation("User-Agent", "Wlniao/XCore");
@@ -411,19 +430,19 @@ namespace Wlniao.XCenter
                     }
                     if (string.IsNullOrEmpty(utime))
                     {
-                        utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                        utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                     }
                     Loger.Topic(app, $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} <<< {resStr}", Log.LogLevel.Information, false);
                 }
                 catch (Exception ex)
                 {
-                    utime = DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
+                    utime = DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms";
                     Loger.Topic(app, $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} <<< 请确认接口访问是否正常： => {ex.Message}", Wlniao.Log.LogLevel.Error, true);
                 }
                 var logs = $"msgid:{msgid},authify:/{path}[{utime}]{Environment.NewLine} >>> {plainData}";
                 try
                 {
-                    var resObj = Json.Deserialize<Wlniao.ApiResult<string>>(resStr);
+                    var resObj = System.Text.Json.JsonSerializer.Deserialize(resStr, JsonContext.Instance.ApiResultString);
                     if (resObj != null)
                     {
                         rlt.node = resObj.node;

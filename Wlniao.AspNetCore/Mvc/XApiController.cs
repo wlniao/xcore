@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 
@@ -50,15 +50,20 @@ namespace Wlniao.Mvc
                     result.data = "202";
                     result.message = "缺少参数，timestamp不能为空";
                 }
-                else if (Convert.ToLong(timestamp) + 3600 < DateTools.GetUnix())
+                else if (!XServer.ApiSignGuard.IsTimestampValid(Convert.ToLong(timestamp), DateTools.GetUnix()))
                 {
                     result.code = "203";
-                    result.message = "请求已过期，请重新发起";
+                    result.message = "请求时间戳超出允许窗口";
                 }
-                else if (Encryptor.SM3Encrypt(timestamp + data + token) != sign)
+                else if (!XServer.ApiSignGuard.FixedTimeEquals(Encryptor.SM3Encrypt(timestamp + data + token), sign))
                 {
                     result.code = "205";
                     result.message = "请求错误，签名验证失败";
+                }
+                else if (!XServer.ApiSignGuard.TryAcceptOnce(sign, DateTools.GetUnix()))
+                {
+                    result.code = "208";
+                    result.message = "请求已处理过，请勿重放";
                 }
                 else
                 {
@@ -78,7 +83,10 @@ namespace Wlniao.Mvc
                                 req.TryAdd(kv.Key, kv.Value);
                             }
                         }
-                        catch { }
+                        catch (Exception dex)
+                        {
+                            Log.Loger.Debug("XApi request deserialize: " + dex.Message);
+                        }
                         if (req == null && !string.IsNullOrEmpty(data))
                         {
                             result.code = "207";
@@ -94,9 +102,11 @@ namespace Wlniao.Mvc
             catch (Exception ex)
             {
                 result.code = "401";
-                result.message = ex.Message;
+                // 不把内部异常原文回给客户端（可能泄露路径/类型信息）
+                result.message = "请求处理失败";
                 Log.Loger.Error(ex.Message);
             }
+            result.sign = XServer.ApiSignGuard.SignResponse(result.data?.ToString() ?? "", token);
             return Json(result);
         }
         /// <summary>
@@ -135,12 +145,14 @@ namespace Wlniao.Mvc
             {
                 txt = ResponseJson.Serialize(obj);
             }
+            var enc = Encryptor.SM4EncryptECBToHex(txt!, token);
             var dic = new Dictionary<string, object>
             {
                 { "node", result.node },
                 { "code", result.code },
                 { "tips", result.tips },
-                { "data", Encryptor.SM4EncryptECBToHex(txt!, token) },
+                { "data", enc },
+                { "sign", XServer.ApiSignGuard.SignResponse(enc, token) },
                 { "success", result.success },
                 { "message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message }
             };
@@ -160,12 +172,14 @@ namespace Wlniao.Mvc
         {
             result.code = "0";
             result.success = true;
+            var enc = Encryptor.SM4EncryptECBToHex(str, token);
             var dic = new Dictionary<string, object>
             {
                 { "node", result.node },
                 { "code", result.code },
                 { "tips", result.tips },
-                { "data", Encryptor.SM4EncryptECBToHex(str, token) },
+                { "data", enc },
+                { "sign", XServer.ApiSignGuard.SignResponse(enc, token) },
                 { "success", result.success },
                 { "message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message }
             };
@@ -219,12 +233,14 @@ namespace Wlniao.Mvc
             {
                 result.code = "1";
             }
+            var enc = Encryptor.SM4EncryptECBToHex(txt!, token);
             var dic = new Dictionary<string, object>
             {
                 { "node", result.node },
                 { "code", result.code },
                 { "tips", result.tips },
-                { "data", Encryptor.SM4EncryptECBToHex(txt!, token) },
+                { "data", enc },
+                { "sign", XServer.ApiSignGuard.SignResponse(enc, token) },
                 { "success", result.success },
                 { "message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message }
             };

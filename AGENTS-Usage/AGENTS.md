@@ -1,7 +1,7 @@
 # AGENTS.md
 
 本项目引用 Wlniao 框架：`Wlniao.XCore`，Web 项目再加 `Wlniao.AspNetCore`。
-本文按包版本 **10.0.2** 编写，只写「必须遵守什么」，不写 API 清单。
+本文按包版本 **10.0.5** 编写，只写「必须遵守什么」，不写 API 清单。
 
 - 完整签名查 `Reference/Wlniao/Wlniao.XCore.md`、`Reference/Wlniao/Wlniao.AspNetCore.md`，**按需检索，不要整篇预读**。
 - 本文与源码冲突时，以源码 / 包内 XML 注释为准，并顺手修正对应文档。
@@ -24,7 +24,7 @@ dotnet publish -c Release -r linux-x64 -p:PublishAot=true     # AOT 发布
 dotnet list package --include-transitive                       # 核对实际引用的 Wlniao 版本
 ```
 
-> 最后一条显示的 Wlniao 版本若不是 10.0.2，先停下确认差异（重点看 `ApiResult`、
+> 最后一条显示的 Wlniao 版本若不是 10.0.5，先停下确认差异（重点看 `ApiResult`、
 > `XApiController` 报文形状、`AddBusiness` 的 AOT 标注），不要照本文硬套。
 
 ## 3. 边界
@@ -78,6 +78,7 @@ AOT 下**静默输出 `{}`**，不报错但数据全丢。禁匿名类型参与�
 
 **④ `Cache.Set(key, value, 0)` 是「立即过期」**
 第三个参数是秒数，`0` 不是「永久」。想长期缓存给足够大的值（如 `365*86400`）。
+memory / file / redis 三后端语义已对齐：redis 对 `expire<=0` 写入后立即设置 0 秒 TTL。
 
 **⑤ `DateTools` 的时间都是无时区语义**
 `GetNow()` 返回 `Kind=Unspecified` 且已按 `WLN_TIMEZONE`（默认 8）偏移。
@@ -110,7 +111,8 @@ AOT 下**静默输出 `{}`**，不报错但数据全丢。禁匿名类型参与�
 **`XApiController`**：
 
 - `token` 必须在构造函数里赋值（16 字符 SM4 密钥），否则 `Check` 直接失败返回；
-- 校验式 `sign == SM3(timestamp + data + token)`，`timestamp` 只拦过期不拦超前；
+- 校验式 `sign == SM3(timestamp + data + token)`（常量时间比较），`timestamp` 双向窗口 `|now-ts|<=3600`（拦过期也拦超前），同 sign 窗口内拒绝重放（`208`）；
+- 响应带 `sign = SM3(data+token)`，`XApi`/`TokenApi` 客户端强制校验（`108`）；请求日志不落盘 sign；
 - **成功与失败报文形状不同**：成功走手拼字典且 `data` 为 SM4 密文、`code="0"`；失败走 `ApiResult<object>` 且 `data` 为明文状态码。客户端必须分开解析。
 
 **AOT 注意**：`AddBusiness` 标了 `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]`；

@@ -19,6 +19,7 @@
     limitations under the License.
 ===============================================================================*/
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -88,8 +89,46 @@ namespace Wlniao.Log
         private static bool _consumerStarted;
         private static readonly object _consumerLock = new();
 
-        // Loki 不可用时的全局退避时间；避免失败批次重入队后立即打满网络
-        private static DateTime _globalBackoffUntilUtc = DateTime.MinValue;
+        // Loki 不可用时的退避时间，按 server/orgId 隔离：单个坏目标不会拖住其他目标
+        private static readonly ConcurrentDictionary<string, long> _backoffUntilUtcTicks = new();
+        private const int BackoffSeconds = 30;
+        private const string BackoffKeySeparator = "\n";
+
+        private static string GetBatchKey(string server, string orgId)
+        {
+            return (server ?? "") + BackoffKeySeparator + (orgId ?? "");
+        }
+
+        private static bool IsBackedOff(string key)
+        {
+            return _backoffUntilUtcTicks.TryGetValue(key, out var until) && until > DateTime.UtcNow.Ticks;
+        }
+
+        /// <summary>
+        /// 队列中没有可选批次时，返回距离最近一次退避到期还需等待的时间
+        /// </summary>
+        private static TimeSpan GetBackoffDelay(TimeSpan fallback)
+        {
+            var now = DateTime.UtcNow.Ticks;
+            long nearest = long.MaxValue;
+            foreach (var item in _backoffUntilUtcTicks)
+            {
+                if (item.Value <= now)
+                {
+                    _backoffUntilUtcTicks.TryRemove(item.Key, out _);
+                }
+                else if (item.Value < nearest)
+                {
+                    nearest = item.Value;
+                }
+            }
+            if (nearest == long.MaxValue)
+            {
+                return fallback;
+            }
+            var wait = TimeSpan.FromTicks(nearest - now);
+            return wait < fallback ? wait : fallback;
+        }
 
         // Loki 推送错误使用文件日志，便于服务化部署排查
         private static readonly FileLoger _errorLoger = new(LogLevel.Error);
@@ -182,11 +221,6 @@ namespace Wlniao.Log
                     List<LokiStream> batch = null;
                     try
                     {
-                        if (DateTime.UtcNow < _globalBackoffUntilUtc)
-                        {
-                            await Task.Delay(1000, _cancellationTokenSource.Token).ConfigureAwait(false);
-                            continue;
-                        }
                         batch = DequeueBatch(MaxBatchSize);
                         if (batch.Count > 0)
                         {
@@ -194,7 +228,7 @@ namespace Wlniao.Log
                         }
                         else
                         {
-                            await Task.Delay(emptyDelay, _cancellationTokenSource.Token).ConfigureAwait(false);
+                            await Task.Delay(GetBackoffDelay(TimeSpan.FromMilliseconds(emptyDelay)), _cancellationTokenSource.Token).ConfigureAwait(false);
                         }
                     }
                     catch (OperationCanceledException)
@@ -340,7 +374,7 @@ namespace Wlniao.Log
                     {
                         continue;
                     }
-                    var key = (item.Server ?? "") + "\n" + (item.OrgId ?? "");
+                    var key = GetBatchKey(item.Server, item.OrgId);
                     if (!groups.TryGetValue(key, out var group))
                     {
                         group = new List<LokiStream>();
@@ -356,18 +390,24 @@ namespace Wlniao.Log
                     }
                 }
 
-                foreach (var group in groups.Values)
+                foreach (var group in groups)
                 {
-                    if (batch.Count == 0)
+                    if (batch.Count == 0 && !IsBackedOff(group.Key))
                     {
-                        batch = group;
+                        batch = group.Value;
+                        break;
                     }
-                    else
+                }
+                // 其他目标（含处于退避期的目标）原样重新入队，等待各自退避结束
+                foreach (var group in groups)
+                {
+                    if (ReferenceEquals(group.Value, batch))
                     {
-                        foreach (var item in group)
-                        {
-                            queue.Enqueue(item);
-                        }
+                        continue;
+                    }
+                    foreach (var item in group.Value)
+                    {
+                        queue.Enqueue(item);
                     }
                 }
             }
@@ -411,6 +451,7 @@ namespace Wlniao.Log
             {
                 return;
             }
+            var batchKey = GetBatchKey(server, orgId);
 
             var dto = new LokiDto { streams = batch };
             var success = false;
@@ -451,10 +492,16 @@ namespace Wlniao.Log
                 }
             }
 
-            if (!success)
+            if (success)
             {
-                // 失败时重新加入队列，并设置全局退避
-                _globalBackoffUntilUtc = DateTime.UtcNow.AddSeconds(30);
+                // 该目标恢复后立刻解除退避，不影响其他目标
+                _backoffUntilUtcTicks.TryRemove(batchKey, out _);
+            }
+            else
+            {
+                // 仅该 server/orgId 退避；已在退避中的保持更晚的到期时间，避免并发失败缩短退避
+                var until = DateTime.UtcNow.AddSeconds(BackoffSeconds).Ticks;
+                _backoffUntilUtcTicks.AddOrUpdate(batchKey, _ => until, (_, old) => old > until ? old : until);
                 RequeueBatch(batch);
             }
         }
@@ -777,10 +824,7 @@ namespace Wlniao.Log
                     return;
                 }
                 await PushBatchAsync(batch, cancellationToken).ConfigureAwait(false);
-                if (DateTime.UtcNow < _globalBackoffUntilUtc)
-                {
-                    return;
-                }
+                // DequeueBatch 会跳过退避中的目标；若只剩退避批次则返回空列表，无需全局短路
                 lock (_queueLock)
                 {
                     if (queue.Count == 0)

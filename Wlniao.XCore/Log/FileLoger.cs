@@ -154,7 +154,11 @@ namespace Wlniao.Log
         /// <param name="consoleLocal"></param>
         public void Topic(string topic, string message, LogLevel logLevel, bool consoleLocal = true)
         {
-            Write(topic, message);
+            // 文件与控制台一样按级别过滤：否则 Debug 级敏感明文会无视 WLN_LOG_LEVEL 全部落盘
+            if (Level <= logLevel)
+            {
+                Write(topic, message);
+            }
             if (consoleLocal && Level <= logLevel && Loger.LogLocal == "console")
             {
                 var color = Loger.GetLevelColor(logLevel);

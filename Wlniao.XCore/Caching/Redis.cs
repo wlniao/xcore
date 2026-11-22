@@ -104,24 +104,35 @@ namespace Wlniao.Caching
         {
             get
             {
+                // 双检锁：并发首次访问只创建一个客户端，避免连接池泄漏
                 if (_instance != null)
                 {
                     return _instance;
                 }
-                try
+                lock (_lock)
                 {
-                    _instance = UseConnStr(ConnStr);
+                    if (_instance != null)
+                    {
+                        return _instance;
+                    }
+                    try
+                    {
+                        _instance = UseConnStr(ConnStr);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Wlniao.Runtime.XCoreException("Redis connection configuration error: " + ex.Message);
+                    }
+                    return _instance;
                 }
-                catch (Exception ex)
-                {
-                    throw new Exception("Redis connection configuration error: " + ex.Message);
-                }
-                return _instance;
             }
             set
             {
-                _instance = value;
-                _canuse = value == null || value.EndPointList.Count == 0 ? -1 : 1;
+                lock (_lock)
+                {
+                    _instance = value;
+                    _canuse = value == null || value.EndPointList.Count == 0 ? -1 : 1;
+                }
             }
         }
         /// <summary>
@@ -173,7 +184,20 @@ namespace Wlniao.Caching
         {
             try
             {
-                return usePool ? Instance.Get(key) : UseConnStr(ConnStr).Get(key);
+                if (usePool)
+                {
+                    return Instance.Get(key);
+                }
+                // 独立短连接：用完即释放，避免 socket 随 GC 泄漏
+                var temp = UseConnStr(ConnStr);
+                try
+                {
+                    return temp.Get(key);
+                }
+                finally
+                {
+                    temp?.Dispose();
+                }
             }
             catch (Exception e)
             {

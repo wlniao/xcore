@@ -1,7 +1,7 @@
 # Wlniao.XCore · API 参考手册
 
 > 本文是**参考手册**，不是 `AGENTS.md`。执行约定（该做什么、不该做什么）见项目根 `AGENTS.md`。
-> 依据源码版本 **10.0.3**（`dotnet list package --include-transitive` 可核对实际引用版本）。
+> 依据源码版本 **10.0.5**（`dotnet list package --include-transitive` 可核对实际引用版本）。
 > 签名以源码与包内 XML 注释为准；本文省略了部分重载，标注「另有重载」处请自行确认。
 
 ## 0. 包与兼容边界
@@ -178,8 +178,12 @@ long   PublishTime         // 当前程序发布时间（Unix）
 bool   IsDevTest           // WLN_DEVTEST == true
 bool   IsUseHttps          // 可写，默认 true
 string Webroxy             // 代理地址（Webroxy）
-string SessionEncryptKey   // 会话密钥，未配置时按节点/主机/库名派生
-JsonSerializerOptions JsonSerializerOptions   // 全局 JSON 选项（中文不转义）
+string SessionEncryptKey   // 会话密钥；未配置时生成进程级随机密钥（多实例需显式配置同一值）
+JsonSerializerOptions JsonSerializerOptions   // 只读快照（中文不转义）；已不可直接赋值
+JsonSerializerOptions CreateJsonSerializerOptions()                  // 新建一套框架默认选项
+JsonSerializerOptions SetJsonSerializerOptions(Func<JsonSerializerOptions> factory)
+                                  // 整体替换全局选项（会同步刷新 AOT 降级缓存）
+void ReloadJsonSerializerOptions() // 恢复框架默认选项
 
 bool   AcceptAnyServerCertificate            // 全局 TLS 放行开关，默认 false（收紧）
 Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>
@@ -205,7 +209,7 @@ XCore.AcceptAnyServerCertificate = true;    // 代码方式
 ### Wlniao.Log.Loger 日志
 
 ```csharp
-void Topic(string topic, string message, LogLevel logLevel = LogLevel.Information, bool consoleLocal = true)
+void Topic(string topic, string message, LogLevel logLevel = LogLevel.Information, bool consoleLocal = true)  // 文件与控制台均按 logLevel 过滤
                                    // 带主题标签，按模块分主题记录的首选
 void Debug(string message)         // 另有 Info / Warn / Error / Fatal(string message)
 void Console(string message, ConsoleColor color = ConsoleColor.White)   // 直接写控制台（不进日志后端）
@@ -321,7 +325,7 @@ bool IsIP(string ip) / IsIPv4(string ip) / IsIPv6(string ip)
 bool IsEmail(string str) / IsMobile(string str) / IsIdentity(string str) / IsNumber(string str)
 bool IsNullOrEmpty(string str) / HasText(string str)
 bool IsChineseLetter(string str) / IsAbcNumberAndChineseLetter(string str) / IsColorValue(string aColor)
-bool IsSafeSqlString(string str)
+bool IsSafeSqlString(string str)  // 已 [Obsolete]：请改用参数化查询
 string GetSafeSqlString(string str) / GetSafeSqlString(string str, bool tolower)
 
 string UrlEncode(string str) / UrlEncode(string str, string encoding)
@@ -371,7 +375,8 @@ bool   Del(string key) / Exists(string key)
 说明：
 
 - L1 内存层：`Get`/`Exists` 优先读内存，未命中才读盘回填；目录由 `WLN_CACHE_PATH` 控制
-- **多进程一致性**：L1 条目带文件指纹（写入时间 + 长度），其他进程/实例更新共享缓存文件后，本进程的陈旧 L1 副本会被自动判失效并重新读盘，无需手动清理
+- **多进程一致性**：L1 条目带文件指纹（写入时间 + 长度）+ 每键代际戳文件（`{缓存文件}.stamp`），框架内 `Set`/`Del` 会更新戳文件；即使同秒、同长度的覆盖写也能让其他进程的陈旧 L1 副本失效并重新读盘。`Del` 会同时删除戳文件
+- 主动失效：`void Invalidate(string key)` / `void InvalidateAll()` 只清本进程 L1，可作为外部失效通道（如 Redis pub/sub 订阅回调）的接入点
 - 命中统计（诊断/测试用）：`long FileCache.L1HitCount` / `L1MissCount` 为进程级累计值，`ResetL1Statistics()` 清零。回归测试建议用计数断言而非仅断言返回值——只验值正确无法发现"L1 静默未命中、每次读盘"的退化路径
 
 ### Wlniao.IO.PathTool / FileEx 文件
@@ -646,7 +651,7 @@ new MessageException(string message, int statusCode, Exception innerException)
 | `WLN_ACCEPT_ANY_CERT` | `false` | 全局 TLS 放行开关（`1/true/yes/on` 才放行） |
 | `Webroxy` | — | 出网代理 |
 | `XServerId` | — | 服务器标识 |
-| `SessionEncryptKey` | 自动派生 | 会话加密密钥 |
+| `SessionEncryptKey` | 进程级随机（未配置时） | 会话加密密钥；多实例必须显式配置同一值 |
 
 ## 8. 提交前自检
 

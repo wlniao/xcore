@@ -13,6 +13,7 @@ namespace Wlniao.XCore.NTest;
 /// BouncyCastle，而 CipherUtilities 不认识该名称（实测抛 SecurityUtilityException），该分支历史上不可用。
 /// 这里既验证可用的路径保持等价，也固定住修复后的行为。
 /// </summary>
+#pragma warning disable CS0618 // 兼容性测试刻意调用已过时的弱算法 API
 [TestFixture]
 public class RsaCompatTests
 {

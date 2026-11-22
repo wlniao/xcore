@@ -1,7 +1,9 @@
-﻿using MQTTnet;
+using MQTTnet;
 using MQTTnet.Protocol;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Buffers;
@@ -65,7 +67,7 @@ namespace Wlniao.Tasker
             }
             else if (topic.IndexOf(',') >= 0 || topic.IndexOf(';') >= 0 || topic.IndexOf('#') >= 0 || topic.IndexOf('/') >= 0 || topic.IndexOf('\\') >= 0)
             {
-                throw new Exception("事件名称包含不允许的特殊字符");
+                throw new ArgumentException("事件名称包含不允许的特殊字符", nameof(topic));
             }
             else
             {
@@ -105,6 +107,8 @@ namespace Wlniao.Tasker
         /// <param name="topic"></param>
         /// <param name="data"></param>
         /// <returns></returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Publish 载荷为 object 运行时类型，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需调用方保证载荷类型已登记到源生成上下文")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "Publish 载荷为 object 运行时类型，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需调用方保证载荷类型已登记到源生成上下文")]
         private MqttApplicationMessage BuildMessage(string topic, object data)
         {
             var msg = Json.Serialize(data);
@@ -127,7 +131,7 @@ namespace Wlniao.Tasker
                 optionsBuilder.WithProtocolVersion(MQTTnet.Formatter.MqttProtocolVersion.V500);
                 optionsBuilder.WithKeepAlivePeriod(TimeSpan.FromSeconds(180));
                 optionsBuilder.WithSessionExpiryInterval(180);
-                optionsBuilder.WithTcpServer(Server, int.Parse(Port)); //设置MQTT服务器地址
+                optionsBuilder.WithTcpServer(Server, Wlniao.Convert.ToInt(Port)); //设置MQTT服务器地址
                 if(string.IsNullOrEmpty(pubkey))
                 {
                     var key = new KeyTool();
@@ -158,7 +162,10 @@ namespace Wlniao.Tasker
                 if (Normal && !string.IsNullOrEmpty(pubkey))
                 {
                     //使用普通服务器时，设置掉线遗嘱消息
-                    var buffer = _sm2.Encrypt(Encoding.UTF8.GetBytes(Json.Serialize(new { ClientId = clientId })));
+                    var buffer = _sm2.Encrypt(Encoding.UTF8.GetBytes(Json.Serialize(new Dictionary<string, object>
+                    {
+                        ["ClientId"] = clientId
+                    }, Wlniao.JsonContext.Instance.DictionaryStringObject)));
                     var willBuilder = new MqttApplicationMessageBuilder();
                     willBuilder.WithTopic("watcher/disconnected");
                     willBuilder.WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce);

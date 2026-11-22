@@ -1,4 +1,4 @@
-﻿/*==============================================================================
+/*==============================================================================
     文件名称：Regex.cs
     适用环境：CoreCLR 5.0,.NET Framework 2.0/4.0/5.0
     功能描述：常用正则表达式的整理
@@ -34,7 +34,9 @@ namespace Wlniao.Pattern
         /// <returns></returns>
         public static bool IsMatch(string input, string pattern)
         {
-            return System.Text.RegularExpressions.Regex.IsMatch(input, pattern);
+            // 默认 2 秒超时：用户可控 pattern/输入时避免 ReDoS 拖死线程
+            return System.Text.RegularExpressions.Regex.IsMatch(input ?? "", pattern ?? "",
+                System.Text.RegularExpressions.RegexOptions.None, System.TimeSpan.FromSeconds(2));
         }
         /// <summary>
         /// 检查字符串是否和指定的正则表达式匹配，并限制单次匹配的最长耗时

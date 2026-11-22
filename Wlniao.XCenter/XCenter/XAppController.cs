@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
 using Wlniao.Mvc;
 
 namespace Wlniao.XCenter
@@ -209,7 +208,10 @@ namespace Wlniao.XCenter
                     }
                 }
             }
-            catch { }
+            catch (Exception pex)
+            {
+                Log.Loger.Debug("XAppController: " + pex.Message);
+            }
             var input = GetPostString();
             if (string.IsNullOrEmpty(input))
             {
@@ -244,7 +246,7 @@ namespace Wlniao.XCenter
                 if (string.IsNullOrEmpty(input))
                 {
                     DebugMessage("Request message decrypt faild!!");
-                    throw new Exception("请求内容解密失败");
+                    throw new Wlniao.Runtime.MessageException("请求内容解密失败", 400);
                 }
             }
             try
@@ -258,7 +260,10 @@ namespace Wlniao.XCenter
                     }
                 }
             }
-            catch { }
+            catch (Exception pex)
+            {
+                Log.Loger.Debug("XAppController: " + pex.Message);
+            }
             return result;
         }
 
@@ -309,7 +314,7 @@ namespace Wlniao.XCenter
                 if (string.IsNullOrEmpty(input))
                 {
                     DebugMessage("Request message decrypt faild!!");
-                    throw new Exception("请求内容解密失败");
+                    throw new Wlniao.Runtime.MessageException("请求内容解密失败", 400);
                 }
             }
             return System.Text.Json.JsonSerializer.Deserialize(input, typeInfo);
@@ -322,10 +327,11 @@ namespace Wlniao.XCenter
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         [NonAction]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
         public IActionResult OutputSerialize<T>(ApiResult<T> result)
         {
             var output = "";
-            var option = new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
             if (string.IsNullOrEmpty(this.sm4key) && !this.sm4ready)
             {
                 var sm2token = HeaderRequest("sm2token");
@@ -351,7 +357,7 @@ namespace Wlniao.XCenter
             }
             if (string.IsNullOrEmpty(this.sm4key))
             {
-                output = JsonSerializer.Serialize<ApiResult<T>>(result, option);
+                output = Wlniao.Json.Serialize(result);
             }
             else
             {
@@ -370,10 +376,10 @@ namespace Wlniao.XCenter
                 }
                 else if (result.data != null)
                 {
-                    var json = JsonSerializer.Serialize<T>(result.data, option);
+                    var json = Wlniao.Json.Serialize(result.data);
                     tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
                 }
-                output = JsonSerializer.Serialize<ApiResult<string>>(tmp, option);
+                output = JsonSerializer.Serialize(tmp, JsonContext.Instance.ApiResultString);
             }
             if (result != null && !string.IsNullOrEmpty(result.debuger))
             {
@@ -392,6 +398,8 @@ namespace Wlniao.XCenter
         /// <param name="code"></param>
         /// <returns></returns>
         [NonAction]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
         public IActionResult OutputMessage<T>(ApiResult<T> result, string message, string code = null)
         {
             result.tips = true;
@@ -402,7 +410,6 @@ namespace Wlniao.XCenter
             }
 
             var output = "";
-            var option = new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
             if (string.IsNullOrEmpty(this.sm4key) && !this.sm4ready)
             {
                 var sm2token = HeaderRequest("sm2token");
@@ -428,7 +435,7 @@ namespace Wlniao.XCenter
             }
             if (string.IsNullOrEmpty(this.sm4key))
             {
-                output = JsonSerializer.Serialize<ApiResult<T>>(result, option);
+                output = Wlniao.Json.Serialize(result);
             }
             else
             {
@@ -447,10 +454,10 @@ namespace Wlniao.XCenter
                 }
                 else if (result.data != null)
                 {
-                    var json = JsonSerializer.Serialize<T>(result.data, option);
+                    var json = Wlniao.Json.Serialize(result.data);
                     tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
                 }
-                output = JsonSerializer.Serialize<ApiResult<string>>(tmp, option);
+                output = JsonSerializer.Serialize(tmp, JsonContext.Instance.ApiResultString);
             }
             if (result != null && !string.IsNullOrEmpty(result.debuger))
             {

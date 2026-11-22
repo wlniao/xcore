@@ -80,7 +80,26 @@ namespace Wlniao.IO
             {
                 path = JoinPath(XCore.StartupRoot, path);
             }
-            return path;
+            // 归一化 . / ..，防止相对路径穿越出程序根目录
+            try
+            {
+                var full = System.IO.Path.GetFullPath(path);
+                var root = System.IO.Path.GetFullPath(XCore.StartupRoot)
+                    .TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar)
+                    + System.IO.Path.DirectorySeparatorChar;
+                var isRelativeInput = path.Length > 0 && path[0] != '/' && path.IndexOf(':') < 0;
+                if (isRelativeInput && !full.StartsWith(root, System.StringComparison.OrdinalIgnoreCase)
+                    && full + System.IO.Path.DirectorySeparatorChar != root)
+                {
+                    // 相对路径归一化后逃逸出程序根：拒绝而非静默返回根外路径
+                    return XCore.StartupRoot;
+                }
+                return full;
+            }
+            catch (System.ArgumentException)
+            {
+                return path; // 非法字符等：保持原行为，由调用方处理
+            }
         }
         /// <summary>
         /// 剥掉路径开头的 '~'（表示程序根目录）：'~/a' → 'a'，'~' → 空串。

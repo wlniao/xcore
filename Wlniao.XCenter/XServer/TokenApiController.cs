@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Wlniao.Mvc;
@@ -53,15 +53,20 @@ namespace Wlniao.XServer
                     result.data = "202";
                     result.message = "缺少参数，timestamp不能为空";
                 }
-                else if (Convert.ToLong(timestamp) + 3600 < DateTools.GetUnix())
+                else if (!ApiSignGuard.IsTimestampValid(Convert.ToLong(timestamp), DateTools.GetUnix()))
                 {
                     result.code = "203";
-                    result.message = "请求已过期，请重新发起";
+                    result.message = "请求时间戳超出允许窗口";
                 }
-                else if (Encryptor.SM3Encrypt(timestamp + data + token) != sign)
+                else if (!ApiSignGuard.FixedTimeEquals(Encryptor.SM3Encrypt(timestamp + data + token), sign))
                 {
                     result.code = "205";
                     result.message = "请求错误，签名验证失败";
+                }
+                else if (!ApiSignGuard.TryAcceptOnce(sign, DateTools.GetUnix()))
+                {
+                    result.code = "208";
+                    result.message = "请求已处理过，请勿重放";
                 }
                 else
                 {
@@ -81,7 +86,10 @@ namespace Wlniao.XServer
                                 req.TryAdd(kv.Key, kv.Value);
                             }
                         }
-                        catch { }
+                        catch (Exception dex)
+                        {
+                            Log.Loger.Debug("TokenApi request deserialize: " + dex.Message);
+                        }
                         if (req == null && !string.IsNullOrEmpty(data))
                         {
                             result.code = "207";
@@ -97,9 +105,11 @@ namespace Wlniao.XServer
             catch (Exception ex)
             {
                 result.code = "401";
-                result.message = ex.Message;
+                // 不把内部异常原文回给客户端（可能泄露路径/类型信息）
+                result.message = "请求处理失败";
                 Log.Loger.Error(ex.Message);
             }
+            result.sign = ApiSignGuard.SignResponse(result.data?.ToString() ?? "", token);
             return Json(result);
         }
         /// <summary>
@@ -136,14 +146,16 @@ namespace Wlniao.XServer
             }
             else
             {
-                txt = Wlniao.Json.Serialize(obj);
+                txt = Wlniao.Mvc.ResponseJson.Serialize(obj);
             }
+            var enc = Encryptor.SM4EncryptECBToHex(txt, token);
             var dic = new Dictionary<string, object>
             {
                 { "node", result.node },
                 { "code", result.code },
                 { "tips", result.tips },
-                { "data", Encryptor.SM4EncryptECBToHex(txt, token) },
+                { "data", enc },
+                { "sign", ApiSignGuard.SignResponse(enc, token) },
                 { "success", result.success },
                 { "message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message }
             };
@@ -163,13 +175,17 @@ namespace Wlniao.XServer
         {
             result.code = "0";
             result.success = true;
-            var dic = new Dictionary<string, object>();
-            dic.Add("node", result.node);
-            dic.Add("code", result.code);
-            dic.Add("tips", result.tips);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(str, token));
-            dic.Add("success", result.success);
-            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            var enc = Encryptor.SM4EncryptECBToHex(str, token);
+            var dic = new Dictionary<string, object>
+            {
+                { "node", result.node },
+                { "code", result.code },
+                { "tips", result.tips },
+                { "data", enc },
+                { "sign", ApiSignGuard.SignResponse(enc, token) },
+                { "success", result.success },
+                { "message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message }
+            };
             if (!string.IsNullOrEmpty(result.debuger))
             {
                 dic.Add("debuger", result.debuger);
@@ -214,19 +230,23 @@ namespace Wlniao.XServer
             }
             else
             {
-                txt = Wlniao.Json.Serialize(result.data);
+                txt = Wlniao.Mvc.ResponseJson.Serialize(result.data);
             }
             if (string.IsNullOrEmpty(result.code))
             {
                 result.code = "1";
             }
-            var dic = new Dictionary<string, object>();
-            dic.Add("node", result.node);
-            dic.Add("code", result.code);
-            dic.Add("tips", result.tips);
-            dic.Add("data", Encryptor.SM4EncryptECBToHex(txt, token));
-            dic.Add("success", result.success);
-            dic.Add("message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message);
+            var enc = Encryptor.SM4EncryptECBToHex(txt, token);
+            var dic = new Dictionary<string, object>
+            {
+                { "node", result.node },
+                { "code", result.code },
+                { "tips", result.tips },
+                { "data", enc },
+                { "sign", ApiSignGuard.SignResponse(enc, token) },
+                { "success", result.success },
+                { "message", string.IsNullOrEmpty(result.message) ? (result.success ? "success" : "unkown error") : result.message }
+            };
             if (!string.IsNullOrEmpty(result.debuger))
             {
                 dic.Add("debuger", result.debuger);

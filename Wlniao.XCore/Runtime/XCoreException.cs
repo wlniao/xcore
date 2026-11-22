@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Wlniao.Runtime
 {
@@ -13,7 +13,14 @@ namespace Wlniao.Runtime
         public int StatusCode { get; }
         
         /// <summary>
-        /// 
+        ///
+        /// </summary>
+        /// <param name="message"></param>
+        public XCoreException(string message) : this(message, 0)
+        {
+        }
+        /// <summary>
+        ///
         /// </summary>
         /// <param name="message"></param>
         /// <param name="statusCode"></param>

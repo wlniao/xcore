@@ -494,6 +494,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="str">要判断字符串</param>
         /// <returns>判断结果</returns>
+        [Obsolete("字符黑名单无法防住编码绕过等注入手法，请改用参数化查询 / ORM，不要依赖本方法做安全边界")]
         public static bool IsSafeSqlString(string str)
         {
             return !Regex.IsMatch(str, @"[;|\/|\(|\)|\[|\]|\}|\{|%|\*|!|\']");
@@ -503,6 +504,7 @@ namespace Wlniao.Text
         /// </summary>
         /// <param name="str">要处理的字符串</param>
         /// <returns>安全的Sql参数值</returns>
+        [Obsolete("字符黑名单无法防住编码绕过等注入手法，请改用参数化查询 / ORM，不要依赖本方法做安全边界")]
         public static string GetSafeSqlString(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -517,6 +519,7 @@ namespace Wlniao.Text
         /// <param name="str"></param>
         /// <param name="tolower"></param>
         /// <returns></returns>
+        [Obsolete("字符黑名单无法防住编码绕过等注入手法，请改用参数化查询 / ORM，不要依赖本方法做安全边界")]
         public static string GetSafeSqlString(string str, bool tolower)
         {
             if (tolower)
@@ -635,7 +638,7 @@ namespace Wlniao.Text
             {
                 return false;
             }
-            else if (Convert.ToInt(str.Substring(6, 4)) < 1900 || Convert.ToInt(str.Substring(6, 4)) > DateTime.Now.Year)
+            else if (Convert.ToInt(str.Substring(6, 4)) < 1900 || Convert.ToInt(str.Substring(6, 4)) > DateTime.UtcNow.Year)
             {
                 return false;
             }
@@ -941,12 +944,19 @@ namespace Wlniao.Text
         /// <returns></returns>
         public static string CreateRndStr(int length)
         {
-            var valid = "0123456789";
-            var res = "";
-            var rnd = new Random();
-            while (0 < length--)
-                res += valid[rnd.Next(valid.Length)];
-            return res;
+            const string valid = "0123456789";
+            if (length <= 0)
+            {
+                return "";
+            }
+            // 密钥/令牌场景可能复用本方法，必须用 CSPRNG 而非 System.Random（可预测）
+            var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(length);
+            var res = new System.Text.StringBuilder(length);
+            for (var i = 0; i < length; i++)
+            {
+                res.Append(valid[bytes[i] % valid.Length]);
+            }
+            return res.ToString();
         }
         /// <summary>
         /// 生成一个指定长度的随机字符串(包含字母)
@@ -956,11 +966,18 @@ namespace Wlniao.Text
         public static string CreateRndStrE(int length)
         {
             const string valid = "0123456789abcdefghijklmnopqrstuvwxyz";
-            var res = "";
-            var rnd = new Random();
-            while (0 < length--)
-                res += valid[rnd.Next(valid.Length)];
-            return res;
+            if (length <= 0)
+            {
+                return "";
+            }
+            // XCenterSm4Key 等通讯密钥会走本方法，必须用 CSPRNG
+            var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(length);
+            var res = new System.Text.StringBuilder(length);
+            for (var i = 0; i < length; i++)
+            {
+                res.Append(valid[bytes[i] % valid.Length]);
+            }
+            return res.ToString();
         }
         /// <summary>
         /// 对字符串数组进行排序
@@ -1432,14 +1449,14 @@ namespace Wlniao.Text
             var ch = true;
             var len = strN.Length;
             if (len > 24)
-                throw new Exception("输入的数字过大，无法转换");
+                throw new ArgumentOutOfRangeException(nameof(number), "输入的数字过大，无法转换");
             var strResult = "";
             var strSz = new string[len];
             for (var i = 0; i < len; i++)
             {
                 strSz[i] = strN.Substring(i, 1);
                 if (!Regex.IsMatch(strSz[i], "^[0-9]$"))
-                    throw new Exception("输入的数字含有非数字符号");
+                    throw new FormatException("输入的数字含有非数字符号");
                 if (strSz[0] == "0" && ch)//检验首位出现零的情况
                 {
                     if (i != len - 1 && strSz[i] == "0" && strSz[i + 1] != "0")
@@ -1632,11 +1649,12 @@ namespace Wlniao.Text
                 }
             }
             //取出截取字符串中的HTML标记
-            var tempResult = result.ToString().Replace("(>)[^<>]*(<?)", "$1$2");
+            // 正确用 Regex.Replace：string.Replace 只做字面量替换，原写法是 no-op
+            var tempResult = Regex.Replace(result.ToString(), "(>)[^<>]*(<?)", "$1$2");
             //去掉不需要结素标记的HTML标记
-            tempResult = tempResult.Replace(@"</?(AREA|BASE|BASEFONT|BODY|BR|COL|COLGROUP|DD|DT|FRAME|HEAD|HR|HTML|IMG|INPUT|ISINDEX|LI|LINK|META|OPTION|P|PARAM|TBODY|TD|TFOOT|TH|THEAD|TR|area|base|basefont|body|br|col|colgroup|dd|dt|frame|head|hr|html|img|input|isindex|li|link|meta|option|p|param|tbody|td|tfoot|th|thead|tr)[^<>]*/?>", "");
+            tempResult = Regex.Replace(tempResult, @"</?(AREA|BASE|BASEFONT|BODY|BR|COL|COLGROUP|DD|DT|FRAME|HEAD|HR|HTML|IMG|INPUT|ISINDEX|LI|LINK|META|OPTION|P|PARAM|TBODY|TD|TFOOT|TH|THEAD|TR|area|base|basefont|body|br|col|colgroup|dd|dt|frame|head|hr|html|img|input|isindex|li|link|meta|option|p|param|tbody|td|tfoot|th|thead|tr)[^<>]*/?>", "");
             //去掉成对的HTML标记
-            tempResult = tempResult.Replace(@"<([a-zA-Z]+)[^<>]*>(.*?)</\1>", "$2");
+            tempResult = Regex.Replace(tempResult, @"<([a-zA-Z]+)[^<>]*>(.*?)</\1>", "$2");
             //用正则表达式取出标记
             pattern = ("<([a-zA-Z]+)[^<>]*>");
             m = Regex.Matches(tempResult, pattern);
@@ -2012,11 +2030,37 @@ namespace Wlniao.Text
         }
 
         /// <summary>
+        /// 是否命中敏感词（自动过滤符号，只支持中文）。与 StringUtil 其它 Is*/Has* 一致返回 bool；
+        /// 需要命中明细时用 <see cref="CheckSensitiveWordsZhcn(string, string, int)"/>
+        /// </summary>
+        /// <param name="content">需要检测的内容</param>
+        /// <param name="blackwords">需要检测的关键字，如：(超强|抗干扰|敏感词)</param>
+        /// <param name="times">最低命中次数（命中次数须大于该值）</param>
+        /// <returns>true 表示命中至少一次（超过 times 阈值）</returns>
+        public static bool HasSensitiveWordsZhcn(string content, string blackwords, int times = 0)
+        {
+            return CheckSensitiveWordsZhcn(content, blackwords, times).success;
+        }
+
+        /// <summary>
+        /// 是否命中敏感词（自动过滤符号）。与 StringUtil 其它 Is*/Has* 一致返回 bool；
+        /// 需要命中明细时用 <see cref="CheckSensitiveWords(string, string, int)"/>
+        /// </summary>
+        /// <param name="content">需要检测的内容</param>
+        /// <param name="blackwords">需要检测的关键字</param>
+        /// <param name="times">最低命中次数（命中次数须大于该值）</param>
+        /// <returns>true 表示命中</returns>
+        public static bool HasSensitiveWords(string content, string blackwords, int times = 0)
+        {
+            return CheckSensitiveWords(content, blackwords, times).success;
+        }
+
+        /// <summary>
         /// 检测敏感词（自动过滤符号，只支持中文）
         /// </summary>
         /// <param name="content">需要检测的内容，如：超G强抗t△干dst△扰敏■■感※◇词 kljb过＆滤jb一■＆№正■№则匹◎←配代crSBtr码（只……支{持^中#^文）</param>
         /// <param name="blackwords">需要检测的关键字，如：(超强|抗干扰|敏感词|过滤|正则匹配|代码|只支持|中文)</param>
-        /// <returns>检测到敏感词时，Result.IsValid为false，且Result.Errors为命中关键字列表</returns>
+        /// <returns>命中时 success=true 且 data 为拼接的命中片段；未命中 success=false</returns>
         public static ApiResult<string> CheckSensitiveWordsZhcn(string content, string blackwords)
         {
             return CheckSensitiveWordsZhcn(content, blackwords, 0);

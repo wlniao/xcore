@@ -42,7 +42,7 @@ namespace Wlniao
         /// <summary>
         /// 环境变量内容
         /// </summary>
-        private static Dictionary<string, string> _env = null;
+        private static volatile Dictionary<string, string> _env = null;
         /// <summary>
         /// 配置表（只读快照可无锁并发读；写入方必须走 MutateConfig 做 copy-on-write）
         /// </summary>
@@ -56,7 +56,11 @@ namespace Wlniao
         /// </summary>
         private static long _configVersion = 0;
         /// <summary>
-        /// 配置回写串行锁；磁盘 IO 不占用 XCore.Lock
+        /// 配置内存状态锁；与 XCore.Lock 及其他组件解耦，磁盘 IO 不占用此锁
+        /// </summary>
+        private static readonly object _configLock = new object();
+        /// <summary>
+        /// 配置回写串行锁；磁盘 IO 不占用 _configLock
         /// </summary>
         private static readonly object _configFlushLock = new object();
         /// <summary>
@@ -103,9 +107,14 @@ namespace Wlniao
         /// </summary>
         internal static void Clear()
         {
-            _env = new Dictionary<string, string>();
-            _config = null;
-            _configDirty = false;
+            lock (_configLock)
+            {
+                _env = new Dictionary<string, string>();
+                _config = null;
+                _configDirty = false;
+                // 递增版本号，使 Clear 之前捕获的落盘快照失效，避免旧配置被回写到磁盘
+                Interlocked.Increment(ref _configVersion);
+            }
         }
         /// <summary>
         /// 获取设置信息（优先查找环境变量，再查找xcore.config中配置，默认值非null时向xcore.config中写入默认值）
@@ -234,7 +243,7 @@ namespace Wlniao
             {
                 return;
             }
-            lock (XCore.Lock)
+            lock (_configLock)
             {
                 if (_config == null)
                 {
@@ -250,7 +259,7 @@ namespace Wlniao
         {
             Dictionary<string, string> snapshot;
             long version;
-            lock (XCore.Lock)
+            lock (_configLock)
             {
                 if (_config == null)
                 {
@@ -292,7 +301,7 @@ namespace Wlniao
             }
             Dictionary<string, string> snapshot;
             long version;
-            lock (XCore.Lock)
+            lock (_configLock)
             {
                 if (!_configDirty || _config == null)
                 {
@@ -304,7 +313,7 @@ namespace Wlniao
                 Interlocked.Exchange(ref _lastConfigFlushTicks, DateTime.UtcNow.Ticks);
             }
 
-            // 磁盘 IO 不持有 XCore.Lock；串行执行并避免旧快照覆盖新快照
+            // 磁盘 IO 不持有 _configLock；串行执行并避免旧快照覆盖新快照
             lock (_configFlushLock)
             {
                 if (Volatile.Read(ref _configVersion) > version)
@@ -363,11 +372,13 @@ namespace Wlniao
         /// <returns>返回一个字符串值</returns>
         public static string GetEnvironment(string key, string defaultValue = "")
         {
-            if (_env == null || _env.Count == 0)
+            var snapshot = _env;
+            if (snapshot == null || snapshot.Count == 0)
             {
-                lock (XCore.Lock)
+                lock (_configLock)
                 {
-                    if (_env == null || _env.Count == 0)
+                    snapshot = _env;
+                    if (snapshot == null || snapshot.Count == 0)
                     {
                         var env = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                         var en = System.Environment.GetEnvironmentVariables().GetEnumerator();
@@ -376,18 +387,20 @@ namespace Wlniao
                             env.TryAdd(en.Key.ToString().ToUpper(), en.Value.ToString());
                         }
                         _env = env;
+                        snapshot = env;
                     }
                 }
             }
 
-            return _env.GetValueOrDefault(key, defaultValue);
+            // 用局部快照读取：ReloadEnvironment/Clear 可能并发把 _env 置空，避免空引用
+            return snapshot?.GetValueOrDefault(key, defaultValue) ?? defaultValue;
         }
         /// <summary>
         /// 重新加载环境变量快照；用于容器/宿主运行时新增或修改环境变量的场景
         /// </summary>
         public static void ReloadEnvironment()
         {
-            lock (XCore.Lock)
+            lock (_configLock)
             {
                 _env = null;
             }
@@ -445,9 +458,13 @@ namespace Wlniao
         /// <returns>返回一个 Dictionary</returns>
         public static void Read(string path)
         {
-            lock (XCore.Lock)
+            // 磁盘 IO 放在锁外：持锁读文件会阻塞所有 GetConfigs
+            var data = FileEx.Exists(path)
+                ? Convert.ToDictionary(FileEx.Read(path))
+                : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            lock (_configLock)
             {
-                _config = FileEx.Exists(path) ? Convert.ToDictionary(FileEx.Read(path)) : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                _config = data;
                 _configDirty = false;
             }
         }

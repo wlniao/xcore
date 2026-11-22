@@ -64,9 +64,9 @@ namespace Wlniao.Tasker
             {
                 try
                 {
-                    if (instance == null && nextconnect < DateTime.Now)
+                    if (instance == null && nextconnect < DateTime.UtcNow)
                     {
-                        nextconnect = DateTime.Now.AddSeconds(1);
+                        nextconnect = DateTime.UtcNow.AddSeconds(1);
                         instance = ConnectionMultiplexer.Connect(Wlniao.Caching.Redis.ConnStr);
                     }
                 }
@@ -244,7 +244,7 @@ namespace Wlniao.Tasker
                 {
                     try
                     {
-                        if (watcher[topic] < DateTime.Now.AddMinutes(-1))
+                        if (watcher[topic] < DateTime.UtcNow.AddMinutes(-1))
                         {
                             if (subscriber != null)
                             {
@@ -255,11 +255,11 @@ namespace Wlniao.Tasker
                         }
                         if (subscriber == null)
                         {
-                            watcher[topic] = DateTime.Now;
+                            watcher[topic] = DateTime.UtcNow;
                             subscriber = Instance.GetSubscriber();
                             subscriber.Subscribe(channel, (rchannel, message) =>
                             {
-                                watcher[topic] = DateTime.Now;
+                                watcher[topic] = DateTime.UtcNow;
                                 Loger.Topic("Tasker", "Tasker execute " + message + "[" + topic + "]", Log.LogLevel.Debug, true);
                                 func.Invoke(new Context { topic = topic, key = message });
                             });
@@ -270,7 +270,7 @@ namespace Wlniao.Tasker
                         }
                         else
                         {
-                            watcher[topic] = DateTime.Now;
+                            watcher[topic] = DateTime.UtcNow;
                         }
                     }
                     catch

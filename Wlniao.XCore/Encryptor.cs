@@ -112,6 +112,7 @@ namespace Wlniao
         /// <param name="publicKey">RSA公钥，查看方式：openssl x509 -in send.crt -pubkey</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
+        [Obsolete("无填充（教科书）RSA 不适合加密新数据，请改用 RsaEncryptOaep 或对称加密")]
         public static string RsaEncryptWithPublic(string data, string publicKey, Encoding encoding = null)
         {
             encoding ??= Encoding.UTF8;
@@ -134,6 +135,7 @@ namespace Wlniao
         /// <param name="privateKey">RSA私钥，查看方式：openssl pkcs12 -in cert.pfx -nocerts -nodes</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
+        [Obsolete("SHA1+PKCS1 签名已不安全，请改用 RsaSignWithPrivateSha256 或国密 SM2 签名")]
         public static string RsaSignWithPrivate(string data, string privateKey, Encoding encoding = null)
         {
             encoding ??= Encoding.UTF8;
@@ -152,6 +154,7 @@ namespace Wlniao
         /// <param name="publicKey">RSA公钥，查看方式：openssl x509 -in send.crt -pubkey</param>
         /// <param name="encoding">字符编码，默认为UTF8</param>
         /// <returns></returns>
+        [Obsolete("对应 RsaSignWithPrivate 的 SHA1 验签，请改用 SHA256/SM2 验签")]
         public static bool RsaVerifyWithPublicKey(string data, string sign, string publicKey, Encoding encoding = null)
         {
             encoding ??= Encoding.UTF8;
@@ -592,7 +595,12 @@ namespace Wlniao
             {
                 return "";
             }
-            else if (encText[0] != '0' && encText[1] != '4' && Regex.IsMatch(encText, "^[0-9a-f]+$", RegexOptions.IgnoreCase))
+            else if (encText.Length >= 2 && !(encText[0] == '0' && encText[1] == '4') && Regex.IsMatch(encText, "^[0-9a-f]+$", RegexOptions.IgnoreCase))
+            {
+                // 未带 04 未压缩点前缀时补前缀；长度为 1 的输入不得访问 [1]
+                encText = "04" + encText;
+            }
+            else if (encText.Length == 1 && Regex.IsMatch(encText, "^[0-9a-f]$", RegexOptions.IgnoreCase))
             {
                 encText = "04" + encText;
             }
@@ -771,7 +779,9 @@ namespace Wlniao
             try
             {
                 var keyBytes = FitKey16(secretKey);
-                var encBytes = Helper.Decode(encText);
+                // 固定按 Base64 解码：Helper.Decode 会把纯 hex 字符串误判为 Hex，
+                // 导致形如 "deadbeef..." 的 Base64 密文解出错误字节
+                var encBytes = System.Convert.FromBase64String(encText);
                 var sm4 = new SM4();
                 var plainBytes = sm4.DecryptECB(encBytes, keyBytes, isPadding);
                 return Encoding.UTF8.GetString(plainBytes);
@@ -888,7 +898,8 @@ namespace Wlniao
             {
                 var ivBytes = FitKey16(iv);
                 var keyBytes = FitKey16(secretKey);
-                var encBytes = Helper.Decode(encText);
+                // 同 ECB FromBase64：禁止 Helper.Decode 自动判型
+                var encBytes = System.Convert.FromBase64String(encText);
                 var sm4 = new SM4();
                 var plainBytes = sm4.DecryptCBC(encBytes, keyBytes, ivBytes, isPadding);
                 return Encoding.UTF8.GetString(plainBytes);

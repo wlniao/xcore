@@ -735,7 +735,7 @@ namespace Wlniao.XServer
             }
             private static HttpResponseMessage newWorker(string method, string Url, byte[] postData = null, Hashtable headers = null)
             {
-                using (var client = new HttpClient())
+                var client = Wlniao.Net.HttpClientManager.SharedInstance; // 复用连接池/DNS/证书策略，不再裸建 HttpClient
                 {
                     var request = new HttpRequestMessage(new HttpMethod(method), "http://" + api_domain + Url);
                     if (headers == null)
@@ -851,7 +851,7 @@ namespace Wlniao.XServer
                         var i = 0;
                         while (i < ss.Length)
                         {
-                            var fi = new FolderItem(ss[i], ss[i + 1], int.Parse(ss[i + 2]), int.Parse(ss[i + 3]));
+                            var fi = new FolderItem(ss[i], ss[i + 1], Wlniao.Convert.ToInt(ss[i + 2]), Wlniao.Convert.ToInt(ss[i + 3]));
                             AL.Add(fi);
                             i += 4;
                         }
@@ -1071,7 +1071,7 @@ namespace Wlniao.XServer
             /// <returns></returns>
             public HttpResponseMessage newWorker(string method, string path, byte[] postData, Hashtable headers, out string message)
             {
-                using (var client = new HttpClient())
+                var client = Wlniao.Net.HttpClientManager.SharedInstance; // 复用连接池/DNS/证书策略，不再裸建 HttpClient
                 {
                     var request = new HttpRequestMessage(new HttpMethod(method), "https://" + ossdomain + path);
                     if (postData != null)
@@ -1319,7 +1319,7 @@ namespace Wlniao.XServer
             /// <returns></returns>
             public HttpResponseMessage newWorker(string method, string path, byte[] postData, Hashtable headers, out string message)
             {
-                using (var client = new HttpClient())
+                var client = Wlniao.Net.HttpClientManager.SharedInstance; // 复用连接池/DNS/证书策略，不再裸建 HttpClient
                 {
                     var host = cosdomain.IndexOf("://", StringComparison.Ordinal) < 0 ? "https://" + cosdomain : cosdomain;
                     var request = new HttpRequestMessage(new HttpMethod(method), host + path);

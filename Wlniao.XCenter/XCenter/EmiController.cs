@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection.Emit;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
@@ -40,6 +40,8 @@ namespace Wlniao.XCenter
         ///
         /// </summary>
         /// <param name="context"></param>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "ViewBag 依赖 MVC 的 dynamic（DLR 运行时代码生成）；MVC 宿主本身不支持 NativeAOT，裁剪部署下该路径仅在 MVC 框架内使用")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "ViewBag 依赖 MVC 的 dynamic（DLR 运行时代码生成）；MVC 宿主本身不支持 NativeAOT，裁剪部署下该路径仅在 MVC 框架内使用")]
         public override void OnActionExecuted(ActionExecutedContext context)
         {
             if (ctx != null)

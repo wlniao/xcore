@@ -116,7 +116,8 @@ namespace Wlniao.Runtime
         /// <param name="currentObject"></param>
         /// <param name="propertyName"></param>
         /// <returns></returns>
-        [RequiresDynamicCode("Uses reflection to get property values")]
+        [RequiresUnreferencedCode("反射读取属性依赖运行时元数据，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("反射读取属性依赖运行时元数据，在 NativeAOT 环境下可能失败")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072", Justification = "兼容旧版反射 API；本类不保证 AOT/裁剪安全，业务代码应迁移到源生成元数据")]
         public static object GetPropertyValue(object currentObject, string propertyName)
         {
@@ -334,6 +335,8 @@ namespace Wlniao.Runtime
         /// <param name="memberInfo"></param>
         /// <param name="attributeType"></param>
         /// <returns></returns>
+        [RequiresUnreferencedCode("反射读取特性依赖运行时元数据，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("反射读取特性依赖运行时元数据，在 NativeAOT 环境下可能失败")]
         public static Attribute GetAttribute(MemberInfo memberInfo, Type attributeType)
         {
             var iCustomAttributes = memberInfo.GetCustomAttributes(attributeType, false);
@@ -349,6 +352,8 @@ namespace Wlniao.Runtime
         /// </summary>
         /// <param name="memberInfo"></param>
         /// <returns></returns>
+        [RequiresUnreferencedCode("反射读取特性依赖运行时元数据，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("反射读取特性依赖运行时元数据，在 NativeAOT 环境下可能失败")]
         public static object[] GetAttributes(MemberInfo memberInfo)
         {
             var attributes = new List<object>();
@@ -366,6 +371,8 @@ namespace Wlniao.Runtime
         /// <param name="memberInfo"></param>
         /// <param name="attributeType"></param>
         /// <returns></returns>
+        [RequiresUnreferencedCode("反射读取特性依赖运行时元数据，在裁剪/AOT 环境下可能失败")]
+        [RequiresDynamicCode("反射读取特性依赖运行时元数据，在 NativeAOT 环境下可能失败")]
         public static object[] GetAttributes(MemberInfo memberInfo, Type attributeType)
         {
             var attributes = new List<object>();

@@ -136,7 +136,7 @@ namespace Wlniao
                             socket.SendTimeout = 3000;
 
                             //通过clientSocket接收数据
-                            var start = DateTime.Now;
+                            var start = DateTime.UtcNow;
                             var encoding = Encoding.UTF8;
                             var buffer = new System.Collections.Generic.List<byte>();
                             var chunk = new byte[8192];
@@ -248,7 +248,7 @@ namespace Wlniao
                             sb.Append("HTTP/1.1 " + ctx.StatusCode + "\r\n");
                             sb.Append("Date: " + DateTime.UtcNow.ToString("r") + "\r\n");
                             sb.Append("Server: wlniao/1.0\r\n");
-                            sb.Append("X-UseTime: " + DateTime.Now.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\r\n");
+                            sb.Append("X-UseTime: " + DateTime.UtcNow.Subtract(start).TotalMilliseconds.ToString("F2") + "ms\r\n");
                             // AOT 安全：Response 为已序列化的字符串，ResponseBytes 为原始字节，均不涉及运行时反射
                             var data = ctx.ResponseBytes;
                             if (data == null && !string.IsNullOrEmpty(ctx.Response))

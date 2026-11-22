@@ -38,13 +38,13 @@ namespace Wlniao.Runtime
         private int startLeft = 0;  //输出列位置
         private double TotalCount = 0;  //进度总值
         private int loading = 0;
-        private DateTime endTime = DateTime.Now;
+        private DateTime endTime = DateTime.UtcNow;
         /// <summary>
         /// 
         /// </summary>
         public Console()
         {
-            endTime = DateTime.Now.AddSeconds(120);
+            endTime = DateTime.UtcNow.AddSeconds(120);
         }
         /// <summary>
         /// 
@@ -194,7 +194,7 @@ namespace Wlniao.Runtime
         /// </summary>
         private void ConsoleLoading()
         {
-            while (DateTime.Now < endTime)
+            while (DateTime.UtcNow < endTime)
             {
                 System.Console.CursorVisible = false;
                 System.Console.SetCursorPosition(startLeft, startTop);
