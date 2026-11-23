@@ -298,7 +298,7 @@ public class AuditFixesTests
     }
 }
 
-/// <summary>P0 安全修复回归：时间窗/重放/响应签名/SessionEncryptKey</summary>
+/// <summary>P0 安全修复回归：时间窗/重放/响应签名/SessionSafeKey</summary>
 [TestFixture]
 public class ApiSignGuardTests
 {
@@ -335,17 +335,22 @@ public class ApiSignGuardTests
     }
 
     [Test]
-    public void SessionEncryptKey_NotDerivedFromPublicConfig()
+    public void SessionSafeKey_DerivedFromEnvAndDbPassword()
     {
-        // 未配置 SessionEncryptKey 时应为随机 32 hex，且同一进程内稳定
-        var k1 = xcore::Wlniao.XCore.SessionEncryptKey;
-        var k2 = xcore::Wlniao.XCore.SessionEncryptKey;
+        // 未配置 SessionSafeKey（配置旧键 SessionEncryptKey 不读）时由 WebNode + 进程路径 + DB 密码 + Redis 密码派生（16 hex），且同一进程内稳定
+        var k1 = xcore::Wlniao.XCore.SessionSafeKey;
+        var k2 = xcore::Wlniao.XCore.SessionSafeKey;
         Assert.That(k1, Is.EqualTo(k2), "同进程应缓存同一密钥");
-        Assert.That(k1, Has.Length.EqualTo(32), "应为 16 字节 hex");
-        Assert.That(k1, Does.Match("^[0-9a-f]{32}$"));
-        // 不再是 WebNode+WebHost 等公开信息的 MD5 派生
+        Assert.That(k1, Has.Length.EqualTo(16), "应为 8 字节 hex（Md5Encryptor16）");
+        Assert.That(k1, Does.Match("^[0-9A-F]{16}$"));
+        // 派生含 DB 密码等非纯公开材料；不重算完整期望值：配置快照可被其它测试 reload 导致漂移
         var publicMaterial = xcore::Wlniao.XCore.WebNode + xcore::Wlniao.XCore.WebHost;
         Assert.That(k1, Is.Not.EqualTo(Encryptor.Md5Encryptor16(publicMaterial).ToLowerInvariant()));
+        var envOnly = Encryptor.Md5Encryptor16($"{Environment.MachineName}_{Environment.ProcessPath}");
+        Assert.That(k1, Is.Not.EqualTo(envOnly), "应包含 DB 密码等参与派生，而非仅环境信息");
+#pragma warning disable XCORE0008 // 过渡期验证 Obsolete 别名仍转发
+        Assert.That(xcore::Wlniao.XCore.SessionEncryptKey, Is.EqualTo(k1), "Obsolete 别名应转发到 SessionSafeKey");
+#pragma warning restore XCORE0008
     }
 }
 

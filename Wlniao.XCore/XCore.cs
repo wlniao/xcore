@@ -364,7 +364,7 @@ namespace Wlniao
         private static short microNode = 0;
         private static string startupTime = null;
         private static string startupRoot = null;
-        private static string sessionEncryptKey = null;
+        private static string sessionSafeKey = null;
         private static string _XServerId = null;
         private static string _WebNode = null;
         private static string _WebHost = null;
@@ -552,7 +552,7 @@ namespace Wlniao
         {
             get
             {
-                _WebNode ??= Config.GetConfigs("WLN_NODE", "xcore");
+                _WebNode ??= Config.GetConfigs("WLN_NODE", System.IO.Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "xcore"));
                 return _WebNode;
             }
         }
@@ -582,28 +582,33 @@ namespace Wlniao
         }
         
         /// <summary>
-        /// 会话加密密钥：优先读配置 SessionEncryptKey；未配置时生成进程级随机密钥，
-        /// 不再从 WebNode/WebHost 等可公开信息推导（否则知道部署配置即可离线复算）。
-        /// 多实例部署必须显式配置同一 SessionEncryptKey，否则各实例会话互不相通。
+        /// 会话加密密钥：只读配置 SessionSafeKey（配置旧键 SessionEncryptKey 已失效，不回退）；
+        /// 未配置时由 WebNode、进程路径、WLN_CONNSTR_PWD 与 WLN_REDIS_PASS 派生（Md5Encryptor16，16 位大写 hex）。
+        /// 多实例部署建议显式配置同一 SessionSafeKey；同环境、同 DB/Redis 密码的实例可得到相同派生值，环境差异会导致会话不通。
+        /// 属性旧名 SessionEncryptKey 仅作 [Obsolete] 别名转发，不读同名配置键。
         /// </summary>
-        public static string SessionEncryptKey
+        public static string SessionSafeKey
         {
             get
             {
-                if (sessionEncryptKey != null)
+                if (sessionSafeKey != null)
                 {
-                    return sessionEncryptKey;
+                    return sessionSafeKey;
                 }
-                sessionEncryptKey = Config.GetConfigs("SessionEncryptKey");
-                if (string.IsNullOrEmpty(sessionEncryptKey))
+                sessionSafeKey = Config.GetConfigs("SessionSafeKey");
+                if (string.IsNullOrEmpty(sessionSafeKey))
                 {
-                    var bytes = new byte[16];
-                    System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
-                    sessionEncryptKey = System.Convert.ToHexString(bytes).ToLowerInvariant();
+                    sessionSafeKey = Encryptor.Md5Encryptor16($"{XCore.WebNode}_{Environment.ProcessPath}_{DbConnectInfo.WLN_CONNSTR_PWD}_{Config.GetEncrypt("WLN_REDIS_PASS", Config.Secret)}");
                 }
-                return sessionEncryptKey;
+                return sessionSafeKey;
             }
         }
+
+        /// <summary>
+        /// 会话加密密钥（旧名，仅属性别名）。请改用 <see cref="SessionSafeKey"/>；本别名不读取同名配置键。
+        /// </summary>
+        [Obsolete("请改用 XCore.SessionSafeKey，本别名将在下个大版本移除。", DiagnosticId = "XCORE0008")]
+        public static string SessionEncryptKey => SessionSafeKey;
         #endregion
 
     }

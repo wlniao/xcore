@@ -297,7 +297,7 @@ namespace Wlniao.Log
             var item = new LokiStream
             {
                 stream = new Dictionary<string, string> { { "service_name", XCore.WebNode } },
-                values = new List<string[]> { new string[] { entrie.ts, entrie.line } },
+                values = [[entrie.ts, entrie.line]],
                 Server = serverHost,
                 OrgId = orgId
             };
@@ -377,7 +377,7 @@ namespace Wlniao.Log
                     var key = GetBatchKey(item.Server, item.OrgId);
                     if (!groups.TryGetValue(key, out var group))
                     {
-                        group = new List<LokiStream>();
+                        group = [];
                         groups[key] = group;
                     }
                     if (group.Count < batchSize)

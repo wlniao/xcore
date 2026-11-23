@@ -167,7 +167,7 @@ Stream  ToStream(byte[] bytes)      // 仅接受 byte[]，无 object 重载
 ```csharp
 int    ListenPort          // HTTP 监听端口（WLN_LISTEN_PORT，默认 5000）
 string ListenUrls          // 监听地址（WLN_LISTEN_URLS，默认 http://*:{ListenPort}）
-string WebNode             // 节点名（WLN_NODE，默认 xcore）
+string WebNode             // 节点名（WLN_NODE，默认进程名；ProcessPath 为 null 时回退 xcore）
 string WebHost             // 对外访问地址（WLN_HOST，默认 http://127.0.0.1:{ListenPort}）
 string XServerId           // 服务器 ID（XServerId）
 string StartupRoot         // 程序根目录（只读环境变量快照 WLN_STARTUP_ROOT，不读 xcore.config；自动剥掉 /bin）
@@ -178,7 +178,8 @@ long   PublishTime         // 当前程序发布时间（Unix）
 bool   IsDevTest           // WLN_DEVTEST == true
 bool   IsUseHttps          // 可写，默认 true
 string Webroxy             // 代理地址（Webroxy）
-string SessionEncryptKey   // 会话密钥；未配置时生成进程级随机密钥（多实例需显式配置同一值）
+string SessionSafeKey      // 会话密钥；读配置 SessionSafeKey（配置旧键 SessionEncryptKey 已失效），缺省由 WebNode+进程路径+DB/Redis 密码派生
+string SessionEncryptKey   // [Obsolete] 仅属性别名，转发 SessionSafeKey（XCORE0008，下个大版本移除）；不读同名配置键
 JsonSerializerOptions JsonSerializerOptions   // 只读快照（中文不转义）；已不可直接赋值
 JsonSerializerOptions CreateJsonSerializerOptions()                  // 新建一套框架默认选项
 JsonSerializerOptions SetJsonSerializerOptions(Func<JsonSerializerOptions> factory)
@@ -639,7 +640,7 @@ new MessageException(string message, int statusCode, Exception innerException)
 | `WLN_LISTEN_PORT` | `5000` | HTTP 监听端口 |
 | `WLN_LISTEN_URLS` | `http://*:{端口}` | 监听地址 |
 | `WLN_HOST` | `http://127.0.0.1:{端口}` | 对外访问地址 |
-| `WLN_NODE` | `xcore` | 节点名 |
+| `WLN_NODE` | 进程名（`ProcessPath` 为 null 时为 `xcore`） | 节点名 |
 | `WLN_STARTUP_ROOT` | 当前目录 | 程序根目录（`/bin` 之后被截断） |
 | `WLN_TIMEZONE` | `8` | 时区偏移小时 |
 | `WLN_CACHE` | `auto` | `auto`/`redis`/`file`/`memory` |
@@ -649,11 +650,11 @@ new MessageException(string message, int statusCode, Exception innerException)
 | `WLN_LOG_TYPE` / `WLN_LOG_LEVEL` / `WLN_LOG_PATH` / `WLN_LOG_LOCAL` / `WLN_LOG_INTERVAL` / `WLN_LOG_SERVER` | — | 日志后端与级别 |
 | `WLN_LOG_ORGID` | — | Loki 日志的 OrgId（`WLN_LOG_TYPE=loki` 时） |
 | `WLN_DEVTEST` | — | 置 `true` 开发测试态（`XCore.IsDevTest`） |
-| `WLN_CONNSTR_TYPE` / `WLN_CONNSTR_NAME` / `WLN_CONNSTR_HOST` / `WLN_CONNSTR_UID` / `WLN_CONNSTR_PWD` / `WLN_CONNSTR_*` | 见 `DbConnectInfo` | 数据库连接（另含 `WLN_CONNSTR_READONLY`/`MYSQL`/`SQLITE`/`SQLSERVER`）；`SessionEncryptKey` 派生依赖 `TYPE`/`NAME` |
+| `WLN_CONNSTR_TYPE` / `WLN_CONNSTR_NAME` / `WLN_CONNSTR_HOST` / `WLN_CONNSTR_UID` / `WLN_CONNSTR_PWD` / `WLN_CONNSTR_*` | 见 `DbConnectInfo` | 数据库连接（另含 `WLN_CONNSTR_READONLY`/`MYSQL`/`SQLITE`/`SQLSERVER`）；`SessionSafeKey` 派生依赖 `PWD`（另依赖 `WLN_REDIS_PASS`、`WebNode`、进程路径） |
 | `WLN_ACCEPT_ANY_CERT` | `false` | 全局 TLS 放行开关（`1/true/yes/on` 才放行） |
 | `Webroxy` | — | 出网代理 |
 | `XServerId` | — | 服务器标识 |
-| `SessionEncryptKey` | 进程级随机（未配置时） | 会话加密密钥；多实例必须显式配置同一值 |
+| `SessionSafeKey` | 由 WebNode+进程路径+DB/Redis 密码派生（缺省时） | 会话加密密钥；只读本键，**旧键 `SessionEncryptKey` 配置不生效**；多实例建议显式配置同一值 |
 
 ## 8. 提交前自检
 

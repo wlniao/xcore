@@ -1,6 +1,26 @@
 # 变更记录
 
-本文件记录 Wlniao.AspNetCore 的公开行为变更，重点标注**破坏性变更**。版本号与 `Wlniao.AspNetCore.csproj` 保持一致。
+本文件记录 XCore / AspNetCore / XCenter / Tasker 四个包的统一版本变更，重点标注**破坏性变更**。版本号与各项目 csproj 保持一致。
+
+## 10.0.7
+
+会话密钥属性与配置键改名（XCore / AspNetCore / XCenter / Tasker 同步升至 10.0.7）。
+
+### 破坏性变更
+
+- **`XCore.SessionEncryptKey` 改名为 `XCore.SessionSafeKey`**
+  - 仅保留 `[Obsolete]` **属性别名** `SessionEncryptKey` 转发到新属性（`XCORE0008`，下个大版本移除），源码可暂不改但会收到编译警告。
+  - **配置旧键 `SessionEncryptKey` 已失效**：只读配置 `SessionSafeKey`，不回退旧键；旧键未迁移时会静默走派生密钥，请改名配置。
+  - 未配置时由 `WebNode` + 进程路径 + `WLN_CONNSTR_PWD` + `WLN_REDIS_PASS` 派生（`Md5Encryptor16`，16 位大写 hex；Redis 密码经 `GetEncrypt` 读取）。
+  - **多实例部署建议显式配置同一 `SessionSafeKey`**；同环境、同 DB/Redis 密码的实例可得到相同派生值，环境差异会导致会话不通。
+
+### 行为变更
+
+- **`XCore.WebNode` 默认值由 `xcore` 改为进程名**（`Path.GetFileNameWithoutExtension(Environment.ProcessPath)`；`ProcessPath` 为 null 时仍回退 `xcore`）。影响 `ApiResult.node`、Loki `service_name` 等默认节点名；可用 `WLN_NODE` 显式指定。
+
+### 其它
+
+- 同步 `README.md` / `Reference/Wlniao/Wlniao.XCore.md` / `Todo.md` 与回归测试至 10.0.7。
 
 ## 10.0.6
 
@@ -69,6 +89,7 @@
 - **`XCore.SessionEncryptKey` 未配置时改为进程级随机密钥**
   - 不再从 `WebNode`/`WebHost`/`ConnType`/`ConnName` 等可公开信息推导（原推导可离线复算）。
   - **多实例部署必须显式配置同一 `SessionEncryptKey`**，否则各实例会话互不相通；未配置时重启进程会使既有会话失效。
+  - （10.0.7 起属性改名 `SessionSafeKey`，未配置时改为环境派生，见上文 10.0.7。）
 
 - **`Engine.Context.InputDeserialize<T>`（SKey 非空）解密失败不再回退明文**
   - 原：解密得到空串时直接把原始 `Body` 当 JSON 解析（客户端发明文即可绕过加密）。

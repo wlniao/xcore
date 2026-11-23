@@ -125,7 +125,7 @@ BASE=https://gitee.com/wlniao/xcore/raw/master/Reference/Wlniao; mkdir -p Refere
 
 ### 升级需留意的行为差异
 
-以下六条会影响已有代码的运行结果，升级时请逐条确认：
+以下八条会影响已有代码的运行结果，升级时请逐条确认：
 
 | 项 | 变化 | 影响 |
 |---|---|---|
@@ -133,12 +133,14 @@ BASE=https://gitee.com/wlniao/xcore/raw/master/Reference/Wlniao; mkdir -p Refere
 | `XCore.AcceptAnyServerCertificate` | 默认 `false`（按标准链校验），仅 `1/true/yes/on` 才放行 | 依赖全局放行访问自签站点的服务需显式开启，否则握手失败 |
 | `"x@y.z".IsEmail()` | 判据统一委托 `StringUtil.IsEmail`：多级域名由 `false` 变 `true`，单字符 TLD 由 `true` 变 `false` | 以扩展方法做邮箱校验的表单，结论可能与升级前不同 |
 | `StringUtil.GetHtmlTitle` | 由实例方法改为静态方法 | 调用方式改为 `StringUtil.GetHtmlTitle(html)` |
-| `RateLimit` / `ClientIP` 默认恢复历史 XFF 行为 | `WLN_RATE_TRUSTED_PROXIES` 未配置时采信 `X-Forwarded-For` 的第一个有效 IP（为兼容历史项目刻意保留，不是默认安全策略）；仅配置非空才启用信任策略 | 反向代理部署应显式配置可信代理列表，不要把默认行为当作安全边界；详见 `Wlniao.AspNetCore/CHANGELOG.md` |
+| `RateLimit` / `ClientIP` 默认恢复历史 XFF 行为 | `WLN_RATE_TRUSTED_PROXIES` 未配置时采信 `X-Forwarded-For` 的第一个有效 IP（为兼容历史项目刻意保留，不是默认安全策略）；仅配置非空才启用信任策略 | 反向代理部署应显式配置可信代理列表，不要把默认行为当作安全边界；详见 `CHANGELOG.md` |
 | `XCore.JsonSerializerOptions` | 由可写静态字段改为只读属性；整体替换改用 `SetJsonSerializerOptions(Func<…>)` / `ReloadJsonSerializerOptions()` | 源码里 `XCore.JsonSerializerOptions = …` 不再编译；运行期改选项请走工厂方法（会同步刷新 AOT 降级缓存） |
+| `XCore.SessionEncryptKey` → `XCore.SessionSafeKey` | 属性改名；仅保留 `[Obsolete]` 属性别名转发（`XCORE0008`），**配置旧键 `SessionEncryptKey` 已失效**，只读 `SessionSafeKey`。均未配置时由 WebNode + 进程路径 + DB 密码 + Redis 密码派生（16 hex） | 源码建议迁移到 `SessionSafeKey`（旧名有编译警告）；**配置文件里的 `SessionEncryptKey` 不再生效**，须改名为 `SessionSafeKey`，否则静默走派生密钥；多实例建议显式配置同一值 |
+| `XCore.WebNode` 默认值 | 由固定 `xcore` 改为进程名（`ProcessPath` 为 null 时仍回退 `xcore`） | `ApiResult.node`、Loki `service_name` 等默认节点名变化；需固定节点名请配置 `WLN_NODE` |
 
 ### 维护约定（文档贡献者）
 
-- 本文档组按 `Wlniao.XCore` / `Wlniao.AspNetCore` **10.0.6** 编写；改公共 API 时同步更新对应文件（`dotnet build` 不会发现文档不同步）。
+- 本文档组按 `Wlniao.XCore` / `Wlniao.AspNetCore` **10.0.7** 编写；改公共 API 时同步更新对应文件（`dotnet build` 不会发现文档不同步）。
 - 新增 API 补三处：手册的签名段落、反例对照（如有坑）、`AGENTS.md` 的自检清单（如属高频误用）。
 - AOT 标注必须与源码一致：源码标了 `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]` 的 API，手册里必须写明。
 - 手册只写「当前行为」，不写历史；泛型类型名用反引号包裹，不要写 `&lt;T&gt;` 实体；签名要能直接编译，不要省略参数名。

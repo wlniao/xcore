@@ -79,8 +79,8 @@
 ## 六、文档 / 流程
 
 - README「全库反射兜底均有标注」——本轮补齐了 `Reflection` 主路径，**其它文件未再逐个核对**
-- 升级行为差异表（README）需补：响应 `sign`、双向时间窗、`SessionEncryptKey` 随机化、FileLoger 级别过滤、熔断仍限流等
-- CHANGELOG 未写本轮安全修复条目（AspNetCore 有 CHANGELOG 文件）
+- 升级行为差异表（README）仍待补：响应 `sign`、双向时间窗、FileLoger 级别过滤、熔断仍限流（`SessionSafeKey` 改名与派生方式已于 10.0.7 补入）
+- CHANGELOG 未写本轮安全修复条目（根目录有 CHANGELOG.md）
 
 ---
 
