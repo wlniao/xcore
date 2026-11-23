@@ -658,7 +658,7 @@ namespace Wlniao.Mvc
         {
             get
             {
-                // fail-closed：与限流共用可信代理策略，未配置时不采信 X-Forwarded-For
+                // 与限流共用 ClientIpResolver：未配置 TrustedProxies 时采信 XFF 第一个有效 IP（历史兼容），配置后才收紧
                 var remote = Request.HttpContext.Connection.RemoteIpAddress;
                 Request.Headers.TryGetValue("x-forwarded-for", out var forwardedIp);
                 return Wlniao.Middleware.ClientIpResolver.Resolve(remote, forwardedIp.ToString());

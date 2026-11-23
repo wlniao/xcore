@@ -99,28 +99,29 @@ var response = Net.ApiClient.Get("https://api.example.com/data");
 - **多环境支持**：通过环境变量或配置文件切换开发 / 测试 / 生产环境
 - **NativeAOT**：全库兼容 NativeAOT 发布，反射兜底 API 均有显式标注
 
-## AI 编码助手接入（AGENTS-Usage）
+## AI 编码助手接入（Reference/Wlniao）
 
-[`AGENTS-Usage/`](AGENTS-Usage/) 目录提供面向 AI 编码助手（Codex / Cursor / Claude Code / WorkBuddy 等）的接入材料，按包拆分、分层使用：
+[`Reference/Wlniao/`](Reference/Wlniao/) 目录提供面向 AI 编码助手（Codex / Cursor / Claude Code / WorkBuddy 等）的接入材料，按包拆分、分层使用：
 
 | 文件 | 落位 | 作用 |
 |---|---|---|
-| [`AGENTS.md`](AGENTS-Usage/AGENTS.md) | `AGENTS.md`（项目根目录） | **执行约定**：命令、边界、必须遵守的规则、自检清单 |
-| [`Wlniao.XCore.md`](AGENTS-Usage/Wlniao.XCore.md) | `Reference/Wlniao/Wlniao.XCore.md` | **参考手册**：`Wlniao.XCore` 的签名、配置项、反例 |
-| [`Wlniao.AspNetCore.md`](AGENTS-Usage/Wlniao.AspNetCore.md) | `Reference/Wlniao/Wlniao.AspNetCore.md` | **参考手册**：`Wlniao.AspNetCore` 的宿主、控制器、报文、限流 |
+| [`AGENTS.md`](Reference/Wlniao/AGENTS.md) | `AGENTS.md`（项目根目录） | **执行约定**：命令、边界、必须遵守的规则、自检清单 |
+| [`Wlniao.XCore.md`](Reference/Wlniao/Wlniao.XCore.md) | `Reference/Wlniao/Wlniao.XCore.md` | **参考手册**：`Wlniao.XCore` 的签名、配置项、反例 |
+| [`Wlniao.AspNetCore.md`](Reference/Wlniao/Wlniao.AspNetCore.md) | `Reference/Wlniao/Wlniao.AspNetCore.md` | **参考手册**：`Wlniao.AspNetCore` 的宿主、控制器、报文 |
+| [`Wlniao.AspNetCore.RateLimit.md`](Reference/Wlniao/Wlniao.AspNetCore.RateLimit.md) | `Reference/Wlniao/Wlniao.AspNetCore.RateLimit.md` | **限流专项手册**：动态封禁、解封时间、响应后检查器、Redis 存储 |
 
 在**业务项目根目录**执行（`sh` / `bash` / Git Bash / WSL），目录会自动创建。**境内推荐从 Gitee 下载**（直连快、无需代理）：
 
 ```bash
-BASE=https://gitee.com/wlniao/xcore/raw/master/AGENTS-Usage; mkdir -p Reference/Wlniao; curl -fsSL "$BASE/AGENTS.md" -o AGENTS.md; curl -fsSL "$BASE/Wlniao.XCore.md" -o Reference/Wlniao/Wlniao.XCore.md; curl -fsSL "$BASE/Wlniao.AspNetCore.md" -o Reference/Wlniao/Wlniao.AspNetCore.md
+BASE=https://gitee.com/wlniao/xcore/raw/master/Reference/Wlniao; mkdir -p Reference/Wlniao; [ ! -f AGENTS.md ] && curl -fsSL "$BASE/AGENTS.md" -o AGENTS.md; for f in Wlniao.XCore.md Wlniao.AspNetCore.md Wlniao.AspNetCore.RateLimit.md; do curl -fsSL "$BASE/$f" -o "Reference/Wlniao/$f"; done
 ```
 
-境外或可直连 GitHub 的环境，把 `BASE` 换为 `https://raw.githubusercontent.com/wlniao/xcore/master/AGENTS-Usage` 即可。Windows PowerShell 中 `curl` 是 `Invoke-WebRequest` 的别名，请改用 `curl.exe`。
+境外或可直连 GitHub 的环境，把 `BASE` 换为 `https://raw.githubusercontent.com/wlniao/xcore/master/Reference/Wlniao` 即可。Windows PowerShell 中 `curl` 是 `Invoke-WebRequest` 的别名，请改用 `curl.exe`。
 
-未引用 `Wlniao.AspNetCore` 的项目，执行后删掉 `Reference/Wlniao/Wlniao.AspNetCore.md` 即可（`AGENTS.md` 已把 Web 相关约定集中在 §6，删掉该节即可）。
+未引用 `Wlniao.AspNetCore` 的项目，执行后删掉 `Reference/Wlniao/Wlniao.AspNetCore.md` 和 `Reference/Wlniao/Wlniao.AspNetCore.RateLimit.md` 即可（`AGENTS.md` 已把 Web 相关约定集中在 §6，删掉该节即可）。
 
-> ⚠️ 三个文件要按上表的**落位**分别放置——`AGENTS.md` 用 `Reference/Wlniao/Wlniao.XCore.md` 这样的相对路径指路，
-> 路径或文件名对不上等于断链；也**不要**把两份手册拼接成一个文件（章节编号与同名小节会冲突）。
+> ⚠️ 四个文件要按上表的**落位**分别放置——`AGENTS.md` 用 `Reference/Wlniao/Wlniao.XCore.md` 这样的相对路径指路，
+> 路径或文件名对不上等于断链；也**不要**把手册拼接成一个文件（章节编号与同名小节会冲突）。
 
 ### 升级需留意的行为差异
 
@@ -132,12 +133,12 @@ BASE=https://gitee.com/wlniao/xcore/raw/master/AGENTS-Usage; mkdir -p Reference/
 | `XCore.AcceptAnyServerCertificate` | 默认 `false`（按标准链校验），仅 `1/true/yes/on` 才放行 | 依赖全局放行访问自签站点的服务需显式开启，否则握手失败 |
 | `"x@y.z".IsEmail()` | 判据统一委托 `StringUtil.IsEmail`：多级域名由 `false` 变 `true`，单字符 TLD 由 `true` 变 `false` | 以扩展方法做邮箱校验的表单，结论可能与升级前不同 |
 | `StringUtil.GetHtmlTitle` | 由实例方法改为静态方法 | 调用方式改为 `StringUtil.GetHtmlTitle(html)` |
-| `RateLimit` 默认不再采信 `X-Forwarded-For` | `TrustedProxies` 未配置时 fail-closed，限流键取直连地址；仅显式 `*` 才信任全部代理 | 依赖伪造 XFF 切换限流键的部署需设 `WLN_RATE_TRUSTED_PROXIES=*` 或列出可信代理；详见 `Wlniao.AspNetCore/CHANGELOG.md` |
+| `RateLimit` / `ClientIP` 默认恢复历史 XFF 行为 | `WLN_RATE_TRUSTED_PROXIES` 未配置时采信 `X-Forwarded-For` 的第一个有效 IP（为兼容历史项目刻意保留，不是默认安全策略）；仅配置非空才启用信任策略 | 反向代理部署应显式配置可信代理列表，不要把默认行为当作安全边界；详见 `Wlniao.AspNetCore/CHANGELOG.md` |
 | `XCore.JsonSerializerOptions` | 由可写静态字段改为只读属性；整体替换改用 `SetJsonSerializerOptions(Func<…>)` / `ReloadJsonSerializerOptions()` | 源码里 `XCore.JsonSerializerOptions = …` 不再编译；运行期改选项请走工厂方法（会同步刷新 AOT 降级缓存） |
 
 ### 维护约定（文档贡献者）
 
-- 本文档组按 `Wlniao.XCore` / `Wlniao.AspNetCore` **10.0.5** 编写；改公共 API 时同步更新对应文件（`dotnet build` 不会发现文档不同步）。
+- 本文档组按 `Wlniao.XCore` / `Wlniao.AspNetCore` **10.0.6** 编写；改公共 API 时同步更新对应文件（`dotnet build` 不会发现文档不同步）。
 - 新增 API 补三处：手册的签名段落、反例对照（如有坑）、`AGENTS.md` 的自检清单（如属高频误用）。
 - AOT 标注必须与源码一致：源码标了 `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]` 的 API，手册里必须写明。
 - 手册只写「当前行为」，不写历史；泛型类型名用反引号包裹，不要写 `&lt;T&gt;` 实体；签名要能直接编译，不要省略参数名。

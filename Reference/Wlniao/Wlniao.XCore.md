@@ -1,7 +1,7 @@
 # Wlniao.XCore · API 参考手册
 
 > 本文是**参考手册**，不是 `AGENTS.md`。执行约定（该做什么、不该做什么）见项目根 `AGENTS.md`。
-> 依据源码版本 **10.0.5**（`dotnet list package --include-transitive` 可核对实际引用版本）。
+> 依据源码版本 **10.0.6**（`dotnet list package --include-transitive` 可核对实际引用版本）。
 > 签名以源码与包内 XML 注释为准；本文省略了部分重载，标注「另有重载」处请自行确认。
 
 ## 0. 包与兼容边界
@@ -361,6 +361,8 @@ bool   LocalSet(string key, string value)                // 进程内本地缓�
 string LocalGet(string key, int expireSeconds = 86400)
 string CachePath { get; set; }                           // file 后端目录
 ```
+
+> Redis 后端的 `Exists` / `Del` 返回值已按 RESP 整数回复（`:1`/`:0`）正确判定；此前 `KeyExists`/`KeyDelete` 对成功场景恒返回 `false`。
 
 ### Wlniao.Caching.FileCache 文件缓存（file 后端的底层实现，带 L1 内存层）
 

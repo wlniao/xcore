@@ -824,6 +824,12 @@ namespace Wlniao.Net
                 temp = Encoding.GetString(res);
                 throw new XCoreException("Redis: " + temp.Substring(1, temp.LastIndexOf('\r')), 500);
             }
+            else if (temp[0] == ':')
+            {
+                // DEL / EXISTS / EXPIRE 等命令返回整数回复（:0\r\n / :1\r\n）
+                var end = temp.IndexOf('\r');
+                return end > 1 && long.TryParse(temp.Substring(1, end - 1), out var value) && value > 0;
+            }
             else
             {
                 return false;

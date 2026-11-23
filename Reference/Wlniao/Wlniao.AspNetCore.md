@@ -1,7 +1,7 @@
 # Wlniao.AspNetCore · API 参考手册
 
-> 本文是**参考手册**，不是 `AGENTS.md`。执行约定见项目根 `AGENTS.md`；通用工具类型（配置/缓存/加密/时间/JSON）见同目录 `Wlniao.XCore.md`。
-> 依据源码版本 **10.0.5**。签名以源码与包内 XML 注释为准，本文省略了部分重载。
+> 参考手册，不是 `AGENTS.md`。执行约定见项目根 `AGENTS.md`；通用工具见 `Wlniao.XCore.md`；**限流/封禁见 `Wlniao.AspNetCore.RateLimit.md`**。
+> 依据源码版本 **10.0.6**。签名以源码与包内 XML 注释为准，省略部分重载。
 
 ## 0. 包与兼容边界
 
@@ -15,12 +15,9 @@ dotnet add package Wlniao.AspNetCore   # 自动依赖 Wlniao.XCore
 | AOT | 程序集标 `IsAotCompatible=true`，但**并非所有 API 都可静态分析**，详见 §4 的标注 |
 | 本项目角色 | **只做宿主与 HTTP 编排**：监听、TLS、参数解析、会话、限流、错误页都已有实现，不要重写 |
 
-> ⚠️ AOT 的两处硬伤：`AddBusiness` 标了 `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]`（反射扫程序集）；
-> `Json(object)` / `OutSuccess(object)` 等响应入口按运行时类型序列化：
-> 反射可用时已登记 `Wlniao.JsonContext` 的类型优先走源生成，仅未登记成员回退反射；
-> 反射禁用的 AOT 环境（含 `PublishTrimmed` 且 `JsonSerializerIsReflectionDisabledByDefault=true`）下
-> 未登记类型会抛 `NotSupportedException`（不再静默输出 `{}`）。
-> 启用 `PublishAot` 的项目请改用显式服务注册 + 具名 DTO 并登记源生成上下文。
+> ⚠️ AOT 两处硬伤：`AddBusiness` 反射扫程序集（标 `RequiresUnreferencedCode` / `RequiresDynamicCode`）；
+> `Json(object)` / `OutSuccess(object)` 按运行时类型序列化，反射禁用的 AOT 下未登记类型抛 `NotSupportedException`。
+> `PublishAot` 项目改用显式注册 + 具名 DTO 并登记源生成上下文（详见 §4 与 `Wlniao.XCore.md` §3）。
 
 ## 1. 类型选择对照
 
@@ -56,12 +53,7 @@ builder.Services.AddEngineBusiness();    // 需要 Engine.IContext 时加这行
 var app = builder.Build();
 
 app.UseErrorHandling(o => o.StatusCode = 502);        // 全局异常兜底（建议第一个）
-app.UseRateLimit(o =>                                 // 按客户端 IP 限流
-{
-    o.TimeWindow = 60;
-    o.MaxRequests = 600;                              // 0 = 不限流
-    o.WhitePath = ["/health", "/api/public*"];
-});
+app.UseRateLimit(o => o.MaxRequests = 600);           // 0 = 不限流；详见限流专项文档
 app.UseRouting();
 app.MapControllers();
 app.Run();
@@ -127,7 +119,7 @@ public class OrderService : IOrderService
 校验内容：`sign == SM3(timestamp + data + token)`（常量时间比较），且要求 `|now - timestamp| <= 3600`（双向时间窗，同时拒绝过期与超前时间戳）；
 同一 `sign` 在时间窗内只允许出现一次（进程内重放拦截，错误码 `208`）。
 响应报文携带 `sign = SM3(data + token)`，客户端 `XApi`/`TokenApi` 会强制校验（失败码 `108`）。
-（**只拦过期，不拦超前**，客户端时钟可超前任意秒数）。
+客户端时钟超前超过 1 小时同样会收到 `203`，上线前需保证调用方已对时。
 
 ### `XApiController` 报文形状（成功与失败不同，客户端要分开解析）
 
@@ -143,7 +135,7 @@ IActionResult? Check(Func<Dictionary<string, object>, IActionResult> func)
 |---|---|---|
 | 未配置 token | `data` | `"200"` |
 | 缺 data / sign / timestamp | `data` | `"202"` |
-| 请求过期 | `code` | `"203"` |
+| 时间戳超出双向窗口（过期或超前） | `code` | `"203"` |
 | 签名错误 | `code` | `"205"` |
 | 请求重放（同 sign 窗口内重复） | `code` | `"208"` |
 | 响应签名验证失败（客户端侧） | `code` | `"108"` |
@@ -169,7 +161,7 @@ new Dictionary<string, object>
 ```
 
 > ⚠️ 三条容易写错的地方：
-> 1. **成功的 `data` 是密文，失败的 `data` 是明文状态码**——客户端必须按 `success` 分流；
+> 1. **成功的 `data` 是密文**；失败报文中 `200`/`202` 的 `data` 是明文状态码（`code` 留空），`203+` 状态在 `code`、`data` 留空——**code/data 不得同时非空**（客户端报 `106`）。业务 `Fail` 若带 data 则与成功一样走加密。客户端必须按 `success` 分流；
 > 2. 成功时 `code="0"`（字符串零），不是 `"200"`；
 > 3. `OutSuccess` 序列化 `data` 按运行时类型解析：反射禁用的 AOT 下未登记类型抛 `NotSupportedException`（建议改传具名 DTO 或登记源生成上下文）。
 
@@ -208,11 +200,8 @@ void AddBusiness(this IServiceCollection service, string? assemblyFile = null)
 void AddEngineBusiness(this IServiceCollection service)   // IContext → Context
 ```
 
-> ⚠️ **`AddBusiness` 不是 AOT/裁剪安全的**：源码标了
-> `[RequiresUnreferencedCode("...Assembly.LoadFrom/GetTypes/GetCustomAttributes/GetInterfaces...")]` 与
-> `[RequiresDynamicCode("...NativeAOT 下不可用...")]`。
-> 启用 `PublishAot` 或单文件发布时，调用方会收到 IL2026/IL3050 警告，且被裁剪的类型不会被注册。
-> 这类项目请改为显式 `services.AddScoped<IOrderService, OrderService>()`。
+> ⚠️ `AddBusiness` 不是 AOT/裁剪安全的（源码标 `RequiresUnreferencedCode` / `RequiresDynamicCode`）。
+> `PublishAot` / 单文件发布会收到 IL2026/IL3050 警告且类型可能被裁掉，改用显式 `AddScoped<IOrderService, OrderService>()`。
 
 ```csharp
 ServiceLifetime LifeTime   // Transient（默认）/ Scoped / Singleton
@@ -252,7 +241,7 @@ protected bool   RequestSecurity   // 默认 true；检测到非法字符会置 
 protected string method / errorMsg
 
 // —— 请求信息 ——
-string ClientIP      // 自动解析 x-forwarded-for
+string ClientIP      // 与限流共用解析器；未配置 TrustedProxies 时采信 XFF 第一个有效 IP（历史兼容），见限流专项文档 §2
 bool   IsHttps       // 兼容 x-forwarded-proto / x-client-scheme / referer
 string UrlHost       // 优先 WLN_HOST 配置，带协议头
 string UrlDomain
@@ -397,26 +386,10 @@ IApplicationBuilder UseErrorHandling(this IApplicationBuilder app, Action<ErrorH
 
 ### Wlniao.Middleware.UseRateLimit 限流
 
-```csharp
-IApplicationBuilder UseRateLimit(this IApplicationBuilder app, Action<RateLimitOptions> configureOptions)
-// 按客户端 IP 限流 + 熔断；超限 429，黑名单 428
-```
+已拆到 **`Wlniao.AspNetCore.RateLimit.md`**：选项、白/黑名单、可信代理、动态封禁与解封时间、响应后检查器、Redis 分布式存储、配置项与自检全部在那里。主手册只保留一行：
 
 ```csharp
-RateLimitAlgorithm Algorithm      // TokenBucket（默认）/ FixedWindow / SlidingWindow
-int  TimeWindow                   // 秒，默认 180（WLN_RATE_TIME_SECONDS）
-int  MaxRequests                  // 窗口内上限，0 = 不启用（WLN_RATE_MAX_REQUESTS）
-int  BucketCapacity               // 令牌桶容量，0 时取 MaxRequests
-bool IsolationPath                // 不同目录分开计数
-string[] WhitePath                // 白名单目录，支持 /api* 前缀（WLN_RATE_WHITEPATH）
-string[] WhiteKeys / BlackKeys    // 白名单 / 黑名单 IP（WLN_RATE_WHITEKEYS / WLN_RATE_BLACKKEYS）
-string[] TrustedProxies           // 可信代理列表（支持 CIDR，IPv4/IPv6）；仅显式配置后才采信 X-Forwarded-For，
-                                  // 采信时从右向左回溯取第一个不可信跳作为客户端 IP（WLN_RATE_TRUSTED_PROXIES，显式 "*" 才信任全部）
-string   MessageTpl               // 拒绝响应模板，支持 {ClientKey}
-bool EnableCircuitBreaker         // 默认 true
-int  CircuitBreakerFailureThreshold / CircuitBreakerRecoveryTime   // 默认 5 次 / 30 秒
-IRateLimitStore DistributedStore  // 分布式存储接口：Task<bool> TryAcquireAsync(string key, int limit, TimeSpan window) + bool IsAvailable
-bool PreferDistributedStore       // 优先用分布式存储
+app.UseRateLimit(o => o.MaxRequests = 600);   // 超限 429，黑名单/动态封禁 428；详见限流专项文档
 ```
 
 ### 其它
@@ -437,7 +410,7 @@ interface Engine.IRuntime { bool InitStart(); }                              // 
 | 手写 `services.AddScoped<IOrderService, OrderService>()` | 类上标 `[BusinessService]` + `AddBusiness()` | 漏注册、生命周期不一致 |
 | 业务类标了 `[BusinessService]` 但没实现接口 | 实现接口（如 `IOrderService`） | **静默不注册**，运行期拿不到服务 |
 | `Request.Query["id"]` | `GetRequest("id")` | 绕过过滤/编码处理，GET+POST 不统一 |
-| `return Content(json, "application/json")` | `return Json(obj)` | 中文转义、null 处理不一致 |
+| `return Content(json, "application/json")` | `return JsonStr(Json.Serialize(dto, ctx))` | 中文转义/null 处理不一致，AOT 下反射路径失效 |
 | `throw new Exception("...")` 交给框架 | `return ErrorMsg("...")` / `OutMessage(...)` | 前端拿到 HTML 或 502 |
 | 每个 Action 里 try/catch | `app.UseErrorHandling(...)` 一次兜底 | 重复代码、漏捕获 |
 | `XApiController` 不赋 `token` | 构造函数里 `token = Config.GetConfigs("ApiToken")` | `Check` 直接失败返回，业务函数不会执行 |
@@ -455,14 +428,9 @@ interface Engine.IRuntime { bool InitStart(); }                              // 
 | `WLN_TLS_PORT` | 同 `WLN_LISTEN_PORT` | TLS 监听端口 |
 | `WLN_TLS_CRT` | `xcore/server.crt` | 服务端证书路径 |
 | `WLN_TLS_KEY` | `xcore/server.key` | 服务端私钥路径 |
-| `WLN_RATE_TIME_SECONDS` | `180` | 限流窗口（秒） |
-| `WLN_RATE_MAX_REQUESTS` | `0` | 窗口内上限，0 不启用 |
-| `WLN_RATE_WHITEPATH` | — | 白名单目录（逗号分隔，支持 `/api*`） |
-| `WLN_RATE_WHITEKEYS` / `WLN_RATE_BLACKKEYS` | — | IP 白 / 黑名单 |
-| `WLN_RATE_TRUSTED_PROXIES` | — | 可信代理列表；未配置时不采信 `X-Forwarded-For`，显式 `*` 才信任全部 |
-| `WLN_RATE_CB_FALLBACK_MAX` | 0 | 熔断打开期间每窗口每键兜底配额；≤0 时自动取 `max(1, MaxRequests/4)` |
 | `NoSecurityMessage` | `请求参数包含非法字符` | 参数被判定不安全时的拦截文案；未配置或为空也使用默认文案并阻断响应（见 §4 `GetRequest` 说明） |
 
+> 限流配置（`WLN_RATE_*`）见 `Wlniao.AspNetCore.RateLimit.md` §6；
 > 其余配置（端口、时区、缓存、日志、TLS 放行开关 `WLN_ACCEPT_ANY_CERT`）见 `Wlniao.XCore.md` §7。
 
 ## 7. 提交前自检
@@ -472,7 +440,7 @@ interface Engine.IRuntime { bool InitStart(); }                              // 
 - [ ] 新 Action 是否继承框架控制器基类，参数是否走 `GetRequest`/`PostRequest` 系列？
 - [ ] 失败路径是否用 `ErrorMsg` / `OutMessage` 返回，而不是抛异常？
 - [ ] AJAX 失败分支是否带了 `do=1`（否则拿到 HTML）？
-- [ ] 新增外部可访问接口是否评估过限流（`UseRateLimit` 白名单是否需要调整）？
+- [ ] 限流/封禁相关检查（白名单、可信代理、检查器、Redis 存储）见 `Wlniao.AspNetCore.RateLimit.md` §7？
 - [ ] 加密通讯接口是否属于 `XApiController` 且 `token` 已赋值？
 - [ ] 对外 HTTP 调用是否确认过 `XCore.AcceptAnyServerCertificate` 仍为默认的 `false`？
 - [ ] 若启用 `PublishAot`：是否已把 `AddBusiness` 换成显式注册、`Json(obj)` 换成源生成序列化？

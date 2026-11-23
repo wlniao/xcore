@@ -1,9 +1,7 @@
 # AGENTS.md
 
-本项目引用 Wlniao 框架：`Wlniao.XCore`，Web 项目再加 `Wlniao.AspNetCore`。
-本文按包版本 **10.0.5** 编写，只写「必须遵守什么」，不写 API 清单。
-
-- 完整签名查 `Reference/Wlniao/Wlniao.XCore.md`、`Reference/Wlniao/Wlniao.AspNetCore.md`，**按需检索，不要整篇预读**。
+本项目引用 Wlniao 框架：`Wlniao.XCore`，Web 项目再加 `Wlniao.AspNetCore`。本文只写「必须遵守什么」，不写 API 清单。
+- 完整签名查 `Reference/Wlniao/Wlniao.XCore.md`、`Reference/Wlniao/Wlniao.AspNetCore.md`；限流/封禁查 `Reference/Wlniao/Wlniao.AspNetCore.RateLimit.md`。**按需检索，不要整篇预读**。
 - 本文与源码冲突时，以源码 / 包内 XML 注释为准，并顺手修正对应文档。
 - 本文没覆盖的 API，读源码后再说，**不要按 .NET 习惯推测参数顺序**。
 
@@ -24,7 +22,7 @@ dotnet publish -c Release -r linux-x64 -p:PublishAot=true     # AOT 发布
 dotnet list package --include-transitive                       # 核对实际引用的 Wlniao 版本
 ```
 
-> 最后一条显示的 Wlniao 版本若不是 10.0.5，先停下确认差异（重点看 `ApiResult`、
+> 最后一条显示的 Wlniao 版本若不是 10.0.6，先停下确认差异（重点看 `ApiResult`、
 > `XApiController` 报文形状、`AddBusiness` 的 AOT 标注），不要照本文硬套。
 
 ## 3. 边界
@@ -111,14 +109,13 @@ memory / file / redis 三后端语义已对齐：redis 对 `expire<=0` 写入后
 **`XApiController`**：
 
 - `token` 必须在构造函数里赋值（16 字符 SM4 密钥），否则 `Check` 直接失败返回；
-- 校验式 `sign == SM3(timestamp + data + token)`（常量时间比较），`timestamp` 双向窗口 `|now-ts|<=3600`（拦过期也拦超前），同 sign 窗口内拒绝重放（`208`）；
+- 校验式 `sign == SM3(timestamp + data + token)`（常量时间比较），`timestamp` 双向窗口 `|now-ts|<=3600`（拦过期也拦超前，超窗返回 `code="203"`），同 sign 窗口内拒绝重放（`208`）；
 - 响应带 `sign = SM3(data+token)`，`XApi`/`TokenApi` 客户端强制校验（`108`）；请求日志不落盘 sign；
 - **成功与失败报文形状不同**：成功走手拼字典且 `data` 为 SM4 密文、`code="0"`；失败走 `ApiResult<object>` 且 `data` 为明文状态码。客户端必须分开解析。
 
 **AOT 注意**：`AddBusiness` 标了 `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]`；
-`Json(object)`/`OutSuccess(object)` 在反射可用时走反射序列化（嵌套匿名类型/DTO 也能输出）；
-反射禁用的 AOT 环境优先按运行时类型解析 `JsonTypeInfo`，未登记类型抛 `NotSupportedException`。
-启用了 AOT 就改用显式注册 + 具名 DTO 并登记源生成上下文，不要指望这两条路径。
+`Json(object)`/`OutSuccess(object)` 反射可用时已登记类型优先走源生成，反射禁用的 AOT 下未登记类型抛 `NotSupportedException`。
+启用 AOT 就改用显式注册 + 具名 DTO 并登记源生成上下文。
 
 ## 7. 反例 → 正例
 
@@ -159,8 +156,9 @@ memory / file / redis 三后端语义已对齐：redis 对 `expire<=0` 写入后
 | 需要什么 | 去哪找 |
 |---|---|
 | 某个类的完整签名 | `Reference/Wlniao/Wlniao.XCore.md` §5 / `Reference/Wlniao/Wlniao.AspNetCore.md` §4 |
-| 配置项 | `Reference/Wlniao/Wlniao.XCore.md` §7、`Reference/Wlniao/Wlniao.AspNetCore.md` §6 |
+| 配置项 | `Reference/Wlniao/Wlniao.XCore.md` §7、`Reference/Wlniao/Wlniao.AspNetCore.RateLimit.md` §6 |
 | 报文/错误码细节 | `Reference/Wlniao/Wlniao.AspNetCore.md` §3「`XApiController` 报文形状」 |
+| 限流/封禁/动态解封 | `Reference/Wlniao/Wlniao.AspNetCore.RateLimit.md` |
 | 本文没写的 API | 源码或包内 XML 注释：<https://github.com/wlniao/xcore> |
 
 文档不是源码的镜像：手册里省略了重载、扩展方法与内部类型。**看到「另有重载」这类表述时去读源码确认签名**，别猜。

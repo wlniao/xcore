@@ -81,17 +81,17 @@ namespace Wlniao.Middleware
         public string[] BlackKeys { get; set; } = Config.GetConfigs("WLN_RATE_BLACKKEYS", "").SplitBy() ?? [];
 
         /// <summary>
-        /// 可信代理白名单（可选，默认空数组 = 不采信 X-Forwarded-For，fail-closed）。
+        /// 可信代理白名单（可选，默认空数组 = 保持历史行为：无条件采信 X-Forwarded-For 的第一个有效 IP）。
         /// 支持单个 IP、CIDR 网段与通配符，如 "10.0.0.5"、"10.0.0.0/8"、"::1"，多项用逗号分隔；
-        /// 仅显式配置 "*" 时才信任全部代理。
+        /// 仅**非空配置**时才启用信任策略，显式 "*" 表示信任全部代理。
         /// 配置项：WLN_RATE_TRUSTED_PROXIES。
         /// <para>
-        /// 为空：**一律不采信** X-Forwarded-For，客户端地址取直连对端（<c>Connection.RemoteIpAddress</c>）。
+        /// 未配置：为兼容历史项目，采信 X-Forwarded-For 的第一个有效 IP；无有效头时才用直连对端。
         /// </para>
         /// <para>
         /// 非空时：仅当直连对端命中白名单才采信该头，
         /// 否则一律使用直连地址；采信时自右向左回溯，取第一个不可信的跳作为客户端地址，
-        /// 避免可信代理「追加而非覆盖」时攻击者预置伪造的最左项。
+        /// 避免可信代理「追加而非覆盖」时攻击者预置伪造的最左项。配置非空但无有效项时 fail-closed。
         /// </para>
         /// </summary>
         public string[] TrustedProxies { get; set; } = Config.GetConfigs("WLN_RATE_TRUSTED_PROXIES", "").SplitBy() ?? [];
@@ -134,6 +134,12 @@ namespace Wlniao.Middleware
         /// 是否优先使用分布式存储
         /// </summary>
         public bool PreferDistributedStore { get; set; } = false;
+
+        /// <summary>
+        /// 响应后检查器：可按 404 频率等规则把客户端加入动态封禁列表（RateLimitControl）。
+        /// 新增属性，不影响既有配置代码。
+        /// </summary>
+        public IList<IRateLimitInspector> Inspectors { get; } = new List<IRateLimitInspector>();
     }
 
     /// <summary>
@@ -412,9 +418,10 @@ namespace Wlniao.Middleware
         private readonly HashSet<string> _whiteKeysSet;
         private readonly HashSet<string> _blackKeysSet;
         private readonly TrustedProxyMatcher _trustedProxies;
+        private readonly IRateLimitInspector[] _inspectors;
         /// <summary>
-        /// 仅当显式配置 "*" 为可信代理时为 true：采信 X-Forwarded-For。
-        /// 未配置或配置笔误一律为 false（fail-closed），不采信该请求头。
+        /// 未配置 TrustedProxies（历史兼容）或显式配置 "*" 时为 true：采信 X-Forwarded-For 的第一个有效 IP。
+        /// 配置非空但无有效项时为 false（fail-closed），不采信该请求头。
         /// </summary>
         private readonly bool _legacyTrustAll;
         private readonly CircuitBreaker? _circuitBreaker;
@@ -467,9 +474,10 @@ namespace Wlniao.Middleware
             _whiteKeysSet = new HashSet<string>(_options.WhiteKeys ?? [], StringComparer.OrdinalIgnoreCase);
             _blackKeysSet = new HashSet<string>(_options.BlackKeys ?? [], StringComparer.OrdinalIgnoreCase);
             _trustedProxies = new TrustedProxyMatcher(_options.TrustedProxies);
-            // 仅显式配置 "*" 时信任全部；未配置或配置笔误一律 fail-closed（忽略 X-Forwarded-For），
-            // 避免默认部署把伪造客户端 IP 的能力打开
-            _legacyTrustAll = _trustedProxies.MatchAll;
+            _inspectors = _options.Inspectors?.ToArray() ?? [];
+            // 未配置 TrustedProxies 时保持历史行为（采信 XFF 第一个有效 IP），仅非空配置才启用信任策略；
+            // 配置非空但无有效项时 fail-closed，避免配置笔误反而放大风险
+            _legacyTrustAll = !_trustedProxies.Configured || _trustedProxies.MatchAll;
             if (_trustedProxies.Configured && !_trustedProxies.Any)
             {
                 Log.Loger.Warn("RateLimit: TrustedProxies 未包含任何有效的 IP / CIDR，X-Forwarded-For 将不被采信");
@@ -507,6 +515,7 @@ namespace Wlniao.Middleware
             var allow = true;
             var blockedStatus = 0;
             var clientKey = string.Empty;
+            var rateKey = "unknown";
             // 熔断打开期间仍需放行请求，但不再更新熔断状态，等待恢复时间后半开自愈
             var observeCircuit = _circuitBreaker != null;
 
@@ -516,12 +525,13 @@ namespace Wlniao.Middleware
                 var path = context.Request.Path.Value;
 
                 // 空 clientKey（RemoteIpAddress 为 null）不能当白名单：落到固定兜底键参与限流
-                var rateKey = string.IsNullOrEmpty(clientKey) ? "unknown" : clientKey;
+                rateKey = string.IsNullOrEmpty(clientKey) ? "unknown" : clientKey;
                 if (!string.IsNullOrEmpty(clientKey) && _whiteKeysSet.Contains(clientKey))
                 {
                     // 客户端白名单放行。与历史行为一致：同一标识同时出现在黑白名单时以白名单为准
                 }
-                else if (!string.IsNullOrEmpty(clientKey) && _blackKeysSet.Contains(clientKey))
+                else if ((!string.IsNullOrEmpty(clientKey) && _blackKeysSet.Contains(clientKey))
+                    || await IsDynamicBannedAsync(rateKey).ConfigureAwait(false))
                 {
                     // 黑名单语义是「封禁该标识」，优先级必须高于熔断状态、限流开关与路径白名单：
                     // 被拉黑的客户端即使在「未启用限流」「路径白名单」「熔断打开」时也必须继续被拦截。
@@ -584,9 +594,59 @@ namespace Wlniao.Middleware
                 throw;
             }
 
+            // 下游成功后先闭合熔断半开状态，再执行旁路观察；
+            // 观察是纯附加能力，外层再兜一层，确保构造 observation 等异常也不会影响已成功的响应
             if (observeCircuit)
             {
                 _circuitBreaker?.OnSuccess();
+            }
+            try
+            {
+                await ObserveAsync(context, rateKey).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Loger.Warn("RateLimit observe failed: " + ex.Message);
+            }
+        }
+
+        private static async Task<bool> IsDynamicBannedAsync(string key)
+        {
+            try
+            {
+                return await RateLimitControl.IsBannedAsync(key).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Loger.Warn("RateLimit dynamic ban check failed: " + ex.Message);
+                return false;
+            }
+        }
+
+        private async Task ObserveAsync(HttpContext context, string clientKey)
+        {
+            if (_inspectors.Length == 0)
+            {
+                return;
+            }
+            var observation = new RateLimitObservation
+            {
+                ClientKey = clientKey,
+                StatusCode = context.Response.StatusCode,
+                Path = context.Request.Path.Value ?? "",
+                Method = context.Request.Method,
+                HttpContext = context
+            };
+            foreach (var inspector in _inspectors)
+            {
+                try
+                {
+                    await inspector.InspectAsync(observation).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Loger.Warn($"RateLimit inspector {inspector.GetType().Name} failed: {ex.Message}");
+                }
             }
         }
 
@@ -953,8 +1013,9 @@ namespace Wlniao.Middleware
     }
 
     /// <summary>
-    /// 统一解析客户端 IP：与限流共用 WLN_RATE_TRUSTED_PROXIES 的 fail-closed 代理信任策略，
-    /// 未配置可信代理时不采信 X-Forwarded-For，防止伪造 XFF 绕过封禁/审计。
+    /// 统一解析客户端 IP：与限流共用 WLN_RATE_TRUSTED_PROXIES。
+    /// 未配置时保持历史行为（采信 X-Forwarded-For 的第一个有效 IP）以兼容既有项目；
+    /// 仅当配置非空时才启用信任策略（自右向左取第一个不可信跳）。
     /// </summary>
     public static class ClientIpResolver
     {
@@ -962,7 +1023,8 @@ namespace Wlniao.Middleware
             new TrustedProxyMatcher(Config.GetConfigs("WLN_RATE_TRUSTED_PROXIES", "").SplitBy() ?? []));
 
         /// <summary>
-        /// 解析客户端 IP：直连对端不可信时忽略 XFF；可信时自右向左回溯取第一个不可信跳
+        /// 解析客户端 IP：未配置 TrustedProxies 时采信 XFF 第一个有效 IP（历史兼容）；
+        /// 配置信任策略后，直连对端不可信时忽略 XFF，可信时自右向左回溯取第一个不可信跳
         /// </summary>
         /// <param name="remoteIp">直连对端地址</param>
         /// <param name="forwardedFor">X-Forwarded-For 头原文（可为 null）</param>
@@ -972,10 +1034,10 @@ namespace Wlniao.Middleware
                 a == null ? "" : a.IsIPv4MappedToIPv6 ? a.MapToIPv4().ToString() : a.ToString();
             var direct = normalize(remoteIp);
             var matcher = Matcher.Value;
-            // 未配置 / 配置无有效项 / 显式 "*"：与 RateLimit 一致
+            // 未配置（历史兼容）/ 显式 "*"：采信 XFF 的第一个有效 IP；无有效项则用直连地址
             if (!matcher.Configured || matcher.MatchAll)
             {
-                if (matcher.MatchAll && !string.IsNullOrEmpty(forwardedFor))
+                if (!string.IsNullOrEmpty(forwardedFor))
                 {
                     foreach (var ip in forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                     {

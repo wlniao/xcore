@@ -23,7 +23,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
+using System.Text.Encodings.Web;
 namespace Wlniao
 {
     /// <summary>
@@ -68,7 +68,9 @@ namespace Wlniao
         /// </summary>
         public static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
         {
-            Encoder = XCore.JsonSerializerOptions.Encoder,
+            // 原 XCore.JsonSerializerOptions.Encoder 只放开中文，引号仍输出 \u0022；
+            // UnsafeRelaxedJsonEscaping 保留中文，且嵌套 JSON 的引号输出为 \"
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode
         };
 

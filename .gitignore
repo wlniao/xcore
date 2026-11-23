@@ -4,6 +4,7 @@
 
 *.log
 *.user
+*.nupkg
 *.dev.config
 *.DotSettings
 *.DotSettings.user

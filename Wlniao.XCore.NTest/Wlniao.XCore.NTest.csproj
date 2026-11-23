@@ -39,7 +39,9 @@
     global 必须一并保留，否则其余按常规方式引用 XCore 类型的测试文件会全部编译失败。
   -->
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\Wlniao.XCore\Wlniao.XCore.csproj" Aliases="global,xcore" />
+    <ProjectReference Include="..\Wlniao.AspNetCore\Wlniao.AspNetCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

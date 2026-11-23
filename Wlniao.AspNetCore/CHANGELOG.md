@@ -2,6 +2,43 @@
 
 本文件记录 Wlniao.AspNetCore 的公开行为变更，重点标注**破坏性变更**。版本号与 `Wlniao.AspNetCore.csproj` 保持一致。
 
+## 10.0.6
+
+限流扩展与 Redis 封禁存储（XCore / AspNetCore / XCenter / Tasker 同步升至 10.0.6）。
+
+### 新增
+
+- **`RateLimitControl` / `IRateLimitInspector` / `RedisRateLimitBanStore`**
+  - 动态封禁与绝对解封时间（`Ban` / `SetUnbanAt` / `GetUnbanAt` / `Unban`），命中沿用 428 + `MessageTpl`
+  - 响应后检查器与内置 `NotFoundScanInspector`：滑动窗口统计 404，`MaxTrackedClients` 严格容量上限，过期/超限惰性回收
+  - `RedisRateLimitBanStore` 复用现有 `WLN_REDIS_*` 配置，不新增配置项；每条封禁为带 TTL 的 Redis String
+  - 专项文档：`Reference/Wlniao/Wlniao.AspNetCore.RateLimit.md`
+
+- **`Wlniao.Middleware.ClientIpResolver`**
+  - 统一解析客户端 IP；未配置 `WLN_RATE_TRUSTED_PROXIES` 时保持历史行为，非空配置才启用信任策略
+  - `XCoreController.ClientIP` 与 `Engine.Context.ClientIp` 共用该解析器
+
+### 行为变更（历史兼容）
+
+- **`WLN_RATE_TRUSTED_PROXIES` 未配置时恢复历史 XFF 行为**
+  - 采信 `X-Forwarded-For` 的第一个有效 IP；这是为兼容既有项目刻意保留，不是默认安全策略
+  - 仅配置非空时启用信任策略；显式 `*` 信任全部，具体 IP/CIDR 自右向左取第一个不可信跳；配置存在但全为非法项时仍 fail-closed
+  - 反向代理部署应显式配置可信代理列表，不要把默认行为当安全边界
+
+### 修复
+
+- **`RedisClient.ResToBool`（XCore，公共行为变更）**
+  - RESP 整数回复（`:1\r\n` / `:0\r\n`）此前一律判为 false，导致 `KeyExists` 对已存在键恒为 false、`KeyDelete` 成功删除也恒为 false（Redis 后端 `Cache.Exists` / `Cache.Del` 同样受影响）；现按整数值 > 0 判定为 true
+
+- **`JsonContext.SerializerOptions` 编码器**（XCore）：改用 `JavaScriptEncoder.UnsafeRelaxedJsonEscaping`，保留中文且嵌套 JSON 的引号输出为 `\"`
+- **`ObserveAsync` 异常边界**：先记录熔断成功再执行检查器，并加外层异常兜底，避免观察逻辑影响已成功响应
+- **`NotFoundScanInspector` 窗口增长**：`force` 路径 CAS 重试确保容量硬上限，过期窗口惰性回收
+
+### 其它
+
+- 拆分 `Reference/Wlniao/Wlniao.AspNetCore.RateLimit.md`，精简主手册；同步 `README.md` / `AGENTS.md` / CHANGELOG 至 10.0.6
+- 新增限流扩展与条件跳过的 Redis 集成测试；`RedisResToBoolTests` 不纳入发布
+
 ## 10.0.5
 
 安全审计修复与行为收紧（XCore / AspNetCore / XCenter / Tasker 同步升至 10.0.5）。
@@ -17,10 +54,6 @@
 - **`RateLimitOptions.CircuitBreakerFallbackMaxRequests`（可选）**
   - 熔断打开期间的本地兜底配额；≤0 时自动取 `max(1, MaxRequests/4)`。
   - 配置项 `WLN_RATE_CB_FALLBACK_MAX`。熔断打开不再等同于「按正常配额放行」，也不再完全跳过限流。
-
-- **`Wlniao.Middleware.ClientIpResolver`**
-  - 统一解析客户端 IP，与限流共用 `WLN_RATE_TRUSTED_PROXIES` 的 fail-closed 策略。
-  - `XCoreController.ClientIP` 与 `Engine.Context.ClientIp` 改为走该解析器：未配置可信代理时不再无条件采信 `X-Forwarded-For`。
 
 - **`StringUtil.HasSensitiveWords` / `HasSensitiveWordsZhcn`**
   - 布尔判断入口，与同类型 `Is*` 风格一致；需要命中明细时仍用 `CheckSensitiveWords*`（返回 `ApiResult`）。
@@ -81,25 +114,19 @@
 - `IsSafeSqlString` / `GetSafeSqlString` 标 `[Obsolete]`（字符黑名单不可作安全边界，请用参数化查询）。
 - 无填充 RSA / SHA1 签名相关 API 标 `[Obsolete]`。
 - 删除整文件被注释的死代码 `Pattern/FileExtentName.cs`；`DateTools.cs` 由 CR-only 单行规范为 CRLF 多行。
-- 同步 AGENTS-Usage 文档至 10.0.5；新增回归测试（时间窗/重放/响应签名/SessionEncryptKey/Base64/HasSensitiveWords 等）。
+- 同步 Reference/Wlniao 文档至 10.0.5；新增回归测试（时间窗/重放/响应签名/SessionEncryptKey/Base64/HasSensitiveWords 等）。
 
 ### 历史未发布条目（并入本版）
 
 - **`RateLimitOptions.TrustedProxies`（可选）**
   - 用途：限定哪些直连对端有权提供 `X-Forwarded-For`。此前该头被无条件采信，客户端只需每次伪造一个不同的值即可获得无限限流键、直接绕过限流。
   - 配置项 `WLN_RATE_TRUSTED_PROXIES`（逗号分隔），支持单个 IP、CIDR 网段（IPv4 / IPv6）与通配符 `*`。
+  - **未配置时保持历史行为**：无条件采信 `X-Forwarded-For` 的第一个有效 IP（为兼容既有项目，此项不作为默认安全策略）；仅当配置非空时才启用下面的信任策略。
   - 配置后：直连对端不在白名单内时忽略该头，直接按对端地址限流；对端可信时**自右向左**回溯，取第一个不可信的跳作为客户端地址——防止可信代理「追加而不覆盖」时，攻击者预置的伪造最左项被采信。
   - 配置项存在、但没有任何一项能解析为合法 IP / CIDR 时 **fail-closed**（忽略该头并写告警日志），不退回「信任全部」，避免配置笔误反而放大风险。
   - 说明：`RateLimitMiddleware`、`XCoreController.ClientIP`、`Engine.Context.ClientIp` 已统一走 `ClientIpResolver`。
 
 ### 破坏性变更
-
-- **`RateLimitMiddleware` 默认不再采信 `X-Forwarded-For`（fail-closed）**
-  - 影响：`TrustedProxies` **未配置（空数组）时**，一律忽略 `X-Forwarded-For`，客户端地址取直连对端（`Connection.RemoteIpAddress`）。历史行为是无条件采信该头的第一个有效 IP。
-  - 仅当显式配置 `"*"` 时才信任全部代理（等价于旧默认）。配置具体 IP / CIDR 时语义不变：仅白名单内的直连对端可提供该头。
-  - **需要恢复旧行为的部署**：设置 `WLN_RATE_TRUSTED_PROXIES=*`，或列出全部可信代理。
-  - 动机：默认部署下伪造 `X-Forwarded-For` 可无限切换限流键绕过限流；默认改为不采信后，限流键回落到直连地址。
-  - 与 AGENTS-Usage 手册、`RateLimitOptions.TrustedProxies` XML 注释已对齐（未配置 = 不采信）。
 
 - **`EngineController` 未认证响应的 HTTP 状态码统一为 401**
   - 影响：`Invoke(Func<IContext, Task<IActionResult>>, mustAuthentication: true)` 的未认证分支，HTTP 状态码由 `200` 变为 `401`；第二个重载（`Func<IContext, Task<object>>`）原本即为 `401`，本次统一。
