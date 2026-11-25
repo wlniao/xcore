@@ -108,7 +108,12 @@ namespace Wlniao.XCenter
         {
             return CheckSession((xsession, ctx) =>
             {
-                return Json(new { success = true, ctx.domain, ticket = xsession.BuildTicket() });
+                return Json(new Dictionary<string, object>
+                {
+                    ["success"] = true,
+                    ["domain"] = ctx.domain,
+                    ["ticket"] = xsession.BuildTicket()
+                });
             });
         }
 

@@ -6,6 +6,10 @@ using System.Text.Json.Serialization.Metadata;
 using Wlniao;
 using Wlniao.Caching;
 
+// 本文件包含故意未登记的匿名类型 / DTO 反射用例，用于验证 AOT 诊断；
+// 仅在此文件局部抑制 IL2026/IL3050，避免掩盖其他真实调用点的风险。
+#pragma warning disable IL2026, IL3050
+
 public class Dto
 {
     public string? Name { get; set; }
@@ -64,3 +68,5 @@ public static class Program
 [JsonSourceGenerationOptions]
 [JsonSerializable(typeof(Dto))]
 internal partial class CacheDemoContext : JsonSerializerContext { }
+
+#pragma warning restore IL2026, IL3050

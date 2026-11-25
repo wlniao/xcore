@@ -1,6 +1,6 @@
 # Wlniao.AspNetCore · 限流与动态封禁
 
-> 由 `Wlniao.AspNetCore.md` §4「UseRateLimit 限流」拆出，避免主手册过长。依据源码版本 **10.0.6**。
+> 由 `Wlniao.AspNetCore.md` §4「UseRateLimit 限流」拆出，避免主手册过长。依据源码版本 **10.0.8**。
 > 通用配置键见 `Wlniao.XCore.md` §7；宿主/控制器等见 `Wlniao.AspNetCore.md`。
 
 ## 1. 快速启用

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Wlniao.Mvc;
 
 namespace Wlniao.XCenter
@@ -321,14 +322,31 @@ namespace Wlniao.XCenter
         }
 
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "仅反射可用的 CoreCLR 兜底；AOT/裁剪下未登记类型直接抛 NotSupportedException")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "仅反射可用的 CoreCLR 兜底；AOT/裁剪下未登记类型直接抛 NotSupportedException")]
+        private static string SerializeOutput<T>(T value, string member)
+        {
+            var typeInfo = JsonContext.Instance.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>
+                ?? Wlniao.JsonContext.Instance.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>;
+            if (typeInfo is null && !JsonSerializer.IsReflectionEnabledByDefault)
+            {
+                throw new NotSupportedException(
+                    $"裁剪/AOT 环境下无法安全序列化类型 '{typeof(T).FullName ?? typeof(T).Name}'（XAppController.{member}）。"
+                    + "请将其登记到 Wlniao.XCenter.JsonContext / Wlniao.JsonContext，或改用已登记的 DTO。");
+            }
+            if (typeInfo is not null)
+            {
+                return JsonSerializer.Serialize(value, typeInfo);
+            }
+            return Wlniao.Json.Serialize(value);
+        }
+
         /// <summary>
         /// 输出内容序列化
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         [NonAction]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
         public IActionResult OutputSerialize<T>(ApiResult<T> result)
         {
             var output = "";
@@ -357,7 +375,7 @@ namespace Wlniao.XCenter
             }
             if (string.IsNullOrEmpty(this.sm4key))
             {
-                output = Wlniao.Json.Serialize(result);
+                output = SerializeOutput(result, nameof(OutputSerialize));
             }
             else
             {
@@ -376,7 +394,7 @@ namespace Wlniao.XCenter
                 }
                 else if (result.data != null)
                 {
-                    var json = Wlniao.Json.Serialize(result.data);
+                    var json = SerializeOutput(result.data, nameof(OutputSerialize));
                     tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
                 }
                 output = JsonSerializer.Serialize(tmp, JsonContext.Instance.ApiResultString);
@@ -398,8 +416,6 @@ namespace Wlniao.XCenter
         /// <param name="code"></param>
         /// <returns></returns>
         [NonAction]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
         public IActionResult OutputMessage<T>(ApiResult<T> result, string message, string code = null)
         {
             result.tips = true;
@@ -435,7 +451,7 @@ namespace Wlniao.XCenter
             }
             if (string.IsNullOrEmpty(this.sm4key))
             {
-                output = Wlniao.Json.Serialize(result);
+                output = SerializeOutput(result, nameof(OutputMessage));
             }
             else
             {
@@ -454,7 +470,7 @@ namespace Wlniao.XCenter
                 }
                 else if (result.data != null)
                 {
-                    var json = Wlniao.Json.Serialize(result.data);
+                    var json = SerializeOutput(result.data, nameof(OutputMessage));
                     tmp.data = Encryptor.SM4EncryptECBToHex(json, this.sm4key, true);
                 }
                 output = JsonSerializer.Serialize(tmp, JsonContext.Instance.ApiResultString);

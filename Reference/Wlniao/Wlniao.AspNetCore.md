@@ -1,7 +1,7 @@
 # Wlniao.AspNetCore · API 参考手册
 
 > 参考手册，不是 `AGENTS.md`。执行约定见项目根 `AGENTS.md`；通用工具见 `Wlniao.XCore.md`；**限流/封禁见 `Wlniao.AspNetCore.RateLimit.md`**。
-> 依据源码版本 **10.0.6**。签名以源码与包内 XML 注释为准，省略部分重载。
+> 依据源码版本 **10.0.8**。签名以源码与包内 XML 注释为准，省略部分重载。
 
 ## 0. 包与兼容边界
 
@@ -120,6 +120,15 @@ public class OrderService : IOrderService
 同一 `sign` 在时间窗内只允许出现一次（进程内重放拦截，错误码 `208`）。
 响应报文携带 `sign = SM3(data + token)`，客户端 `XApi`/`TokenApi` 会强制校验（失败码 `108`）。
 客户端时钟超前超过 1 小时同样会收到 `203`，上线前需保证调用方已对时。
+
+客户端调用 `Wlniao.XServer.TokenApi.Request<T>`（XCenter 包）自 10.0.8 起需传预序列化请求体与源生成元数据：
+
+```csharp
+var json = Json.Serialize(request, MyJsonContext.Default.RequestDto);
+var rlt = TokenApi.Request<ResultDto>("node", url, token, json, MyJsonContext.Default.ResultDto);
+```
+
+旧签名 `Request<T>(..., object data, string traceid = "")` 已移除；不要用匿名类型拼请求体，AOT 下会输出 `{}`。用法与 `XApi.Request<T>` 一致。
 
 ### `XApiController` 报文形状（成功与失败不同，客户端要分开解析）
 

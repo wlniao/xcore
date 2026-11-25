@@ -8,8 +8,9 @@ namespace Wlniao.XCenter
 {
     /// <summary>
     /// Wlniao.XCenter 自有业务类型的源生成 JSON 元数据上下文（零反射、AOT / 裁剪安全）。
-    /// 与 XCore 侧 Wlniao.JsonContext 分工：本上下文负责 XCenter 的业务类型，
-    /// 已在 Wlniao.JsonContext 注册的公共类型（string / Dictionary&lt;string,string&gt; / Dictionary&lt;string,object&gt;）直接复用，不重复登记。
+    /// 与 XCore 侧 Wlniao.JsonContext 分工：本上下文负责 XCenter 的业务类型；
+    /// 常用字典类型（Dictionary&lt;string,object&gt; / List&lt;Dictionary&lt;string,object&gt;&gt;）随 ApiResult&lt;object&gt; 一并登记，
+    /// 确保 data 为字典时也能被本上下文解析，不依赖反射兜底。
     /// 序列化输出统一用 <see cref="Instance"/>（中文不转义）；<see cref="Default"/> 仅用于反序列化等不关心编码器的场景。
     /// </summary>
     [JsonSourceGenerationOptions]
@@ -19,6 +20,11 @@ namespace Wlniao.XCenter
     [JsonSerializable(typeof(List<Models.Enum>))]
     [JsonSerializable(typeof(Models.Account))]
     [JsonSerializable(typeof(ApiResult<string>))]
+    [JsonSerializable(typeof(Dictionary<string, object>))]
+    [JsonSerializable(typeof(List<Dictionary<string, object>>))]
+    [JsonSerializable(typeof(ApiResult<object>))]
+    [JsonSerializable(typeof(ApiResult<Dictionary<string, object>>))]
+    [JsonSerializable(typeof(ApiResult<List<Dictionary<string, object>>>))]
     public partial class JsonContext : JsonSerializerContext
     {
         /// <summary>

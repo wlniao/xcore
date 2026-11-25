@@ -21,10 +21,10 @@
 ===============================================================================*/
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json.Serialization.Metadata;
 using Wlniao.Log;
 using Wlniao.Text;
 
@@ -42,12 +42,11 @@ namespace Wlniao.XServer
         /// <param name="apinode"></param>
         /// <param name="url"></param>
         /// <param name="token"></param>
-        /// <param name="data"></param>
+        /// <param name="dataJson">已由调用方序列化为 JSON 字符串的请求体</param>
+        /// <param name="dataInfo">响应数据载荷 T 的源生成元数据</param>
         /// <param name="traceid"></param>
         /// <returns></returns>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "开放泛型 T 无处获取 JsonTypeInfo，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需为具体 T 登记上下文后迁移")]
-        public static Wlniao.ApiResult<T> Request<T>(string apinode, string url, string token, object data, string traceid = "")
+        public static Wlniao.ApiResult<T> Request<T>(string apinode, string url, string token, string dataJson, JsonTypeInfo<T> dataInfo, string traceid = "")
         {
             var now = DateTools.GetUnix().ToString();
             var rlt = new Wlniao.ApiResult<T>();
@@ -64,7 +63,7 @@ namespace Wlniao.XServer
                 }
                 var uri = new Uri(url);
                 // 出站请求体（非 HTTP 响应）：按约定走 Wlniao.Json，不走 Mvc.ResponseJson
-                var txt = data is string ? data.ToString() : Json.Serialize(data);
+                var txt = dataJson;
                 var utime = "";
                 var start = DateTime.UtcNow;
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(txt, token);
@@ -180,7 +179,7 @@ namespace Wlniao.XServer
                                 }
                                 else
                                 {
-                                    rlt.data = Json.Deserialize<T>(plaintext);
+                                    rlt.data = Json.Deserialize<T>(plaintext, dataInfo);
                                     rlt.tips = resObj.tips;
                                 }
                             }

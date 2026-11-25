@@ -2,6 +2,41 @@
 
 本文件记录 XCore / AspNetCore / XCenter / Tasker 四个包的统一版本变更，重点标注**破坏性变更**。版本号与各项目 csproj 保持一致。
 
+## 10.0.8
+
+NativeAOT / 裁剪场景 JSON 数据丢失修复与 API 收紧（XCore / AspNetCore / XCenter / Tasker 同步升至 10.0.8）。
+
+### 破坏性变更
+
+- **`TokenApi.Request`（XCenter）签名变更**
+  - 原：`Request<T>(string apinode, string url, string token, object data, string traceid = "")`
+  - 现：`Request<T>(string apinode, string url, string token, string dataJson, JsonTypeInfo<T> dataInfo, string traceid = "")`
+  - `data` 不再支持运行时反射序列化，调用方需先自行序列化请求体，并传入响应载荷的源生成元数据。
+  - 迁移示例：
+    ```csharp
+    var json = Json.Serialize(request, MyJsonContext.Default.RequestDto);
+    var rlt = TokenApi.Request<ResultDto>("node", url, token, json, MyJsonContext.Default.ResultDto);
+    ```
+  - 与 `Wlniao.XServer.XApi.Request` 的用法保持一致；未在源生成上下文登记的类型在 AOT 下会失败，不再静默输出 `{}`。
+
+### 行为变更
+
+- **`XCenter.Context` 静态构造启用 `Json.StrictTrimDiagnostics = true`**：未登记类型的反射式序列化在 AOT / 裁剪下直接抛 `NotSupportedException`，不再静默丢数据；CoreCLR 下行为不变。
+- **`Wlniao.Mvc.ResponseJson.Serialize` 自定义 options 分支**：反射禁用时必须命中 `options.TypeInfoResolver`，否则抛 `NotSupportedException`；反射可用时仍回退反射以保持选项语义。
+- **`XAppController.OutputSerialize<T>` / `OutputMessage<T>`**：输出优先取源生成元数据（先 XCenter 上下文、再 XCore 上下文），AOT 下未登记类型快速失败。
+- **`RedisClient` 增加连接超时**：TCP 连接超时固定为 3 秒（`public const int ConnectTimeoutSeconds`），解决 `Send/ReceiveTimeout` 不约束 `Connect` 导致的长时间阻塞；连接失败日志写入 `xcore` Topic。
+
+### 修复
+
+- **`get_xapp_by_domain` / `get_xapp_by_suite` 在 AOT 下返回空数据**：请求参数由匿名类型改为 `Dictionary<string, object>`，明文不再被序列化为 `{}`；响应反序列化优先使用 `Result<T>` 源生成元数据。
+- **`ApiData<T>` / Tasker MQTT / `EmiController` / `EmiJsController`**：出站请求与响应中的匿名类型统一改为已登记的字典类型，避免 AOT 静默丢字段。
+- **`AotCompatTest` 全局 `NoWarn` 移除**：IL2026 / IL3050 抑制收敛到两个故意演示反射风险的源文件，避免掩盖真实调用点。
+
+### 其它
+
+- `Wlniao.XCenter.JsonContext` 补登记 `Dictionary<string, object>`、`List<Dictionary<string, object>>` 及 `ApiResult<T>` 常用变体。
+- 同步 `README.md` / `Reference/Wlniao/` / `Todo.md` 与回归测试至 10.0.8。
+
 ## 10.0.7
 
 会话密钥属性与配置键改名（XCore / AspNetCore / XCenter / Tasker 同步升至 10.0.7）。

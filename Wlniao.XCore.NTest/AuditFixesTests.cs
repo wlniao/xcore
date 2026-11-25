@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -149,8 +150,8 @@ public class AuditFixesTests
         var graph = Json.JsonNodeToObject(System.Text.Json.Nodes.JsonNode.Parse(json));
 
         Assert.That(graph, Is.TypeOf<System.Collections.Generic.Dictionary<string, object>>());
-        var dic = (System.Collections.Generic.Dictionary<string, object>?)graph;
-        Assert.That(dic["a"], Is.EqualTo(1L));
+        var dic = (System.Collections.Generic.Dictionary<string, object>?)graph!;
+        Assert.That(dic!["a"], Is.EqualTo(1L));
         Assert.That(dic["b"], Is.TypeOf<System.Collections.Generic.Dictionary<string, object>>());
         Assert.That(dic["d"], Is.TypeOf<System.Collections.Generic.List<object>>());
     }
@@ -295,6 +296,46 @@ public class AuditFixesTests
             xcore::Wlniao.XCore.ReloadJsonSerializerOptions();
         }
         Assert.That(xcore::Wlniao.XCore.JsonSerializerOptions.WriteIndented, Is.False, "重载后应恢复框架默认选项");
+    }
+}
+
+/// <summary>
+/// Redis 连接超时回归：确认 Connect 有独立超时上界，不可达地址不会长时间阻塞。
+/// 行为测试默认跳过（设 WLN_TEST_REDIS_CONNECT_HOST 指定黑洞地址后执行）；常量断言始终运行。
+/// </summary>
+[TestFixture]
+public class RedisConnectTimeoutTests
+{
+    [Test]
+    public void ConnectTimeout_IsBoundedConstant()
+    {
+        Assert.That(xcore::Wlniao.Net.RedisClient.ConnectTimeoutSeconds, Is.EqualTo(3), "连接超时默认 3 秒");
+    }
+
+    [Test]
+    [Category("Integration")]
+    public void Get_UnreachableHost_FailsWithinConnectTimeout()
+    {
+        var host = Environment.GetEnvironmentVariable("WLN_TEST_REDIS_CONNECT_HOST");
+        if (string.IsNullOrEmpty(host))
+        {
+            Assert.Ignore("未设置 WLN_TEST_REDIS_CONNECT_HOST，跳过不可达地址连接测试");
+        }
+        if (!int.TryParse(Environment.GetEnvironmentVariable("WLN_TEST_REDIS_CONNECT_PORT"), out var port))
+        {
+            port = 6379;
+        }
+
+        var address = IPAddress.TryParse(host, out var parsed)
+            ? parsed
+            : Dns.GetHostAddresses(host).First(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
+        var client = new xcore::Wlniao.Net.RedisClient(new IPEndPoint(address, port));
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        Assert.That(() => client.Get("timeout-probe"), Throws.Exception);
+        sw.Stop();
+        // 连接超时 3 秒，留 3 秒余量给收发/调度；确认不会无限阻塞
+        Assert.That(sw.Elapsed.TotalSeconds, Is.LessThan(9),
+            $"不可达地址应在连接超时窗口内快速失败，实际耗时 {sw.Elapsed.TotalSeconds:F1}s");
     }
 }
 

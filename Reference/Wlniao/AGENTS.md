@@ -22,8 +22,8 @@ dotnet publish -c Release -r linux-x64 -p:PublishAot=true     # AOT 发布
 dotnet list package --include-transitive                       # 核对实际引用的 Wlniao 版本
 ```
 
-> 最后一条显示的 Wlniao 版本若不是 10.0.6，先停下确认差异（重点看 `ApiResult`、
-> `XApiController` 报文形状、`AddBusiness` 的 AOT 标注），不要照本文硬套。
+> 最后一条显示的 Wlniao 版本若不是 10.0.8，先停下确认差异（重点看 `ApiResult`、
+> `XApiController` 报文形状、`AddBusiness` 的 AOT 标注、`TokenApi.Request` 的 AOT 签名），不要照本文硬套。
 
 ## 3. 边界
 
@@ -111,6 +111,7 @@ memory / file / redis 三后端语义已对齐：redis 对 `expire<=0` 写入后
 - `token` 必须在构造函数里赋值（16 字符 SM4 密钥），否则 `Check` 直接失败返回；
 - 校验式 `sign == SM3(timestamp + data + token)`（常量时间比较），`timestamp` 双向窗口 `|now-ts|<=3600`（拦过期也拦超前，超窗返回 `code="203"`），同 sign 窗口内拒绝重放（`208`）；
 - 响应带 `sign = SM3(data+token)`，`XApi`/`TokenApi` 客户端强制校验（`108`）；请求日志不落盘 sign；
+- `TokenApi.Request<T>` 自 10.0.8 起与 `XApi.Request<T>` 同签名，需传预序列化请求体与 `JsonTypeInfo<T>`，不要用匿名类型；
 - **成功与失败报文形状不同**：成功走手拼字典且 `data` 为 SM4 密文、`code="0"`；失败走 `ApiResult<object>` 且 `data` 为明文状态码。客户端必须分开解析。
 
 **AOT 注意**：`AddBusiness` 标了 `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]`；
@@ -124,6 +125,7 @@ memory / file / redis 三后端语义已对齐：redis 对 `expire<=0` 写入后
 | `Cache.Get<T>("k")` | `Cache.Get("k", MyCtx.Default.T)` | 编译失败（无该重载） |
 | `Json.Deserialize<Dto>(json)` 用在 AOT 发布 | `Json.Deserialize(json, MyCtx.Default.Dto)` | 静默返回 `{}`，数据全丢 |
 | `Json.Serialize(new { Id = 1 })` | 具名 DTO / `Dictionary<string, object>` | AOT 下无元数据 |
+| `TokenApi.Request<T>(..., new { ... }, ...)` | 先 `Json.Serialize(request, ctx.RequestDto)`，再传 `dataJson` + `JsonTypeInfo<T>` | 10.0.8 起签名已移除，且匿名类型在 AOT 下输出 `{}` |
 | `var v = Config.GetConfigs("k"); if (v == null)` | `if (string.IsNullOrEmpty(v))` | 缺项返回 `""`，判空永不成立 |
 | `Convert.ToInt(x)` + `using System;` | `Wlniao.Convert.ToInt(x)` | CS0104 二义性 |
 | `DateTime.Now` | `DateTools.GetNow()` | 时区不受配置控制 |
@@ -150,6 +152,7 @@ memory / file / redis 三后端语义已对齐：redis 对 `expire<=0` 写入后
 - [ ] Web 项目：`Program.cs` 里是否只有 `UseWlniao`，没有额外的 `UseKestrel`/`UseHttps`？
 - [ ] Web 项目：新业务类是否标了 `[BusinessService]` **并且实现了接口**？
 - [ ] 加密通讯接口是否属于 `XApiController` 且 `token` 已赋值？
+- [ ] `TokenApi.Request<T>` 是否传 `dataJson` + `JsonTypeInfo<T>`，而非旧 `object data` 重载？
 
 ## 9. 文档与源码
 

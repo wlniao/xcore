@@ -125,7 +125,7 @@ BASE=https://gitee.com/wlniao/xcore/raw/master/Reference/Wlniao; mkdir -p Refere
 
 ### 升级需留意的行为差异
 
-以下八条会影响已有代码的运行结果，升级时请逐条确认：
+以下条目会影响已有代码的运行结果，升级时请逐条确认：
 
 | 项 | 变化 | 影响 |
 |---|---|---|
@@ -137,10 +137,12 @@ BASE=https://gitee.com/wlniao/xcore/raw/master/Reference/Wlniao; mkdir -p Refere
 | `XCore.JsonSerializerOptions` | 由可写静态字段改为只读属性；整体替换改用 `SetJsonSerializerOptions(Func<…>)` / `ReloadJsonSerializerOptions()` | 源码里 `XCore.JsonSerializerOptions = …` 不再编译；运行期改选项请走工厂方法（会同步刷新 AOT 降级缓存） |
 | `XCore.SessionEncryptKey` → `XCore.SessionSafeKey` | 属性改名；仅保留 `[Obsolete]` 属性别名转发（`XCORE0008`），**配置旧键 `SessionEncryptKey` 已失效**，只读 `SessionSafeKey`。均未配置时由 WebNode + 进程路径 + DB 密码 + Redis 密码派生（16 hex） | 源码建议迁移到 `SessionSafeKey`（旧名有编译警告）；**配置文件里的 `SessionEncryptKey` 不再生效**，须改名为 `SessionSafeKey`，否则静默走派生密钥；多实例建议显式配置同一值 |
 | `XCore.WebNode` 默认值 | 由固定 `xcore` 改为进程名（`ProcessPath` 为 null 时仍回退 `xcore`） | `ApiResult.node`、Loki `service_name` 等默认节点名变化；需固定节点名请配置 `WLN_NODE` |
+| `TokenApi.Request`（XCenter） | 参数 `object data` 改为 `string dataJson, JsonTypeInfo<T> dataInfo`，与 `XApi.Request` 对齐 | 调用方需先序列化请求体并传源生成元数据；详见 `CHANGELOG.md` 10.0.8 与 `Wlniao.XCenter/README.md` |
+| AOT 严格诊断（XCenter） | 引用 `XCenter.Context` 即启用 `Json.StrictTrimDiagnostics = true` | AOT / 裁剪下未登记类型快速失败（CoreCLR 不变）；匿名类型参数应改为字典或登记 DTO |
 
 ### 维护约定（文档贡献者）
 
-- 本文档组按 `Wlniao.XCore` / `Wlniao.AspNetCore` **10.0.7** 编写；改公共 API 时同步更新对应文件（`dotnet build` 不会发现文档不同步）。
+- 本文档组按 `Wlniao.XCore` / `Wlniao.AspNetCore` **10.0.8** 编写；改公共 API 时同步更新对应文件（`dotnet build` 不会发现文档不同步）。
 - 新增 API 补三处：手册的签名段落、反例对照（如有坑）、`AGENTS.md` 的自检清单（如属高频误用）。
 - AOT 标注必须与源码一致：源码标了 `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]` 的 API，手册里必须写明。
 - 手册只写「当前行为」，不写历史；泛型类型名用反引号包裹，不要写 `&lt;T&gt;` 实体；签名要能直接编译，不要省略参数名。

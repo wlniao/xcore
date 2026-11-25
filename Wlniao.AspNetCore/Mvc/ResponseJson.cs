@@ -17,6 +17,7 @@
 ===============================================================================*/
 using System;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Wlniao.Mvc
 {
@@ -31,16 +32,27 @@ namespace Wlniao.Mvc
         /// 序列化响应负载。
         /// </summary>
         /// <param name="obj">负载对象；null 输出字面量 null</param>
-        /// <param name="options">自定义选项；与 <see cref="Wlniao.XCore.JsonSerializerOptions"/> 不同时走反射路径以保持覆盖语义</param>
+        /// <param name="options">自定义选项；与 <see cref="Wlniao.XCore.JsonSerializerOptions"/> 不同时优先走其 TypeInfoResolver，反射可用时才回退反射</param>
         public static string Serialize(object? obj, JsonSerializerOptions? options = null)
         {
             if (obj is null)
             {
                 return "null";
             }
-            // Context.JsonSerializerOptions 允许业务方覆盖；与默认选项不同时走反射路径以保持选项语义
+            // Context.JsonSerializerOptions 允许业务方覆盖；与默认选项不同时优先走自定义选项的 TypeInfoResolver
             if (options != null && !ReferenceEquals(options, Wlniao.XCore.JsonSerializerOptions))
             {
+                if (!JsonSerializer.IsReflectionEnabledByDefault)
+                {
+                    var customTypeInfo = options.TypeInfoResolver?.GetTypeInfo(obj.GetType(), options);
+                    if (customTypeInfo is null)
+                    {
+                        throw new NotSupportedException(
+                            $"裁剪/AOT 环境下无法安全序列化类型 '{obj.GetType().FullName}'（HTTP 响应负载的自定义 JsonSerializerOptions）。"
+                            + "请为自定义选项配置 TypeInfoResolver，或登记具名 DTO 到源生成上下文。");
+                    }
+                    return JsonSerializer.Serialize(obj, customTypeInfo);
+                }
                 return SerializeWithCustomOptions(obj, obj.GetType(), options);
             }
             // 反射可用：源生成命中优先（更快、选项一致），嵌套 object 成员解析失败时回退反射，
@@ -74,8 +86,8 @@ namespace Wlniao.Mvc
             return JsonSerializer.Serialize(obj, Wlniao.XCore.JsonSerializerOptions);
         }
 
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "自定义 JsonSerializerOptions 需要按运行时类型反射序列化，以保持业务方可覆盖输出格式")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "自定义 JsonSerializerOptions 需要按运行时类型反射序列化，以保持业务方可覆盖输出格式")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "仅在 JsonSerializer.IsReflectionEnabledByDefault 为 true 的分支调用；反射被禁用的 AOT 环境已改走 TypeInfoResolver 或直接抛异常")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "仅在 JsonSerializer.IsReflectionEnabledByDefault 为 true 的分支调用；反射被禁用的 AOT 环境已改走 TypeInfoResolver 或直接抛异常")]
         private static string SerializeWithCustomOptions(object obj, Type type, JsonSerializerOptions options)
         {
             return JsonSerializer.Serialize(obj, type, options);

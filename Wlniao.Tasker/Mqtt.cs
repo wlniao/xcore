@@ -3,7 +3,6 @@ using MQTTnet.Protocol;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Buffers;
@@ -107,11 +106,9 @@ namespace Wlniao.Tasker
         /// <param name="topic"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Publish 载荷为 object 运行时类型，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需调用方保证载荷类型已登记到源生成上下文")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "Publish 载荷为 object 运行时类型，走 Json 反射逃生舱（CoreCLR 下行为不变）；NativeAOT 需调用方保证载荷类型已登记到源生成上下文")]
-        private MqttApplicationMessage BuildMessage(string topic, object data)
+        private MqttApplicationMessage BuildMessage(string topic, Dictionary<string, object> data)
         {
-            var msg = Json.Serialize(data);
+            var msg = Json.Serialize(data, Wlniao.JsonContext.Instance.DictionaryStringObject);
             var buffer = _sm2.Encrypt(Encoding.UTF8.GetBytes(msg));
             var builder = new MqttApplicationMessageBuilder()
             .WithTopic(topic)
@@ -207,14 +204,14 @@ namespace Wlniao.Tasker
                                 }
                                 if (Normal)
                                 {
-                                    await client.PublishAsync(BuildMessage("watcher/connected", new { ClientId = clientId })).ConfigureAwait(false);
+                                    await client.PublishAsync(BuildMessage("watcher/connected", new Dictionary<string, object> { ["ClientId"] = clientId })).ConfigureAwait(false);
                                 }
                                 foreach (var topic in _subscribe.Keys)
                                 {
                                     await client.SubscribeAsync(topic, MqttQualityOfServiceLevel.AtLeastOnce).ConfigureAwait(false);
                                     if (Normal)
                                     {
-                                        await client.PublishAsync(BuildMessage("watcher/subscribe", new { ClientId = clientId, Topic = topic })).ConfigureAwait(false);
+                                        await client.PublishAsync(BuildMessage("watcher/subscribe", new Dictionary<string, object> { ["ClientId"] = clientId, ["Topic"] = topic })).ConfigureAwait(false);
                                     }
                                 }
                             }

@@ -4,6 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Wlniao.Log;
 using Wlniao.Runtime;
 using Wlniao.Text;
@@ -17,6 +19,11 @@ namespace Wlniao.XCenter
     /// </summary>
     public class Context
     {
+        static Context()
+        {
+            Wlniao.Json.StrictTrimDiagnostics = true;
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -157,7 +164,11 @@ namespace Wlniao.XCenter
             var ctx = new Context { owner = ownerId.ToString(), token = XCenterToken, app = XCenterApp };
             try
             {
-                var res = AppData<Dictionary<string, object>>("/app/saas/get_xapp_by_suite", new { suite_id = ctx.owner, app = ctx.app });
+                var res = AppData<Dictionary<string, object>>("/app/saas/get_xapp_by_suite", new Dictionary<string, object>
+                {
+                    ["suite_id"] = ctx.owner,
+                    ["app"] = ctx.app
+                });
                 if (res.Success)
                 {
                     ctx.app = res.Data.GetString("app");
@@ -222,7 +233,11 @@ namespace Wlniao.XCenter
                     }
                     else
                     {
-                        var res = AppData<Dictionary<string, object>>("/app/saas/get_xapp_by_domain", new { domain = ctx.domain, app = ctx.app });
+                        var res = AppData<Dictionary<string, object>>("/app/saas/get_xapp_by_domain", new Dictionary<string, object>
+                        {
+                            ["domain"] = ctx.domain,
+                            ["app"] = ctx.app
+                        });
                         if (res.Success && res.Data != null)
                         {
                             ctx.app = res.Data.GetString("app", ctx.app);
@@ -261,6 +276,17 @@ namespace Wlniao.XCenter
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "仅非字典参数走 Json 反射逃生舱，保持 CoreCLR 兼容；AOT 调用方应传 Dictionary<string, object> 以使用源生成元数据")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "仅非字典参数走 Json 反射逃生舱，保持 CoreCLR 兼容；AOT 调用方应传 Dictionary<string, object> 以使用源生成元数据")]
+        private static string SerializeRequestData(object? data)
+        {
+            if (data is Dictionary<string, object> dict)
+            {
+                return Wlniao.Json.Serialize(dict, Wlniao.JsonContext.Instance.DictionaryStringObject);
+            }
+            return Wlniao.Json.Serialize(data);
+        }
+
         /// <summary>
         /// 获取平台接口数据（获取Saas租户信息）
         /// </summary>
@@ -285,7 +311,7 @@ namespace Wlniao.XCenter
             var utime = "";
             var msgid = StringUtil.CreateLongId();
             var token = XCenterSm4Key.Length == 16 ? XCenterSm4Key : StringUtil.CreateRndStrE(16);
-            var plainData = Wlniao.Json.Serialize(data);
+            var plainData = SerializeRequestData(data);
             var expireTime = DateTools.GetUnix() + 7200;
             var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, token);
             var sm2Token = Wlniao.Encryptor.SM2EncryptByPublicKey(Encoding.ASCII.GetBytes(token), XCenterServerKey);
@@ -344,7 +370,10 @@ namespace Wlniao.XCenter
                         Log.Loger.Topic("authify", $"msgid:{msgid}, authify:/{path}[{utime}]{Environment.NewLine} >>> {plainData}{Environment.NewLine} <<< {plainResult}", Log.LogLevel.Debug, true);
                         try
                         {
-                            rlt = Wlniao.Json.Deserialize<Result<T>>(plainResult);
+                            var resultTypeInfo = Wlniao.JsonContext.Instance.GetTypeInfo(typeof(Result<T>)) as JsonTypeInfo<Result<T>>;
+                            rlt = resultTypeInfo is null
+                                ? Wlniao.Json.Deserialize<Result<T>>(plainResult)
+                                : Wlniao.Json.Deserialize<Result<T>>(plainResult, resultTypeInfo);
                         }
                         catch (Exception e)
                         {
@@ -391,7 +420,7 @@ namespace Wlniao.XCenter
                 var utime = "";
                 var start = DateTime.UtcNow;
                 var msgid = StringUtil.CreateLongId();
-                var plainData = Wlniao.Json.Serialize(data);
+                var plainData = SerializeRequestData(data);
                 var encdata = Wlniao.Encryptor.SM4EncryptECBToHex(plainData, apptoken);
                 var sign = Wlniao.Encryptor.SM3Encrypt(owner + app + encdata + now + apptoken);
                 var resStr = "";
@@ -466,7 +495,10 @@ namespace Wlniao.XCenter
                                     }
                                     else
                                     {
-                                        rlt.data = Wlniao.Json.Deserialize<T>(json);
+                                        var dataTypeInfo = Wlniao.JsonContext.Instance.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>;
+                                        rlt.data = dataTypeInfo is null
+                                            ? Wlniao.Json.Deserialize<T>(json)
+                                            : Wlniao.Json.Deserialize<T>(json, dataTypeInfo);
                                     }
                                     logs += "\n <<< " + Wlniao.Json.Serialize(rlt);
                                 }
@@ -508,7 +540,7 @@ namespace Wlniao.XCenter
             }
             else
             {
-                var res = ApiData<string>("/api/get_sid", new { mobile = mobile });
+                var res = ApiData<string>("/api/get_sid", new Dictionary<string, object> { ["mobile"] = mobile });
                 if (res.success)
                 {
                     return res.data;
@@ -528,7 +560,7 @@ namespace Wlniao.XCenter
             if (!string.IsNullOrEmpty(owner))
             {
                 val = Wlniao.Caching.InMemory.Get("ownername_" + owner);
-                var res = ApiData<string>("/api/get_ownername", new { owner = owner });
+                var res = ApiData<string>("/api/get_ownername", new Dictionary<string, object> { ["owner"] = owner });
                 if (res.success)
                 {
                     val = res.data;
@@ -553,7 +585,7 @@ namespace Wlniao.XCenter
             if (!string.IsNullOrEmpty(point))
             {
                 val = Wlniao.Caching.InMemory.Get("pointname_" + point);
-                var res = ApiData<string>("/api/get_pointname", new { id = point });
+                var res = ApiData<string>("/api/get_pointname", new Dictionary<string, object> { ["id"] = point });
                 if (res.success)
                 {
                     val = res.data;
@@ -579,7 +611,7 @@ namespace Wlniao.XCenter
             if (!string.IsNullOrEmpty(point))
             {
                 val = Wlniao.Caching.InMemory.Get("pointcode_" + point);
-                var res = ApiData<string>("/api/get_pointcode", new { id = point, app = app });
+                var res = ApiData<string>("/api/get_pointcode", new Dictionary<string, object> { ["id"] = point, ["app"] = app });
                 if (res.success)
                 {
                     val = res.data;
@@ -611,7 +643,7 @@ namespace Wlniao.XCenter
             {
                 if (obj == null || obj.Count == 0)
                 {
-                    var res = ApiData<string>("/api/get_setting", new { key = key });
+                    var res = ApiData<string>("/api/get_setting", new Dictionary<string, object> { ["key"] = key });
                     if (res.success)
                     {
                         obj = System.Text.Json.JsonSerializer.Deserialize(res.data, Wlniao.JsonContext.Instance.DictionaryStringString);
@@ -639,7 +671,7 @@ namespace Wlniao.XCenter
             {
                 if (string.IsNullOrEmpty(XCenterToken))
                 {
-                    var res = ApiData<Dictionary<string, object>>("/api/check_ticket", new { app = app, ticket = ticket });
+                    var res = ApiData<Dictionary<string, object>>("/api/check_ticket", new Dictionary<string, object> { ["app"] = app, ["ticket"] = ticket });
                     if (res.success)
                     {
                         obj = res.data;

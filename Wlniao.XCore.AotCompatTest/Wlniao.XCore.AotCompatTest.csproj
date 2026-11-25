@@ -5,7 +5,6 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PublishAot>true</PublishAot>
-    <NoWarn>IL2026;IL3050</NoWarn>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 

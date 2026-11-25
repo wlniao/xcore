@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Wlniao;
 
+// 本文件故意序列化 / 反序列化未覆盖类型以验证诊断开关；
+// 仅在此文件局部抑制 IL2026/IL3050。
+#pragma warning disable IL2026, IL3050
+
 /// <summary>
 /// Json.StrictTrimDiagnostics 诊断开关的行为验证。
 ///
@@ -145,3 +149,5 @@ public class UncoveredPayload
     public string? Name { get; set; }
     public int Amount { get; set; }
 }
+
+#pragma warning restore IL2026, IL3050

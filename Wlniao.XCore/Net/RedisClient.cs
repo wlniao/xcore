@@ -24,6 +24,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
+using Wlniao.Log;
 using Wlniao.Runtime;
 
 namespace Wlniao.Net
@@ -74,6 +76,11 @@ namespace Wlniao.Net
 
         // 单条 Redis 命令的发送/接收超时
         private const int SocketTimeoutSeconds = 5;
+
+        /// <summary>
+        /// 建立 TCP 连接的超时（秒）。独立于池满等待与收发超时；Send/ReceiveTimeout 不约束 Connect。
+        /// </summary>
+        public const int ConnectTimeoutSeconds = 3;
         
         // 获取连接的最大等待时间（秒）
         private const int GetConnectionMaxWaitSeconds = 5;
@@ -487,7 +494,19 @@ namespace Wlniao.Net
                 };
                 try
                 {
-                    newsocket.Connect(endPoint);
+                    // ConnectAsync 配合 CancellationToken 限定连接（含 DNS 解析）耗时；
+                    // SendTimeout/ReceiveTimeout 只作用于收发，无法约束 Connect
+                    using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ConnectTimeoutSeconds)))
+                    {
+                        try
+                        {
+                            newsocket.ConnectAsync(endPoint, cts.Token).GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+                        {
+                            throw new XCoreException($"Redis: 连接 {endPoint} 超时（{ConnectTimeoutSeconds} 秒）", 500);
+                        }
+                    }
                     if (!newsocket.Connected)
                     {
                         newsocket.Close();
@@ -522,8 +541,9 @@ namespace Wlniao.Net
                     newsocket.LastUse = DateTime.UtcNow.Ticks;
                     return newsocket;
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Loger.Topic("xcore", $"Redis connect {endPoint} failed: {ex.Message}", LogLevel.Error);
                     newsocket.Catch = true;
                     newsocket.Close();
                     newsocket.Dispose();

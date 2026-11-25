@@ -79,8 +79,8 @@
 ## 六、文档 / 流程
 
 - README「全库反射兜底均有标注」——本轮补齐了 `Reflection` 主路径，**其它文件未再逐个核对**
-- 升级行为差异表（README）仍待补：响应 `sign`、双向时间窗、FileLoger 级别过滤、熔断仍限流（`SessionSafeKey` 改名与派生方式已于 10.0.7 补入）
-- CHANGELOG 未写本轮安全修复条目（根目录有 CHANGELOG.md）
+- 升级行为差异表（README）已补：响应 `sign`、双向时间窗、FileLoger 级别过滤、熔断仍限流、`SessionSafeKey` 改名与派生方式、10.0.8 的 `TokenApi.Request` 签名与 AOT 严格诊断
+- CHANGELOG 已补 10.0.5 安全修复与 10.0.8 AOT / API 收紧条目（根目录 `CHANGELOG.md`）
 
 ---
 
@@ -90,4 +90,4 @@
 2. **独立 PR**：超大文件拆分 + XServer 管线去重（纯重构，易 review）  
 3. **工程 PR**：开分析器 + 覆盖率门槛（先在分支上看警告量）  
 4. **并发 PR**：`.Result` 清理 + Mqtt 停机  
-5. **版本**：把本轮破坏性变更写进 CHANGELOG / 升级表，发 10.0.6  
+5. **版本**：破坏性变更已写进 CHANGELOG / 升级表，随 10.0.8 发布

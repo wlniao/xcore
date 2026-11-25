@@ -1,7 +1,7 @@
 # Wlniao.XCore · API 参考手册
 
 > 本文是**参考手册**，不是 `AGENTS.md`。执行约定（该做什么、不该做什么）见项目根 `AGENTS.md`。
-> 依据源码版本 **10.0.6**（`dotnet list package --include-transitive` 可核对实际引用版本）。
+> 依据源码版本 **10.0.8**（`dotnet list package --include-transitive` 可核对实际引用版本）。
 > 签名以源码与包内 XML 注释为准；本文省略了部分重载，标注「另有重载」处请自行确认。
 
 ## 0. 包与兼容边界
@@ -86,7 +86,9 @@ Json.StrictTrimDiagnostics = true;   // 未覆盖类型直接抛 NotSupportedExc
 - 字典 / 集合：`DictionaryStringString`（`Dictionary<string,string>`）、`DictionaryStringObject`、`DictionaryStringJsonElement`；对应列表 `ListDictionaryStringString`、`ListDictionaryStringObject`、`ListDictionaryStringJsonElement`；另有 `ListObject`、`Object`、`String`、`Int32`、`Int64`、`Boolean`、`DateTime`。
 - `Result<T>`：`ResultObject`、`ResultInt32`、`ResultInt64`、`ResultBoolean`、`ResultString`；以及 `ResultDictionaryStringString`、`ResultDictionaryStringObject`、`ResultDictionaryStringJsonElement`、`ResultListDictionaryStringString`、`ResultListDictionaryStringObject`、`ResultListDictionaryStringJsonElement`。
 
-未登记的类型（自有 DTO、`EngineSession`、`ConsumerInfo` 等）仍需自建 `[JsonSerializable]` 上下文；可用 `Json.IsCovered(type)` 先确认。仅引用 `Wlniao.XCenter` 时另有 `Wlniao.XCenter.JsonContext.Default`：`Context`、`EmiContext`、`Enum`、`ListEnum`、`Account`、`ApiResultString`（公共类型不重复登记）。
+未登记的类型（自有 DTO、`EngineSession`、`ConsumerInfo` 等）仍需自建 `[JsonSerializable]` 上下文；可用 `Json.IsCovered(type)` 先确认。仅引用 `Wlniao.XCenter` 时另有 `Wlniao.XCenter.JsonContext`：`Context`、`EmiContext`、`Enum`、`ListEnum`、`Account`、`ApiResultString`、`ApiResultObject`、`ApiResultDictionaryStringObject`、`ApiResultListDictionaryStringObject`、`DictionaryStringObject`、`ListDictionaryStringObject`；序列化输出统一用 `Instance`（中文不转义），不要用 `Default`。
+
+`Wlniao.XCenter.Context` 首次访问时会把 `Json.StrictTrimDiagnostics` 置为 `true`：引用该类型的进程在 AOT / 裁剪下对未登记类型快速失败（CoreCLR 不受影响）。若需保留静默降级，请在访问 `Context` 前显式置回 `false`。
 
 其它 AOT 硬性要求：
 
@@ -364,6 +366,8 @@ string CachePath { get; set; }                           // file 后端目录
 ```
 
 > Redis 后端的 `Exists` / `Del` 返回值已按 RESP 整数回复（`:1`/`:0`）正确判定；此前 `KeyExists`/`KeyDelete` 对成功场景恒返回 `false`。
+>
+> `Wlniao.Net.RedisClient.ConnectTimeoutSeconds`（`public const int`，默认 `3` 秒）约束 TCP 连接耗时；`SocketTimeoutSeconds` 只约束收发，池满等待上限为 `GetConnectionMaxWaitSeconds`（5 秒）。连接失败会写入 `xcore` Topic 的 Error 日志。
 
 ### Wlniao.Caching.FileCache 文件缓存（file 后端的底层实现，带 L1 内存层）
 
